@@ -177,7 +177,7 @@ describe('procedural music song', () => {
     expect(battle.dna.progression).toEqual(ambient.dna.progression);
     expect(battle.dna.sharedMotif).toEqual(ambient.dna.sharedMotif);
     expect(boss.dna.leadContour).toEqual(ambient.dna.leadContour);
-  });
+  }, 4_000);
 
   it('repeats song sections with deterministic melodic and rhythmic variation', () => {
     const song = createProceduralMusicSong({

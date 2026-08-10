@@ -3,8 +3,8 @@
 - [x] Fix natural minor offsets to 0, 2, 3, 5, 7, 8, 10.
 - [x] Reject mode definitions with duplicate scale degrees.
 - [x] Reject seven-note modes with fewer than seven unique offsets.
-- [ ] Make lead interval weights affect actual note selection.
-- [ ] Penalize repeated minor-sixth jumps in the lead.
+- [x] Make lead interval weights affect actual note selection.
+- [x] Penalize repeated minor-sixth jumps in the lead.
 - [ ] Limit ordinary lead motion to three semitones.
 - [ ] Allow larger leaps only once per phrase.
 - [ ] Require stepwise recovery after every large lead leap.
@@ -30,7 +30,7 @@
 - [ ] Make B harmony occupancy lower than Section A occupancy.
 - [ ] Add a soft repeating rhythmic pulse for forest music.
 - [ ] Use percussion patterns instead of isolated cymbal events.
-- [ ] Compare intended intervals with actual interval counts.
+- [x] Compare intended intervals with actual interval counts.
 - [x] Report exact and varied motif matches separately.
 - [ ] Score phrase repetition and phrase-level similarity.
 - [ ] Reject songs whose configured motif never appears.

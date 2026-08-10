@@ -2,6 +2,7 @@ import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import { resolveProceduralChordProgression as resolveCuratedProceduralChordProgression } from './procedural-music-chord-progression.ts';
 import { resolveProceduralHarmonyChordVoicing } from './procedural-music-harmony-voicing.ts';
 import { blendLeadMotifWithRecognition } from './procedural-music-lead-motif.ts';
+import { scoreProceduralLeadMotionPenalty } from './procedural-music-lead-motion.ts';
 import {
   getProceduralScaleDegreeSemitones,
   isProceduralSemitoneInMode,
@@ -686,12 +687,33 @@ function resolveLeadSemitonesCached(
       memo
     ),
   };
+  const previousLeapDistance =
+    stepIndex > 1
+      ? Math.abs(
+          previous.semitones -
+            resolveLeadSemitonesCached(
+              theme,
+              resolveProceduralChordAtStep(
+                theme,
+                stepIndex - 2,
+                clusterX,
+                clusterY
+              ),
+              stepIndex - 2,
+              clusterX,
+              clusterY,
+              memo
+            )
+        )
+      : null;
   const selectedCurrentSemitones = selectPreferredLeadSemitoneClass({
     candidates: current.candidateSemitones,
     previousSemitones: previous.semitones,
     strongLeadBeat: current.strongLeadBeat,
     structuralAccent: current.structuralAccent,
     contourRange: current.contourRange,
+    preferredIntervals: theme.vocabulary?.preferredIntervals,
+    previousLeapDistance,
   });
   const leap = selectedCurrentSemitones - previous.semitones;
   const leapMagnitude = Math.abs(leap);
@@ -979,6 +1001,8 @@ function selectPreferredLeadSemitoneClass(options: {
   previousSemitones: number | null;
   strongLeadBeat: boolean;
   structuralAccent: boolean;
+  preferredIntervals?: readonly number[];
+  previousLeapDistance?: number | null;
   contourRange?: {
     minSemitones: number;
     targetSemitones: number;
@@ -1007,21 +1031,25 @@ function selectPreferredLeadSemitoneClass(options: {
         }))
     )
     .sort((left, right) => {
-      const leftPenalty = scoreLeadMotionPenalty({
+      const leftPenalty = scoreProceduralLeadMotionPenalty({
         distance: left.distance,
         isPrimaryCandidate: left.index === 0,
         strongLeadBeat: options.strongLeadBeat,
         structuralAccent: options.structuralAccent,
         candidateSemitones: left.candidate,
         contourRange: options.contourRange,
+        preferredIntervals: options.preferredIntervals,
+        previousLeapDistance: options.previousLeapDistance,
       });
-      const rightPenalty = scoreLeadMotionPenalty({
+      const rightPenalty = scoreProceduralLeadMotionPenalty({
         distance: right.distance,
         isPrimaryCandidate: right.index === 0,
         strongLeadBeat: options.strongLeadBeat,
         structuralAccent: options.structuralAccent,
         candidateSemitones: right.candidate,
         contourRange: options.contourRange,
+        preferredIntervals: options.preferredIntervals,
+        previousLeapDistance: options.previousLeapDistance,
       });
       return leftPenalty - rightPenalty || left.index - right.index;
     });
@@ -1053,75 +1081,6 @@ function clampLeadSemitone(targetSemitones: number): number {
     candidate += 12;
   }
   return Math.min(LEAD_MAX_SEMITONES, Math.max(LEAD_MIN_SEMITONES, candidate));
-}
-
-function scoreLeadMotionPenalty(options: {
-  distance: number;
-  isPrimaryCandidate: boolean;
-  strongLeadBeat: boolean;
-  structuralAccent: boolean;
-  candidateSemitones: number;
-  contourRange?: {
-    minSemitones: number;
-    targetSemitones: number;
-    maxSemitones: number;
-  };
-}): number {
-  const contourPenalty = resolveLeadContourPenalty(
-    options.candidateSemitones,
-    options.contourRange
-  );
-  const isStepOrThird = options.distance <= 4;
-  if (isStepOrThird) {
-    return (
-      options.distance +
-      contourPenalty +
-      (options.isPrimaryCandidate ? -0.75 : 0)
-    );
-  }
-
-  if (
-    options.strongLeadBeat &&
-    options.structuralAccent &&
-    options.distance <= LARGE_LEAP_LIMIT_SEMITONES
-  ) {
-    return (
-      24 +
-      options.distance * 2 +
-      contourPenalty +
-      (options.isPrimaryCandidate ? -0.1 : 0)
-    );
-  }
-
-  return (
-    160 +
-    options.distance * 14 +
-    contourPenalty +
-    (options.isPrimaryCandidate ? -0.05 : 0)
-  );
-}
-
-function resolveLeadContourPenalty(
-  candidateSemitones: number,
-  contourRange:
-    | {
-        minSemitones: number;
-        targetSemitones: number;
-        maxSemitones: number;
-      }
-    | undefined
-): number {
-  if (!contourRange) {
-    return 0;
-  }
-
-  if (candidateSemitones < contourRange.minSemitones) {
-    return (contourRange.minSemitones - candidateSemitones) * 0.75;
-  }
-  if (candidateSemitones > contourRange.maxSemitones) {
-    return (candidateSemitones - contourRange.maxSemitones) * 0.75;
-  }
-  return Math.abs(candidateSemitones - contourRange.targetSemitones) * 0.08;
 }
 
 function resolveNearbyScaleMotion(options: {

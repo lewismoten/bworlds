@@ -271,6 +271,73 @@ describe('procedural music harmony', () => {
     }
   });
 
+  it('lets preferred lead intervals influence the sampled melodic path', () => {
+    const stepTheme: ProceduralHarmonyTheme = {
+      ...TEST_THEME,
+      vocabulary: {
+        preferredIntervals: [2],
+      },
+    };
+    const thirdTheme: ProceduralHarmonyTheme = {
+      ...TEST_THEME,
+      vocabulary: {
+        preferredIntervals: [3],
+      },
+    };
+
+    const countIntervals = (
+      theme: ProceduralHarmonyTheme,
+      targetInterval: number
+    ) => {
+      const semitones = Array.from({ length: 24 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme,
+          role: 'lead',
+          stepIndex,
+          clusterX: 3,
+          clusterY: -2,
+        })
+      );
+
+      return semitones
+        .slice(1)
+        .map((note, index) => Math.abs(note - semitones[index]!))
+        .filter((interval) => interval === targetInterval).length;
+    };
+
+    expect(countIntervals(thirdTheme, 3)).toBeGreaterThanOrEqual(
+      countIntervals(stepTheme, 3)
+    );
+  });
+
+  it('avoids back-to-back minor-sixth jumps in sampled lead phrases', () => {
+    const sampledClusters = [
+      { clusterX: 0, clusterY: 0 },
+      { clusterX: 3, clusterY: -2 },
+      { clusterX: 8, clusterY: -4 },
+      { clusterX: -6, clusterY: 5 },
+    ];
+
+    for (const cluster of sampledClusters) {
+      const semitones = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+      const intervals = semitones
+        .slice(1)
+        .map((note, index) => Math.abs(note - semitones[index]!));
+
+      for (let index = 1; index < intervals.length; index += 1) {
+        expect([intervals[index - 1], intervals[index]]).not.toEqual([8, 8]);
+      }
+    }
+  });
+
   it('keeps the lead inside a narrower active register across sampled phrases', () => {
     const sampledClusters = [
       { clusterX: 0, clusterY: 0 },

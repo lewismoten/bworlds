@@ -124,6 +124,10 @@ describe('music debug', () => {
     );
     expect(first.trackStats.bass.averageDurationMs).toBeGreaterThan(0);
     expect(first.trackStats.lead.averageSilenceMs).toBeGreaterThanOrEqual(0);
+    expect(first.intervalComparison.totalIntervalCount).toBeGreaterThan(0);
+    expect(
+      first.intervalComparison.actualIntervalCounts.length
+    ).toBeGreaterThan(0);
     expect(first.sectionMotifMatches).toHaveLength(first.song.sections.length);
     expect(first.harmonyChordDetections).toHaveLength(
       first.song.sections.length
@@ -160,7 +164,7 @@ describe('music debug', () => {
     expect(first.midiExportValidation.blackKeyNoteCount).toBeGreaterThanOrEqual(
       first.accidentalNoteCount
     );
-  });
+  }, 4_000);
 
   it('renders markup and summary content for the laboratory page', () => {
     const snapshot = createMusicDebugSnapshot();
@@ -198,6 +202,7 @@ describe('music debug', () => {
     expect(summary).toContain('Region');
     expect(summary).toContain('Location');
     expect(summary).toContain('Preferred Intervals');
+    expect(summary).toContain('Interval Match');
     expect(summary).toContain('semitones');
     expect(summary).toContain('Vocabulary');
     expect(summary).toContain('SongDNA');

@@ -232,7 +232,7 @@ describe('music debug midi', () => {
     expect(snapshot.instrumentBank.instruments.lead.family).toBe('vocals');
     expect(snapshot.lyrics.length).toBeGreaterThan(0);
     expect(leadLyrics).toEqual(snapshot.lyrics.map((line) => line.text));
-  });
+  }, 4_000);
 
   it('rejects MIDI export when chromatic-note validation fails', () => {
     const snapshot = createMusicDebugSnapshot({
