@@ -17,7 +17,7 @@ This is also partially due to performance issues which can be seen here, and add
 - [x] Prefer cached LODs over new high-detail generation.
 - [x] Reserve fallback boxes for hard generation failures.
 - [x] Log every fallback box with its tile and failure reason.
-- [ ] tiles that do not support models (ie plains) should not be reported as LOD failures, and tiles that do have models should have "supports" indicating such.
+- [x] tiles that do not support models (ie plains) should not be reported as LOD failures, and tiles that do have models should have "supports" indicating such.
 
 ## Stable LOD Dimensions
 

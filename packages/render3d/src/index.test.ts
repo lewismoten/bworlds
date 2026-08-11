@@ -4307,6 +4307,7 @@ describe('render3d visibility helpers', () => {
               detailLevel: 'low',
               fallbackReason: 'low failed',
               modelRoot: { type: 'Group' },
+              supportsModel: true,
             },
           ],
         ]),
@@ -4322,6 +4323,7 @@ describe('render3d visibility helpers', () => {
       cachedDetailLevel: 'low',
       fallbackReason: 'low failed',
       hasVisibleModel: true,
+      supportsModel: true,
     });
 
     expect(
@@ -4339,6 +4341,7 @@ describe('render3d visibility helpers', () => {
       cachedDetailLevel: 'low',
       fallbackReason: null,
       hasVisibleModel: false,
+      supportsModel: null,
     });
 
     expect(
@@ -5243,10 +5246,25 @@ describe('render3d visibility helpers', () => {
   it('rebuilds visible fallback-only entries even when the requested detail level is unchanged', () => {
     expect(
       shouldRebuildVisibleTileModelDetailEntry(
-        { detailLevel: 'full', modelRoot: null },
+        { detailLevel: 'full', modelRoot: null, supportsModel: true },
         'full'
       )
     ).toBe(true);
+  });
+
+  it('does not rebuild visible fallback-only entries for tiles that do not support models', () => {
+    expect(
+      shouldRebuildVisibleTileModelDetailEntry(
+        { detailLevel: 'low', modelRoot: null, supportsModel: false },
+        'full'
+      )
+    ).toBe(false);
+    expect(
+      shouldRebuildVisibleTileModelDetailEntry(
+        { detailLevel: 'low', modelRoot: null, supportsModel: false },
+        'low'
+      )
+    ).toBe(false);
   });
 
   it('skips visible lod rebuilds when a valid model already matches the requested detail level', () => {

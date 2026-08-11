@@ -260,6 +260,7 @@ describe('debug snapshot', () => {
         currentTileCachedDetailLevel: 'low',
         currentTileFallbackReason: 'low failed',
         currentTileHasVisibleModel: true,
+        currentTileSupportsModel: true,
         object3dCount: 318,
         visibleObjectCount: 301,
         invisibleObjectCount: 17,
@@ -646,6 +647,7 @@ describe('debug snapshot', () => {
         renderedDetailLevel: 'low',
         cachedDetailLevel: 'low',
         fallbackReason: 'low failed',
+        supportsModel: true,
         hasVisibleModel: true,
       },
       thresholds: {

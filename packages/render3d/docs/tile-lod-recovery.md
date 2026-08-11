@@ -55,7 +55,12 @@ The web debug surfaces also expose the latest visible-tile recovery failure summ
 
 They also surface recent per-plugin summaries for visible-tile LOD swaps and fallback-box usage, which makes it easier to identify which plugin is causing churn without inspecting the full event log.
 
-For the player's current snapped tile, the web debug panel also exposes the requested visible LOD, the currently rendered LOD, the last cached successful LOD, whether a real model is currently visible, and the current tile fallback reason when one exists.
+For the player's current snapped tile, the web debug panel also exposes the requested visible LOD, the currently rendered LOD, the last cached successful LOD, whether that tile supports plugin models at all, whether a real model is currently visible, and the current tile fallback reason when one exists.
+
+Tiles that do not support plugin models, such as ordinary plains fallback tiles,
+now keep `supportsModel = false` in visible-tile debug state. The visible LOD
+sync path uses that flag to avoid re-reporting those tiles as LOD recovery
+failures just because their rendered fallback shell has no `modelRoot`.
 
 The debug panel also includes a `Freeze LOD` toggle that stops new visible-tile LOD resync passes while it is active. That makes it easier to inspect a problematic tile without movement immediately retriggering another selection pass.
 
@@ -79,6 +84,7 @@ The current implementation already covers these `docs/todo/tile-lod.md` items:
 - Prefer cached LODs over new high-detail generation.
 - Reserve fallback boxes for hard generation failures.
 - Log every fallback box with its tile and failure reason.
+- Avoid reporting non-model tiles as visible LOD failures.
 - Lower requested LOD when frame time exceeds budget.
 - Measure generation time for every LOD.
 

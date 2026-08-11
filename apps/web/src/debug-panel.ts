@@ -67,6 +67,7 @@ export type DebugSnapshot = {
   currentTileCachedDetailLevel?: string;
   currentTileFallbackReason?: string;
   currentTileHasVisibleModel?: boolean;
+  currentTileSupportsModel?: boolean | null;
   object3dCount: number;
   visibleObjectCount?: number;
   invisibleObjectCount?: number;
@@ -266,6 +267,11 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.currentTileCachedDetailLevel ?? '',
     snapshot.currentTileFallbackReason ?? '',
     snapshot.currentTileHasVisibleModel ? '1' : '0',
+    snapshot.currentTileSupportsModel === null
+      ? 'unknown'
+      : snapshot.currentTileSupportsModel
+        ? '1'
+        : '0',
     snapshot.object3dCount,
     snapshot.groupCount,
     snapshot.meshCount,
@@ -435,6 +441,13 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Current Tile Requested LOD</dt><dd>${snapshot.currentTileRequestedDetailLevel || 'None'}</dd></div>
     <div><dt>Current Tile Rendered LOD</dt><dd>${snapshot.currentTileRenderedDetailLevel || 'None'}</dd></div>
     <div><dt>Current Tile Cached LOD</dt><dd>${snapshot.currentTileCachedDetailLevel || 'None'}</dd></div>
+    <div><dt>Current Tile Supports Model</dt><dd>${
+      snapshot.currentTileSupportsModel === null
+        ? 'Unknown'
+        : snapshot.currentTileSupportsModel
+          ? 'Yes'
+          : 'No'
+    }</dd></div>
     <div><dt>Current Tile Has Model</dt><dd>${snapshot.currentTileHasVisibleModel ? 'Yes' : 'No'}</dd></div>
     <div><dt>Current Tile Fallback</dt><dd>${snapshot.currentTileFallbackReason || 'None'}</dd></div>
     <div><dt>Active Objects</dt><dd>${snapshot.object3dCount}</dd></div>

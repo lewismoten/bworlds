@@ -305,6 +305,7 @@ type Render3DController = {
     cachedDetailLevel: RenderBudgetDetailLevel | null;
     fallbackReason: string | null;
     hasVisibleModel: boolean;
+    supportsModel: boolean | null;
   } | null;
   getStats(): {
     drawCalls: number;
@@ -970,6 +971,7 @@ type DynamicTileNode = {
   model: unknown;
   modelRoot?: THREE.Object3D | null;
   fallbackReason?: string;
+  supportsModel?: boolean;
   uniqueMaterials?: readonly THREE.Material[];
   uniqueTextures?: readonly unknown[];
   pluginUniqueTextures?: readonly unknown[];
@@ -2270,6 +2272,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
       fallbackReason,
+      supportsModel: usedTilePluginModelFactory,
       uniqueMaterials: pluginUniqueMaterials,
       uniqueTextures: finalUniqueTextures,
       pluginUniqueTextures,
@@ -3227,7 +3230,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         lastSuccessfulVisibleTileDetailLevels.get(key)
       );
       nextEntry.requestedDetailLevel = requestedDetailLevel;
-      if (!nextEntry.modelRoot) {
+      if (!nextEntry.modelRoot && nextEntry.supportsModel !== false) {
         recordRenderDebugEvent(recentDebugEvents, {
           nowMs,
           type: 'model-rejected',
@@ -3288,6 +3291,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     cachedDetailLevel: RenderBudgetDetailLevel | null;
     fallbackReason: string | null;
     hasVisibleModel: boolean;
+    supportsModel: boolean | null;
   } | null {
     return getVisibleTileDebugInfoFromState(
       visibleTileNodes,
@@ -4183,9 +4187,13 @@ export function shouldRebuildVisibleTileModelDetailEntry(
   currentEntry: {
     detailLevel?: RenderBudgetDetailLevel;
     modelRoot?: THREE.Object3D | null;
+    supportsModel?: boolean;
   },
   requestedDetailLevel: RenderBudgetDetailLevel
 ): boolean {
+  if (currentEntry.supportsModel === false) {
+    return false;
+  }
   return (
     !currentEntry.modelRoot ||
     (currentEntry.detailLevel ?? 'full') !== requestedDetailLevel
@@ -4202,6 +4210,7 @@ export function getVisibleTileDebugInfoFromState(
       | 'detailLevel'
       | 'fallbackReason'
       | 'modelRoot'
+      | 'supportsModel'
     >
   >,
   lastSuccessfulVisibleTileDetailLevels: ReadonlyMap<
@@ -4218,6 +4227,7 @@ export function getVisibleTileDebugInfoFromState(
   cachedDetailLevel: RenderBudgetDetailLevel | null;
   fallbackReason: string | null;
   hasVisibleModel: boolean;
+  supportsModel: boolean | null;
 } | null {
   const key = `${tileX}:${tileY}`;
   const entry = visibleTileNodes.get(key);
@@ -4234,6 +4244,8 @@ export function getVisibleTileDebugInfoFromState(
     cachedDetailLevel,
     fallbackReason: entry?.fallbackReason ?? null,
     hasVisibleModel: Boolean(entry?.modelRoot),
+    supportsModel:
+      typeof entry?.supportsModel === 'boolean' ? entry.supportsModel : null,
   };
 }
 

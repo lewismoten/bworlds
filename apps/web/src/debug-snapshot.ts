@@ -296,6 +296,7 @@ export type DebugSnapshotExport = {
       renderedDetailLevel: string | null;
       cachedDetailLevel: string | null;
       fallbackReason: string | null;
+      supportsModel: boolean | null;
       hasVisibleModel: boolean;
     };
     thresholds: LodThresholdSummary;
@@ -656,6 +657,7 @@ export function buildDebugSnapshotExport(
           options.snapshot.currentTileCachedDetailLevel?.trim() || null,
         fallbackReason:
           options.snapshot.currentTileFallbackReason?.trim() || null,
+        supportsModel: options.snapshot.currentTileSupportsModel ?? null,
         hasVisibleModel: options.snapshot.currentTileHasVisibleModel ?? false,
       },
       thresholds: options.lod.thresholds,

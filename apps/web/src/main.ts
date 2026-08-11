@@ -2547,6 +2547,8 @@ function collectCurrentDebugSnapshot(
     currentTileDebugInfo?.fallbackReason ?? undefined;
   debugSnapshot.currentTileHasVisibleModel =
     currentTileDebugInfo?.hasVisibleModel ?? false;
+  debugSnapshot.currentTileSupportsModel =
+    currentTileDebugInfo?.supportsModel ?? null;
   debugSnapshot.resourceWarnings = [
     ...getPerformanceWarnings(debugSnapshot),
     ...getWorkQueueWarnings(debugSnapshot),

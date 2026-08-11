@@ -98,6 +98,7 @@ describe('debug panel', () => {
       currentTileCachedDetailLevel: 'low',
       currentTileFallbackReason: 'low failed',
       currentTileHasVisibleModel: true,
+      currentTileSupportsModel: true,
       object3dCount: 318,
       groupCount: 54,
       meshCount: 180,
@@ -195,6 +196,7 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Current Tile Requested LOD');
     expect(buildDebugMarkup(snapshot)).toContain('Current Tile Rendered LOD');
     expect(buildDebugMarkup(snapshot)).toContain('Current Tile Cached LOD');
+    expect(buildDebugMarkup(snapshot)).toContain('Current Tile Supports Model');
     expect(buildDebugMarkup(snapshot)).toContain('Current Tile Has Model');
     expect(buildDebugMarkup(snapshot)).toContain('Current Tile Fallback');
     expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');
