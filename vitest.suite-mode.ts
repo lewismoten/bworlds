@@ -1,9 +1,9 @@
+export const LONG_TEST_GLOBS = [
+  'packages/**/src/**/*.long.test.ts',
+  'apps/web/src/**/*.long.test.ts',
+] as const;
+
 export const LONG_TEST_FILES = [
-  'packages/core/src/index.long.test.ts',
-  'packages/dock-route-support/src/index.long.test.ts',
-  'packages/map-depth/src/index.long.test.ts',
-  'packages/runtime-weather/src/index.long.test.ts',
-  'packages/town-support/src/index.long.test.ts',
   'apps/web/src/music-debug-midi-audit-baseline.test.ts',
   'apps/web/src/music-debug-midi-audit-mismatch.test.ts',
   'apps/web/src/music-debug-midi-audit-warnings.test.ts',
@@ -66,12 +66,12 @@ export function resolveVitestSuiteSelection(mode: VitestSuiteMode): {
 } {
   if (mode === 'long') {
     return {
-      include: LONG_TEST_FILES,
+      include: [...LONG_TEST_GLOBS, ...LONG_TEST_FILES],
     };
   }
   if (mode === 'fast') {
     return {
-      exclude: LONG_TEST_FILES,
+      exclude: [...LONG_TEST_GLOBS, ...LONG_TEST_FILES],
     };
   }
   return {};

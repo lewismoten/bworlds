@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   LONG_TEST_FILES,
+  LONG_TEST_GLOBS,
   resolveVitestSuiteMode,
   resolveVitestSuiteSelection,
 } from '../../../vitest.suite-mode.ts';
@@ -16,10 +17,10 @@ describe('vitest suite mode', () => {
 
   it('selects the long-test list only for long-mode runs', () => {
     expect(resolveVitestSuiteSelection('fast')).toEqual({
-      exclude: LONG_TEST_FILES,
+      exclude: [...LONG_TEST_GLOBS, ...LONG_TEST_FILES],
     });
     expect(resolveVitestSuiteSelection('long')).toEqual({
-      include: LONG_TEST_FILES,
+      include: [...LONG_TEST_GLOBS, ...LONG_TEST_FILES],
     });
     expect(resolveVitestSuiteSelection('all')).toEqual({});
   });
