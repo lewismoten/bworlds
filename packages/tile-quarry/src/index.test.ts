@@ -360,6 +360,84 @@ describe('tile quarry', () => {
     );
   });
 
+  it('builds the quarry progressively before returning the final model', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createQuarryState(),
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'pit-rubble',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'derrick',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'cart-lantern',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous quarry build aligned with the progressive final model', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const state = createQuarryState();
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    }) as FakeNode | undefined;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    });
+    let progressiveModel: FakeNode | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeNode | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel)).toEqual(
+      createModelSignature(syncModel)
+    );
+  });
+
   it('lights quarry lanterns at night', () => {
     const plugin = createQuarryTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');

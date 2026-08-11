@@ -1,22 +1,13 @@
-# Quarry Rendering
+# Tile Quarry Rendering
 
-The quarry tile now instances its repeated rubble stones, derrick posts, and
-cart wheels instead of creating separate repeated `Mesh` nodes for those
-props.
+The quarry tile now exposes a progressive build path so the renderer can
+spread the heavier landmark mesh creation across multiple frames.
 
-Current layout:
+Current progressive phases:
 
-- The quarry rim, pit, derrick beam, pulley, cable, bucket, cart body, and
-  lantern still use ordinary meshes because they have distinct geometry or
-  lighting behavior.
-- The six surrounding rubble stones now share one `BoxGeometry`, one material,
-  and one `InstancedMesh`, with per-instance scale and position stored in
-  matrices.
-- The two mirrored derrick posts now share one `BoxGeometry`, one material,
-  and one `InstancedMesh`, with per-instance local position stored in
-  matrices.
-- The two repeated cart wheels now share one `CylinderGeometry`, one material,
-  and one `InstancedMesh`, with per-instance position stored in matrices.
+- `pit-rubble`
+- `derrick`
+- `cart-lantern`
 
-This keeps the visible layout the same at the tile level while lowering the
-number of repeated static `Object3D` nodes the renderer has to carry.
+The synchronous `create3DModel()` path exhausts the same generator so the
+progressive and eager builds stay structurally aligned.
