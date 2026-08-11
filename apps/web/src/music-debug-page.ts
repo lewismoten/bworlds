@@ -56,6 +56,7 @@ import {
   resolveMusicDebugTimelineSeekOffset,
 } from './music-debug-timeline.ts';
 import {
+  createMusicDebugDrumKitAuditionNotes,
   normalizeMusicDebugPercussionPlaybackState,
   resolveMusicDebugPercussionVoiceIdsForPlayback,
   toggleMusicDebugPercussionMutedVoice,
@@ -659,6 +660,22 @@ summary?.addEventListener('click', (event) => {
       playbackController.isPlaying(),
       resolveDisplayedOffsetMs()
     );
+    return;
+  }
+  if (percussionAction === 'audition-pattern') {
+    const snapshot = pageState.refreshNow();
+    const notes = createMusicDebugDrumKitAuditionNotes(
+      snapshot,
+      percussionPlaybackState,
+      performance.now()
+    );
+    if (notes.length === 0) {
+      return;
+    }
+    instrumentPreviewPlayer.stop();
+    for (const note of notes) {
+      instrumentPreviewPlayer.play(note);
+    }
     return;
   }
   const previewTarget = normalizeInstrumentPreviewTarget(

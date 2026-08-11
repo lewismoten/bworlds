@@ -162,7 +162,10 @@
       dedicated controls for each resolved percussion voice, and applies the
       filter immediately to live playback without dropping the non-percussion
       layers from the selected playback variant.
-- [ ] Add a drum-kit audition pattern.
+- [x] Add a drum-kit audition pattern.
+      The music debug percussion panel now includes an `Audition Drum Kit`
+      action that builds a stable eight-hit preview groove from the currently
+      allowed drum voices, including soloed or muted subsets.
 - [x] Add a melody-only playback option.
 - [x] Add a bass-and-harmony playback option.
 - [x] Add a dry full-song playback option.

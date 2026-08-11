@@ -251,6 +251,17 @@ body {
   font-size: 0.82rem;
 }
 
+.music-debug-percussion-playback-audition {
+  margin-top: 0.75rem;
+  border: 1px solid rgba(85, 214, 190, 0.24);
+  border-radius: 999px;
+  background: rgba(85, 214, 190, 0.08);
+  color: #ebfffb;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+}
+
 .music-debug-percussion-playback-grid {
   display: grid;
   gap: 0.7rem;

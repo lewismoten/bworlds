@@ -1,5 +1,12 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
+import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
+import {
+  resolvePercussionVoiceById,
+  type PercussionFamily,
+  type PercussionVoiceId,
+} from './procedural-music-percussion-voices.ts';
 
 export type MusicDebugPercussionPlaybackState = {
   soloVoiceIds: readonly string[];
@@ -13,6 +20,20 @@ export type MusicDebugPercussionPlaybackVoice = {
 };
 
 const PERCUSSION_VOICE_ID_PATTERN = /:perc-([a-z-]+-\d+):/;
+const MUSIC_DEBUG_DRUM_KIT_AUDITION_STEP_MS = 170;
+const MUSIC_DEBUG_DRUM_KIT_AUDITION_PATTERN: ReadonlyArray<{
+  preferredVoiceId: PercussionVoiceId;
+  fallbackFamily: PercussionFamily;
+}> = [
+  { preferredVoiceId: 'kick-36', fallbackFamily: 'kick' },
+  { preferredVoiceId: 'cymbals-42', fallbackFamily: 'cymbals' },
+  { preferredVoiceId: 'snare-38', fallbackFamily: 'snare' },
+  { preferredVoiceId: 'cymbals-42', fallbackFamily: 'cymbals' },
+  { preferredVoiceId: 'kick-36', fallbackFamily: 'kick' },
+  { preferredVoiceId: 'cymbals-42', fallbackFamily: 'cymbals' },
+  { preferredVoiceId: 'snare-38', fallbackFamily: 'snare' },
+  { preferredVoiceId: 'cymbals-46', fallbackFamily: 'cymbals' },
+];
 
 export function normalizeMusicDebugPercussionPlaybackState(
   value: Partial<MusicDebugPercussionPlaybackState> | null | undefined
@@ -113,6 +134,44 @@ export function resolveMusicDebugPercussionVoiceId(
   return instrumentId.match(PERCUSSION_VOICE_ID_PATTERN)?.[1] ?? null;
 }
 
+export function createMusicDebugDrumKitAuditionNotes(
+  snapshot: MusicDebugSnapshot,
+  state: MusicDebugPercussionPlaybackState,
+  nowMs: number
+): readonly ProceduralMusicNote[] {
+  const allowedVoiceIds =
+    resolveMusicDebugPercussionVoiceIdsForPlayback(snapshot, state) ??
+    createMusicDebugPercussionPlaybackVoices(snapshot).map(
+      (voice) => voice.voiceId
+    );
+  if (allowedVoiceIds.length === 0) {
+    return [];
+  }
+
+  return MUSIC_DEBUG_DRUM_KIT_AUDITION_PATTERN.flatMap((step, index) => {
+    const voiceId =
+      resolveMatchingPercussionVoiceId(
+        allowedVoiceIds,
+        step.preferredVoiceId
+      ) ??
+      resolveMatchingPercussionFamilyVoiceId(
+        allowedVoiceIds,
+        step.fallbackFamily
+      ) ??
+      allowedVoiceIds[index % allowedVoiceIds.length] ??
+      null;
+    if (!voiceId) {
+      return [];
+    }
+    const note = resolveMusicDebugInstrumentPreviewNote(
+      snapshot,
+      `percussion:${voiceId}`,
+      nowMs + index * MUSIC_DEBUG_DRUM_KIT_AUDITION_STEP_MS
+    );
+    return note ? [note] : [];
+  });
+}
+
 export function buildMusicDebugPercussionPlaybackControlsMarkup(
   snapshot: MusicDebugSnapshot,
   state: MusicDebugPercussionPlaybackState
@@ -127,6 +186,13 @@ export function buildMusicDebugPercussionPlaybackControlsMarkup(
       <div class="music-debug-percussion-playback-panel-head">
         <h3>Percussion Voice Playback</h3>
         <p>Solo or mute individual drum voices while keeping the rest of the current playback variant intact.</p>
+        <button
+          type="button"
+          class="music-debug-percussion-playback-audition"
+          data-percussion-playback-action="audition-pattern"
+        >
+          Audition Drum Kit
+        </button>
       </div>
       <div class="music-debug-percussion-playback-grid">
         ${voices
@@ -183,4 +249,26 @@ function normalizeMusicDebugPercussionVoiceIdList(
     uniqueVoiceIds.push(voiceId);
   }
   return uniqueVoiceIds;
+}
+
+function resolveMatchingPercussionVoiceId(
+  allowedVoiceIds: readonly string[],
+  preferredVoiceId: PercussionVoiceId
+): string | null {
+  return allowedVoiceIds.includes(preferredVoiceId) ? preferredVoiceId : null;
+}
+
+function resolveMatchingPercussionFamilyVoiceId(
+  allowedVoiceIds: readonly string[],
+  family: PercussionFamily
+): string | null {
+  for (const voiceId of allowedVoiceIds) {
+    if (
+      resolvePercussionVoiceById(voiceId as PercussionVoiceId)?.family ===
+      family
+    ) {
+      return voiceId;
+    }
+  }
+  return null;
 }

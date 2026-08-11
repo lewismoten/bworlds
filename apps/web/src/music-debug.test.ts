@@ -258,6 +258,10 @@ describe('music debug', () => {
     );
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Percussion Voice Playback');
+    expect(summary).toContain('Audition Drum Kit');
+    expect(summary).toContain(
+      'data-percussion-playback-action="audition-pattern"'
+    );
     expect(summary).toContain('data-percussion-playback-action="solo"');
     expect(summary).toContain('data-percussion-playback-action="mute"');
     expect(summary).toContain('Song Length');

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   buildMusicDebugPercussionPlaybackControlsMarkup,
+  createMusicDebugDrumKitAuditionNotes,
   createMusicDebugPercussionPlaybackVoices,
   normalizeMusicDebugPercussionPlaybackState,
   resolveMusicDebugPercussionVoiceId,
@@ -87,6 +88,10 @@ describe('music debug percussion playback', () => {
     expect(voices.length).toBeGreaterThan(1);
     expect(markup).toContain('music-debug-percussion-playback-panel');
     expect(markup).toContain('Percussion Voice Playback');
+    expect(markup).toContain('Audition Drum Kit');
+    expect(markup).toContain(
+      'data-percussion-playback-action="audition-pattern"'
+    );
     expect(markup).toContain('data-percussion-playback-action="solo"');
     expect(markup).toContain('data-percussion-playback-action="mute"');
     expect(markup).toContain(
@@ -97,5 +102,40 @@ describe('music debug percussion playback', () => {
     );
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('hits');
+  });
+
+  it('builds a stable drum-kit audition pattern from the currently allowed voices', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+    });
+    const allowedVoiceIds =
+      resolveMusicDebugPercussionVoiceIdsForPlayback(
+        snapshot,
+        normalizeMusicDebugPercussionPlaybackState({
+          soloVoiceIds: ['kick-41', 'shaker-42'],
+        })
+      ) ?? [];
+
+    const notes = createMusicDebugDrumKitAuditionNotes(
+      snapshot,
+      normalizeMusicDebugPercussionPlaybackState({
+        soloVoiceIds: ['kick-41', 'shaker-42'],
+      }),
+      24_000
+    );
+
+    expect(allowedVoiceIds).toEqual(['kick-41', 'shaker-42']);
+    expect(notes).toHaveLength(8);
+    expect(notes.map((note) => note.startMs)).toEqual([
+      24_004, 24_174, 24_344, 24_514, 24_684, 24_854, 25_024, 25_194,
+    ]);
+    expect(
+      new Set(
+        notes.map(
+          (note) => resolveMusicDebugPercussionVoiceId(note.instrumentId) ?? ''
+        )
+      )
+    ).toEqual(new Set(['kick-41', 'shaker-42']));
   });
 });
