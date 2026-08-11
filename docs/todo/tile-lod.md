@@ -199,7 +199,7 @@ This is also partially due to performance issues which can be seen here, and add
 - [ ] Show tile and group resource budgets.
 - [ ] Show actual triangles and draw calls per group.
 - [ ] Add a toggle to disable consolidation.
-- [ ] Add a toggle to freeze LOD selection.
+- [x] Add a toggle to freeze LOD selection.
 - [ ] Add a toggle to show canonical bounds.
 - [ ] Add a toggle to show cached model availability.
 

@@ -285,6 +285,7 @@ type Render3DOptions = {
   environment?: WorldEnvironmentLike;
   cameraPitch?: number;
   cameraBobOffset?: number;
+  freezeLodSelection?: boolean;
   visibilityRadius?: number;
   renderBudget?: RenderBudget;
   generationBudgetMs?: number;
@@ -2755,6 +2756,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       options.renderBudget
     );
     if (
+      !options.freezeLodSelection &&
       shouldSyncTileModelDetailLevels(
         lastLodSyncPlayerPosition,
         state.player.x,
@@ -2765,7 +2767,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lodSyncEntryOffset = 0;
       lastLodSyncPlayerPosition = { x: state.player.x, y: state.player.y };
     }
-    if (pendingLodSyncChecks > 0) {
+    if (
+      shouldProcessPendingLodSyncChecks(
+        pendingLodSyncChecks,
+        options.freezeLodSelection ?? false
+      )
+    ) {
       if (!isFrameTimeBudgetExhausted(generationFrameBudget)) {
         const visibleEntries = collectMapEntriesInto(
           visibleTileNodes.entries(),
@@ -4306,6 +4313,13 @@ export function shouldSyncTileModelDetailLevels(
   const dx = nextX - previousPosition.x;
   const dy = nextY - previousPosition.y;
   return dx * dx + dy * dy >= minimumMovementSquared;
+}
+
+export function shouldProcessPendingLodSyncChecks(
+  pendingLodSyncChecks: number,
+  freezeLodSelection: boolean
+): boolean {
+  return pendingLodSyncChecks > 0 && !freezeLodSelection;
 }
 
 export function shouldSyncWorldCurvature(

@@ -208,6 +208,7 @@ import {
   trackOwnedObject3DMaterials,
   isFrameTimeBudgetExhausted,
   shouldProcessPendingWorldBuildEntry,
+  shouldProcessPendingLodSyncChecks,
   shouldEvaluateTileModelDetailLevel,
   shouldKeepTileModelFullDetailLonger,
   shouldReplaceVisibleTileModelDetailEntry,
@@ -4334,6 +4335,12 @@ describe('render3d visibility helpers', () => {
     expect(
       getVisibleTileDebugInfoFromState(new Map(), new Map(), 15, -9)
     ).toBeNull();
+  });
+
+  it('skips pending lod sync work while lod selection is frozen', () => {
+    expect(shouldProcessPendingLodSyncChecks(0, false)).toBe(false);
+    expect(shouldProcessPendingLodSyncChecks(4, false)).toBe(true);
+    expect(shouldProcessPendingLodSyncChecks(4, true)).toBe(false);
   });
 
   it('records bounded recent debug events and filters them to the active window', () => {

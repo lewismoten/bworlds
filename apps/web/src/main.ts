@@ -653,6 +653,9 @@ root.innerHTML = `
             <div class="time-skip-controls">
               <button id="debug-level-down" type="button">Level -</button>
               <button id="debug-level-up" type="button">Level +</button>
+              <button id="debug-freeze-lod-toggle" type="button">
+                Freeze LOD
+              </button>
               <button id="debug-download-snapshot" type="button">
                 Download Debug Snapshot
               </button>
@@ -1110,6 +1113,9 @@ const debugLevelDownButton =
   document.querySelector<HTMLButtonElement>('#debug-level-down');
 const debugLevelUpButton =
   document.querySelector<HTMLButtonElement>('#debug-level-up');
+const debugFreezeLodButton = document.querySelector<HTMLButtonElement>(
+  '#debug-freeze-lod-toggle'
+);
 const debugDownloadSnapshotButton = document.querySelector<HTMLButtonElement>(
   '#debug-download-snapshot'
 );
@@ -1467,6 +1473,9 @@ const debugSnapshotState = {
   latestSnapshot: null as DebugSnapshot | null,
   lastSampleNowMs: null as number | null,
 };
+const debugTileLodState = {
+  selectionFrozen: false,
+};
 const MAX_DEBUG_RECENT_EVENTS = 64;
 const DEBUG_RECENT_EVENT_WINDOW_MS = 30_000;
 const debugRecentEventsState = {
@@ -1572,6 +1581,7 @@ const runLoopFrame = createFrameLoopRunner({
 });
 
 updateFreezeTimeButton();
+updateFreezeLodButton();
 updateViewModeUi();
 updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
@@ -3328,6 +3338,23 @@ function updateFreezeTimeButton(): void {
   freezeTimeButton.classList.toggle('is-active', timeState.frozen);
 }
 
+function updateFreezeLodButton(): void {
+  if (!debugFreezeLodButton) return;
+  debugFreezeLodButton.textContent = debugTileLodState.selectionFrozen
+    ? 'Resume LOD'
+    : 'Freeze LOD';
+  debugFreezeLodButton.classList.toggle(
+    'is-active',
+    debugTileLodState.selectionFrozen
+  );
+}
+
+function toggleFreezeLodSelection(): void {
+  debugTileLodState.selectionFrozen = !debugTileLodState.selectionFrozen;
+  updateFreezeLodButton();
+  requestRender();
+}
+
 function toggleTimeFreeze(): void {
   if (timeState.frozen) {
     const resumeFromWorldTime = getCurrentWorldTimeMs();
@@ -3615,6 +3642,7 @@ function render(): FrameLoopActivityLike {
       environment,
       cameraPitch: mouseLookState.pitch,
       cameraBobOffset: motion.headBob.offset,
+      freezeLodSelection: debugTileLodState.selectionFrozen,
       visibilityRadius: renderBudgetState.visibilityRadius,
       renderBudget,
       generationBudgetMs: frameGenerationBudget.generationBudgetMs,
@@ -4345,6 +4373,7 @@ AUDIO_CATEGORIES.forEach((category) => {
 zoomOutMinimapButton?.addEventListener('click', () => adjustMinimapZoom(-0.1));
 zoomInMinimapButton?.addEventListener('click', () => adjustMinimapZoom(0.1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
+debugFreezeLodButton?.addEventListener('click', toggleFreezeLodSelection);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setInspectorTab(button.id.replace('tab-', ''));
