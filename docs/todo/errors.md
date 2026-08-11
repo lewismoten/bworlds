@@ -2,19 +2,27 @@
 
 Always run tests to make sure all tests pass
 
-- [x] Downloading MIDI works, but Download Export ZIP fails
+- [ ] Fix console error on music debug page
+music-debug-page.ts:183 Uncaught (in promise) ReferenceError: Cannot access 'pageState' before initialization
+    at resolveCurrentSnapshot (music-debug-page.ts:183:3)
+    at buildTrackVisibilityButtonMarkup (music-debug-page.ts:271:11)
+    at music-debug-page.ts:293:5
+    at Array.map (<anonymous>)
+    at renderTrackVisibilityControls (music-debug-page.ts:292:66)
+    at applyPersistedPageState (music-debug-page.ts:646:3)
+    at music-debug-page.ts:180:1
+resolveCurrentSnapshot @ music-debug-page.ts:183
+buildTrackVisibilityButtonMarkup @ music-debug-page.ts:271
+(anonymous) @ music-debug-page.ts:293
+renderTrackVisibilityControls @ music-debug-page.ts:292
+applyPersistedPageState @ music-debug-page.ts:646
+(anonymous) @ music-debug-page.ts:180
+
+
 - [ ] Complete audio-priority2.md
 
 # Next Highest
 
-- [x] Shorten long running tests above 200ms where possible
-      Progress: the fast Vitest suite no longer has any individual test above
-      `200ms`; the current slowest fast-path case is the
-      `173ms` `procedural-music-song-repair` regression after moving the
-      full-song harmony-span sweep and dock route cache-churn coverage into
-      dedicated `*.long.test.ts` files and reusing file-scoped fixtures in the
-      remaining hot audio tests.
-- [x] Move long running tests to only execute for a separate test script so development isn't slowed down
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.
   - [ ] Convert long plugin loops to generators that yield work to the scheduler.
   - [ ] Resume unfinished generators on later frames.
