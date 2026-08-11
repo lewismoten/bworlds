@@ -74,6 +74,9 @@ function createDebugSnapshot(
     instancedMeshSummary: 'tile-forest owns 9 visible instanced meshes.',
     renderedInstanceTopPluginLabel: 'tile-forest',
     renderedInstanceSummary: 'tile-forest renders 66 instances.',
+    instancingWarningTopPluginLabel: 'tile-town',
+    instancingWarningSummary:
+      'tile-town suggests instancing repeated parts 4 times per second.',
     materialTopPluginLabel: 'tile-water',
     materialSummary: 'tile-water dominates materials.',
     sceneUniqueMaterialTopPluginLabel: 'tile-route',
@@ -249,6 +252,7 @@ describe('runtime performance tracking', () => {
     expect(issue?.pluginHotspots.materials).toBe('tile-route');
     expect(issue?.pluginHotspots.instancedMeshes).toBe('tile-forest');
     expect(issue?.pluginHotspots.renderedInstances).toBe('tile-forest');
+    expect(issue?.pluginHotspots.instancingWarnings).toBe('tile-town');
     expect(issue?.renderState.renderQualityLimiters).toEqual([
       'frame time',
       'materials',
@@ -277,6 +281,9 @@ describe('runtime performance tracking', () => {
     );
     expect(issue?.reasons).toContain(
       'Top rendered-instance plugins: tile-forest renders 66 instances.'
+    );
+    expect(issue?.reasons).toContain(
+      'Top instancing-warning plugins: tile-town suggests instancing repeated parts 4 times per second.'
     );
     expect(issue?.reasons).toContain(
       'Top per-tile material plugins: tile-water dominates materials.'

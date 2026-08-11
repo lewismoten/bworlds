@@ -2442,6 +2442,9 @@ function collectCurrentDebugSnapshot(
     instancedMeshSummary: rendererStats.instancedMeshSummary,
     renderedInstanceTopPluginLabel: rendererStats.renderedInstanceTopPluginLabel,
     renderedInstanceSummary: rendererStats.renderedInstanceSummary,
+    instancingWarningTopPluginLabel:
+      rendererStats.instancingWarningTopPluginLabel,
+    instancingWarningSummary: rendererStats.instancingWarningSummary,
     materialTopPluginLabel: rendererStats.materialTopPluginLabel,
     materialSummary: rendererStats.materialSummary,
     sceneUniqueMaterialTopPluginLabel:

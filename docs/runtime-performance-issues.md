@@ -20,6 +20,7 @@ Captured issue reports currently include:
   pending tile count
 - measured quality-limiter details plus the limiter that triggered the latest
   graphics-quality downgrade
+- recent plugin warnings that suggest repeated meshes should be instanced
 - scene-unique material owners by plugin, separate from the existing per-tile
   material-pressure summary
 - top plugin hotspots for instanced meshes, rendered instances, materials,

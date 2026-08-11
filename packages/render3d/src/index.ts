@@ -357,6 +357,8 @@ type Render3DController = {
     instancedMeshSummary: string;
     renderedInstanceTopPluginLabel: string;
     renderedInstanceSummary: string;
+    instancingWarningTopPluginLabel: string;
+    instancingWarningSummary: string;
     materialTopPluginLabel: string;
     materialSummary: string;
     sceneUniqueMaterialTopPluginLabel: string;
@@ -2955,6 +2957,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const ownedMaterialLifecycleCounts =
       getRecentOwnedMaterialLifecycleCounts(nowMs);
     const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
+    const recentInstancingWarningStats =
+      summarizeRecentInstancingWarningsByPlugin(recentEvents);
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
     const visibleTileDrawCallStats = summarizeVisibleTileDrawCallsByPlugin(
       visibleTileNodes.values()
@@ -3034,6 +3038,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       instancedMeshSummary: visibleTileInstancedMeshStats.summary,
       renderedInstanceTopPluginLabel: visibleTileRenderedInstanceStats.topLabel,
       renderedInstanceSummary: visibleTileRenderedInstanceStats.summary,
+      instancingWarningTopPluginLabel: recentInstancingWarningStats.topLabel,
+      instancingWarningSummary: recentInstancingWarningStats.summary,
       materialTopPluginLabel: visibleTileMaterialStats.topLabel,
       materialSummary: visibleTileMaterialStats.summary,
       sceneUniqueMaterialTopPluginLabel:
@@ -5780,6 +5786,44 @@ export function summarizeVisibleTileOwnedUniqueMaterialsByPlugin(
   const labeledSummary = summarizeSortedCountMapWithTopLabel(counts);
   return {
     totalCount: materialOwners.size,
+    topCount: labeledSummary.topCount,
+    topLabel: labeledSummary.topLabel,
+    summary: labeledSummary.summary,
+  };
+}
+
+export function summarizeRecentInstancingWarningsByPlugin(
+  events: Iterable<Pick<Render3DDebugEvent, 'type' | 'plugin' | 'summary'>>
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  const counts = new Map<string, number>();
+  let totalCount = 0;
+  for (const event of events) {
+    if (event.type !== 'plugin-performance-warning') {
+      continue;
+    }
+    if (!event.summary.includes('suggests instancing repeated parts')) {
+      continue;
+    }
+    totalCount += 1;
+    const label = event.plugin?.trim() || 'unknown';
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  if (totalCount === 0) {
+    return {
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    };
+  }
+  const labeledSummary = summarizeSortedCountMapWithTopLabel(counts);
+  return {
+    totalCount,
     topCount: labeledSummary.topCount,
     topLabel: labeledSummary.topLabel,
     summary: labeledSummary.summary,

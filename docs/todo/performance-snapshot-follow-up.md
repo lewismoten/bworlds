@@ -38,7 +38,7 @@
 - [x] Report InstancedMesh counts by tile plugin.
 - [x] Report rendered instance counts by tile plugin.
 - [ ] Add a test scene that must contain visible instances.
-- [ ] Warn when repeated meshes exist but no instances exist.
+- [x] Warn when repeated meshes exist but no instances exist.
 
 ## Scene Graph
 

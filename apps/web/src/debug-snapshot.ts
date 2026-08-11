@@ -222,6 +222,8 @@ export type DebugSnapshotExport = {
     renderedInstanceCount: number;
     topRenderedInstancePlugin: string | null;
     renderedInstanceSummary: string;
+    topInstancingWarningPlugin: string | null;
+    instancingWarningSummary: string;
     visibleMeshCount: number;
   };
   sceneGraph: {
@@ -371,6 +373,8 @@ export type DebugSnapshotExport = {
   resources: {
     totalMaterialReferences: number;
     uniqueMaterialCount: number;
+    topInstancingWarningPlugin: string | null;
+    instancingWarningSummary: string;
     topMaterialPlugin: string | null;
     materialSummary: string;
     topSceneUniqueMaterialPlugin: string | null;
@@ -524,6 +528,10 @@ export function buildDebugSnapshotExport(
       topRenderedInstancePlugin:
         options.snapshot.renderedInstanceTopPluginLabel?.trim() || null,
       renderedInstanceSummary: options.snapshot.renderedInstanceSummary ?? '',
+      topInstancingWarningPlugin:
+        options.snapshot.instancingWarningTopPluginLabel?.trim() || null,
+      instancingWarningSummary:
+        options.snapshot.instancingWarningSummary ?? '',
       visibleMeshCount: options.snapshot.visibleMeshCount,
     },
     sceneGraph: {
@@ -576,6 +584,10 @@ export function buildDebugSnapshotExport(
     resources: {
       totalMaterialReferences: options.snapshot.materialRefCount ?? 0,
       uniqueMaterialCount: options.snapshot.materialCount,
+      topInstancingWarningPlugin:
+        options.snapshot.instancingWarningTopPluginLabel?.trim() || null,
+      instancingWarningSummary:
+        options.snapshot.instancingWarningSummary ?? '',
       topMaterialPlugin:
         options.snapshot.materialTopPluginLabel?.trim() || null,
       materialSummary: options.snapshot.materialSummary ?? '',

@@ -58,6 +58,8 @@ export type DebugSnapshot = {
   instancedMeshSummary?: string;
   renderedInstanceTopPluginLabel?: string;
   renderedInstanceSummary?: string;
+  instancingWarningTopPluginLabel?: string;
+  instancingWarningSummary?: string;
   materialTopPluginLabel?: string;
   materialSummary?: string;
   sceneUniqueMaterialTopPluginLabel?: string;
@@ -273,6 +275,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.instancedMeshSummary ?? '',
     snapshot.renderedInstanceTopPluginLabel ?? '',
     snapshot.renderedInstanceSummary ?? '',
+    snapshot.instancingWarningTopPluginLabel ?? '',
+    snapshot.instancingWarningSummary ?? '',
     snapshot.materialTopPluginLabel ?? '',
     snapshot.materialSummary ?? '',
     snapshot.sceneUniqueMaterialTopPluginLabel ?? '',
@@ -488,6 +492,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Rendered Instances</dt><dd>${snapshot.renderedInstanceCount ?? 0}</dd></div>
     <div><dt>Rendered Instance Plugin</dt><dd>${snapshot.renderedInstanceTopPluginLabel || 'None'}</dd></div>
     <div><dt>Rendered Instance Summary</dt><dd>${snapshot.renderedInstanceSummary || 'None'}</dd></div>
+    <div><dt>Instancing Warning Plugin</dt><dd>${snapshot.instancingWarningTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Instancing Warning Summary</dt><dd>${snapshot.instancingWarningSummary || 'None'}</dd></div>
     <div><dt>Particles</dt><dd>${snapshot.activeParticleCount}</dd></div>
     <div><dt>Particle Systems</dt><dd>${snapshot.activeParticleSystemCount ?? snapshot.pointsCount}</dd></div>
     <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>

@@ -87,6 +87,8 @@ describe('debug panel', () => {
       instancedMeshSummary: 'tile-forest:5, tile-town:2',
       renderedInstanceTopPluginLabel: 'tile-forest',
       renderedInstanceSummary: 'tile-forest:248, tile-town:32',
+      instancingWarningTopPluginLabel: 'tile-route',
+      instancingWarningSummary: 'tile-route:3, tile-forest:1',
       materialTopPluginLabel: 'tile-forest',
       materialSummary: 'tile-forest:15, tile-town:5',
       sceneUniqueMaterialTopPluginLabel: 'tile-water',

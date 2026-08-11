@@ -17,6 +17,10 @@ describe('latest runtime performance issues', () => {
             `${issue.createdAt} | ${issue.summary}`,
             ...issue.reasons,
             formatRuntimeIssueHotspot(
+              'Instancing-warning hotspots',
+              issue.pluginHotspots.instancingWarnings
+            ),
+            formatRuntimeIssueHotspot(
               'Material hotspots',
               issue.pluginHotspots.materials
             ),

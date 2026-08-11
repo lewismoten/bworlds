@@ -43,6 +43,7 @@ export type RuntimePerformanceIssueReport = {
   pluginHotspots: {
     instancedMeshes: string | null;
     renderedInstances: string | null;
+    instancingWarnings: string | null;
     materials: string | null;
     drawCalls: string | null;
     objects: string | null;
@@ -144,6 +145,8 @@ export function buildRuntimePerformanceIssueReport(
         options.debugSnapshot.instancedMeshTopPluginLabel?.trim() || null,
       renderedInstances:
         options.debugSnapshot.renderedInstanceTopPluginLabel?.trim() || null,
+      instancingWarnings:
+        options.debugSnapshot.instancingWarningTopPluginLabel?.trim() || null,
       materials:
         options.debugSnapshot.sceneUniqueMaterialTopPluginLabel?.trim() ||
         null,
@@ -263,6 +266,10 @@ function describeRuntimePerformanceHotspots(
     formatRuntimePerformanceHotspot(
       'Top rendered-instance plugins',
       debugSnapshot.renderedInstanceSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top instancing-warning plugins',
+      debugSnapshot.instancingWarningSummary
     ),
     formatRuntimePerformanceHotspot(
       'Top per-tile material plugins',

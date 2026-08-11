@@ -221,6 +221,7 @@ import {
   summarizeVisibleTileMeshesByPlugin,
   summarizeVisibleTileOwnedUniqueMaterialsByPlugin,
   summarizeVisibleTileObjectsByPlugin,
+  summarizeRecentInstancingWarningsByPlugin,
   summarizeVisibleTileDrawCallsByPlugin,
   summarizeVisibleTileRenderedInstancesByPlugin,
   summarizeVisibleTileStaticMatrixUpdatesByPlugin,
@@ -4630,6 +4631,48 @@ describe('render3d visibility helpers', () => {
     });
 
     expect(summarizeVisibleTileOwnedUniqueMaterialsByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes recent plugin warnings that suggest instancing', () => {
+    expect(
+      summarizeRecentInstancingWarningsByPlugin([
+        {
+          type: 'plugin-performance-warning',
+          plugin: 'tile-forest',
+          summary:
+            'meshCount 12 with sharedGeometryCount 8 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts',
+        },
+        {
+          type: 'plugin-performance-warning',
+          plugin: 'tile-town',
+          summary:
+            'meshCount 11 with sharedGeometryCount 7 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts',
+        },
+        {
+          type: 'plugin-performance-warning',
+          plugin: 'tile-forest',
+          summary:
+            'meshCount 14 with sharedGeometryCount 9 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts',
+        },
+        {
+          type: 'plugin-performance-warning',
+          plugin: 'tile-water',
+          summary: 'materialCount 10 for meshCount 10 with sharedMaterialCount 0 suggests per-instance materials',
+        },
+      ])
+    ).toEqual({
+      totalCount: 3,
+      topCount: 2,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:2, tile-town:1',
+    });
+
+    expect(summarizeRecentInstancingWarningsByPlugin([])).toEqual({
       totalCount: 0,
       topCount: 0,
       topLabel: '',
