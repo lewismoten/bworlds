@@ -171,7 +171,10 @@ Always run tests to make sure all tests pass
       per-tile runtime cache layer, and `tile-support` now caches both
       terrain signals and predicted route-presence lookups inside
       `createRoadsideRouteProfile()` so repeated local junction/span scans
-      stop rediscovering the same nearby coordinates.
+      stop rediscovering the same nearby coordinates, and
+      `overworld-support` now caches one bounds object per river curve or
+      fork path so distant terrain samples can skip segment-distance scans
+      before walking the sampled path arrays.
 
 - [ ] Move deterministic world-generation computation into workers.
       The CPU profile is dominated by cache/hashing/world-generation code that does not need access to WebGL. Move terrain signals, hashes, anchors, river paths, tree descriptors, cave descriptors, etc. into workers and send compact numeric results back to the rendering thread.

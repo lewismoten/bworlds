@@ -1,6 +1,7 @@
 import { createCoordinateCache } from '@bworlds/cache-support';
 import { describe, expect, it } from 'vitest';
 import {
+  canRiverPathAffectPoint,
   collectNearbyOverworldPoiAnchors,
   composeOverworldTileFromPlugins,
   createCachedOverworldTileResolver,
@@ -18,6 +19,7 @@ import {
   getOverworldPlacementLabelHash,
   getRiverControlPathSignalAtPoint,
   isNearOverworldLand,
+  resolveRiverPathBounds,
   resolveOverworldCellAnchor,
 } from './index.ts';
 import type { PluginRegistryLike } from '@bworlds/plugin-api';
@@ -361,6 +363,29 @@ describe('overworld support', () => {
         12
       );
     }
+  });
+
+  it('caches one bounds object per river path and rejects distant points early', () => {
+    const controlPoints = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 6, y: 4 },
+      { x: 10, y: 4 },
+    ];
+
+    const firstBounds = resolveRiverPathBounds(controlPoints);
+    const secondBounds = resolveRiverPathBounds(controlPoints);
+
+    expect(secondBounds).toBe(firstBounds);
+    expect(firstBounds).toEqual({
+      minX: 0,
+      maxX: 10,
+      minY: 0,
+      maxY: 4,
+    });
+    expect(canRiverPathAffectPoint(controlPoints, 12, 2)).toBe(true);
+    expect(canRiverPathAffectPoint(controlPoints, 13, 2)).toBe(false);
+    expect(getRiverControlPathSignalAtPoint(controlPoints, 13, 2)).toBe(0);
   });
 
   it('can generate strongly meandering river control paths', () => {

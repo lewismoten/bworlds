@@ -99,6 +99,13 @@ export type RiverForkPath = {
   points: RiverControlPoint[];
 };
 
+export type RiverPathBounds = {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+};
+
 type OverworldCellAnchorEvaluation<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
 > = {
@@ -130,6 +137,10 @@ const OVERWORLD_TILE_CACHE_LIMIT = 4096;
 const OVERWORLD_ANCHOR_CACHE_LIMIT = 1024;
 const OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT = 2048;
 const OVERWORLD_GENERATION_SNAPSHOT_CACHE_LIMIT = 4096;
+const riverPathBoundsCache = new WeakMap<
+  readonly RiverControlPoint[],
+  RiverPathBounds
+>();
 
 type OverworldGenerationSnapshotCacheStore = {
   stateless: ReturnType<
@@ -787,6 +798,9 @@ function getRiverPathSignalAtPoint(
   x: number,
   y: number
 ): number {
+  if (!canRiverPathAffectPoint(points, x, y)) {
+    return 0;
+  }
   let strongestSignal = 0;
   for (let index = 1; index < points.length; index += 1) {
     const segmentDistance = getDistanceToLineSegment(
@@ -813,6 +827,9 @@ export function getRiverControlPathSignalAtPoint(
   segmentsPerCurve = RIVER_CURVE_SEGMENTS
 ): number {
   if (controlPoints.length <= 1) {
+    return 0;
+  }
+  if (!canRiverPathAffectPoint(controlPoints, x, y)) {
     return 0;
   }
   if (controlPoints.length <= 2) {
@@ -870,6 +887,62 @@ export function getRiverControlPathSignalAtPoint(
   }
 
   return strongestSignal;
+}
+
+export function resolveRiverPathBounds(
+  points: readonly RiverControlPoint[]
+): RiverPathBounds {
+  const cached = riverPathBoundsCache.get(points);
+  if (cached) {
+    return cached;
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const point of points) {
+    if (point.x < minX) {
+      minX = point.x;
+    }
+    if (point.x > maxX) {
+      maxX = point.x;
+    }
+    if (point.y < minY) {
+      minY = point.y;
+    }
+    if (point.y > maxY) {
+      maxY = point.y;
+    }
+  }
+
+  const bounds = {
+    minX,
+    maxX,
+    minY,
+    maxY,
+  };
+  riverPathBoundsCache.set(points, bounds);
+  return bounds;
+}
+
+export function canRiverPathAffectPoint(
+  points: readonly RiverControlPoint[],
+  x: number,
+  y: number,
+  falloff = RIVER_SEGMENT_FALLOFF
+): boolean {
+  if (points.length === 0) {
+    return false;
+  }
+  const bounds = resolveRiverPathBounds(points);
+  return (
+    x >= bounds.minX - falloff &&
+    x <= bounds.maxX + falloff &&
+    y >= bounds.minY - falloff &&
+    y <= bounds.maxY + falloff
+  );
 }
 
 function getDistanceToLineSegment(
