@@ -100,7 +100,7 @@
 - [x] Make motif notes more prominent than filler notes.
 - [x] Repeat the motif before introducing a variation.
 - [x] Change only one motif feature in each variation.
-- [ ] Keep filler notes connected to nearby motif notes.
+- [x] Keep filler notes connected to nearby motif notes.
 - [x] Place phrase peaks near planned contour checkpoints.
 - [x] Reserve the song's highest note for the main climax.
 - [x] Descend gradually after the main climax.

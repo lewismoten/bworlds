@@ -37,6 +37,8 @@ const MOTIF_PROMINENCE_VOLUME_MULTIPLIER = 1.12;
 const MOTIF_PROMINENCE_VELOCITY_BONUS = 8;
 const FILLER_DEEMPHASIS_VOLUME_MULTIPLIER = 0.94;
 const FILLER_DEEMPHASIS_VELOCITY_PENALTY = 4;
+const MOTIF_TO_FILLER_CONNECTION_GAP_RATIO = 0.08;
+const MOTIF_TO_FILLER_CONNECTION_RELEASE_MULTIPLIER = 1.35;
 
 export function stateLeadMotifInFirstASection(options: {
   notes: readonly ProceduralMusicNote[];
@@ -569,12 +571,17 @@ function preserveLeadMotifStatementLane(
     return;
   }
 
-  const statementGapMs = Math.max(1, Math.round(options.noteDurationMs * 0.18));
+  const statementGapMs = Math.max(
+    1,
+    Math.round(options.noteDurationMs * MOTIF_TO_FILLER_CONNECTION_GAP_RATIO)
+  );
   let displacedStartMs = Math.min(
     options.phraseEndMs - 1,
     options.protectedThroughMs + statementGapMs
   );
   let protectedLeadCount = 0;
+  let previousProtectedLeadIndex: number | null = null;
+  let previousDisplacedLeadIndex: number | null = null;
 
   for (let index = 0; index < notes.length; index += 1) {
     const note = notes[index]!;
@@ -587,14 +594,20 @@ function preserveLeadMotifStatementLane(
     }
     if (protectedLeadCount < options.motifLength) {
       protectedLeadCount += 1;
+      previousProtectedLeadIndex = index;
       continue;
     }
-    if (note.startMs >= displacedStartMs) {
+    const needsMotifConnection =
+      previousDisplacedLeadIndex === null &&
+      previousProtectedLeadIndex !== null &&
+      note.startMs > displacedStartMs + statementGapMs;
+    if (note.startMs >= displacedStartMs && !needsMotifConnection) {
+      previousDisplacedLeadIndex = index;
       continue;
     }
     const nextStartMs = Math.min(
       options.phraseEndMs - 1,
-      Math.max(displacedStartMs, note.startMs)
+      needsMotifConnection ? displacedStartMs : Math.max(displacedStartMs, note.startMs)
     );
     notes[index] = {
       ...note,
@@ -613,6 +626,14 @@ function preserveLeadMotifStatementLane(
               note.velocity - FILLER_DEEMPHASIS_VELOCITY_PENALTY
             ),
     };
+    connectDisplacedLeadSentence(notes, {
+      priorLeadIndex:
+        previousDisplacedLeadIndex ?? previousProtectedLeadIndex ?? index,
+      nextLeadIndex: index,
+      connectionGapMs: statementGapMs,
+      phraseEndMs: options.phraseEndMs,
+    });
+    previousDisplacedLeadIndex = index;
     displacedStartMs = Math.min(
       options.phraseEndMs - 1,
       nextStartMs + statementGapMs
@@ -832,4 +853,44 @@ function clampNormalizedScalar(value: number): number {
 
 function clampMidiVelocity(value: number): number {
   return Math.max(1, Math.min(127, Math.round(value)));
+}
+
+function connectDisplacedLeadSentence(
+  notes: ProceduralMusicNote[],
+  options: {
+    priorLeadIndex: number;
+    nextLeadIndex: number;
+    connectionGapMs: number;
+    phraseEndMs: number;
+  }
+): void {
+  if (options.priorLeadIndex === options.nextLeadIndex) {
+    return;
+  }
+
+  const priorNote = notes[options.priorLeadIndex];
+  const nextNote = notes[options.nextLeadIndex];
+  if (
+    !priorNote ||
+    !nextNote ||
+    priorNote.role !== 'lead' ||
+    nextNote.role !== 'lead'
+  ) {
+    return;
+  }
+
+  const desiredPriorEndMs = Math.min(
+    options.phraseEndMs,
+    Math.max(priorNote.startMs + 1, nextNote.startMs - options.connectionGapMs)
+  );
+  priorNote.durationMs = Math.max(
+    priorNote.durationMs,
+    desiredPriorEndMs - priorNote.startMs
+  );
+  priorNote.releaseMs = Math.max(
+    priorNote.releaseMs,
+    Math.round(
+      priorNote.releaseMs * MOTIF_TO_FILLER_CONNECTION_RELEASE_MULTIPLIER
+    )
+  );
 }

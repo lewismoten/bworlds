@@ -1246,6 +1246,42 @@ describe('procedural music song', () => {
     );
   });
 
+  it('keeps the first filler note close to the motif cadence in Section A', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a');
+
+    expect(sectionA).toBeDefined();
+
+    const phraseEndMs =
+      song.startMs + sectionA!.startOffsetMs + sectionA!.durationMs / 2;
+    const openingPhraseLeadNotes = song.notes.filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= song.startMs + sectionA!.startOffsetMs &&
+        note.startMs < phraseEndMs
+    );
+    const motifEndingNote = openingPhraseLeadNotes[3];
+    const firstFillerNote = openingPhraseLeadNotes[4];
+
+    expect(motifEndingNote).toBeDefined();
+    expect(firstFillerNote).toBeDefined();
+    expect(
+      firstFillerNote!.startMs -
+        (motifEndingNote!.startMs + motifEndingNote!.durationMs)
+    ).toBeLessThanOrEqual(30);
+    expect(firstFillerNote!.startMs - motifEndingNote!.startMs).toBeLessThan(
+      700
+    );
+  });
+
   it('keeps transformed notes fully inside their assigned section windows', () => {
     const song = createProceduralMusicSong({
       nowMs: 1_000,

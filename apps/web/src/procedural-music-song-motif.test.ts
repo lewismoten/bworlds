@@ -125,6 +125,43 @@ describe('procedural music song motif', () => {
     );
   });
 
+  it('keeps displaced filler notes close to the motif ending so the phrase stays connected', () => {
+    const notes: ProceduralMusicNote[] = [
+      createLeadNote(8_000, 392),
+      createLeadNote(9_000, 440),
+      createLeadNote(10_000, 493.883),
+      createLeadNote(11_000, 440),
+      createLeadNote(11_100, 523.251),
+      createLeadNote(11_200, 587.33),
+    ];
+    const sections: ProceduralMusicSongSection[] = [
+      createSection('intro', 0, 8_000, 8),
+      createSection('a', 8_000, 16_000, 16),
+    ];
+
+    const updated = stateLeadMotifInFirstASection({
+      notes,
+      sections,
+      songStartMs: 0,
+      leadMotif: [0, 2, 4, 2],
+      theme: {
+        rootHz: 196,
+        rootMidiNote: 55,
+        scale: [0, 2, 4, 5, 7, 9, 10],
+        noteDurationMs: 360,
+      },
+    });
+
+    const motifEndingNote = updated[3]!;
+    const firstFillerNote = updated[4]!;
+    const handoffGapMs =
+      firstFillerNote.startMs -
+      (motifEndingNote.startMs + motifEndingNote.durationMs);
+
+    expect(handoffGapMs).toBeLessThanOrEqual(30);
+    expect(motifEndingNote.releaseMs).toBeGreaterThan(notes[3]!.releaseMs);
+  });
+
   it("states a transposed motif variation in the opening notes of section A'", () => {
     const notes: ProceduralMusicNote[] = [
       createLeadNote(24_100, 392),
