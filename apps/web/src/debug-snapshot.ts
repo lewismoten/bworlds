@@ -217,7 +217,11 @@ export type DebugSnapshotExport = {
     devicePixelRatio: number;
     renderScale: number;
     visibleInstancedMeshCount: number;
+    topInstancedMeshPlugin: string | null;
+    instancedMeshSummary: string;
     renderedInstanceCount: number;
+    topRenderedInstancePlugin: string | null;
+    renderedInstanceSummary: string;
     visibleMeshCount: number;
   };
   sceneGraph: {
@@ -231,7 +235,11 @@ export type DebugSnapshotExport = {
     topMeshPlugin: string | null;
     meshSummary: string;
     instancedMeshCount: number;
+    topInstancedMeshPlugin: string | null;
+    instancedMeshSummary: string;
     renderedInstanceCount: number;
+    topRenderedInstancePlugin: string | null;
+    renderedInstanceSummary: string;
     maxHierarchyDepth: number;
     averageHierarchyDepth: number;
     emptyGroupCount: number;
@@ -507,7 +515,13 @@ export function buildDebugSnapshotExport(
       renderScale: options.snapshot.renderScale ?? 0,
       visibleInstancedMeshCount:
         options.snapshot.visibleInstancedMeshCount ?? 0,
+      topInstancedMeshPlugin:
+        options.snapshot.instancedMeshTopPluginLabel?.trim() || null,
+      instancedMeshSummary: options.snapshot.instancedMeshSummary ?? '',
       renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
+      topRenderedInstancePlugin:
+        options.snapshot.renderedInstanceTopPluginLabel?.trim() || null,
+      renderedInstanceSummary: options.snapshot.renderedInstanceSummary ?? '',
       visibleMeshCount: options.snapshot.visibleMeshCount,
     },
     sceneGraph: {
@@ -533,7 +547,13 @@ export function buildDebugSnapshotExport(
       topMeshPlugin: options.snapshot.meshTopPluginLabel?.trim() || null,
       meshSummary: options.snapshot.meshSummary ?? '',
       instancedMeshCount: options.snapshot.instancedMeshCount ?? 0,
+      topInstancedMeshPlugin:
+        options.snapshot.instancedMeshTopPluginLabel?.trim() || null,
+      instancedMeshSummary: options.snapshot.instancedMeshSummary ?? '',
       renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
+      topRenderedInstancePlugin:
+        options.snapshot.renderedInstanceTopPluginLabel?.trim() || null,
+      renderedInstanceSummary: options.snapshot.renderedInstanceSummary ?? '',
       maxHierarchyDepth: options.snapshot.maxHierarchyDepth ?? 0,
       averageHierarchyDepth: options.snapshot.averageHierarchyDepth ?? 0,
       emptyGroupCount: options.snapshot.emptyGroupCount ?? 0,

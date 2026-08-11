@@ -34,8 +34,8 @@
 - [ ] Investigate why no visible InstancedMesh objects are found.
 - [ ] Verify instanced models survive the tile build pipeline.
 - [ ] Verify LOD conversion does not replace instanced models.
-- [ ] Report InstancedMesh counts by tile plugin.
-- [ ] Report rendered instance counts by tile plugin.
+- [x] Report InstancedMesh counts by tile plugin.
+- [x] Report rendered instance counts by tile plugin.
 - [ ] Add a test scene that must contain visible instances.
 - [ ] Warn when repeated meshes exist but no instances exist.
 

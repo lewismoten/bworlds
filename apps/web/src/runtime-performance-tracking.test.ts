@@ -70,6 +70,10 @@ function createDebugSnapshot(
     objectSummary: 'tile-town dominates objects.',
     meshTopPluginLabel: 'tile-town',
     meshSummary: 'tile-town dominates meshes.',
+    instancedMeshTopPluginLabel: 'tile-forest',
+    instancedMeshSummary: 'tile-forest owns 9 visible instanced meshes.',
+    renderedInstanceTopPluginLabel: 'tile-forest',
+    renderedInstanceSummary: 'tile-forest renders 66 instances.',
     materialTopPluginLabel: 'tile-water',
     materialSummary: 'tile-water dominates materials.',
     staticMatrixUpdateTopPluginLabel: 'tile-sign',
@@ -241,6 +245,8 @@ describe('runtime performance tracking', () => {
     );
     expect(issue?.pluginHotspots.rejectedModels).toBe('tile-plains');
     expect(issue?.pluginHotspots.materials).toBe('tile-water');
+    expect(issue?.pluginHotspots.instancedMeshes).toBe('tile-forest');
+    expect(issue?.pluginHotspots.renderedInstances).toBe('tile-forest');
     expect(issue?.renderState.renderQualityLimiters).toEqual([
       'frame time',
       'materials',
@@ -263,6 +269,12 @@ describe('runtime performance tracking', () => {
     );
     expect(issue?.reasons).toContain(
       'Top draw-call plugins: tile-forest dominates draw calls.'
+    );
+    expect(issue?.reasons).toContain(
+      'Top instanced-mesh plugins: tile-forest owns 9 visible instanced meshes.'
+    );
+    expect(issue?.reasons).toContain(
+      'Top rendered-instance plugins: tile-forest renders 66 instances.'
     );
     expect(issue?.reasons).toContain(
       'Top unique-material plugins: tile-water dominates materials.'

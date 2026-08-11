@@ -54,6 +54,10 @@ export type DebugSnapshot = {
   objectSummary?: string;
   meshTopPluginLabel?: string;
   meshSummary?: string;
+  instancedMeshTopPluginLabel?: string;
+  instancedMeshSummary?: string;
+  renderedInstanceTopPluginLabel?: string;
+  renderedInstanceSummary?: string;
   materialTopPluginLabel?: string;
   materialSummary?: string;
   clonedMaterialTopPluginLabel?: string;
@@ -263,6 +267,10 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.objectSummary ?? '',
     snapshot.meshTopPluginLabel ?? '',
     snapshot.meshSummary ?? '',
+    snapshot.instancedMeshTopPluginLabel ?? '',
+    snapshot.instancedMeshSummary ?? '',
+    snapshot.renderedInstanceTopPluginLabel ?? '',
+    snapshot.renderedInstanceSummary ?? '',
     snapshot.materialTopPluginLabel ?? '',
     snapshot.materialSummary ?? '',
     snapshot.clonedMaterialTopPluginLabel ?? '',
@@ -470,6 +478,12 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Mesh Nodes</dt><dd>${snapshot.meshCount}</dd></div>
     <div><dt>Mesh Plugin</dt><dd>${snapshot.meshTopPluginLabel || 'None'}</dd></div>
     <div><dt>Mesh Summary</dt><dd>${snapshot.meshSummary || 'None'}</dd></div>
+    <div><dt>Visible Instanced Meshes</dt><dd>${snapshot.visibleInstancedMeshCount ?? 0}</dd></div>
+    <div><dt>Instanced Mesh Plugin</dt><dd>${snapshot.instancedMeshTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Instanced Mesh Summary</dt><dd>${snapshot.instancedMeshSummary || 'None'}</dd></div>
+    <div><dt>Rendered Instances</dt><dd>${snapshot.renderedInstanceCount ?? 0}</dd></div>
+    <div><dt>Rendered Instance Plugin</dt><dd>${snapshot.renderedInstanceTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Rendered Instance Summary</dt><dd>${snapshot.renderedInstanceSummary || 'None'}</dd></div>
     <div><dt>Particles</dt><dd>${snapshot.activeParticleCount}</dd></div>
     <div><dt>Particle Systems</dt><dd>${snapshot.activeParticleSystemCount ?? snapshot.pointsCount}</dd></div>
     <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>

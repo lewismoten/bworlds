@@ -20,8 +20,9 @@ Captured issue reports currently include:
   pending tile count
 - measured quality-limiter details plus the limiter that triggered the latest
   graphics-quality downgrade
-- top plugin hotspots for materials, draw calls, objects, meshes, LOD swaps,
-  fallback boxes, rejected models, and static matrix updates
+- top plugin hotspots for instanced meshes, rendered instances, materials,
+  draw calls, objects, meshes, LOD swaps, fallback boxes, rejected models,
+  and static matrix updates
 - current tile LOD/fallback details and renderer resource warnings
 
 The Vite dev server now exposes `/api/runtime-performance-issues`:

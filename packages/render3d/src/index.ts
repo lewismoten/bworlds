@@ -353,6 +353,10 @@ type Render3DController = {
     objectSummary: string;
     meshTopPluginLabel: string;
     meshSummary: string;
+    instancedMeshTopPluginLabel: string;
+    instancedMeshSummary: string;
+    renderedInstanceTopPluginLabel: string;
+    renderedInstanceSummary: string;
     materialTopPluginLabel: string;
     materialSummary: string;
     clonedMaterialTopPluginLabel: string;
@@ -959,6 +963,8 @@ type DynamicTileNode = {
   lightCount: number;
   shadowLightCount: number;
   visibleMeshCount: number;
+  visibleInstancedMeshCount: number;
+  renderedInstanceCount: number;
   staticMatrixAutoUpdateCount?: number;
   materialCount: number;
   clonedMaterialCount?: number;
@@ -2265,6 +2271,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lightCount: finalSceneResourceStats.lightCount,
       shadowLightCount: finalSceneResourceStats.shadowLightCount,
       visibleMeshCount: finalSceneResourceStats.visibleMeshCount,
+      visibleInstancedMeshCount:
+        finalSceneResourceStats.visibleInstancedMeshCount,
+      renderedInstanceCount: finalSceneResourceStats.renderedInstanceCount,
       staticMatrixAutoUpdateCount:
         finalSceneResourceStats.staticMatrixAutoUpdateCount,
       materialCount: finalSceneResourceStats.materialCount,
@@ -2954,6 +2963,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const visibleTileMeshStats = summarizeVisibleTileMeshesByPlugin(
       visibleTileNodes.values()
     );
+    const visibleTileInstancedMeshStats =
+      summarizeVisibleTileInstancedMeshesByPlugin(visibleTileNodes.values());
+    const visibleTileRenderedInstanceStats =
+      summarizeVisibleTileRenderedInstancesByPlugin(visibleTileNodes.values());
     const visibleTileMaterialStats = summarizeVisibleTileMaterialsByPlugin(
       visibleTileNodes.values()
     );
@@ -3013,6 +3026,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       objectSummary: visibleTileObjectStats.summary,
       meshTopPluginLabel: visibleTileMeshStats.topLabel,
       meshSummary: visibleTileMeshStats.summary,
+      instancedMeshTopPluginLabel: visibleTileInstancedMeshStats.topLabel,
+      instancedMeshSummary: visibleTileInstancedMeshStats.summary,
+      renderedInstanceTopPluginLabel: visibleTileRenderedInstanceStats.topLabel,
+      renderedInstanceSummary: visibleTileRenderedInstanceStats.summary,
       materialTopPluginLabel: visibleTileMaterialStats.topLabel,
       materialSummary: visibleTileMaterialStats.summary,
       clonedMaterialTopPluginLabel: visibleTileClonedMaterialStats.topLabel,
@@ -5608,6 +5625,8 @@ function summarizeVisibleTileCountByPlugin<
     DynamicTileNode,
     | 'object3dCount'
     | 'visibleMeshCount'
+    | 'visibleInstancedMeshCount'
+    | 'renderedInstanceCount'
     | 'materialCount'
     | 'clonedMaterialCount'
     | 'drawCallCount'
@@ -5673,6 +5692,35 @@ export function summarizeVisibleTileMeshesByPlugin(
   summary: string;
 } {
   return summarizeVisibleTileCountByPlugin(entries, 'visibleMeshCount');
+}
+
+export function summarizeVisibleTileInstancedMeshesByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'visibleInstancedMeshCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(
+    entries,
+    'visibleInstancedMeshCount'
+  );
+}
+
+export function summarizeVisibleTileRenderedInstancesByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'renderedInstanceCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(entries, 'renderedInstanceCount');
 }
 
 export function summarizeVisibleTileMaterialsByPlugin(

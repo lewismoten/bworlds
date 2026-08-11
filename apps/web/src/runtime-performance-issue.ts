@@ -41,6 +41,8 @@ export type RuntimePerformanceIssueReport = {
     pendingTileCount: number;
   };
   pluginHotspots: {
+    instancedMeshes: string | null;
+    renderedInstances: string | null;
     materials: string | null;
     drawCalls: string | null;
     objects: string | null;
@@ -138,6 +140,10 @@ export function buildRuntimePerformanceIssueReport(
       pendingTileCount: options.debugSnapshot.pendingTileCount,
     },
     pluginHotspots: {
+      instancedMeshes:
+        options.debugSnapshot.instancedMeshTopPluginLabel?.trim() || null,
+      renderedInstances:
+        options.debugSnapshot.renderedInstanceTopPluginLabel?.trim() || null,
       materials: options.debugSnapshot.materialTopPluginLabel?.trim() || null,
       drawCalls: options.debugSnapshot.drawCallTopPluginLabel?.trim() || null,
       objects: options.debugSnapshot.objectTopPluginLabel?.trim() || null,
@@ -247,6 +253,14 @@ function describeRuntimePerformanceHotspots(
     formatRuntimePerformanceHotspot(
       'Top mesh plugins',
       debugSnapshot.meshSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top instanced-mesh plugins',
+      debugSnapshot.instancedMeshSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top rendered-instance plugins',
+      debugSnapshot.renderedInstanceSummary
     ),
     formatRuntimePerformanceHotspot(
       'Top unique-material plugins',
