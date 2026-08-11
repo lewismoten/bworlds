@@ -4,6 +4,7 @@ import {
   type MusicDebugSnapshot,
 } from './music-debug.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
+import { resolveMusicDebugSectionJumpTargets } from './music-debug-transport.ts';
 
 describe('music debug playback controller', () => {
   it('starts playback, flips state, and auto-stops after the song duration', () => {
@@ -295,6 +296,42 @@ describe('music debug playback controller', () => {
       expect.objectContaining({
         startOffsetMs: nextSection,
         endOffsetMs: snapshot.durationMs,
+      })
+    );
+    expect(controller.isPlaying()).toBe(true);
+  });
+
+  it('can jump to a section-button target while the song is already playing', () => {
+    vi.useFakeTimers();
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const playback = {
+      play: vi.fn(),
+      stop: vi.fn(),
+    };
+    const controller = createMusicDebugPlaybackController({
+      playback,
+    });
+    const jumpTarget = resolveMusicDebugSectionJumpTargets(snapshot)[2]!;
+
+    controller.start(snapshot, { loop: true, startOffsetMs: 0 });
+    controller.start(snapshot, {
+      loop: true,
+      startOffsetMs: jumpTarget.startOffsetMs,
+    });
+
+    expect(jumpTarget.label).toBe(snapshot.song.sections[1]?.label);
+    expect(playback.stop).toHaveBeenCalledTimes(1);
+    expect(playback.play).toHaveBeenNthCalledWith(
+      2,
+      snapshot,
+      expect.objectContaining({
+        startOffsetMs: jumpTarget.startOffsetMs,
+        endOffsetMs: snapshot.loopEndOffsetMs,
       })
     );
     expect(controller.isPlaying()).toBe(true);
