@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createMusicDebugSnapshot } from './music-debug.ts';
 import { normalizeMusicDebugPagePersistenceState } from './music-debug-page-persistence.ts';
 import { restoreMusicDebugPageStateFromPersistence } from './music-debug-page-restore.ts';
+
+const PREVIEW_OFFSET_MS = 17_500;
 
 describe('music debug page restore', () => {
   it('restores persisted inputs and playback state without needing a snapshot render', () => {
@@ -9,7 +10,6 @@ describe('music debug page restore', () => {
     const loopInput = { checked: false } as HTMLInputElement;
     const playbackVariantSelect = { value: 'full' } as HTMLSelectElement;
     const playbackDryInput = { checked: false } as HTMLInputElement;
-    const snapshot = createMusicDebugSnapshot();
     const persistedState = normalizeMusicDebugPagePersistenceState({
       options: {
         tileKind: 'forest',
@@ -35,7 +35,7 @@ describe('music debug page restore', () => {
         soloRoles: ['lead'],
         mutedRoles: ['bass'],
       },
-      previewOffsetMs: snapshot.durationMs - 500,
+      previewOffsetMs: PREVIEW_OFFSET_MS,
     });
 
     const restored = restoreMusicDebugPageStateFromPersistence({
@@ -64,7 +64,7 @@ describe('music debug page restore', () => {
     expect(playbackVariantSelect.value).toBe('melody-only');
     expect(playbackDryInput.checked).toBe(true);
     expect(restored).toEqual({
-      previewOffsetMs: snapshot.durationMs - 500,
+      previewOffsetMs: PREVIEW_OFFSET_MS,
       percussionPlaybackState: {
         soloVoiceIds: ['kick-35'],
         mutedVoiceIds: ['snare-38'],

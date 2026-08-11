@@ -54,6 +54,12 @@ keeps the fast-path route classifier and dock smoke checks, while
 [packages/tile-route/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-route/src/index.long.test.ts:1)
 holds the heavier bridge/dock scan and cache-churn coverage.
 
+When fast-path tests must import one of the heavy procedural snapshot modules,
+prefer keeping related assertions in the same `*.test.ts` file so Vitest only
+pays the module-load cost once. The sound-bank preview mode and phrase checks
+now follow that pattern instead of loading the full sound-bank debug snapshot
+graph in two separate fast-path files.
+
 After that split exists, remove the short `*.test.ts` file from
 `LONG_TEST_FILES` in
 [vitest.suite-mode.ts](/Users/lewismoten/dev/bworlds/vitest.suite-mode.ts:1).
