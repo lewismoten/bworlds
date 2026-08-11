@@ -19,6 +19,13 @@ This is also partially due to performance issues which can be seen here, and add
 - [x] Log every fallback box with its tile and failure reason.
 - [x] tiles that do not support models (ie plains) should not be reported as LOD failures, and tiles that do have models should have "supports" indicating such.
 
+- [ ] Limit each tree species to 10 material variants per part type.
+- [ ] Reuse bark, foliage, and branch materials across nearby trees.
+- [ ] Prefer tinting shared materials over creating new textures.
+- [ ] Use color shifts to distinguish related tree species.
+- [ ] Avoid unique textures when color variation is sufficient.
+- [ ] Share material variants between compatible tree species.
+
 ## Stable LOD Dimensions
 
 - [ ] Keep the same footprint across every LOD for a model.
