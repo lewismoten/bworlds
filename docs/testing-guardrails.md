@@ -24,11 +24,13 @@ Keep the normal `*.test.ts` files for behavior checks that should run during
 every `npm run check`.
 
 When a file grows into a broad integration sweep that explores many seeds,
-tiles, routes, or song variants in one pass, move that whole file onto the
-long path even if it still uses a `*.test.ts` suffix. The fast suite now does
-that for the heaviest map-overworld, overworld-support, route-network, dock
-traffic, ambience-debug, and procedural-music repair files so `npm run check`
-stays bounded around unit-level feedback.
+tiles, routes, or song variants in one pass, prefer renaming it to
+`*.long.test.ts` so the fast suite excludes it through the glob-based long-path
+selection automatically. Keep `LONG_TEST_FILES` for the heavy files that have
+not been split or renamed yet. The fast suite now does that for the heaviest
+map-overworld, overworld-support, route-network, dock traffic, ambience-debug,
+and procedural-music repair files so `npm run check` stays bounded around
+unit-level feedback.
 
 When a helper can be tested with a small structural fixture, keep that as the
 fast-path unit test and move the representative full-generation determinism

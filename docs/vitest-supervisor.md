@@ -38,7 +38,11 @@ Related commands:
   so Vitest can parallelize them without putting those checks back into the
   fast path.
   Recent examples include the split sound-bank shell coverage described in
-  [docs/sound-bank-debug-shell-tests.md](/Users/lewismoten/dev/bworlds/docs/sound-bank-debug-shell-tests.md:1).
+  [docs/sound-bank-debug-shell-tests.md](/Users/lewismoten/dev/bworlds/docs/sound-bank-debug-shell-tests.md:1)
+  plus the renamed `music-debug-export-bundle-*.long.test.ts`,
+  `music-debug-snapshot-generation-*.long.test.ts`,
+  `music-debug-markup.long.test.ts`, and
+  `music-debug-song-playback.long.test.ts` suites.
 - `npm run test -- apps/web/src/example.test.ts`
   Still forwards file arguments through to Vitest and bypasses fast/long suite filtering.
 - `npm run test:hang-debug -- <files...>`

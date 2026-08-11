@@ -6,18 +6,18 @@ parallelize them and the files stay easier to maintain:
 - [music-debug-snapshot-helpers.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-helpers.test.ts:1)
   covers snapshot option normalization plus small formatting and seed helpers
   that do not need the long-suite path.
-- [music-debug-snapshot-generation-baseline.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-baseline.test.ts:1)
+- [music-debug-snapshot-generation-baseline.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-baseline.long.test.ts:1)
   covers the heaviest deterministic snapshot generation baseline plus cache
   reuse and theme-overlay expectations.
-- [music-debug-snapshot-generation-variants.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-variants.test.ts:1)
+- [music-debug-snapshot-generation-variants.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-variants.long.test.ts:1)
   covers SongDNA variant exposure, motif counters, and battle-versus-boss
   duration scenarios.
 - [music-debug-snapshot-representative.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-representative.test.ts:1)
   covers representative known-good snapshot prominence and section-plan
   expectations.
-- [music-debug-markup.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-markup.test.ts:1)
+- [music-debug-markup.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-markup.long.test.ts:1)
   covers full laboratory markup plus pending-shell rendering.
-- [music-debug-playback.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-playback.test.ts:1)
+- [music-debug-song-playback.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-song-playback.long.test.ts:1)
   covers playback scheduling, batching, role filtering, and dry/percussion
   routing behavior.
 - [music-debug-timeline-fast.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline-fast.test.ts:1)

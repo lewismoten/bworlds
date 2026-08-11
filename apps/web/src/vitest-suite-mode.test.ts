@@ -50,4 +50,19 @@ describe('vitest suite mode', () => {
       'packages/town-support/src/index.test.ts'
     );
   });
+
+  it('relies on the .long.test.ts glob for renamed heavy audio suites', () => {
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-export-bundle-archive.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-markup.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-song-playback.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/sound-bank-debug-shell-audio.test.ts'
+    );
+  });
 });
