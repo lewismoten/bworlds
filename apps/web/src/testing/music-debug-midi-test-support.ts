@@ -2,6 +2,15 @@ import { expect } from 'vitest';
 import { createMusicDebugSnapshot } from '../music-debug.ts';
 import { msToMusicDebugTicks } from '../music-debug-tempo.ts';
 
+export const EXPORTABLE_TOWN_MIDI_SNAPSHOT = toExportableSnapshot(
+  createMusicDebugSnapshot({
+    tileKind: 'town',
+    contextType: 'town',
+    clusterX: 3,
+    clusterY: -2,
+  })
+);
+
 export function withValidCadenceValidation(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {

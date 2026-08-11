@@ -17,7 +17,6 @@ export const LONG_TEST_FILES = [
   'apps/web/src/music-debug-midi-export-variants.test.ts',
   'apps/web/src/music-debug-midi-interaction.test.ts',
   'apps/web/src/music-debug-midi-validation-content.test.ts',
-  'apps/web/src/music-debug-midi-validation-core.test.ts',
   'apps/web/src/music-debug-note-analysis.test.ts',
   'apps/web/src/music-debug-snapshot-signature.long.test.ts',
   'apps/web/src/music-debug-behavior.test.ts',
