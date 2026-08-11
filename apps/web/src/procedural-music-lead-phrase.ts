@@ -155,6 +155,10 @@ function connectLeadMeasureDurations(
   }[]
 ): void {
   const minimumGapMs = Math.max(24, Math.round(subdivisionDurationMs * 0.24));
+  const connectedSentenceGapMs = Math.max(
+    12,
+    Math.round(subdivisionDurationMs * 0.12)
+  );
   const minimumDurationMs = Math.max(
     48,
     Math.round(subdivisionDurationMs * 1.35)
@@ -180,16 +184,25 @@ function connectLeadMeasureDurations(
         subdivisionDurationMs * (attackTemplate?.subdivisionLength ?? 3) * 0.54
       )
     );
+    const connectsIntoSentence =
+      nextNote !== null &&
+      nextNote.startMs - note.startMs <= subdivisionDurationMs * 6;
     const measureCapMs =
       nextNote === null
         ? phraseRestEndMs
-        : Math.min(phraseRestEndMs, nextNote.startMs - minimumGapMs);
+        : Math.min(
+            phraseRestEndMs,
+            nextNote.startMs -
+              (connectsIntoSentence ? connectedSentenceGapMs : minimumGapMs)
+          );
     const phraseEndingSustainMs =
       nextNote === null && phraseEndingMeasure ? phraseRestEndMs : 0;
+    const sentenceConnectionEndMs = connectsIntoSentence ? measureCapMs : 0;
     const desiredEndMs = Math.min(
       phraseRestEndMs,
       Math.max(
         note.startMs + Math.max(targetDurationMs, note.durationMs),
+        sentenceConnectionEndMs,
         phraseEndingSustainMs
       )
     );
@@ -199,13 +212,10 @@ function connectLeadMeasureDurations(
     );
 
     note.durationMs = resolvedEndMs - note.startMs;
-    if (
-      nextNote !== null &&
-      nextNote.startMs - resolvedEndMs <= subdivisionDurationMs * 1.25
-    ) {
+    if (connectsIntoSentence) {
       note.releaseMs = Math.max(
         note.releaseMs,
-        Math.round(note.releaseMs * 1.45)
+        Math.round(note.releaseMs * 1.75)
       );
     }
   }

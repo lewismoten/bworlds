@@ -37,10 +37,13 @@ describe('procedural music lead phrase shaping', () => {
       )
     ).toBe(true);
     expect(firstMeasure[0]?.durationMs).toBeGreaterThanOrEqual(120);
-    expect(firstMeasure[0]?.releaseMs).toBeGreaterThanOrEqual(70);
-    expect(firstMeasure[0]!.startMs + firstMeasure[0]!.durationMs).toBeLessThan(
-      firstMeasure[1]!.startMs
-    );
+    expect(firstMeasure[0]?.releaseMs).toBeGreaterThanOrEqual(122);
+    expect(
+      firstMeasure[1]!.startMs - firstMeasure[0]!.durationMs
+    ).toBeGreaterThan(firstMeasure[0]!.startMs);
+    expect(
+      firstMeasure[1]!.startMs - firstMeasure[0]!.startMs
+    ).toBeLessThanOrEqual(firstMeasure[0]!.durationMs + 12);
   });
 
   it('keeps phrase-end rests at the end of the fourth and eighth measures', () => {
@@ -79,6 +82,38 @@ describe('procedural music lead phrase shaping', () => {
     expect(notes).toHaveLength(2);
     expect(notes[1]!.durationMs).toBeGreaterThan(notes[0]!.durationMs);
     expect(notes[1]!.startMs + notes[1]!.durationMs).toBe(3_750);
+  });
+
+  it('keeps short lead runs connected as one melodic sentence', () => {
+    const notes = shapeProceduralPhraseLeadNotes(
+      [
+        createLeadNote({ startMs: 1_260, durationMs: 90, releaseMs: 70 }),
+        createLeadNote({ startMs: 1_660, durationMs: 90, releaseMs: 70 }),
+        createLeadNote({ startMs: 2_660, durationMs: 90, releaseMs: 70 }),
+      ],
+      {
+        phraseStartMs: 0,
+        phraseDurationMs: 8_000,
+        clusterX: 3,
+        clusterY: -2,
+      }
+    );
+
+    const secondMeasure = notes.filter(
+      (note) => note.startMs >= 1_000 && note.startMs < 2_000
+    );
+    const thirdMeasureNote = notes.find(
+      (note) => note.startMs >= 2_000 && note.startMs < 3_000
+    );
+
+    expect(secondMeasure).toHaveLength(2);
+    expect(
+      secondMeasure[1]!.startMs - secondMeasure[0]!.startMs
+    ).toBeLessThanOrEqual(secondMeasure[0]!.durationMs + 12);
+    expect(secondMeasure[0]!.releaseMs).toBeGreaterThan(
+      secondMeasure[1]!.releaseMs
+    );
+    expect(thirdMeasureNote?.releaseMs).toBe(70);
   });
 });
 

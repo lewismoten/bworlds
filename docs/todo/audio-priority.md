@@ -137,7 +137,7 @@
 - [ ] Avoid constant note activity in every layer.
 - [ ] Avoid every layer resting at the same time.
 - [x] Give the bass a stable recurring pulse.
-- [ ] Let lead notes connect into short musical sentences.
+- [x] Let lead notes connect into short musical sentences.
 - [x] Use longer notes near phrase endings.
 - [ ] Use shorter notes when building toward a climax.
 - [x] Make section changes audible through rhythm changes.
@@ -146,9 +146,11 @@
       libraries, repeats the same opening rhythm before A' varies it, keeps
       phrase-end rests in the fourth and eighth measures, explicitly stretches
       the last lead attack in those phrase-ending measures up to the reserved
-      tail-rest boundary, gives the variation section a measurably different
-      lead rhythm than Section A, and keeps the bass pulse repeating
-      measure-for-measure across the repeated Section A phrase cycle.
+      tail-rest boundary, tightens short inter-note gaps while lengthening the
+      release of connected lead attacks so nearby notes read as one short
+      melodic sentence, gives the variation section a measurably different lead
+      rhythm than Section A, and keeps the bass pulse repeating measure-for-
+      measure across the repeated Section A phrase cycle.
 
 ## Humanization
 
