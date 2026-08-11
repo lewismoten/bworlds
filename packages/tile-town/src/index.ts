@@ -812,35 +812,6 @@ function getTownDescriptors(tileX: number, tileY: number): TownDescriptor[] {
   return resolveTownDescriptors(tileX, tileY);
 }
 
-function writeTownInstancedScalePositionMatrix(
-  target: InstanceType<ThreeHostLike['Matrix4']>,
-  x: number,
-  y: number,
-  z: number,
-  scaleX: number,
-  scaleY: number,
-  scaleZ: number
-) {
-  return target.set(
-    scaleX,
-    0,
-    0,
-    x,
-    0,
-    scaleY,
-    0,
-    y,
-    0,
-    0,
-    scaleZ,
-    z,
-    0,
-    0,
-    0,
-    1
-  );
-}
-
 function writeTownRotatedInstancedScalePositionMatrix(
   target: InstanceType<ThreeHostLike['Matrix4']>,
   x: number,
