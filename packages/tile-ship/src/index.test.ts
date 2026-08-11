@@ -300,6 +300,106 @@ describe('tile ship', () => {
     ).toBe(true);
   });
 
+  it('builds ship models progressively before returning the final model', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: {
+        kind: 'ship',
+        poi: { type: 'ship', name: 'Spec Mast' },
+      } as never,
+      tileX: 5,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const expectedFinalLabel =
+      syncModel?.userData?.shipPoiVariant === 'tall-ship'
+        ? 'rigging'
+        : 'wreckage';
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: {
+        kind: 'ship',
+        poi: { type: 'ship', name: 'Spec Mast' },
+      } as never,
+      tileX: 5,
+      tileY: 5,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'hull',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'lantern',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: expectedFinalLabel,
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous ship build aligned with the progressive final model', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: {
+        kind: 'ship',
+        poi: { type: 'ship', name: 'Spec Mast' },
+      } as never,
+      tileX: 5,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: {
+        kind: 'ship',
+        poi: { type: 'ship', name: 'Spec Mast' },
+      } as never,
+      tileX: 5,
+      tileY: 5,
+    });
+    let progressiveModel: FakeNode | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeNode | undefined;
+        break;
+      }
+    }
+
+    expect(createShipModelSignature(progressiveModel)).toEqual(
+      createShipModelSignature(syncModel)
+    );
+  });
+
   it('keeps ship model signatures stable after repeated model churn', () => {
     const plugin = createShipTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');

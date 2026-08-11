@@ -1,6 +1,18 @@
 # Ship Rendering
 
-The tall-ship variant now instances its repeated rigging parts instead of
+The ship tile now exposes a progressive build path so the renderer can spread
+the heavier landmark mesh creation across multiple frames.
+
+Current progressive phases:
+
+- `hull`
+- `lantern`
+- `rigging` for tall ships or `wreckage` for broken ships
+
+The synchronous `create3DModel()` path exhausts the same generator so the
+progressive and eager builds stay structurally aligned.
+
+The tall-ship variant also instances its repeated rigging parts instead of
 emitting separate meshes for each mast, yard, and sail.
 
 Current layout:

@@ -13,6 +13,7 @@ import {
 } from '@bworlds/poi-support';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   RuntimePlugin,
   ThreeMaterialLike,
   ThreeMatrix4Like,
@@ -69,103 +70,11 @@ export function createShipTilePlugin(): RuntimePlugin {
       fillRect(context, x + 11, y + 7, 2, 2, '#e5d7bb');
       return true;
     }),
-    create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-      const group = new three.Group();
-      const facing = getShipFacing(state, tileX, tileY);
-      const variant = getShipVariant(tileX, tileY);
-      const {
-        hullMaterial,
-        trimMaterial,
-        mastMaterial,
-        sailMaterial,
-        lanternMaterial,
-      } = getShipSharedMaterials(three, variant);
-
-      group.position.set(tileX, 0, tileY);
-      group.rotation.y = facing.rotationY;
-      group.userData = {
-        ...(group.userData ?? {}),
-        [SHIP_VARIANT_KEY]: variant,
-      };
-
-      const hull = new three.Mesh(
-        new three.BoxGeometry(0.62, 0.22, 1.18),
-        hullMaterial
-      );
-      hull.position.set(0, 0.11, 0.05);
-      group.add(hull);
-
-      const deck = new three.Mesh(
-        new three.BoxGeometry(0.5, 0.04, 0.92),
-        trimMaterial
-      );
-      deck.position.set(0, 0.24, 0.04);
-      group.add(deck);
-
-      const prow = new three.Mesh(
-        new three.BoxGeometry(0.42, 0.18, 0.2),
-        hullMaterial
-      );
-      prow.position.set(0, 0.14, -0.58);
-      prow.rotation.x = -0.24;
-      group.add(prow);
-
-      const stern = new three.Mesh(
-        new three.BoxGeometry(0.44, 0.24, 0.22),
-        hullMaterial
-      );
-      stern.position.set(0, 0.18, 0.58);
-      group.add(stern);
-
-      const cabin = new three.Mesh(
-        new three.BoxGeometry(0.34, 0.2, 0.26),
-        trimMaterial
-      );
-      cabin.position.set(0, 0.34, 0.42);
-      group.add(cabin);
-
-      const lantern = markPoiLightEmitter(
-        new three.Mesh(new three.SphereGeometry(0.04, 6, 6), lanternMaterial),
-        {
-          kind: 'emissive-mesh',
-          dayIntensity: 0.02,
-          nightIntensity: 1.1,
-        }
-      );
-      lantern.position.set(0.18, 0.42, 0.46);
-      group.add(lantern);
-
-      const lanternLight = markPoiLightEmitter(
-        new three.PointLight('#f6c56b', 0, 3.8, 1.85),
-        {
-          kind: 'point-light',
-          nightIntensity: 0.72,
-          visibleThreshold: 0.03,
-        }
-      );
-      lanternLight.position.set(0.18, 0.42, 0.42);
-      lanternLight.visible = false;
-      group.add(lanternLight);
-
-      if (variant === 'tall-ship') {
-        addTallShipRigging(
-          three,
-          group,
-          mastMaterial,
-          sailMaterial,
-          trimMaterial
-        );
-      } else {
-        addBrokenShipDetails(
-          three,
-          group,
-          hullMaterial,
-          mastMaterial,
-          trimMaterial
-        );
-      }
-
-      return group;
+    create3DModel(context: Create3DModelContext) {
+      return runShipModelBuildToCompletion(createShipModelProgressive(context));
+    },
+    create3DModelProgressive(context: Create3DModelContext) {
+      return createShipModelProgressive(context);
     },
     sync3DModel({ model, cycle }) {
       if (!model || typeof model !== 'object') {
@@ -178,6 +87,136 @@ export function createShipTilePlugin(): RuntimePlugin {
       syncShipSails(model as ThreeObject3DLike, cycle);
     },
   });
+}
+
+function* createShipModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const group = new three.Group();
+  const facing = getShipFacing(state, tileX, tileY);
+  const variant = getShipVariant(tileX, tileY);
+  const {
+    hullMaterial,
+    trimMaterial,
+    mastMaterial,
+    sailMaterial,
+    lanternMaterial,
+  } = getShipSharedMaterials(three, variant);
+  const totalSteps = 3;
+
+  group.position.set(tileX, 0, tileY);
+  group.rotation.y = facing.rotationY;
+  group.userData = {
+    ...(group.userData ?? {}),
+    [SHIP_VARIANT_KEY]: variant,
+  };
+
+  const hull = new three.Mesh(
+    new three.BoxGeometry(0.62, 0.22, 1.18),
+    hullMaterial
+  );
+  hull.position.set(0, 0.11, 0.05);
+  group.add(hull);
+
+  const deck = new three.Mesh(
+    new three.BoxGeometry(0.5, 0.04, 0.92),
+    trimMaterial
+  );
+  deck.position.set(0, 0.24, 0.04);
+  group.add(deck);
+
+  const prow = new three.Mesh(
+    new three.BoxGeometry(0.42, 0.18, 0.2),
+    hullMaterial
+  );
+  prow.position.set(0, 0.14, -0.58);
+  prow.rotation.x = -0.24;
+  group.add(prow);
+
+  const stern = new three.Mesh(
+    new three.BoxGeometry(0.44, 0.24, 0.22),
+    hullMaterial
+  );
+  stern.position.set(0, 0.18, 0.58);
+  group.add(stern);
+
+  const cabin = new three.Mesh(
+    new three.BoxGeometry(0.34, 0.2, 0.26),
+    trimMaterial
+  );
+  cabin.position.set(0, 0.34, 0.42);
+  group.add(cabin);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'hull',
+  };
+
+  const lantern = markPoiLightEmitter(
+    new three.Mesh(new three.SphereGeometry(0.04, 6, 6), lanternMaterial),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: 0.02,
+      nightIntensity: 1.1,
+    }
+  );
+  lantern.position.set(0.18, 0.42, 0.46);
+  group.add(lantern);
+
+  const lanternLight = markPoiLightEmitter(
+    new three.PointLight('#f6c56b', 0, 3.8, 1.85),
+    {
+      kind: 'point-light',
+      nightIntensity: 0.72,
+      visibleThreshold: 0.03,
+    }
+  );
+  lanternLight.position.set(0.18, 0.42, 0.42);
+  lanternLight.visible = false;
+  group.add(lanternLight);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'lantern',
+  };
+
+  if (variant === 'tall-ship') {
+    addTallShipRigging(three, group, mastMaterial, sailMaterial, trimMaterial);
+    yield {
+      completedSteps: 3,
+      totalSteps,
+      label: 'rigging',
+    };
+  } else {
+    addBrokenShipDetails(
+      three,
+      group,
+      hullMaterial,
+      mastMaterial,
+      trimMaterial
+    );
+    yield {
+      completedSteps: 3,
+      totalSteps,
+      label: 'wreckage',
+    };
+  }
+
+  return group;
+}
+
+function runShipModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function getShipVariant(tileX: number, tileY: number): ShipVariant {
