@@ -82,6 +82,19 @@ class FakeMaterial {
   }
 }
 
+class FakeMatrix4 {
+  elements = Array<number>(16).fill(0);
+
+  set(...elements: number[]) {
+    this.elements = [...elements];
+    return this;
+  }
+
+  clone() {
+    return new FakeMatrix4().set(...this.elements);
+  }
+}
+
 class FakeNode {
   position = {
     x: 0,
@@ -136,6 +149,22 @@ class FakeMesh extends FakeNode {
   }
 }
 
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[],
+    public count = 0
+  ) {
+    super();
+  }
+
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
+  }
+}
+
 class FakePointLight extends FakeNode {
   constructor(
     public color?: string,
@@ -150,6 +179,8 @@ class FakePointLight extends FakeNode {
 const fakeThree = {
   Group: FakeGroup,
   Mesh: FakeMesh,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
@@ -217,6 +248,36 @@ function createSignState(name: string) {
   };
 }
 
+function createMultiPlacardSignState() {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', type: 'overworld', depth: 0 };
+    },
+    getCurrentTile(x: number, y: number) {
+      const poiNames: Record<string, string> = {
+        '9:8': 'Oakcross',
+        '10:8': 'Harbor Market',
+        '8:10': 'Crescent Watch',
+      };
+      const name = poiNames[`${x}:${y}`];
+      if (name) {
+        return { kind: 'town', poi: { type: 'town', name } };
+      }
+      return { kind: 'plains' };
+    },
+    getTileDefinition() {
+      return {
+        name: 'Plains',
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
 function createModelSignature(model: FakeGroup | undefined) {
   const signature: Array<Record<string, unknown>> = [];
   model?.traverse((node) => {
@@ -228,7 +289,7 @@ function createModelSignature(model: FakeGroup | undefined) {
       visible: node.visible,
       childCount: node.children.length,
       material:
-        node instanceof FakeMesh
+        node instanceof FakeMesh || node instanceof FakeInstancedMesh
           ? Array.isArray(node.material)
             ? node.material.map((material) => material.options)
             : node.material?.options
@@ -513,6 +574,40 @@ describe('tile sign', () => {
     );
   });
 
+  it('instances repeated full-detail placard support hardware', () => {
+    const model = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    const supportInstances: FakeInstancedMesh[] = [];
+    const edgeCapInstances: FakeInstancedMesh[] = [];
+    model?.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.signInstancedPart === 'placard-support'
+      ) {
+        supportInstances.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.signInstancedPart === 'placard-edge-cap'
+      ) {
+        edgeCapInstances.push(node);
+      }
+    });
+
+    expect(supportInstances).toHaveLength(1);
+    expect(edgeCapInstances).toHaveLength(1);
+    expect(supportInstances[0]?.count).toBe(3);
+    expect(edgeCapInstances[0]?.count).toBe(3);
+    expect(supportInstances[0]?.matrices).toHaveLength(3);
+    expect(edgeCapInstances[0]?.matrices).toHaveLength(3);
+  });
+
   it('builds a simpler low-detail sign silhouette without lantern or label sprites', () => {
     const full = signTile?.create3DModel?.({
       three: fakeThree as never,
@@ -565,7 +660,7 @@ function countSharedMaterialReferences(
 function collectMeshMaterials(root: FakeGroup | undefined): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root?.traverse((node) => {
-    if (node instanceof FakeMesh) {
+    if (node instanceof FakeMesh || node instanceof FakeInstancedMesh) {
       if (Array.isArray(node.material)) {
         node.material.forEach((material) => materials.add(material));
       } else if (node.material) {

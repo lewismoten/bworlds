@@ -263,6 +263,26 @@ export function createSignTilePlugin(): RuntimePlugin {
           nearbyPois.length > 0
             ? nearbyPois.slice(0, 3)
             : [fallbackPlacard(tileX, tileY)];
+        const placardSupportInstances = new three.InstancedMesh(
+          new three.BoxGeometry(1, 1, 1),
+          style.postMaterial,
+          placards.length
+        );
+        placardSupportInstances.userData = {
+          ...(placardSupportInstances.userData ?? {}),
+          signInstancedPart: 'placard-support',
+        };
+        const placardEdgeCapInstances = new three.InstancedMesh(
+          new three.BoxGeometry(1, 1, 1),
+          style.trimMaterial,
+          placards.length
+        );
+        placardEdgeCapInstances.userData = {
+          ...(placardEdgeCapInstances.userData ?? {}),
+          signInstancedPart: 'placard-edge-cap',
+        };
+        const placardSupportMatrixScratch = new three.Matrix4();
+        const placardEdgeCapMatrixScratch = new three.Matrix4();
 
         placards.forEach((poi, index) => {
           const mount =
@@ -275,9 +295,20 @@ export function createSignTilePlugin(): RuntimePlugin {
             group.add(mount);
           }
 
-          const signArm = createDirectionalPlacard(three, style, poi, index);
+          const signArm = createDirectionalPlacard(
+            three,
+            style,
+            poi,
+            index,
+            placardSupportInstances,
+            placardSupportMatrixScratch,
+            placardEdgeCapInstances,
+            placardEdgeCapMatrixScratch
+          );
           mount.add(signArm);
         });
+        group.add(placardSupportInstances);
+        group.add(placardEdgeCapInstances);
 
         const lantern = createSignLantern(three, style);
         lantern.position.set(
@@ -438,7 +469,11 @@ function createDirectionalPlacard(
   three: ThreeHostLike,
   style: SignStyle,
   poi: NearbyPoi,
-  index: number
+  index: number,
+  supportInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
+  supportMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>,
+  edgeCapInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
+  edgeCapMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>
 ) {
   const group = new three.Group();
   const width = style.placardWidth * (poi.name.length > 12 ? 1.15 : 1);
@@ -467,19 +502,33 @@ function createDirectionalPlacard(
   arrowHead.scale.set(1.05, 1, 1.35);
   group.add(arrowHead);
 
-  const edgeCap = new three.Mesh(
-    new three.BoxGeometry(depth * 1.4, height * 0.9, depth * 1.4),
-    style.trimMaterial
+  edgeCapInstances.setMatrixAt(
+    index,
+    writeSignRotatedScalePositionMatrix(
+      edgeCapMatrixScratch,
+      width + armLength - depth * 0.2,
+      rowOffset,
+      0,
+      depth * 1.4,
+      height * 0.9,
+      depth * 1.4,
+      -heading
+    )
   );
-  edgeCap.position.x = width + armLength - depth * 0.2;
-  group.add(edgeCap);
 
-  const support = new three.Mesh(
-    new three.BoxGeometry(armLength + 0.06, depth * 0.9, depth * 0.9),
-    style.postMaterial
+  supportInstances.setMatrixAt(
+    index,
+    writeSignRotatedScalePositionMatrix(
+      supportMatrixScratch,
+      armLength * 0.5 + 0.03,
+      rowOffset,
+      0,
+      armLength + 0.06,
+      depth * 0.9,
+      depth * 0.9,
+      -heading
+    )
   );
-  support.position.x = armLength * 0.5 + 0.03;
-  group.add(support);
 
   const textPlane = createSignLabelSprite(three, style, poi, width, height);
   textPlane.position.set(width * 0.5 + armLength, 0, depth * 0.65);
@@ -659,6 +708,38 @@ function arrowFromVector(dx: number, dy: number): SignArrow {
   const angle = Math.atan2(dy, dx);
   const octant = Math.round(angle / (Math.PI / 4) + 8) % 8;
   return DIRECTION_ARROWS[octant];
+}
+
+function writeSignRotatedScalePositionMatrix(
+  target: InstanceType<ThreeHostLike['Matrix4']>,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return target.set(
+    cosRotation * scaleX,
+    0,
+    sinRotation * scaleZ,
+    x,
+    0,
+    scaleY,
+    0,
+    y,
+    -sinRotation * scaleX,
+    0,
+    cosRotation * scaleZ,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
 }
 
 interface NearbyPoi {
