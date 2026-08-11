@@ -13,6 +13,7 @@ import {
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
+  Create3DModelProgress,
   RuntimePlugin,
   ThreeMaterialLike,
   ThreeObject3DLike,
@@ -65,92 +66,13 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       fillRect(context, x + 7, y + 7, 2, 4, '#1f2937');
       return true;
     }),
-    create3DModel({ three, tileX, tileY }: Create3DModelContext) {
-      const { mountainMaterial, snowMaterial } =
-        createMountainTerrainMaterials(three);
-      const { wallMaterial, trimMaterial, domeMaterial, telescopeMaterial } =
-        getObservatorySharedMaterials(three);
-
-      const group = new three.Group();
-
-      const base = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.72, 0.92, 0.38, 10),
-        mountainMaterial
+    create3DModel(context: Create3DModelContext) {
+      return runObservatoryModelBuildToCompletion(
+        createObservatoryModelProgressive(context)
       );
-      base.position.set(tileX, 0.19, tileY);
-      group.add(base);
-
-      const tower = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.46, 0.52, 0.82, 10),
-        wallMaterial
-      );
-      tower.position.set(tileX, 0.7, tileY);
-      group.add(tower);
-
-      const ring = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.5, 0.54, 0.08, 10),
-        trimMaterial
-      );
-      ring.position.set(tileX, 1.08, tileY);
-      group.add(ring);
-
-      const domePivot = new three.Group();
-      domePivot.userData = {
-        ...(domePivot.userData ?? {}),
-        [OBSERVATORY_DOME_KEY]: true,
-      };
-      domePivot.position.set(tileX, 1.08, tileY);
-
-      const dome = new three.Mesh(
-        getSharedSphereGeometry(three, 0.42, 12, 8),
-        domeMaterial
-      );
-      dome.scale.set(1, 0.82, 1);
-      domePivot.add(dome);
-
-      const slit = new three.Mesh(
-        getSharedBoxGeometry(three, 0.12, 0.44, 0.58),
-        trimMaterial
-      );
-      slit.position.set(0, 0.06, 0.2);
-      domePivot.add(slit);
-      group.add(domePivot);
-
-      const telescope = new three.Group();
-      telescope.userData = {
-        ...(telescope.userData ?? {}),
-        [OBSERVATORY_TELESCOPE_KEY]: true,
-      };
-      telescope.position.set(tileX, 0.92, tileY - 0.02);
-      telescope.visible = false;
-
-      const telescopeBase = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.08, 0.1, 0.22, 8),
-        trimMaterial
-      );
-      telescopeBase.position.y = 0.11;
-      telescope.add(telescopeBase);
-
-      const telescopeTube = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.06, 0.07, 0.72, 10),
-        telescopeMaterial
-      );
-      telescopeTube.rotation.z = Math.PI / 2.5;
-      telescopeTube.rotation.y = -Math.PI / 4;
-      telescopeTube.position.set(0.12, 0.34, -0.06);
-      telescope.add(telescopeTube);
-
-      const eyepiece = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.03, 0.03, 0.14, 8),
-        snowMaterial
-      );
-      eyepiece.rotation.z = telescopeTube.rotation.z;
-      eyepiece.rotation.y = telescopeTube.rotation.y;
-      eyepiece.position.set(-0.08, 0.27, 0.05);
-      telescope.add(eyepiece);
-      group.add(telescope);
-
-      return group;
+    },
+    create3DModelProgressive(context: Create3DModelContext) {
+      return createObservatoryModelProgressive(context);
     },
     sync3DModel({ model, cycle }) {
       if (!model || typeof model !== 'object') {
@@ -159,6 +81,125 @@ export function createObservatoryTilePlugin(): RuntimePlugin {
       syncObservatoryModel(model as ThreeObject3DLike, cycle);
     },
   });
+}
+
+function* createObservatoryModelProgressive({
+  three,
+  tileX,
+  tileY,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const { mountainMaterial, snowMaterial } =
+    createMountainTerrainMaterials(three);
+  const { wallMaterial, trimMaterial, domeMaterial, telescopeMaterial } =
+    getObservatorySharedMaterials(three);
+
+  const group = new three.Group();
+  const totalSteps = 3;
+
+  const base = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.72, 0.92, 0.38, 10),
+    mountainMaterial
+  );
+  base.position.set(tileX, 0.19, tileY);
+  group.add(base);
+
+  const tower = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.46, 0.52, 0.82, 10),
+    wallMaterial
+  );
+  tower.position.set(tileX, 0.7, tileY);
+  group.add(tower);
+
+  const ring = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.5, 0.54, 0.08, 10),
+    trimMaterial
+  );
+  ring.position.set(tileX, 1.08, tileY);
+  group.add(ring);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'base',
+  };
+
+  const domePivot = new three.Group();
+  domePivot.userData = {
+    ...(domePivot.userData ?? {}),
+    [OBSERVATORY_DOME_KEY]: true,
+  };
+  domePivot.position.set(tileX, 1.08, tileY);
+
+  const dome = new three.Mesh(
+    getSharedSphereGeometry(three, 0.42, 12, 8),
+    domeMaterial
+  );
+  dome.scale.set(1, 0.82, 1);
+  domePivot.add(dome);
+
+  const slit = new three.Mesh(
+    getSharedBoxGeometry(three, 0.12, 0.44, 0.58),
+    trimMaterial
+  );
+  slit.position.set(0, 0.06, 0.2);
+  domePivot.add(slit);
+  group.add(domePivot);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'dome',
+  };
+
+  const telescope = new three.Group();
+  telescope.userData = {
+    ...(telescope.userData ?? {}),
+    [OBSERVATORY_TELESCOPE_KEY]: true,
+  };
+  telescope.position.set(tileX, 0.92, tileY - 0.02);
+  telescope.visible = false;
+
+  const telescopeBase = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.08, 0.1, 0.22, 8),
+    trimMaterial
+  );
+  telescopeBase.position.y = 0.11;
+  telescope.add(telescopeBase);
+
+  const telescopeTube = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.06, 0.07, 0.72, 10),
+    telescopeMaterial
+  );
+  telescopeTube.rotation.z = Math.PI / 2.5;
+  telescopeTube.rotation.y = -Math.PI / 4;
+  telescopeTube.position.set(0.12, 0.34, -0.06);
+  telescope.add(telescopeTube);
+
+  const eyepiece = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.03, 0.03, 0.14, 8),
+    snowMaterial
+  );
+  eyepiece.rotation.z = telescopeTube.rotation.z;
+  eyepiece.rotation.y = telescopeTube.rotation.y;
+  eyepiece.position.set(-0.08, 0.27, 0.05);
+  telescope.add(eyepiece);
+  group.add(telescope);
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'telescope',
+  };
+
+  return group;
+}
+
+function runObservatoryModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function getObservatorySharedMaterials(three: Create3DModelContext['three']) {

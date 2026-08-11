@@ -124,7 +124,109 @@ function createFakeThreeHost() {
   } as const;
 }
 
+function createModelSignature(model: FakeGroup | undefined) {
+  const signature: Array<Record<string, unknown>> = [];
+  model?.traverse((node) => {
+    signature.push({
+      type: node.constructor.name,
+      x: node.position.x,
+      y: node.position.y,
+      z: node.position.z,
+      rotationX: node.rotation.x,
+      rotationY: node.rotation.y,
+      rotationZ: node.rotation.z,
+      visible: node.visible,
+      childCount: node.children.length,
+      material:
+        node instanceof FakeMesh
+          ? Array.isArray(node.material)
+            ? node.material.map((material) => material.options)
+            : node.material?.options
+          : undefined,
+      userData: node.userData,
+    });
+  });
+  return signature;
+}
+
 describe('tile observatory', () => {
+  it('builds the full-detail observatory progressively before returning the final model', () => {
+    const plugin = createObservatoryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 4,
+      tileY: 5,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'base',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'dome',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'telescope',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous observatory build aligned with the progressive final model', () => {
+    const plugin = createObservatoryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 4,
+      tileY: 5,
+    });
+    let progressiveModel: FakeNode | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeNode | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel as FakeGroup)).toEqual(
+      createModelSignature(syncModel as FakeGroup)
+    );
+  });
+
   it('reuses shared observatory materials across repeated model builds', () => {
     const plugin = createObservatoryTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
