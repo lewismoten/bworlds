@@ -123,6 +123,30 @@ describe('procedural music song density', () => {
     expect(fourthMeasureNotes[0]?.durationMs).toBeGreaterThan(0);
   });
 
+  it('synthesizes one repair attack when a measure starts completely empty', () => {
+    const notes = applyProceduralSongDensityPlan({
+      notes: [
+        createNote({
+          role: 'bass',
+          instrumentId: 'bass:anchor',
+          startMs: 120,
+        }),
+      ],
+      sections: [createSection('a', 0, 4_000, 4)],
+      songStartMs: 0,
+    });
+
+    const secondMeasureNotes = notes.filter(
+      (note) => note.startMs >= 1_000 && note.startMs < 2_000
+    );
+
+    expect(secondMeasureNotes).toHaveLength(1);
+    expect(secondMeasureNotes[0]?.instrumentId).toContain(
+      ':measure-gap-repair'
+    );
+    expect(secondMeasureNotes[0]?.role).toBe('bass');
+  });
+
   it('keeps the protected outro opening motif without exceeding the first-measure lead cap', () => {
     const notes = applyProceduralSongDensityPlan({
       notes: [

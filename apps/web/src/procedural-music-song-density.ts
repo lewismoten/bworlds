@@ -93,6 +93,11 @@ function applySectionDensityPlan(
     }
 
     ensureMeasureRetainsActiveLayer(notes, groupedIndexes, options.sourceNotes);
+    ensureMeasureHasAttack(notes, groupedIndexes, {
+      sourceNotes: options.sourceNotes,
+      measureStartMs,
+      measureEndMs,
+    });
   }
 }
 
@@ -235,6 +240,67 @@ function ensureMeasureRetainsActiveLayer(
     };
     return;
   }
+}
+
+function ensureMeasureHasAttack(
+  notes: ProceduralMusicNote[],
+  groupedIndexes: Record<ProceduralMusicRole, number[]>,
+  options: {
+    sourceNotes: readonly ProceduralMusicNote[];
+    measureStartMs: number;
+    measureEndMs: number;
+  }
+): void {
+  if (countActiveMeasureNotes(notes, groupedIndexes) > 0) {
+    return;
+  }
+
+  const repairTemplate = resolveMeasureRepairTemplate(
+    options.sourceNotes,
+    options.measureStartMs
+  );
+  if (!repairTemplate) {
+    return;
+  }
+
+  const measureDurationMs = Math.max(
+    1,
+    options.measureEndMs - options.measureStartMs
+  );
+  const noteOffsetMs = Math.min(
+    Math.max(40, repairTemplate.startMs % 1_000),
+    Math.max(40, measureDurationMs - 80)
+  );
+  const startMs = options.measureStartMs + noteOffsetMs;
+
+  notes.push({
+    ...repairTemplate,
+    instrumentId: `${repairTemplate.instrumentId}:measure-gap-repair`,
+    startMs,
+    durationMs: Math.min(
+      repairTemplate.durationMs,
+      Math.max(1, options.measureEndMs - startMs)
+    ),
+  });
+}
+
+function resolveMeasureRepairTemplate(
+  sourceNotes: readonly ProceduralMusicNote[],
+  measureStartMs: number
+): ProceduralMusicNote | null {
+  for (const role of MEASURE_REST_RESTORE_ROLE_PRIORITY) {
+    const candidate = sourceNotes
+      .filter((note) => note.role === role && note.durationMs > 0)
+      .sort(
+        (left, right) =>
+          Math.abs(left.startMs - measureStartMs) -
+          Math.abs(right.startMs - measureStartMs)
+      )[0];
+    if (candidate) {
+      return candidate;
+    }
+  }
+  return null;
 }
 
 function countActiveMeasureNotes(
