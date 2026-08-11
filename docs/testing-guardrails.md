@@ -45,12 +45,14 @@ to verify string serialization behavior. The known-good seed registry now does
 the same: fast-path tests keep seed-id and resolver coverage in
 `music-debug-known-good-seeds.test.ts`, while the full per-seed snapshot
 determinism sweep lives in `music-debug-known-good-seeds.long.test.ts`.
-The same pattern now applies to the procedural music harmony-span sweep and the
-dock route cache-eviction churn regression: the short-path files keep the local
-behavior checks, while `procedural-music.long.test.ts` and
+The same pattern now applies to the procedural music harmony-span sweep, the
+broader procedural music integration coverage, and the dock route cache-eviction
+churn regression: the short-path files keep the local behavior checks, while
+`procedural-music.long.test.ts`,
+`procedural-music-integration.long.test.ts`, and
 `packages/dock-route-support/src/index.long.test.ts` hold the representative
-full-song and cache-rollover coverage. Forest rendering now follows the same
-shape: [packages/tile-forest/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-forest/src/index.test.ts:1)
+full-song, full integration, and cache-rollover coverage. Forest rendering now
+follows the same shape: [packages/tile-forest/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-forest/src/index.test.ts:1)
 keeps the cheap smoke checks in the normal suite, while
 [packages/tile-forest/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-forest/src/index.long.test.ts:1)
 holds the broad descriptor and rendering sweeps. Route rendering now follows it

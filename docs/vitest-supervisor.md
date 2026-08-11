@@ -29,6 +29,7 @@ Related commands:
   seed-sweep checks off the default path, including
   [music-debug-timeline.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline.long.test.ts:1),
   [procedural-music.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music.long.test.ts:1),
+  [procedural-music-integration.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-integration.long.test.ts:1),
   [procedural-music-song-repair.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-repair.long.test.ts:1),
   [test-source-audit-repository.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/testing/test-source-audit-repository.long.test.ts:1),
   [packages/runtime-overworld-anchors/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/runtime-overworld-anchors/src/index.long.test.ts:1),
