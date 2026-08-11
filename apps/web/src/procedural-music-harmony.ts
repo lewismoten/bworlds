@@ -488,6 +488,7 @@ export function resolveProceduralHarmonyVoicing(options: {
   clusterY: number;
   chord?: ProceduralChord;
   previousChord?: ProceduralChord | null;
+  maxTopSemitones?: number;
 }): readonly number[] {
   const chord =
     options.chord ??
@@ -512,6 +513,7 @@ export function resolveProceduralHarmonyVoicing(options: {
   return resolveProceduralHarmonyChordVoicing({
     chord,
     previousChord,
+    maxTopSemitones: options.maxTopSemitones,
   });
 }
 

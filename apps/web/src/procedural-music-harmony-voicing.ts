@@ -6,18 +6,25 @@ type ProceduralHarmonyTriad = {
 
 const HARMONY_VOICING_MIN_SEMITONES = 8;
 const HARMONY_VOICING_MAX_SEMITONES = 24;
+const HARMONY_VOICING_CONSTRAINED_MIN_SEMITONES = -12;
 
 export function resolveProceduralHarmonyChordVoicing(options: {
   chord: ProceduralHarmonyTriad;
   previousChord?: ProceduralHarmonyTriad | null;
+  maxTopSemitones?: number;
 }): readonly number[] {
-  const currentCandidates = createChordVoicingCandidates(options.chord);
+  const currentCandidates =
+    createChordVoicingCandidates(options.chord, options.maxTopSemitones) ??
+    createChordVoicingCandidates(options.chord);
   if (!options.previousChord) {
     return currentCandidates[0] ?? [];
   }
 
   const previousVoicing =
-    createChordVoicingCandidates(options.previousChord)[0] ?? [];
+    (createChordVoicingCandidates(
+      options.previousChord,
+      options.maxTopSemitones
+    ) ?? createChordVoicingCandidates(options.previousChord))[0] ?? [];
   let bestVoicing = currentCandidates[0] ?? [];
   let bestDistance = Number.POSITIVE_INFINITY;
 
@@ -33,8 +40,9 @@ export function resolveProceduralHarmonyChordVoicing(options: {
 }
 
 function createChordVoicingCandidates(
-  chord: ProceduralHarmonyTriad
-): readonly (readonly number[])[] {
+  chord: ProceduralHarmonyTriad,
+  maxTopSemitones?: number
+): readonly (readonly number[])[] | null {
   const inversionSeeds = [
     [
       chord.rootSemitones + 12,
@@ -58,7 +66,8 @@ function createChordVoicingCandidates(
   for (const inversionSeed of inversionSeeds) {
     for (const octaveShift of [-12, 0, 12]) {
       const candidate = normalizeVoicingCandidate(
-        inversionSeed.map((semitones) => semitones + octaveShift)
+        inversionSeed.map((semitones) => semitones + octaveShift),
+        maxTopSemitones
       );
       if (!candidate) {
         continue;
@@ -72,17 +81,35 @@ function createChordVoicingCandidates(
     }
   }
 
-  return candidates;
+  return candidates.length > 0 ? candidates : null;
 }
 
 function normalizeVoicingCandidate(
-  candidate: readonly number[]
+  candidate: readonly number[],
+  maxTopSemitones?: number
 ): number[] | null {
   const normalized = [...candidate].sort((left, right) => left - right);
   for (let index = 1; index < normalized.length; index += 1) {
     while ((normalized[index] ?? 0) <= (normalized[index - 1] ?? 0)) {
       normalized[index] = (normalized[index] ?? 0) + 12;
     }
+  }
+
+  if (maxTopSemitones !== undefined) {
+    while ((normalized[normalized.length - 1] ?? 0) > maxTopSemitones) {
+      for (let index = 0; index < normalized.length; index += 1) {
+        normalized[index] = (normalized[index] ?? 0) - 12;
+      }
+    }
+
+    if (
+      (normalized[0] ?? 0) < HARMONY_VOICING_CONSTRAINED_MIN_SEMITONES ||
+      (normalized[normalized.length - 1] ?? 0) > maxTopSemitones
+    ) {
+      return null;
+    }
+
+    return normalized;
   }
 
   while ((normalized[0] ?? 0) < HARMONY_VOICING_MIN_SEMITONES) {

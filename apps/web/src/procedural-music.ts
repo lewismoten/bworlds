@@ -1055,6 +1055,15 @@ function createThemeNotes(options: {
           clusterY: options.clusterY,
           chord: trackContext.harmonicState.chord,
           previousChord: trackContext.harmonicState.previousChord,
+          maxTopSemitones: resolveHarmonyLeadCeilingSemitones({
+            theme: options.theme,
+            arrangement: options.arrangement,
+            stepIndex: options.stepIndex,
+            clusterX: options.clusterX,
+            clusterY: options.clusterY,
+            previousLeadSemitones: options.previousLeadSemitones,
+            allowLeadAccidentals: options.allowLeadAccidentals,
+          }),
         })
       : [semitones];
   if (role === 'percussion') {
@@ -1202,6 +1211,100 @@ function resolveThemeNoteOctaveBoost(options: {
   ) > 0.965
     ? 12
     : 0;
+}
+
+function resolveHarmonyLeadCeilingSemitones(options: {
+  theme: MusicRegionTheme;
+  arrangement: MusicArrangement;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+  previousLeadSemitones?: number | null;
+  allowLeadAccidentals?: boolean;
+}): number {
+  const referenceLeadStepIndex = resolveNextPlayedLeadStepIndex({
+    theme: options.theme,
+    arrangement: options.arrangement,
+    stepIndex: options.stepIndex,
+    clusterX: options.clusterX,
+    clusterY: options.clusterY,
+  });
+  const referenceComposition = resolveProceduralCompositionStep(
+    options.theme,
+    referenceLeadStepIndex,
+    options.clusterX,
+    options.clusterY,
+    options.allowLeadAccidentals
+  );
+  const referenceLeadSemitones = normalizeProceduralLeadSemitones({
+    targetSemitones: resolveProceduralInstrumentSemitones({
+      theme: options.theme,
+      role: 'lead',
+      stepIndex: referenceLeadStepIndex,
+      clusterX: options.clusterX,
+      clusterY: options.clusterY,
+      allowLeadAccidentals: options.allowLeadAccidentals,
+      chord: referenceComposition.chord,
+    }),
+    melodyRangeSemitones: options.theme.vocabulary.melodyRangeSemitones,
+    previousLeadSemitones: options.previousLeadSemitones,
+  });
+  const leadRenderedSemitones =
+    referenceLeadSemitones +
+    resolveThemeNoteOctaveBoost({
+      role: 'lead',
+      composition: referenceComposition,
+      themeId: options.theme.id,
+      clusterX: options.clusterX,
+      clusterY: options.clusterY,
+      stepIndex: referenceLeadStepIndex,
+    }) +
+    (options.arrangement.roleProfiles.lead.octaveShiftSemitones ?? 0);
+
+  return (
+    leadRenderedSemitones -
+    (options.arrangement.roleProfiles.harmony.octaveShiftSemitones ?? 0) -
+    2
+  );
+}
+
+function resolveNextPlayedLeadStepIndex(options: {
+  theme: MusicRegionTheme;
+  arrangement: MusicArrangement;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+}): number {
+  const leadProfile = options.arrangement.roleProfiles.lead;
+  const searchLimit = options.stepIndex + options.theme.stepPattern.length * 2;
+
+  for (
+    let candidateStepIndex = options.stepIndex + 1;
+    candidateStepIndex <= searchLimit;
+    candidateStepIndex += 1
+  ) {
+    if (selectInstrumentRole(candidateStepIndex) !== 'lead') {
+      continue;
+    }
+
+    const shouldRest = shouldRestAtThemeStep(
+      options.theme,
+      'lead',
+      candidateStepIndex,
+      options.clusterX,
+      options.clusterY
+    );
+    const skippedByArrangement =
+      typeof leadProfile.skipEvery === 'number' &&
+      leadProfile.skipEvery > 1 &&
+      candidateStepIndex % leadProfile.skipEvery === 0;
+
+    if (!shouldRest && !skippedByArrangement) {
+      return candidateStepIndex;
+    }
+  }
+
+  return options.stepIndex + 1;
 }
 
 function scheduleThemeLayerNotes(

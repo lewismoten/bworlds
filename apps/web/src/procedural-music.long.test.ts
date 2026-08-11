@@ -30,4 +30,50 @@ describe('procedural music long', () => {
     expect(averageHarmonySpanMs).toBeGreaterThan(0);
     expect(averageDurationMs).toBeGreaterThan(averageHarmonySpanMs * 0.7);
   });
+
+  it('keeps harmony clusters below the following lead register in generated songs', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 0,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.5,
+      yearProgress: 0.5,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const leadNotes = song.notes
+      .filter((note) => note.role === 'lead')
+      .sort((left, right) => left.startMs - right.startMs);
+    const harmonyGroups = [
+      ...new Set(
+        song.notes
+          .filter((note) => note.role === 'harmony')
+          .map((note) => note.startMs)
+      ),
+    ]
+      .sort((left, right) => left - right)
+      .map((startMs) => ({
+        startMs,
+        notes: song.notes.filter(
+          (note) => note.role === 'harmony' && note.startMs === startMs
+        ),
+      }));
+
+    const comparableGroups = harmonyGroups
+      .map((group) => ({
+        ...group,
+        nextLead: leadNotes.find((note) => note.startMs > group.startMs) ?? null,
+      }))
+      .filter((group) => group.nextLead !== null);
+
+    expect(comparableGroups.length).toBeGreaterThan(0);
+
+    for (const group of comparableGroups) {
+      const highestHarmonyFrequency = Math.max(
+        ...group.notes.map((note) => note.frequency)
+      );
+
+      expect(highestHarmonyFrequency).toBeLessThan(group.nextLead!.frequency);
+    }
+  });
 });
