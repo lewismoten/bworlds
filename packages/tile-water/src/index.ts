@@ -24,6 +24,7 @@ import {
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
+  Create3DModelProgress,
   DecorateOverworldTileContext,
   Kind,
   Paint2DContext,
@@ -349,8 +350,13 @@ export function createWaterTilePlugin(): RuntimePlugin {
               },
             });
           },
-          create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-            return createRiverGroup(three, state, tileX, tileY);
+          create3DModel(context: Create3DModelContext) {
+            return runRiverModelBuildToCompletion(
+              createRiverModelProgressive(context)
+            );
+          },
+          create3DModelProgressive(context: Create3DModelContext) {
+            return createRiverModelProgressive(context);
           },
           paint2D: createPlainsBackedTilePainter(
             ({ context, x, y, definition, motif }: Paint2DContext) => {
@@ -442,6 +448,17 @@ export function createWaterTilePlugin(): RuntimePlugin {
       },
     }
   );
+}
+
+function runRiverModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+) {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function classifyRiverTile(
@@ -564,12 +581,12 @@ export function isSingleTileRiverCandidate(options: {
   return options.riverSignal >= 0.78;
 }
 
-function createRiverGroup(
-  three: ThreeHostLike,
-  state: WorldStateLike,
-  tileX: number,
-  tileY: number
-) {
+function* createRiverModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
   const connections = getRiverConnections(state, tileX, tileY);
   const tileSeed = createRiverTileSeed(tileX, tileY);
   const group = new three.Group();
@@ -586,30 +603,35 @@ function createRiverGroup(
       inwardX: 0.08,
       inwardZ: 0.18,
     });
+    const stubSeed = appendHashSeedLabel(tileSeed, RIVER_RIBBON_STUB_SEED);
     group.add(
-      createRiverRibbonMesh(
-        three,
-        stub,
-        0.34,
-        riverMaterial,
-        appendHashSeedLabel(tileSeed, RIVER_RIBBON_STUB_SEED),
-        0.12
-      )
+      createRiverRibbonMesh(three, stub, 0.34, riverMaterial, stubSeed, 0.12)
     );
+
+    yield {
+      completedSteps: 1,
+      totalSteps: 2,
+      label: 'stub-water',
+    };
+
     group.add(
       createRiverRibbonMesh(
         three,
         stub,
         0.12,
         highlightMaterial,
-        appendHashSeedLabel(
-          appendHashSeedLabel(tileSeed, RIVER_RIBBON_STUB_SEED),
-          RIVER_RIBBON_HIGHLIGHT_SEED
-        ),
+        appendHashSeedLabel(stubSeed, RIVER_RIBBON_HIGHLIGHT_SEED),
         0.06,
         0.008
       )
     );
+
+    yield {
+      completedSteps: 2,
+      totalSteps: 2,
+      label: 'stub-highlight',
+    };
+
     return group;
   }
 
@@ -621,6 +643,12 @@ function createRiverGroup(
   centerPool.position.y = RIVER_SURFACE_HEIGHT;
   group.add(centerPool);
 
+  yield {
+    completedSteps: 1,
+    totalSteps: 3,
+    label: 'center-pool',
+  };
+
   if (connections.length === 2) {
     const curve = createRiverCurve(
       three,
@@ -629,39 +657,51 @@ function createRiverGroup(
       connections[0],
       connections[1]
     );
+    const curveSeed = appendHashSeedLabel(tileSeed, RIVER_RIBBON_RIVER_SEED);
     group.add(
-      createRiverRibbonMesh(
-        three,
-        curve,
-        0.36,
-        riverMaterial,
-        appendHashSeedLabel(tileSeed, RIVER_RIBBON_RIVER_SEED),
-        0.12
-      )
+      createRiverRibbonMesh(three, curve, 0.36, riverMaterial, curveSeed, 0.12)
     );
+
+    yield {
+      completedSteps: 2,
+      totalSteps: 3,
+      label: 'curve-water',
+    };
+
     group.add(
       createRiverRibbonMesh(
         three,
         curve,
         0.12,
         highlightMaterial,
-        appendHashSeedLabel(
-          appendHashSeedLabel(tileSeed, RIVER_RIBBON_RIVER_SEED),
-          RIVER_RIBBON_HIGHLIGHT_SEED
-        ),
+        appendHashSeedLabel(curveSeed, RIVER_RIBBON_HIGHLIGHT_SEED),
         0.04,
         0.008
       )
     );
+
+    yield {
+      completedSteps: 3,
+      totalSteps: 3,
+      label: 'curve-highlight',
+    };
+
     return group;
   }
 
-  connections.forEach((connection, index) => {
+  const branchBuilds = connections.map((connection, index) => {
     const branch = createRiverBranch(three, tileX, tileY, connection, index);
     const branchSeed = appendHashSeedLabel(
       appendHashSeedLabel(tileSeed, RIVER_RIBBON_BRANCH_SEED),
       RIVER_CONNECTION_DIRECTION_SEEDS[connection.id]
     );
+    return {
+      branch,
+      branchSeed,
+    };
+  });
+
+  for (const { branch, branchSeed } of branchBuilds) {
     group.add(
       createRiverRibbonMesh(
         three,
@@ -672,6 +712,15 @@ function createRiverGroup(
         0.12
       )
     );
+  }
+
+  yield {
+    completedSteps: 2,
+    totalSteps: 3,
+    label: 'branch-water',
+  };
+
+  for (const { branch, branchSeed } of branchBuilds) {
     group.add(
       createRiverRibbonMesh(
         three,
@@ -683,7 +732,13 @@ function createRiverGroup(
         0.008
       )
     );
-  });
+  }
+
+  yield {
+    completedSteps: 3,
+    totalSteps: 3,
+    label: 'branch-highlight',
+  };
 
   return group;
 }

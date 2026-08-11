@@ -59,6 +59,128 @@ describe('tile water', () => {
     ).toBe(false);
   });
 
+  it('builds branching river models progressively before returning the final model', () => {
+    const plugin = createWaterTilePlugin();
+    const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
+    const state = createRiverState();
+
+    const build = riverTile?.create3DModelProgressive?.({
+      tile: { kind: 'river' } as never,
+      three: createFakeThree() as never,
+      state: state as never,
+      tileX: 0,
+      tileY: 0,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'center-pool',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'branch-water',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'branch-highlight',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('builds straight river curves progressively before returning the final model', () => {
+    const plugin = createWaterTilePlugin();
+    const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
+    const state = createStraightRiverState();
+
+    const build = riverTile?.create3DModelProgressive?.({
+      tile: { kind: 'river' } as never,
+      three: createFakeThree() as never,
+      state: state as never,
+      tileX: 0,
+      tileY: 0,
+    });
+
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'center-pool',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'curve-water',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'curve-highlight',
+      },
+    });
+    expect(build?.next()?.done).toBe(true);
+  });
+
+  it('keeps the synchronous river build aligned with the progressive final model', () => {
+    const plugin = createWaterTilePlugin();
+    const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
+    const state = createRiverState();
+    const host = createFakeThree();
+
+    const syncModel = riverTile?.create3DModel?.({
+      tile: { kind: 'river' } as never,
+      three: host as never,
+      state: state as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+    const progressiveBuild = riverTile?.create3DModelProgressive?.({
+      tile: { kind: 'river' } as never,
+      three: host as never,
+      state: state as never,
+      tileX: 0,
+      tileY: 0,
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(captureRiverGeometrySignature(progressiveModel)).toEqual(
+      captureRiverGeometrySignature(syncModel)
+    );
+  });
+
   it('renders deterministic river geometry for the same tile after repeated rebuilds', () => {
     const plugin = createWaterTilePlugin();
     const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
@@ -235,6 +357,16 @@ function createRiverState() {
   };
 }
 
+function createStraightRiverState() {
+  const riverTiles = new Set(['0:0', '0:-1', '0:1']);
+
+  return {
+    getCurrentTile(x: number, y: number) {
+      return { kind: riverTiles.has(`${x}:${y}`) ? 'river' : 'plains' };
+    },
+  };
+}
+
 function createFakeOverlayContext() {
   const gradient = {
     addColorStop() {
@@ -303,4 +435,18 @@ function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   }
 
   return materials;
+}
+
+function captureRiverGeometrySignature(model: FakeGroup | undefined) {
+  return (model?.children ?? []).map((child) => ({
+    geometry: child.geometry?.constructor.name ?? 'unknown',
+    opacity:
+      child.material && !Array.isArray(child.material)
+        ? (child.material.opacity ?? null)
+        : null,
+    color:
+      child.material && !Array.isArray(child.material)
+        ? (child.material.options.color ?? null)
+        : null,
+  }));
 }
