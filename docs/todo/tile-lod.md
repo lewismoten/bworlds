@@ -34,6 +34,7 @@
 - [ ] Add hysteresis around every LOD distance threshold.
 - [ ] Delay upgrades until the player remains nearby.
 - [ ] Downgrade LODs sooner when the scheduler is overloaded.
+- [ ] Fallback box should be the dimensions of the bounding boxes if any are specified that obstruct movement.
 
 ## Footprint Definitions
 
