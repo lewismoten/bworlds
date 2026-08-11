@@ -281,12 +281,60 @@ export function createTownTilePlugin(): RuntimePlugin {
       const style = getTownStyle(three, tileX, tileY, renderBudget?.quality);
       const descriptors = getTownDescriptors(tileX, tileY);
       const group = new three.Group();
+      if (detailLevel === 'low') {
+        for (const descriptor of descriptors) {
+          const building = new three.Group();
+          building.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
+          building.rotation.y = descriptor.rotation;
+
+          const body = new three.Mesh(
+            new three.BoxGeometry(
+              descriptor.width,
+              descriptor.height,
+              descriptor.depth
+            ),
+            style.wallMaterial
+          );
+          body.position.y = descriptor.height * 0.5;
+          building.add(body);
+          group.add(building);
+        }
+        return group;
+      }
+
+      const bodyInstances = new three.InstancedMesh(
+        new three.BoxGeometry(1, 1, 1),
+        style.wallMaterial,
+        descriptors.length
+      );
+      bodyInstances.userData = {
+        ...(bodyInstances.userData ?? {}),
+        townInstancedPart: 'building-body',
+      };
+      const roofInstances = new three.InstancedMesh(
+        new three.ConeGeometry(1, 1, 4),
+        style.roofMaterial,
+        descriptors.length
+      );
+      roofInstances.userData = {
+        ...(roofInstances.userData ?? {}),
+        townInstancedPart: 'building-roof',
+      };
+      const doorInstances = new three.InstancedMesh(
+        new three.BoxGeometry(1, 1, 1),
+        style.trimMaterial,
+        descriptors.length
+      );
+      doorInstances.userData = {
+        ...(doorInstances.userData ?? {}),
+        townInstancedPart: 'building-door',
+      };
       const fullDetailWindowCount = descriptors.reduce(
         (count, descriptor) => count + descriptor.windows.length,
         0
       );
       const windowInstances =
-        detailLevel === 'full' && fullDetailWindowCount > 0
+        fullDetailWindowCount > 0
           ? markPoiLightEmitter(
               new three.InstancedMesh(
                 new three.BoxGeometry(1, 1, 1),
@@ -300,9 +348,6 @@ export function createTownTilePlugin(): RuntimePlugin {
               }
             )
           : null;
-      const windowMatrixScratch = windowInstances ? new three.Matrix4() : null;
-      let nextWindowInstanceIndex = 0;
-
       if (windowInstances) {
         windowInstances.userData = {
           ...(windowInstances.userData ?? {}),
@@ -310,87 +355,89 @@ export function createTownTilePlugin(): RuntimePlugin {
         };
       }
 
-      for (const descriptor of descriptors) {
-        const building = new three.Group();
-        building.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-        building.rotation.y = descriptor.rotation;
+      const bodyMatrixScratch = new three.Matrix4();
+      const roofMatrixScratch = new three.Matrix4();
+      const doorMatrixScratch = new three.Matrix4();
+      const windowMatrixScratch = windowInstances ? new three.Matrix4() : null;
+      let nextWindowInstanceIndex = 0;
 
-        const body = new three.Mesh(
-          new three.BoxGeometry(
+      for (let index = 0; index < descriptors.length; index += 1) {
+        const descriptor = descriptors[index]!;
+        bodyInstances.setMatrixAt(
+          index,
+          writeTownRotatedInstancedScalePositionMatrix(
+            bodyMatrixScratch,
+            tileX + descriptor.x,
+            descriptor.height * 0.5,
+            tileY + descriptor.y,
             descriptor.width,
             descriptor.height,
-            descriptor.depth
-          ),
-          style.wallMaterial
+            descriptor.depth,
+            descriptor.rotation
+          )
         );
-        body.position.y = descriptor.height * 0.5;
-        building.add(body);
-
-        if (detailLevel === 'low') {
-          group.add(building);
-          continue;
-        }
-
-        const roof = new three.Mesh(
-          new three.ConeGeometry(
+        roofInstances.setMatrixAt(
+          index,
+          writeTownRotatedInstancedScalePositionMatrix(
+            roofMatrixScratch,
+            tileX + descriptor.x,
+            descriptor.height + descriptor.roofHeight * 0.5 - 0.03,
+            tileY + descriptor.y,
             descriptor.roofRadius,
             descriptor.roofHeight,
-            4
-          ),
-          style.roofMaterial
+            descriptor.roofRadius,
+            descriptor.rotation + Math.PI * 0.25
+          )
         );
-        roof.position.y =
-          descriptor.height + descriptor.roofHeight * 0.5 - 0.03;
-        roof.rotation.y = Math.PI * 0.25;
-        building.add(roof);
-
-        const door = new three.Mesh(
-          new three.BoxGeometry(
+        const doorPosition = rotateTownLocalOffset(
+          0,
+          descriptor.depth * 0.5 + 0.01,
+          descriptor.rotation
+        );
+        doorInstances.setMatrixAt(
+          index,
+          writeTownRotatedInstancedScalePositionMatrix(
+            doorMatrixScratch,
+            tileX + descriptor.x + doorPosition.x,
+            descriptor.height * 0.17,
+            tileY + descriptor.y + doorPosition.z,
             descriptor.width * 0.18,
             descriptor.height * 0.34,
-            0.04
-          ),
-          style.trimMaterial
+            0.04,
+            descriptor.rotation
+          )
         );
-        door.position.set(
-          0,
-          descriptor.height * 0.17,
-          descriptor.depth * 0.5 + 0.01
-        );
-        building.add(door);
 
         for (const window of descriptor.windows) {
           if (windowInstances && windowMatrixScratch) {
-            const localZ = descriptor.depth * 0.5 + 0.008;
-            const cosRotation = Math.cos(descriptor.rotation);
-            const sinRotation = Math.sin(descriptor.rotation);
-            const rotatedX = window.x * cosRotation + localZ * sinRotation;
-            const rotatedZ = -window.x * sinRotation + localZ * cosRotation;
+            const windowPosition = rotateTownLocalOffset(
+              window.x,
+              descriptor.depth * 0.5 + 0.008,
+              descriptor.rotation
+            );
             windowInstances.setMatrixAt(
               nextWindowInstanceIndex,
-              writeTownInstancedScalePositionMatrix(
+              writeTownRotatedInstancedScalePositionMatrix(
                 windowMatrixScratch,
-                tileX + descriptor.x + rotatedX,
+                tileX + descriptor.x + windowPosition.x,
                 window.y,
-                tileY + descriptor.y + rotatedZ,
+                tileY + descriptor.y + windowPosition.z,
                 window.width,
                 window.height,
-                0.03
+                0.03,
+                descriptor.rotation
               )
             );
             nextWindowInstanceIndex += 1;
           }
         }
-
-        group.add(building);
       }
 
+      group.add(bodyInstances);
+      group.add(roofInstances);
+      group.add(doorInstances);
       if (windowInstances) {
         group.add(windowInstances);
-      }
-
-      if (detailLevel === 'low') {
-        return group;
       }
 
       if (tile.poi?.name) {
@@ -792,6 +839,51 @@ function writeTownInstancedScalePositionMatrix(
     0,
     1
   );
+}
+
+function writeTownRotatedInstancedScalePositionMatrix(
+  target: InstanceType<ThreeHostLike['Matrix4']>,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return target.set(
+    cosRotation * scaleX,
+    0,
+    sinRotation * scaleZ,
+    x,
+    0,
+    scaleY,
+    0,
+    y,
+    -sinRotation * scaleX,
+    0,
+    cosRotation * scaleZ,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
+}
+
+function rotateTownLocalOffset(
+  localX: number,
+  localZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return {
+    x: localX * cosRotation + localZ * sinRotation,
+    z: -localX * sinRotation + localZ * cosRotation,
+  };
 }
 
 interface TownStyle {

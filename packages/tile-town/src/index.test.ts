@@ -290,6 +290,13 @@ describe('tile town', () => {
     expect(
       lowModel.children.every((building) => building.children.length === 1)
     ).toBe(true);
+    expect(
+      fullModel.children.some(
+        (child) =>
+          child instanceof FakeInstancedMesh &&
+          child.userData?.townInstancedPart === 'building-body'
+      )
+    ).toBe(true);
   });
 
   it('passes render quality through to textured town surface materials', () => {
@@ -460,6 +467,52 @@ describe('tile town', () => {
 
     expect((windowMaterial as FakeMaterial).emissiveIntensity).toBeGreaterThan(
       0.08
+    );
+  });
+
+  it('instances repeated full-detail town building bodies, roofs, and doors', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const bodyInstances = model.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.townInstancedPart === 'building-body'
+    ) as FakeInstancedMesh[];
+    const roofInstances = model.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.townInstancedPart === 'building-roof'
+    ) as FakeInstancedMesh[];
+    const doorInstances = model.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.townInstancedPart === 'building-door'
+    ) as FakeInstancedMesh[];
+    expect(bodyInstances).toHaveLength(1);
+    expect(roofInstances).toHaveLength(1);
+    expect(doorInstances).toHaveLength(1);
+    expect(bodyInstances[0]?.count).toBeGreaterThan(0);
+    expect(roofInstances[0]?.count).toBe(bodyInstances[0]?.count);
+    expect(doorInstances[0]?.count).toBe(bodyInstances[0]?.count);
+    expect(bodyInstances[0]?.matrices).toHaveLength(
+      bodyInstances[0]?.count ?? 0
+    );
+    expect(roofInstances[0]?.matrices).toHaveLength(
+      roofInstances[0]?.count ?? 0
+    );
+    expect(doorInstances[0]?.matrices).toHaveLength(
+      doorInstances[0]?.count ?? 0
     );
   });
 
