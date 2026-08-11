@@ -90,4 +90,25 @@ describe('sound bank debug preview mode', () => {
     expect(notes.length).toBeGreaterThan(1);
     expect(notes.every((note) => (note.space?.wetGain ?? 0) === 0)).toBe(true);
   });
+
+  it('applies live envelope overrides across preview notes', () => {
+    const note = resolveSoundBankDebugPreviewNoteRole(
+      CAVE_SNAPSHOT,
+      'lead',
+      7_000,
+      {
+        envelope: {
+          attackMs: 30,
+          decayMs: 88,
+          sustainLevel: 0.64,
+          releaseMs: 190,
+        },
+      }
+    );
+
+    expect(note?.attackMs).toBe(30);
+    expect(note?.releaseMs).toBe(190);
+    expect(note?.timbre.bodySettleMs).toBe(88);
+    expect(note?.timbre.bodySustainLevel).toBe(0.64);
+  });
 });

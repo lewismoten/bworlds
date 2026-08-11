@@ -38,6 +38,14 @@ import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralInstrument } from './procedural-music-sound-bank.ts';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import {
+  applySoundBankDebugPreviewEnvelopeToInstrument,
+  applySoundBankDebugPreviewEnvelopeToNote,
+  normalizeSoundBankDebugPreviewEnvelopeState,
+  resolveSoundBankDebugPreviewEnvelopeDefaults,
+  type SoundBankDebugPreviewEnvelope,
+  type SoundBankDebugPreviewEnvelopeState,
+} from './sound-bank-debug-preview-envelope.ts';
+import {
   createSoundBankInstrumentRegistry,
   type SoundBankInstrumentRegistryEntry,
   type SoundBankInstrumentRegistration,
@@ -75,6 +83,8 @@ export type SoundBankDebugGeneralMidiBrowserState = {
 export type SoundBankDebugPercussionBrowserState = {
   familyFilter: SoundBankDebugPercussionFamilyFilter;
 };
+
+export type { SoundBankDebugPreviewEnvelopeState };
 
 export type SoundBankDebugGeneralMidiBrowserSection = Readonly<{
   heading: string;
@@ -210,6 +220,7 @@ export function buildSoundBankDebugMarkup(
     errorMessage?: string | null;
     generalMidiBrowserState?: Partial<SoundBankDebugGeneralMidiBrowserState>;
     percussionBrowserState?: Partial<SoundBankDebugPercussionBrowserState>;
+    previewEnvelopeState?: SoundBankDebugPreviewEnvelopeState | null;
   } = {
     audioStatus: 'Audio idle',
   }
@@ -260,7 +271,8 @@ export function buildSoundBankDebugMarkup(
   const selectedInstrumentDetailsMarkup = buildSelectedInstrumentDetailsMarkup(
     snapshot,
     snapshot.instrumentRegistry.entries,
-    generalMidiBrowserModel.selectedProgramNumber
+    generalMidiBrowserModel.selectedProgramNumber,
+    viewState.previewEnvelopeState ?? null
   );
   const generalMidiBrowserMarkup = generalMidiBrowserModel.sections
     .map(
@@ -860,7 +872,10 @@ export function resolveSoundBankDebugPreviewNoteRole(
   snapshot: SoundBankDebugSnapshot,
   role: MusicDebugInstrumentPreviewTarget,
   nowMs: number,
-  options: { dry?: boolean } = {}
+  options: {
+    dry?: boolean;
+    envelope?: SoundBankDebugPreviewEnvelope | null;
+  } = {}
 ) {
   const existingPreview = resolveMusicDebugInstrumentPreviewNote(
     snapshot.musicSnapshot,
@@ -868,13 +883,13 @@ export function resolveSoundBankDebugPreviewNoteRole(
     nowMs
   );
   if (existingPreview) {
-    return applySoundBankDebugPreviewMode(existingPreview, options);
+    return applySoundBankDebugPreviewOptions(existingPreview, options);
   }
   if (!role.startsWith('percussion:')) {
     return null;
   }
 
-  return applySoundBankDebugPreviewMode(
+  return applySoundBankDebugPreviewOptions(
     createFallbackPercussionPreviewNote(
       snapshot.musicSnapshot,
       role.slice('percussion:'.length) as PercussionVoiceId,
@@ -888,20 +903,26 @@ export function resolveSoundBankDebugPreviewPhraseRole(
   snapshot: SoundBankDebugSnapshot,
   role: MusicDebugInstrumentPreviewTarget,
   nowMs: number,
-  options: { dry?: boolean } = {}
+  options: {
+    dry?: boolean;
+    envelope?: SoundBankDebugPreviewEnvelope | null;
+  } = {}
 ): readonly ProceduralMusicNote[] {
   return resolveMusicDebugInstrumentPreviewPhraseNotes(
     snapshot.musicSnapshot,
     role,
     nowMs
-  ).map((note) => applySoundBankDebugPreviewMode(note, options));
+  ).map((note) => applySoundBankDebugPreviewOptions(note, options));
 }
 
 export function createSoundBankDebugPercussionRangeAuditionNotes(
   snapshot: SoundBankDebugSnapshot,
   state: Partial<SoundBankDebugPercussionBrowserState>,
   nowMs: number,
-  options: { dry?: boolean } = {}
+  options: {
+    dry?: boolean;
+    envelope?: SoundBankDebugPreviewEnvelope | null;
+  } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
     normalizeSoundBankDebugPercussionBrowserState(state);
@@ -924,7 +945,10 @@ export function createSoundBankDebugStandardPercussionPatternNotes(
   snapshot: SoundBankDebugSnapshot,
   state: Partial<SoundBankDebugPercussionBrowserState>,
   nowMs: number,
-  options: { dry?: boolean } = {}
+  options: {
+    dry?: boolean;
+    envelope?: SoundBankDebugPreviewEnvelope | null;
+  } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
     normalizeSoundBankDebugPercussionBrowserState(state);
@@ -952,7 +976,10 @@ export function createSoundBankDebugQuietPercussionPatternNotes(
   snapshot: SoundBankDebugSnapshot,
   state: Partial<SoundBankDebugPercussionBrowserState>,
   nowMs: number,
-  options: { dry?: boolean } = {}
+  options: {
+    dry?: boolean;
+    envelope?: SoundBankDebugPreviewEnvelope | null;
+  } = {}
 ): readonly ProceduralMusicNote[] {
   return createSoundBankDebugStandardPercussionPatternNotes(
     snapshot,
@@ -1135,7 +1162,8 @@ function renderOptionList(
 function buildSelectedInstrumentDetailsMarkup(
   snapshot: SoundBankDebugSnapshot,
   registryEntries: readonly SoundBankInstrumentRegistryEntry[],
-  selectedProgramNumber: number | null
+  selectedProgramNumber: number | null,
+  previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null
 ): string {
   const selectedEntry =
     selectedProgramNumber === null
@@ -1158,6 +1186,13 @@ function buildSelectedInstrumentDetailsMarkup(
     snapshot,
     selectedEntry.id
   );
+  const effectiveInstrument =
+    runtimeInstrument === null
+      ? null
+      : applySoundBankDebugPreviewEnvelopeToInstrument(
+          runtimeInstrument,
+          previewEnvelopeState
+        );
   const usesSamples = runtimeInstrument ? 'No' : 'Unknown';
   const usesSynthesis = runtimeInstrument ? 'Yes' : 'Unknown';
   const patchVariant = runtimeInstrument
@@ -1169,39 +1204,47 @@ function buildSelectedInstrumentDetailsMarkup(
   const estimatedComplexity = runtimeInstrument
     ? resolveEstimatedPatchComplexity(runtimeInstrument)
     : 'Unknown';
-  const waveformPreviewMarkup = runtimeInstrument
-    ? buildMusicDebugInstrumentWaveformMarkup(runtimeInstrument)
+  const waveformPreviewMarkup = effectiveInstrument
+    ? buildMusicDebugInstrumentWaveformMarkup(effectiveInstrument)
     : '<p class="sound-bank-debug-warning" role="status">Waveform preview unavailable for this patch source.</p>';
-  const attackMs = runtimeInstrument
-    ? `${Math.round(runtimeInstrument.attackMs)} ms`
+  const attackMs = effectiveInstrument
+    ? `${Math.round(effectiveInstrument.attackMs)} ms`
     : 'Unknown';
-  const releaseMs = runtimeInstrument
-    ? `${Math.round(runtimeInstrument.releaseMs)} ms`
+  const releaseMs = effectiveInstrument
+    ? `${Math.round(effectiveInstrument.releaseMs)} ms`
     : 'Unknown';
-  const sustainLevel = runtimeInstrument
-    ? formatNormalizedValue(runtimeInstrument.timbre.bodySustainLevel ?? 0.74)
+  const sustainLevel = effectiveInstrument
+    ? formatNormalizedValue(effectiveInstrument.timbre.bodySustainLevel ?? 0.74)
     : 'Unknown';
-  const primaryOscillatorType = runtimeInstrument
-    ? runtimeInstrument.waveform
+  const primaryOscillatorType = effectiveInstrument
+    ? effectiveInstrument.waveform
     : 'Unknown';
-  const harmonicOscillatorType = runtimeInstrument
-    ? runtimeInstrument.timbre.harmonicWaveform
+  const harmonicOscillatorType = effectiveInstrument
+    ? effectiveInstrument.timbre.harmonicWaveform
     : 'Unknown';
-  const primaryHarmonicContent = runtimeInstrument
-    ? describeWaveformHarmonicContent(runtimeInstrument.waveform)
+  const primaryHarmonicContent = effectiveInstrument
+    ? describeWaveformHarmonicContent(effectiveInstrument.waveform)
     : 'Unknown';
-  const harmonicOscillatorContent = runtimeInstrument
-    ? describeWaveformHarmonicContent(runtimeInstrument.timbre.harmonicWaveform)
+  const harmonicOscillatorContent = effectiveInstrument
+    ? describeWaveformHarmonicContent(
+        effectiveInstrument.timbre.harmonicWaveform
+      )
     : 'Unknown';
-  const activeOscillatorCount = runtimeInstrument
-    ? String(resolveActiveOscillatorCount(runtimeInstrument))
+  const activeOscillatorCount = effectiveInstrument
+    ? String(resolveActiveOscillatorCount(effectiveInstrument))
     : 'Unknown';
-  const filterType = runtimeInstrument
-    ? runtimeInstrument.timbre.filterType
+  const filterType = effectiveInstrument
+    ? effectiveInstrument.timbre.filterType
     : 'Unknown';
-  const filterResponseCurveMarkup = runtimeInstrument
-    ? buildSelectedInstrumentFilterResponseCurveMarkup(runtimeInstrument)
+  const filterResponseCurveMarkup = effectiveInstrument
+    ? buildSelectedInstrumentFilterResponseCurveMarkup(effectiveInstrument)
     : '<p class="sound-bank-debug-warning" role="status">Filter response preview unavailable for this patch source.</p>';
+  const previewEnvelopeControlsMarkup = effectiveInstrument
+    ? buildSoundBankDebugPreviewEnvelopeControlsMarkup(
+        effectiveInstrument,
+        previewEnvelopeState
+      )
+    : '';
 
   return `
     <div class="music-debug-instrument-waveform">
@@ -1210,6 +1253,7 @@ function buildSelectedInstrumentDetailsMarkup(
     <div class="music-debug-instrument-waveform">
       ${filterResponseCurveMarkup}
     </div>
+    ${previewEnvelopeControlsMarkup}
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
       <div><dt>GM Program</dt><dd>${selectedEntry.generalMidiProgramNumber}</dd></div>
@@ -1640,6 +1684,133 @@ function applySoundBankDebugPreviewMode(
       wetGain: 0,
     },
   };
+}
+
+export function buildSoundBankDebugPreviewEnvelopeControlsMarkup(
+  instrument: ProceduralInstrument,
+  previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null
+): string {
+  const previewEnvelope = normalizeSoundBankDebugPreviewEnvelopeState(
+    previewEnvelopeState,
+    resolveSoundBankDebugPreviewEnvelopeDefaults(instrument)
+  );
+
+  return `
+    <section
+      class="sound-bank-debug-preview-envelope"
+      aria-label="Preview envelope controls"
+      data-instrument-id="${instrument.id}"
+    >
+      <div class="sound-bank-debug-panel-head">
+        <div>
+          <p class="sound-bank-debug-panel-kicker">Live Preview Controls</p>
+          <h3>ADSR Envelope</h3>
+          <p>
+            Override the selected patch envelope for debug playback without
+            changing the generated bank.
+          </p>
+        </div>
+      </div>
+      <div class="sound-bank-debug-grid sound-bank-debug-preview-envelope-grid">
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-envelope-attack',
+          outputId: 'sound-bank-debug-envelope-attack-value',
+          label: 'Attack',
+          value: previewEnvelope.attackMs,
+          min: 1,
+          max: 120,
+          step: 1,
+          suffix: 'ms',
+        })}
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-envelope-decay',
+          outputId: 'sound-bank-debug-envelope-decay-value',
+          label: 'Decay',
+          value: previewEnvelope.decayMs,
+          min: 20,
+          max: 240,
+          step: 1,
+          suffix: 'ms',
+        })}
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-envelope-sustain',
+          outputId: 'sound-bank-debug-envelope-sustain-value',
+          label: 'Sustain',
+          value: previewEnvelope.sustainLevel,
+          min: 0.5,
+          max: 1,
+          step: 0.01,
+          suffix: '',
+        })}
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-envelope-release',
+          outputId: 'sound-bank-debug-envelope-release-value',
+          label: 'Release',
+          value: previewEnvelope.releaseMs,
+          min: 20,
+          max: 360,
+          step: 1,
+          suffix: 'ms',
+        })}
+      </div>
+    </section>
+  `;
+}
+
+function buildSoundBankDebugPreviewEnvelopeSliderMarkup(options: {
+  inputId: string;
+  outputId: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  suffix: string;
+}): string {
+  return `
+    <label>
+      <span>${options.label}</span>
+      <div class="sound-bank-debug-master-gain-row">
+        <input
+          id="${options.inputId}"
+          type="range"
+          min="${options.min}"
+          max="${options.max}"
+          step="${options.step}"
+          value="${options.value}"
+        />
+        <output id="${options.outputId}" for="${options.inputId}">
+          ${formatSoundBankDebugPreviewEnvelopeValue(
+            options.value,
+            options.suffix
+          )}
+        </output>
+      </div>
+    </label>
+  `;
+}
+
+function formatSoundBankDebugPreviewEnvelopeValue(
+  value: number,
+  suffix: string
+): string {
+  const roundedValue =
+    suffix.length === 0 ? value.toFixed(2) : String(Math.round(value));
+  return `${roundedValue}${suffix}`;
+}
+
+function applySoundBankDebugPreviewOptions(
+  note: ProceduralMusicNote,
+  options: {
+    dry?: boolean;
+    envelope?: SoundBankDebugPreviewEnvelope | null;
+  }
+): ProceduralMusicNote {
+  const withEnvelope = applySoundBankDebugPreviewEnvelopeToNote(
+    note,
+    options.envelope
+  );
+  return applySoundBankDebugPreviewMode(withEnvelope, options);
 }
 
 const PERCUSSION_FAMILY_ORDER: readonly PercussionFamily[] = [

@@ -32,6 +32,7 @@ export type ProceduralInstrumentTimbre = {
   pitchSweepDurationMs?: number;
   fundamentalGainMultiplier?: number;
   attackPeakGainMultiplier?: number;
+  bodySettleMs?: number;
   bodySustainLevel?: number;
   harmonicBodyLevel?: number;
   harmonicReleaseLeadMs?: number;
@@ -133,6 +134,7 @@ type InstrumentTimbreTemplate = {
   pitchSweepDurationMs?: number;
   fundamentalGainMultiplier?: number;
   attackPeakGainMultiplier?: number;
+  bodySettleMs?: number;
   bodySustainLevel?: number;
   harmonicBodyLevel?: number;
   harmonicReleaseLeadMs?: number;

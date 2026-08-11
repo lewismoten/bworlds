@@ -239,6 +239,22 @@ body {
   margin-top: 0.9rem;
 }
 
+.sound-bank-debug-preview-envelope {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(172, 208, 255, 0.16);
+  background: rgba(16, 31, 48, 0.8);
+}
+
+.sound-bank-debug-preview-envelope h3 {
+  margin: 0;
+}
+
+.sound-bank-debug-preview-envelope-grid {
+  margin-top: 0.8rem;
+}
+
 .sound-bank-debug-master-gain span {
   display: block;
   margin-bottom: 0.35rem;

@@ -1,4 +1,5 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import { resolveSoundBankDebugPreviewDecayMs } from './sound-bank-debug-preview-envelope.ts';
 import { encodeMonoPcm16Wav } from './wav-file.ts';
 
 const MUSIC_DEBUG_PREVIEW_WAV_SAMPLE_RATE = 48_000;
@@ -243,9 +244,10 @@ export function resolveEnvelopeGain(
     0.5,
     Math.min(1, note.timbre.bodySustainLevel ?? 0.74)
   );
+  const decaySeconds = resolveSoundBankDebugPreviewDecayMs(note) / 1000;
   const bodySettleSeconds = Math.min(
     durationSeconds,
-    attackSeconds + Math.min(0.08, Math.max(0.02, attackSeconds * 0.5))
+    attackSeconds + decaySeconds
   );
   if (timeSeconds <= attackSeconds) {
     return (timeSeconds / attackSeconds) * attackPeakGainMultiplier;
@@ -295,9 +297,10 @@ export function resolveHarmonicEnvelopeGain(
         Math.max(0.5, (note.timbre.bodySustainLevel ?? 0.74) - 0.06)
     )
   );
+  const decaySeconds = resolveSoundBankDebugPreviewDecayMs(note) / 1000;
   const bodySettleSeconds = Math.min(
     durationSeconds,
-    attackSeconds + Math.min(0.08, Math.max(0.02, attackSeconds * 0.5))
+    attackSeconds + decaySeconds
   );
   const harmonicReleaseLeadSeconds = Math.max(
     0,

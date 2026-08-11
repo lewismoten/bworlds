@@ -1,5 +1,6 @@
 import { clamp } from '@bworlds/core';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
+import { resolveSoundBankDebugPreviewDecayMs } from './sound-bank-debug-preview-envelope.ts';
 import type { AudioCategory } from './audio-categories.ts';
 import {
   resolveMusicEqStages,
@@ -323,8 +324,9 @@ export function createWebAudioMusicSink(
         1,
         note.timbre.attackPeakGainMultiplier ?? 1
       );
+      const decaySeconds = resolveSoundBankDebugPreviewDecayMs(note) / 1000;
       const bodySettleAt =
-        startAt + Math.min(0.08, Math.max(0.02, attackSeconds * 1.5));
+        startAt + Math.min(durationSeconds, attackSeconds + decaySeconds);
       const harmonicReleaseStartAt =
         startAt +
         Math.max(

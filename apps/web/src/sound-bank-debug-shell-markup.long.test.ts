@@ -92,6 +92,11 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('Polyphony Limit');
     expect(normalizedMarkup).toContain('Estimated Complexity');
     expect(normalizedMarkup).toContain('Validation Warnings');
+    expect(normalizedMarkup).toContain('ADSR Envelope');
+    expect(normalizedMarkup).toContain('sound-bank-debug-envelope-attack');
+    expect(normalizedMarkup).toContain('sound-bank-debug-envelope-decay');
+    expect(normalizedMarkup).toContain('sound-bank-debug-envelope-sustain');
+    expect(normalizedMarkup).toContain('sound-bank-debug-envelope-release');
     expect(normalizedMarkup).toContain('Standard');
     expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Kick<');

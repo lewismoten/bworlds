@@ -19,9 +19,11 @@ import {
   type SoundBankDebugLayoutMode,
   type SoundBankDebugOptions,
   type SoundBankDebugPercussionBrowserState,
+  type SoundBankDebugPreviewEnvelopeState,
   type SoundBankDebugPreviewMode,
   type SoundBankDebugSnapshot,
 } from './sound-bank-debug.ts';
+import { normalizeSoundBankDebugPreviewEnvelopeState } from './sound-bank-debug-preview-envelope.ts';
 import type { MusicDebugInstrumentPreviewTarget } from './music-debug-instrument-panel.ts';
 import type {
   MusicDebugInstrumentPreviewAudioState,
@@ -47,6 +49,7 @@ let audioStatus = 'Audio idle';
 let errorMessage: string | null = null;
 let layoutMode: SoundBankDebugLayoutMode = 'expanded';
 let previewMode: SoundBankDebugPreviewMode = 'processed';
+let previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null = null;
 const SOUND_BANK_TILE_KINDS: readonly MusicDebugTileKind[] = [
   'plains',
   'forest',
@@ -322,9 +325,87 @@ function renderPage(): void {
     errorMessage,
     generalMidiBrowserState,
     percussionBrowserState,
+    previewEnvelopeState,
   });
   bindPage(snapshot);
   syncAudioContextUi();
+}
+
+function readPreviewEnvelopeState(): SoundBankDebugPreviewEnvelopeState | null {
+  const controls = document.querySelector<HTMLElement>(
+    '.sound-bank-debug-preview-envelope'
+  );
+  const instrumentId = controls?.dataset.instrumentId?.trim();
+  if (!instrumentId) {
+    return null;
+  }
+
+  return normalizeSoundBankDebugPreviewEnvelopeState(
+    {
+      instrumentId,
+      attackMs: Number(
+        document.querySelector<HTMLInputElement>(
+          '#sound-bank-debug-envelope-attack'
+        )?.value
+      ),
+      decayMs: Number(
+        document.querySelector<HTMLInputElement>(
+          '#sound-bank-debug-envelope-decay'
+        )?.value
+      ),
+      sustainLevel: Number(
+        document.querySelector<HTMLInputElement>(
+          '#sound-bank-debug-envelope-sustain'
+        )?.value
+      ),
+      releaseMs: Number(
+        document.querySelector<HTMLInputElement>(
+          '#sound-bank-debug-envelope-release'
+        )?.value
+      ),
+    },
+    {
+      instrumentId,
+    }
+  );
+}
+
+function syncPreviewEnvelopeUi(): void {
+  const attackInput = document.querySelector<HTMLInputElement>(
+    '#sound-bank-debug-envelope-attack'
+  );
+  const decayInput = document.querySelector<HTMLInputElement>(
+    '#sound-bank-debug-envelope-decay'
+  );
+  const sustainInput = document.querySelector<HTMLInputElement>(
+    '#sound-bank-debug-envelope-sustain'
+  );
+  const releaseInput = document.querySelector<HTMLInputElement>(
+    '#sound-bank-debug-envelope-release'
+  );
+
+  document
+    .querySelector<HTMLOutputElement>('#sound-bank-debug-envelope-attack-value')
+    ?.replaceChildren(
+      document.createTextNode(`${attackInput?.value ?? '0'}ms`)
+    );
+  document
+    .querySelector<HTMLOutputElement>('#sound-bank-debug-envelope-decay-value')
+    ?.replaceChildren(document.createTextNode(`${decayInput?.value ?? '0'}ms`));
+  document
+    .querySelector<HTMLOutputElement>(
+      '#sound-bank-debug-envelope-sustain-value'
+    )
+    ?.replaceChildren(
+      document.createTextNode(Number(sustainInput?.value ?? 0).toFixed(2))
+    );
+  document
+    .querySelector<HTMLOutputElement>(
+      '#sound-bank-debug-envelope-release-value'
+    )
+    ?.replaceChildren(
+      document.createTextNode(`${releaseInput?.value ?? '0'}ms`)
+    );
 }
 
 function bindPage(snapshot: SoundBankDebugSnapshot): void {
@@ -338,6 +419,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         options = readFormOptions();
         generalMidiBrowserState = readGeneralMidiBrowserState();
         percussionBrowserState = readPercussionBrowserState();
+        previewEnvelopeState = null;
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -481,6 +563,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         stopPreview();
         options = randomizeSoundBankDebugSeed(readFormOptions());
         generalMidiBrowserState = readGeneralMidiBrowserState();
+        previewEnvelopeState = null;
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -499,6 +582,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
         percussionBrowserState =
           DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
+        previewEnvelopeState = null;
         previewMode = 'processed';
         audioStatus = 'Audio idle';
         errorMessage = null;
@@ -535,14 +619,20 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
                 snapshot,
                 previewTarget,
                 nowMs,
-                { dry: previewMode === 'dry' }
+                {
+                  dry: previewMode === 'dry',
+                  envelope: readPreviewEnvelopeState(),
+                }
               )
             : (() => {
                 const previewNote = resolveSoundBankDebugPreviewNoteRole(
                   snapshot,
                   previewTarget,
                   nowMs,
-                  { dry: previewMode === 'dry' }
+                  {
+                    dry: previewMode === 'dry',
+                    envelope: readPreviewEnvelopeState(),
+                  }
                 );
                 return previewNote ? [previewNote] : [];
               })();
@@ -587,7 +677,10 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           snapshot,
           readPercussionBrowserState(),
           performance.now(),
-          { dry: previewMode === 'dry' }
+          {
+            dry: previewMode === 'dry',
+            envelope: readPreviewEnvelopeState(),
+          }
         );
         if (notes.length === 0) {
           setAudioFeedback(
@@ -627,7 +720,10 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           snapshot,
           readPercussionBrowserState(),
           performance.now(),
-          { dry: previewMode === 'dry' }
+          {
+            dry: previewMode === 'dry',
+            envelope: readPreviewEnvelopeState(),
+          }
         );
         if (notes.length === 0) {
           setAudioFeedback(
@@ -667,7 +763,10 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           snapshot,
           readPercussionBrowserState(),
           performance.now(),
-          { dry: previewMode === 'dry' }
+          {
+            dry: previewMode === 'dry',
+            envelope: readPreviewEnvelopeState(),
+          }
         );
         if (notes.length === 0) {
           setAudioFeedback(
@@ -830,6 +929,23 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
       },
       pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
     );
+
+  document
+    .querySelectorAll<HTMLInputElement>(
+      '#sound-bank-debug-envelope-attack, #sound-bank-debug-envelope-decay, #sound-bank-debug-envelope-sustain, #sound-bank-debug-envelope-release'
+    )
+    .forEach((input) => {
+      input.addEventListener(
+        'input',
+        () => {
+          previewEnvelopeState = readPreviewEnvelopeState();
+          syncPreviewEnvelopeUi();
+        },
+        pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+      );
+    });
+
+  syncPreviewEnvelopeUi();
 }
 
 globalThis.addEventListener?.(

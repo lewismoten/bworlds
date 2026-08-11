@@ -13,10 +13,11 @@ now runs as three focused files:
 - [apps/web/src/sound-bank-debug-preview-mode.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-bank-debug-preview-mode.test.ts)
   covers the processed-versus-dry preview toggle so melodic and percussion
   preview notes can share the same debug controls while selectively zeroing the
-  wet send.
-- [apps/web/src/sound-bank-debug-preview-phrase.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-bank-debug-preview-phrase.test.ts)
-  covers the one-click phrase audition path so each patch card can preview a
-  short representative line instead of only a single note hit.
+  wet send, previewing short phrases, and applying live ADSR overrides without
+  rebuilding the generated bank.
+- [apps/web/src/sound-bank-debug-preview-envelope.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-bank-debug-preview-envelope.test.ts)
+  covers normalization and note-level application of the debug-only preview
+  envelope state that feeds the live ADSR controls on the sound-bank page.
 
 This keeps the same assertions while giving the long-suite runner more files to
 parallelize, which reduces the wall-clock impact of the largest remaining
