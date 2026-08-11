@@ -72,6 +72,8 @@ describe('debug panel', () => {
       fallbackBoxesPerSecond: 1,
       fallbackBoxTopPluginLabel: 'tile-forest',
       fallbackBoxSummary: 'tile-forest:1',
+      drawCallTopPluginLabel: 'tile-forest',
+      drawCallSummary: 'tile-forest:17, tile-town:7',
       staticMatrixUpdateTopPluginLabel: 'tile-forest',
       staticMatrixUpdateSummary: 'tile-forest:9, tile-town:6',
       lastLodFailureReason:
@@ -126,6 +128,8 @@ describe('debug panel', () => {
       getDebugSignature({ ...snapshot })
     );
     expect(buildDebugMarkup(snapshot)).toContain('Draw Calls');
+    expect(buildDebugMarkup(snapshot)).toContain('Draw Call Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Draw Call Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
     expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');

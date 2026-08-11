@@ -214,6 +214,7 @@ import {
   shouldReplaceVisibleTileModelDetailEntry,
   shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
+  summarizeVisibleTileDrawCallsByPlugin,
   summarizeVisibleTileStaticMatrixUpdatesByPlugin,
   summarizeVisibleTileKinds,
   summarizeRemovedTileModelBudgetParts,
@@ -4366,6 +4367,41 @@ describe('render3d visibility helpers', () => {
     });
 
     expect(summarizeVisibleTileStaticMatrixUpdatesByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes visible tile draw calls by plugin', () => {
+    expect(
+      summarizeVisibleTileDrawCallsByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          drawCallCount: 12,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          drawCallCount: 7,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          drawCallCount: 5,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          drawCallCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 24,
+      topCount: 17,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:17, tile-town:7',
+    });
+
+    expect(summarizeVisibleTileDrawCallsByPlugin([])).toEqual({
       totalCount: 0,
       topCount: 0,
       topLabel: '',

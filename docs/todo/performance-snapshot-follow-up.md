@@ -97,7 +97,7 @@
 - [ ] Add top material-producing plugins to the snapshot.
 - [ ] Add top Object3D-producing plugins to the snapshot.
 - [ ] Add top mesh-producing plugins to the snapshot.
-- [ ] Add top draw-call-producing plugins to the snapshot.
+- [x] Add top draw-call-producing plugins to the snapshot.
 - [x] Add top LOD-swapping plugins to the snapshot.
 - [x] Add top fallback-model plugins to the snapshot.
 - [x] Add top matrix-update plugins to the snapshot.

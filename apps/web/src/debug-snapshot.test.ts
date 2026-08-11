@@ -234,6 +234,8 @@ describe('debug snapshot', () => {
         fallbackBoxesPerSecond: 1,
         fallbackBoxTopPluginLabel: 'tile-forest',
         fallbackBoxSummary: 'tile-forest:1',
+        drawCallTopPluginLabel: 'tile-forest',
+        drawCallSummary: 'tile-forest:17, tile-town:7',
         staticMatrixUpdateTopPluginLabel: 'tile-forest',
         staticMatrixUpdateSummary: 'tile-forest:9, tile-town:6',
         lastLodFailureReason:
@@ -503,6 +505,8 @@ describe('debug snapshot', () => {
     });
     expect(result.rendering).toMatchObject({
       drawCalls: 420,
+      topDrawCallPlugin: 'tile-forest',
+      drawCallSummary: 'tile-forest:17, tile-town:7',
       triangles: 120000,
       vertices: 14432,
       renderWidth: 1536,

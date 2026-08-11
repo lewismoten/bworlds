@@ -196,6 +196,8 @@ export type DebugSnapshotExport = {
   };
   rendering: {
     drawCalls: number;
+    topDrawCallPlugin: string | null;
+    drawCallSummary: string;
     triangles: number;
     vertices: number;
     points: number;
@@ -443,6 +445,9 @@ export function buildDebugSnapshotExport(
     },
     rendering: {
       drawCalls: options.snapshot.drawCalls,
+      topDrawCallPlugin:
+        options.snapshot.drawCallTopPluginLabel?.trim() || null,
+      drawCallSummary: options.snapshot.drawCallSummary ?? '',
       triangles: options.snapshot.triangles,
       vertices: options.snapshot.vertexCount,
       points: options.snapshot.points,

@@ -342,6 +342,8 @@ type Render3DController = {
     fallbackBoxesPerSecond: number;
     fallbackBoxTopPluginLabel: string;
     fallbackBoxSummary: string;
+    drawCallTopPluginLabel: string;
+    drawCallSummary: string;
     staticMatrixUpdateTopPluginLabel: string;
     staticMatrixUpdateSummary: string;
     object3dCount: number;
@@ -2888,6 +2890,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       getRecentOwnedMaterialLifecycleCounts(nowMs);
     const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
+    const visibleTileDrawCallStats = summarizeVisibleTileDrawCallsByPlugin(
+      visibleTileNodes.values()
+    );
     const visibleTileStaticMatrixUpdateStats =
       summarizeVisibleTileStaticMatrixUpdatesByPlugin(
         visibleTileNodes.values()
@@ -2932,6 +2937,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       fallbackBoxesPerSecond: renderChurnStats.fallbackBoxesPerSecond,
       fallbackBoxTopPluginLabel: recentFallbackBoxStats.topLabel,
       fallbackBoxSummary: recentFallbackBoxStats.summary,
+      drawCallTopPluginLabel: visibleTileDrawCallStats.topLabel,
+      drawCallSummary: visibleTileDrawCallStats.summary,
       staticMatrixUpdateTopPluginLabel:
         visibleTileStaticMatrixUpdateStats.topLabel,
       staticMatrixUpdateSummary: visibleTileStaticMatrixUpdateStats.summary,
@@ -5448,6 +5455,44 @@ export function summarizeVisibleTileStaticMatrixUpdatesByPlugin(
   const counts = new Map<string, number>();
   for (const entry of entries) {
     const count = Math.max(0, entry.staticMatrixAutoUpdateCount ?? 0);
+    if (count === 0) {
+      continue;
+    }
+    totalCount += count;
+    const label = entry.tilePluginOwnerLabel?.trim() || 'unknown';
+    counts.set(label, (counts.get(label) ?? 0) + count);
+  }
+  if (totalCount === 0) {
+    return {
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    };
+  }
+  const labeledSummary = summarizeSortedCountMapWithTopLabel(counts);
+  return {
+    totalCount,
+    topCount: labeledSummary.topCount,
+    topLabel: labeledSummary.topLabel,
+    summary: labeledSummary.summary,
+  };
+}
+
+export function summarizeVisibleTileDrawCallsByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'drawCallCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  let totalCount = 0;
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    const count = Math.max(0, entry.drawCallCount ?? 0);
     if (count === 0) {
       continue;
     }

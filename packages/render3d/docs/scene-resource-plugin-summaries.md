@@ -28,14 +28,20 @@ That makes the plugin summary path cheap and deterministic:
 
 ## Current coverage
 
-The renderer now exposes a top-plugin summary for static matrix updates:
+The renderer now exposes top-plugin summaries for:
 
+- visible tile draw calls
+- static matrix updates
+
+- `drawCallTopPluginLabel`
+- `drawCallSummary`
 - `staticMatrixUpdateTopPluginLabel`
 - `staticMatrixUpdateSummary`
 
 Those values flow into the web debug snapshot export and debug panel so the
-performance follow-up work can identify which visible tile plugins keep the
-largest number of static transforms on `matrixAutoUpdate = true`.
+performance follow-up work can identify which visible tile plugins dominate
+draw-call pressure and which ones keep the largest number of static transforms
+on `matrixAutoUpdate = true`.
 
 ## Tradeoff
 

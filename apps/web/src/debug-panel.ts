@@ -43,6 +43,8 @@ export type DebugSnapshot = {
   fallbackBoxesPerSecond?: number;
   fallbackBoxTopPluginLabel?: string;
   fallbackBoxSummary?: string;
+  drawCallTopPluginLabel?: string;
+  drawCallSummary?: string;
   staticMatrixUpdateTopPluginLabel?: string;
   staticMatrixUpdateSummary?: string;
   lastLodFailureReason?: string;
@@ -226,6 +228,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.fallbackBoxesPerSecond ?? 0,
     snapshot.fallbackBoxTopPluginLabel ?? '',
     snapshot.fallbackBoxSummary ?? '',
+    snapshot.drawCallTopPluginLabel ?? '',
+    snapshot.drawCallSummary ?? '',
     snapshot.staticMatrixUpdateTopPluginLabel ?? '',
     snapshot.staticMatrixUpdateSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
@@ -339,6 +343,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Level</dt><dd>${snapshot.playerLevel}</dd></div>
     <div><dt>Render Radius</dt><dd>${snapshot.visibilityRadius}</dd></div>
     <div><dt>Draw Calls</dt><dd>${snapshot.drawCalls}</dd></div>
+    <div><dt>Draw Call Plugin</dt><dd>${snapshot.drawCallTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Draw Call Summary</dt><dd>${snapshot.drawCallSummary || 'None'}</dd></div>
     <div><dt>Triangles</dt><dd>${snapshot.triangles}</dd></div>
     <div><dt>GPU Points</dt><dd>${snapshot.points}</dd></div>
     <div><dt>GPU Lines</dt><dd>${snapshot.lines}</dd></div>
