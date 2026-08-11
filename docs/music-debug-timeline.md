@@ -36,6 +36,9 @@ Current behavior:
   overlays and `H` badges, using the same `measureWindows` diagnostics that
   feed the audit output so the timeline points to the same planned-versus-
   detected chord mismatch text.
+- Bass root drift now uses matching amber measure overlays with `B` badges so
+  root mismatches can be distinguished from harmony-voicing drift without
+  opening the audit panel.
 - The active playhead also renders the current planned chord in a dedicated
   badge, using the same cue source as the exported SVG timeline.
 - Chord cues are grouped across repeated measures so long tonic spans render as

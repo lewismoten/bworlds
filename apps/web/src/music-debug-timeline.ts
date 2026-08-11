@@ -51,10 +51,12 @@ const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 32;
 const MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y = 48;
 const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 64;
 const MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_MARKER_Y = 66;
+const MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y = 74;
 const MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y = 78;
 const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_GAP = 8;
 const MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS = 6;
 const MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_BADGE_RADIUS = 7;
+const MUSIC_DEBUG_TIMELINE_BASS_DRIFT_BADGE_RADIUS = 7;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -97,6 +99,22 @@ export type MusicDebugTimelinePercussionLaneLabel = {
 };
 
 export type MusicDebugTimelineHarmonyDriftMarker = {
+  sectionId: string;
+  sectionLabel: string;
+  startMeasure: number;
+  endMeasure: number;
+  plannedLabel: string;
+  detectedLabel: string | null;
+  detectedNoteLabels: readonly string[];
+  startOffsetMs: number;
+  endOffsetMs: number;
+  centerOffsetMs: number;
+  label: string;
+  hoverLabel: string;
+  hoverDurationLabel: string;
+};
+
+export type MusicDebugTimelineBassDriftMarker = {
   sectionId: string;
   sectionLabel: string;
   startMeasure: number;
@@ -249,12 +267,29 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
     options.snapshot,
     measureMarkers
   );
+  const bassDriftMarkers = resolveMusicDebugTimelineBassDriftMarkers(
+    options.snapshot,
+    measureMarkers
+  );
   const noteBars = resolveMusicDebugTimelineNoteBars(options.snapshot, layout, {
     visibleRoles: options.visibleRoles,
   });
 
   for (const marker of harmonyDriftMarkers) {
     const hoverDetail = resolveMusicDebugTimelineHarmonyDriftMarkerHoverDetail({
+      layout,
+      durationMs: options.snapshot.durationMs,
+      canvasX,
+      canvasY,
+      marker,
+    });
+    if (hoverDetail) {
+      return hoverDetail;
+    }
+  }
+
+  for (const marker of bassDriftMarkers) {
+    const hoverDetail = resolveMusicDebugTimelineBassDriftMarkerHoverDetail({
       layout,
       durationMs: options.snapshot.durationMs,
       canvasX,
@@ -350,6 +385,53 @@ export function resolveMusicDebugTimelineHarmonyDriftMarkers(
   );
 }
 
+export function resolveMusicDebugTimelineBassDriftMarkers(
+  snapshot: MusicDebugSnapshot,
+  measureMarkers = resolveMusicDebugMeasureMarkers(snapshot)
+): MusicDebugTimelineBassDriftMarker[] {
+  return snapshot.bassProgressionDetections.flatMap((detection) =>
+    detection.measureWindows.flatMap((window) => {
+      if (window.detectedLabel === window.plannedLabel) {
+        return [];
+      }
+      const range = resolveMusicDebugTimelineMeasureRangeOffsets(
+        measureMarkers,
+        window.startMeasure,
+        window.endMeasure
+      );
+      if (!range) {
+        return [];
+      }
+      const measureLabel =
+        window.startMeasure === window.endMeasure
+          ? `measure ${window.startMeasure}`
+          : `measures ${window.startMeasure}-${window.endMeasure}`;
+      const detectedLabel = window.detectedLabel ?? 'missing';
+      const noteLabel =
+        window.detectedNoteLabels.length > 0
+          ? `; notes ${window.detectedNoteLabels.join(', ')}`
+          : '';
+      return [
+        {
+          sectionId: detection.sectionId,
+          sectionLabel: detection.sectionLabel,
+          startMeasure: window.startMeasure,
+          endMeasure: window.endMeasure,
+          plannedLabel: window.plannedLabel,
+          detectedLabel: window.detectedLabel,
+          detectedNoteLabels: window.detectedNoteLabels,
+          startOffsetMs: range.startOffsetMs,
+          endOffsetMs: range.endOffsetMs,
+          centerOffsetMs: range.centerOffsetMs,
+          label: 'B',
+          hoverLabel: `${detection.sectionLabel} bass drift at ${measureLabel}: ${detectedLabel} vs ${window.plannedLabel}${noteLabel}.`,
+          hoverDurationLabel: `${detection.sectionLabel} • ${measureLabel} • bass drift`,
+        },
+      ];
+    })
+  );
+}
+
 function resolveMusicDebugTimelineHarmonyDriftMarkerHoverDetail(options: {
   layout: MusicDebugTimelineLayout;
   durationMs: number;
@@ -379,6 +461,55 @@ function resolveMusicDebugTimelineHarmonyDriftMarkerHoverDetail(options: {
   );
   const hoverTop = MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_MARKER_Y - 10;
   const hoverBottom = MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y - 2;
+  if (
+    options.canvasX < hoverLeft ||
+    options.canvasX > hoverRight ||
+    options.canvasY < hoverTop ||
+    options.canvasY > hoverBottom
+  ) {
+    return null;
+  }
+  return {
+    noteIndex: null,
+    role: null,
+    hoverLabel: options.marker.hoverLabel,
+    hoverDurationLabel: options.marker.hoverDurationLabel,
+    x: hoverLeft,
+    y: hoverTop,
+    width: hoverRight - hoverLeft,
+    height: hoverBottom - hoverTop,
+  };
+}
+
+function resolveMusicDebugTimelineBassDriftMarkerHoverDetail(options: {
+  layout: MusicDebugTimelineLayout;
+  durationMs: number;
+  canvasX: number;
+  canvasY: number;
+  marker: MusicDebugTimelineBassDriftMarker;
+}): MusicDebugTimelineHoverDetail | null {
+  const startX = resolveMusicDebugTimelineXForOffset(
+    options.layout,
+    options.durationMs,
+    options.marker.startOffsetMs
+  );
+  const endX = resolveMusicDebugTimelineXForOffset(
+    options.layout,
+    options.durationMs,
+    options.marker.endOffsetMs
+  );
+  const centerX = resolveMusicDebugTimelineXForOffset(
+    options.layout,
+    options.durationMs,
+    options.marker.centerOffsetMs
+  );
+  const hoverLeft = Math.min(startX, centerX - 12);
+  const hoverRight = Math.max(
+    endX,
+    centerX + MUSIC_DEBUG_TIMELINE_BASS_DRIFT_BADGE_RADIUS + 4
+  );
+  const hoverTop = MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y - 10;
+  const hoverBottom = MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y + 2;
   if (
     options.canvasX < hoverLeft ||
     options.canvasX > hoverRight ||
@@ -517,6 +648,10 @@ export function drawMusicDebugTimeline(
     snapshot,
     measureMarkers
   );
+  const bassDriftMarkers = resolveMusicDebugTimelineBassDriftMarkers(
+    snapshot,
+    measureMarkers
+  );
   const beatMarkers = resolveMusicDebugBeatSubdivisionMarkers(snapshot);
   const activeChordCue =
     typeof options.playheadOffsetMs === 'number'
@@ -603,6 +738,9 @@ export function drawMusicDebugTimeline(
       durationMs,
       marker
     );
+  }
+  for (const marker of bassDriftMarkers) {
+    drawMusicDebugTimelineBassDriftMarker(context, layout, durationMs, marker);
   }
   context.fillStyle = '#8fa4af';
   for (const measure of measureMarkers) {
@@ -705,6 +843,10 @@ export function buildMusicDebugTimelineSvgMarkup(
     snapshot,
     measureMarkers
   );
+  const bassDriftMarkers = resolveMusicDebugTimelineBassDriftMarkers(
+    snapshot,
+    measureMarkers
+  );
   const beatMarkers = resolveMusicDebugBeatSubdivisionMarkers(snapshot);
   const activeChordCue =
     typeof options.playheadOffsetMs === 'number'
@@ -798,6 +940,15 @@ export function buildMusicDebugTimelineSvgMarkup(
       ${harmonyDriftMarkers
         .map((marker) =>
           buildMusicDebugTimelineHarmonyDriftMarkerSvgMarkup(
+            layout,
+            durationMs,
+            marker
+          )
+        )
+        .join('')}
+      ${bassDriftMarkers
+        .map((marker) =>
+          buildMusicDebugTimelineBassDriftMarkerSvgMarkup(
             layout,
             durationMs,
             marker
@@ -1540,6 +1691,57 @@ function drawMusicDebugTimelineHarmonyDriftMarker(
   context.textAlign = 'start';
 }
 
+function drawMusicDebugTimelineBassDriftMarker(
+  context: CanvasRenderingContext2D,
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  marker: MusicDebugTimelineBassDriftMarker
+): void {
+  const startX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.startOffsetMs
+  );
+  const endX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.endOffsetMs
+  );
+  const centerX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.centerOffsetMs
+  );
+
+  context.strokeStyle = '#ffb86b';
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(startX, MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y);
+  context.lineTo(endX, MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y);
+  context.stroke();
+
+  context.fillStyle = '#ffb86b';
+  context.beginPath();
+  context.arc(
+    centerX,
+    MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y,
+    MUSIC_DEBUG_TIMELINE_BASS_DRIFT_BADGE_RADIUS,
+    0,
+    Math.PI * 2
+  );
+  context.fill();
+
+  context.fillStyle = '#071019';
+  context.font = '10px Trebuchet MS';
+  context.textAlign = 'center';
+  context.fillText(
+    marker.label,
+    centerX,
+    MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y + 3
+  );
+  context.textAlign = 'start';
+}
+
 function drawMusicDebugTimelineCadenceWarningBadge(
   context: CanvasRenderingContext2D,
   marker: MusicDebugCadenceMarker,
@@ -1603,6 +1805,51 @@ function buildMusicDebugTimelineHarmonyDriftMarkerSvgMarkup(
     2
   )}" y="${(
     MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_MARKER_Y + 3
+  ).toFixed(
+    2
+  )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="10" text-anchor="middle">${
+    marker.label
+  }</text><title>${escapeMusicDebugTimelineSvgText(
+    `${marker.hoverLabel} (${marker.hoverDurationLabel})`
+  )}</title></g>`;
+}
+
+function buildMusicDebugTimelineBassDriftMarkerSvgMarkup(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  marker: MusicDebugTimelineBassDriftMarker
+): string {
+  const startX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.startOffsetMs
+  );
+  const endX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.endOffsetMs
+  );
+  const centerX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.centerOffsetMs
+  );
+  return `<g class="music-debug-timeline-bass-drift-marker"><path d="M${startX.toFixed(
+    2
+  )} ${MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y.toFixed(
+    2
+  )} H${endX.toFixed(
+    2
+  )}" fill="none" stroke="#ffb86b" stroke-width="2"></path><circle cx="${centerX.toFixed(
+    2
+  )}" cy="${MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y.toFixed(
+    2
+  )}" r="${MUSIC_DEBUG_TIMELINE_BASS_DRIFT_BADGE_RADIUS.toFixed(
+    2
+  )}" fill="#ffb86b"></circle><text x="${centerX.toFixed(
+    2
+  )}" y="${(
+    MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y + 3
   ).toFixed(
     2
   )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="10" text-anchor="middle">${

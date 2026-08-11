@@ -10,6 +10,7 @@ import {
 } from './procedural-music-scale.ts';
 import {
   buildMusicDebugTimelineSvgMarkup,
+  resolveMusicDebugTimelineBassDriftMarkers,
   resolveMusicDebugTimelineChordLabels,
   resolveMusicDebugTimelineHarmonyDriftMarkers,
   resolveMusicDebugTimelineHoverDetail,
@@ -138,6 +139,52 @@ const HARMONY_DRIFT_TIMELINE_SNAPSHOT = (() => {
                       plannedLabel: 'C-E-G',
                       detectedLabel: 'D-F-A',
                       detectedNoteLabels: ['D4', 'F4', 'A4'],
+                    }
+                  : window
+              ),
+            }
+          : entry
+    ),
+  };
+})();
+const BASS_DRIFT_TIMELINE_SNAPSHOT = (() => {
+  const detection = FOREST_SNAPSHOT.bassProgressionDetections.find(
+    (entry) => entry.measureWindows.length > 0
+  )!;
+  const driftWindow = detection.measureWindows[0]!;
+  return {
+    ...FOREST_SNAPSHOT,
+    harmonyChordDetections: FOREST_SNAPSHOT.harmonyChordDetections.map(
+      (entry) => ({
+        ...entry,
+        driftWindows: [],
+        measureWindows: entry.measureWindows.map((window) => ({
+          ...window,
+          detectedLabel: window.plannedLabel,
+        })),
+      })
+    ),
+    bassProgressionDetections: FOREST_SNAPSHOT.bassProgressionDetections.map(
+      (entry) =>
+        entry.sectionId === detection.sectionId
+          ? {
+              ...entry,
+              driftWindows: [
+                {
+                  startMeasure: driftWindow.startMeasure,
+                  endMeasure: driftWindow.endMeasure,
+                  plannedLabel: 'C',
+                  detectedLabel: 'D',
+                  detectedNoteLabels: ['D3'],
+                },
+              ],
+              measureWindows: entry.measureWindows.map((window, index) =>
+                index === 0
+                  ? {
+                      ...window,
+                      plannedLabel: 'C',
+                      detectedLabel: 'D',
+                      detectedNoteLabels: ['D3'],
                     }
                   : window
               ),
@@ -617,6 +664,35 @@ describe('music debug timeline', () => {
     );
   });
 
+  it('surfaces bass drift details when hovering a drift marker', () => {
+    const marker =
+      resolveMusicDebugTimelineBassDriftMarkers(BASS_DRIFT_TIMELINE_SNAPSHOT)[0]!;
+
+    const hoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot: BASS_DRIFT_TIMELINE_SNAPSHOT,
+      canvas: { width: 960, height: 320 },
+      clientX: resolveMusicDebugTimelineXForOffset(
+        DEFAULT_LAYOUT,
+        BASS_DRIFT_TIMELINE_SNAPSHOT.durationMs,
+        marker.centerOffsetMs
+      ),
+      clientY: 74,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(hoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: expect.stringMatching(/bass drift at measure .*D vs C/),
+        hoverDurationLabel: expect.stringContaining('bass drift'),
+      })
+    );
+  });
+
   it('renders a standalone svg export for the timeline graph', () => {
     const markup = buildMusicDebugTimelineSvgMarkup(FOREST_SNAPSHOT, {
       playheadOffsetMs: 1_500,
@@ -690,5 +766,13 @@ describe('music debug timeline', () => {
     expect(markup).toContain('class="music-debug-timeline-harmony-drift-marker"');
     expect(markup).toContain('D-F-A vs C-E-G');
     expect(markup).toContain('harmony drift');
+  });
+
+  it('renders bass drift markers in svg exports', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(BASS_DRIFT_TIMELINE_SNAPSHOT);
+
+    expect(markup).toContain('class="music-debug-timeline-bass-drift-marker"');
+    expect(markup).toContain('D vs C');
+    expect(markup).toContain('bass drift');
   });
 });
