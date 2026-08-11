@@ -451,8 +451,8 @@ export function drawMusicDebugTimeline(
     context.strokeStyle = '#f5f7fb';
     context.lineWidth = 2;
     context.beginPath();
-    context.moveTo(playheadX, 12);
-    context.lineTo(playheadX, height - layout.bottomPad + 6);
+    context.moveTo(playheadX, layout.topPad);
+    context.lineTo(playheadX, height - layout.bottomPad);
     context.stroke();
     if (playheadLabel) {
       drawMusicDebugTimelinePlayheadChordLabel(
@@ -1064,11 +1064,11 @@ function buildMusicDebugTimelinePlayheadSvgMarkup(
     durationMs,
     playheadOffsetMs
   );
-  const playheadPath = `<path d="M${playheadX.toFixed(2)} 12 V${(
-    height -
-    layout.bottomPad +
-    6
-  ).toFixed(2)}" fill="none" stroke="#f5f7fb" stroke-width="2"></path>`;
+  const playheadPath = `<path d="M${playheadX.toFixed(2)} ${layout.topPad.toFixed(
+    2
+  )} V${(height - layout.bottomPad).toFixed(
+    2
+  )}" fill="none" stroke="#f5f7fb" stroke-width="2"></path>`;
   if (!playheadLabel) {
     return playheadPath;
   }

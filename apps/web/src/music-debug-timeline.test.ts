@@ -354,6 +354,7 @@ describe('music debug timeline', () => {
     expect(markup).toContain(
       `Scale ${resolveMusicDebugPitchClassLabel(snapshot.scaleMap.rootMidiNote)}`
     );
+    expect(markup).toMatch(/<path d="M[0-9.]+ 84\.00 V296\.00"/);
     expect(markup).toContain('rgba(85,214,190,0.08)');
     expect(markup).toContain('stroke="#f5f7fb"');
   });
