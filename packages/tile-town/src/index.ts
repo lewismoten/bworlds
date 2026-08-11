@@ -33,7 +33,9 @@ import type {
   RuntimePlugin,
   TileLike,
   ThreeHostLike,
+  ThreeInstancedMeshLike,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeObject3DLike,
   ThreeTextureLike,
 } from '@bworlds/plugin-api';
@@ -343,7 +345,10 @@ function* createTownModelProgressive({
     return group;
   }
 
-  const totalSteps = 4;
+  const firstBuildingBatchCount = Math.ceil(descriptors.length / 2);
+  const primaryBuildingDescriptors = descriptors.slice(0, firstBuildingBatchCount);
+  const secondaryBuildingDescriptors = descriptors.slice(firstBuildingBatchCount);
+  const totalSteps = secondaryBuildingDescriptors.length > 0 ? 5 : 4;
   const bodyInstances = new three.InstancedMesh(
     new three.BoxGeometry(1, 1, 1),
     style.wallMaterial,
@@ -403,77 +408,21 @@ function* createTownModelProgressive({
   const windowMatrixScratch = windowInstances ? new three.Matrix4() : null;
   let nextWindowInstanceIndex = 0;
 
-  for (let index = 0; index < descriptors.length; index += 1) {
-    const descriptor = descriptors[index]!;
-    bodyInstances.setMatrixAt(
-      index,
-      writeTownRotatedInstancedScalePositionMatrix(
-        bodyMatrixScratch,
-        tileX + descriptor.x,
-        descriptor.height * 0.5,
-        tileY + descriptor.y,
-        descriptor.width,
-        descriptor.height,
-        descriptor.depth,
-        descriptor.rotation
-      )
-    );
-    roofInstances.setMatrixAt(
-      index,
-      writeTownRotatedInstancedScalePositionMatrix(
-        roofMatrixScratch,
-        tileX + descriptor.x,
-        descriptor.height + descriptor.roofHeight * 0.5 - 0.03,
-        tileY + descriptor.y,
-        descriptor.roofRadius,
-        descriptor.roofHeight,
-        descriptor.roofRadius,
-        descriptor.rotation + Math.PI * 0.25
-      )
-    );
-    const doorPosition = rotateTownLocalOffset(
-      0,
-      descriptor.depth * 0.5 + 0.01,
-      descriptor.rotation
-    );
-    doorInstances.setMatrixAt(
-      index,
-      writeTownRotatedInstancedScalePositionMatrix(
-        doorMatrixScratch,
-        tileX + descriptor.x + doorPosition.x,
-        descriptor.height * 0.17,
-        tileY + descriptor.y + doorPosition.z,
-        descriptor.width * 0.18,
-        descriptor.height * 0.34,
-        0.04,
-        descriptor.rotation
-      )
-    );
-
-    for (const window of descriptor.windows) {
-      if (windowInstances && windowMatrixScratch) {
-        const windowPosition = rotateTownLocalOffset(
-          window.x,
-          descriptor.depth * 0.5 + 0.008,
-          descriptor.rotation
-        );
-        windowInstances.setMatrixAt(
-          nextWindowInstanceIndex,
-          writeTownRotatedInstancedScalePositionMatrix(
-            windowMatrixScratch,
-            tileX + descriptor.x + windowPosition.x,
-            window.y,
-            tileY + descriptor.y + windowPosition.z,
-            window.width,
-            window.height,
-            0.03,
-            descriptor.rotation
-          )
-        );
-        nextWindowInstanceIndex += 1;
-      }
-    }
-  }
+  nextWindowInstanceIndex = populateTownBuildingInstances({
+    descriptors: primaryBuildingDescriptors,
+    startIndex: 0,
+    startWindowIndex: nextWindowInstanceIndex,
+    tileX,
+    tileY,
+    bodyInstances,
+    roofInstances,
+    doorInstances,
+    windowInstances,
+    bodyMatrixScratch,
+    roofMatrixScratch,
+    doorMatrixScratch,
+    windowMatrixScratch,
+  });
 
   group.add(bodyInstances);
   group.add(roofInstances);
@@ -484,14 +433,40 @@ function* createTownModelProgressive({
   yield {
     completedSteps: 1,
     totalSteps,
-    label: 'buildings',
+    label: 'buildings-primary',
   };
+
+  if (secondaryBuildingDescriptors.length > 0) {
+    nextWindowInstanceIndex = populateTownBuildingInstances({
+      descriptors: secondaryBuildingDescriptors,
+      startIndex: primaryBuildingDescriptors.length,
+      startWindowIndex: nextWindowInstanceIndex,
+      tileX,
+      tileY,
+      bodyInstances,
+      roofInstances,
+      doorInstances,
+      windowInstances,
+      bodyMatrixScratch,
+      roofMatrixScratch,
+      doorMatrixScratch,
+      windowMatrixScratch,
+    });
+    void nextWindowInstanceIndex;
+    yield {
+      completedSteps: 2,
+      totalSteps,
+      label: 'buildings-secondary',
+    };
+  }
+
+  const postBuildingBaseStep = secondaryBuildingDescriptors.length > 0 ? 2 : 1;
 
   if (tile.poi?.name) {
     addTownNameSign(group, three, tile.poi.name, tileX, tileY, style);
   }
   yield {
-    completedSteps: 2,
+    completedSteps: postBuildingBaseStep + 1,
     totalSteps,
     label: 'sign',
   };
@@ -559,7 +534,7 @@ function* createTownModelProgressive({
     group.add(bannerCrossbarInstances);
   }
   yield {
-    completedSteps: 3,
+    completedSteps: postBuildingBaseStep + 2,
     totalSteps,
     label: 'banners',
   };
@@ -568,12 +543,105 @@ function* createTownModelProgressive({
     group.add(light);
   });
   yield {
-    completedSteps: 4,
+    completedSteps: postBuildingBaseStep + 3,
     totalSteps,
     label: 'night-lights',
   };
 
   return group;
+}
+
+function populateTownBuildingInstances(options: {
+  descriptors: readonly TownDescriptor[];
+  startIndex: number;
+  startWindowIndex: number;
+  tileX: number;
+  tileY: number;
+  bodyInstances: ThreeInstancedMeshLike;
+  roofInstances: ThreeInstancedMeshLike;
+  doorInstances: ThreeInstancedMeshLike;
+  windowInstances: ThreeInstancedMeshLike | null;
+  bodyMatrixScratch: ThreeMatrix4Like;
+  roofMatrixScratch: ThreeMatrix4Like;
+  doorMatrixScratch: ThreeMatrix4Like;
+  windowMatrixScratch: ThreeMatrix4Like | null;
+}): number {
+  let nextWindowInstanceIndex = options.startWindowIndex;
+
+  for (let index = 0; index < options.descriptors.length; index += 1) {
+    const descriptor = options.descriptors[index]!;
+    const targetIndex = options.startIndex + index;
+    options.bodyInstances.setMatrixAt(
+      targetIndex,
+      writeTownRotatedInstancedScalePositionMatrix(
+        options.bodyMatrixScratch,
+        options.tileX + descriptor.x,
+        descriptor.height * 0.5,
+        options.tileY + descriptor.y,
+        descriptor.width,
+        descriptor.height,
+        descriptor.depth,
+        descriptor.rotation
+      )
+    );
+    options.roofInstances.setMatrixAt(
+      targetIndex,
+      writeTownRotatedInstancedScalePositionMatrix(
+        options.roofMatrixScratch,
+        options.tileX + descriptor.x,
+        descriptor.height + descriptor.roofHeight * 0.5 - 0.03,
+        options.tileY + descriptor.y,
+        descriptor.roofRadius,
+        descriptor.roofHeight,
+        descriptor.roofRadius,
+        descriptor.rotation + Math.PI * 0.25
+      )
+    );
+    const doorPosition = rotateTownLocalOffset(
+      0,
+      descriptor.depth * 0.5 + 0.01,
+      descriptor.rotation
+    );
+    options.doorInstances.setMatrixAt(
+      targetIndex,
+      writeTownRotatedInstancedScalePositionMatrix(
+        options.doorMatrixScratch,
+        options.tileX + descriptor.x + doorPosition.x,
+        descriptor.height * 0.17,
+        options.tileY + descriptor.y + doorPosition.z,
+        descriptor.width * 0.18,
+        descriptor.height * 0.34,
+        0.04,
+        descriptor.rotation
+      )
+    );
+
+    for (const window of descriptor.windows) {
+      if (options.windowInstances && options.windowMatrixScratch) {
+        const windowPosition = rotateTownLocalOffset(
+          window.x,
+          descriptor.depth * 0.5 + 0.008,
+          descriptor.rotation
+        );
+        options.windowInstances.setMatrixAt(
+          nextWindowInstanceIndex,
+          writeTownRotatedInstancedScalePositionMatrix(
+            options.windowMatrixScratch,
+            options.tileX + descriptor.x + windowPosition.x,
+            window.y,
+            options.tileY + descriptor.y + windowPosition.z,
+            window.width,
+            window.height,
+            0.03,
+            descriptor.rotation
+          )
+        );
+        nextWindowInstanceIndex += 1;
+      }
+    }
+  }
+
+  return nextWindowInstanceIndex;
 }
 
 function runTownModelBuildToCompletion(

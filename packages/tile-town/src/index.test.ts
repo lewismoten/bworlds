@@ -284,31 +284,39 @@ describe('tile town', () => {
       done: false,
       value: {
         completedSteps: 1,
-        totalSteps: 4,
-        label: 'buildings',
+        totalSteps: 5,
+        label: 'buildings-primary',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 2,
-        totalSteps: 4,
-        label: 'sign',
+        totalSteps: 5,
+        label: 'buildings-secondary',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 3,
-        totalSteps: 4,
-        label: 'banners',
+        totalSteps: 5,
+        label: 'sign',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 4,
-        totalSteps: 4,
+        totalSteps: 5,
+        label: 'banners',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 5,
+        totalSteps: 5,
         label: 'night-lights',
       },
     });

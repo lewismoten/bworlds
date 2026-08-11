@@ -5,7 +5,8 @@ renderer can spread more of the town landmark work across multiple frames.
 
 Current progressive phases:
 
-- `buildings`
+- `buildings-primary`
+- `buildings-secondary`
 - `sign`
 - `banners`
 - `night-lights`

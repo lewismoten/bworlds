@@ -27,6 +27,9 @@ Current groundwork:
 - `tile-forest` now splits its full-detail tree construction into two
   resumable batches before close-detail passes, which reduces how much work can
   hide behind the first progressive yield.
+- `tile-town` now splits its full-detail building population into two
+  resumable batches before signage, banners, and light passes, so one large
+  structure loop does not dominate the first progressive step.
 
 This is the typed scheduler seam for the `errors.md` frame-stall work. The
 renderer now keeps one unfinished plugin build alive across frames and resumes
