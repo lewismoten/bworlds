@@ -48,6 +48,10 @@ Current behavior:
   still ends without a real model, and each attempted step can now carry its
   own fallback reason, so debug output can show whether recovery failed on
   `full`, `low`, or a cached `low -> full` sequence and why each step failed.
+- Cached low-detail recovery no longer retries the same `low` build twice in a
+  single visible recovery chain; once cached `low` has already failed, the
+  helper falls through to the requested `full` result instead of rebuilding the
+  same low-detail fallback again.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

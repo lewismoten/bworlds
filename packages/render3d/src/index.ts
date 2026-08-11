@@ -4040,6 +4040,7 @@ export function buildRecoverableVisibleTileModelDetailEntry<
     detailLevel: RenderBudgetDetailLevel;
     fallbackReason?: string;
   }> = [];
+  let attemptedPreferredLowRecovery = false;
   const buildTrackedEntry = (detailLevel: RenderBudgetDetailLevel) => {
     const entry = buildEntry(detailLevel);
     attemptedEntries.push({
@@ -4054,6 +4055,7 @@ export function buildRecoverableVisibleTileModelDetailEntry<
     requestedDetailLevel === 'full' &&
     preferredRecoveryDetailLevel === 'low'
   ) {
+    attemptedPreferredLowRecovery = true;
     const preferredEntry = buildTrackedEntry('low');
     if (preferredEntry.modelRoot) {
       return {
@@ -4069,6 +4071,14 @@ export function buildRecoverableVisibleTileModelDetailEntry<
     return {
       entry: requestedEntry,
       resolvedDetailLevel: requestedDetailLevel,
+      attemptedEntries,
+    };
+  }
+
+  if (requestedDetailLevel === 'full' && attemptedPreferredLowRecovery) {
+    return {
+      entry: requestedEntry,
+      resolvedDetailLevel: 'full',
       attemptedEntries,
     };
   }

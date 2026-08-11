@@ -5010,6 +5010,30 @@ describe('render3d visibility helpers', () => {
     expect(buildEntry.mock.calls).toEqual([['low'], ['full']]);
   });
 
+  it('does not retry low detail twice after a cached low-detail recovery already failed', () => {
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') => ({
+      detailLevel,
+      modelRoot: null,
+      fallbackReason: `${detailLevel} failed`,
+    }));
+
+    expect(
+      buildRecoverableVisibleTileModelDetailEntry('full', buildEntry, 'low')
+    ).toEqual({
+      entry: {
+        detailLevel: 'full',
+        modelRoot: null,
+        fallbackReason: 'full failed',
+      },
+      resolvedDetailLevel: 'full',
+      attemptedEntries: [
+        { detailLevel: 'low', fallbackReason: 'low failed' },
+        { detailLevel: 'full', fallbackReason: 'full failed' },
+      ],
+    });
+    expect(buildEntry.mock.calls).toEqual([['low'], ['full']]);
+  });
+
   it('returns the low-detail fallback only after the recovery chain is exhausted', () => {
     const buildEntry = vi.fn((detailLevel: 'full' | 'low') => ({
       detailLevel,
@@ -5020,7 +5044,11 @@ describe('render3d visibility helpers', () => {
     expect(
       buildRecoverableVisibleTileModelDetailEntry('full', buildEntry)
     ).toEqual({
-      entry: { detailLevel: 'low', modelRoot: null },
+      entry: {
+        detailLevel: 'low',
+        modelRoot: null,
+        fallbackReason: 'low failed',
+      },
       resolvedDetailLevel: 'low',
       attemptedEntries: [
         { detailLevel: 'full', fallbackReason: 'full failed' },
