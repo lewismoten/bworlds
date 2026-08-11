@@ -52,6 +52,9 @@ Current behavior:
   single visible recovery chain; once cached `low` has already failed, the
   helper falls through to the requested `full` result instead of rebuilding the
   same low-detail fallback again.
+- Render churn stats now count successful lower-LOD visible recoveries
+  separately from ordinary LOD replacements, so recovery activity can be
+  measured directly in the debug stats.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

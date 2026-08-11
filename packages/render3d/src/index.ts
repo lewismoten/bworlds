@@ -323,6 +323,7 @@ type Render3DController = {
     pendingCancelledEntriesPerSecond: number;
     lodChecksPerSecond: number;
     lodReplacementsPerSecond: number;
+    lowerLodRecoveriesPerSecond: number;
     object3dCount: number;
     visibleObjectCount: number;
     invisibleObjectCount: number;
@@ -1461,6 +1462,7 @@ type RenderChurnMetrics = {
   pendingCancelledEntries: number[];
   lodChecks: number[];
   lodReplacements: number[];
+  lowerLodRecoveries: number[];
   pendingFlushCounts: RecentCountSample[];
   tileBuildDurations: RecentDurationSample[];
   tilePluginBuildDurations: RecentLabeledDurationSample[];
@@ -1681,6 +1683,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     pendingCancelledEntries: [] as number[],
     lodChecks: [] as number[],
     lodReplacements: [] as number[],
+    lowerLodRecoveries: [] as number[],
     pendingFlushCounts: [] as RecentCountSample[],
     tileBuildDurations: [] as RecentDurationSample[],
     tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
@@ -2868,6 +2871,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         renderChurnStats.pendingCancelledEntriesPerSecond,
       lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
       lodReplacementsPerSecond: renderChurnStats.lodReplacementsPerSecond,
+      lowerLodRecoveriesPerSecond: renderChurnStats.lowerLodRecoveriesPerSecond,
       object3dCount: sceneResourceStats.object3dCount,
       visibleObjectCount: sceneResourceStats.visibleObjectCount,
       invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
@@ -3101,6 +3105,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (!shouldReplaceVisibleTileModelDetailEntry(entry, nextEntry)) {
         disposeObject3DResources(nextEntry.node);
         continue;
+      }
+      if (requestedDetailLevel === 'full' && resolvedDetailLevel === 'low') {
+        recordRecentMetric(renderChurnMetrics.lowerLodRecoveries, nowMs);
       }
       visibleTileNodes.set(key, nextEntry);
       if (nextEntry.modelRoot) {
@@ -5290,6 +5297,7 @@ export function getRenderChurnStats(
   pendingCancelledEntriesPerSecond: number;
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
+  lowerLodRecoveriesPerSecond: number;
 } {
   return {
     tileNodeBuildsPerSecond: countRecentMetricEvents(
@@ -5314,6 +5322,11 @@ export function getRenderChurnStats(
     ),
     lodReplacementsPerSecond: countRecentMetricEvents(
       metrics.lodReplacements,
+      nowMs,
+      windowMs
+    ),
+    lowerLodRecoveriesPerSecond: countRecentMetricEvents(
+      metrics.lowerLodRecoveries,
       nowMs,
       windowMs
     ),

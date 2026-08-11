@@ -1225,6 +1225,7 @@ describe('render3d visibility helpers', () => {
           pendingCancelledEntries: [450, 800],
           lodChecks: [900],
           lodReplacements: [100, 450],
+          lowerLodRecoveries: [450],
           pendingFlushCounts: [],
           tileBuildDurations: [],
           tilePluginBuildDurations: [],
@@ -1238,6 +1239,7 @@ describe('render3d visibility helpers', () => {
       pendingCancelledEntriesPerSecond: 2,
       lodChecksPerSecond: 1,
       lodReplacementsPerSecond: 2,
+      lowerLodRecoveriesPerSecond: 1,
     });
 
     expect(
@@ -1248,6 +1250,7 @@ describe('render3d visibility helpers', () => {
           pendingCancelledEntries: [450, 800],
           lodChecks: [900],
           lodReplacements: [100, 450],
+          lowerLodRecoveries: [450],
           pendingFlushCounts: [],
           tileBuildDurations: [],
           tilePluginBuildDurations: [],
@@ -1261,6 +1264,7 @@ describe('render3d visibility helpers', () => {
       pendingCancelledEntriesPerSecond: 1,
       lodChecksPerSecond: 1,
       lodReplacementsPerSecond: 0,
+      lowerLodRecoveriesPerSecond: 0,
     });
   });
 
