@@ -188,8 +188,8 @@
 - [ ] Show current LOD level above each debug tile.
 - [ ] Show requested and rendered LOD separately.
 - [ ] Show cached LOD levels for the selected tile.
-- [ ] Show the last LOD failure reason.
-- [ ] Show fallback reason when a box is rendered.
+- [x] Show the last LOD failure reason.
+- [x] Show fallback reason when a box is rendered.
 - [ ] Show consolidated footprint outlines.
 - [ ] Show the owner tile for each consolidated group.
 - [ ] Show member tiles for each consolidated group.

@@ -68,6 +68,9 @@ describe('debug panel', () => {
       lodReplacementsPerSecond: 3,
       lowerLodRecoveriesPerSecond: 2,
       fallbackBoxesPerSecond: 1,
+      lastLodFailureReason:
+        '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
+      lastFallbackReason: '15:-9 / tile-forest: low failed',
       object3dCount: 318,
       groupCount: 54,
       meshCount: 180,
@@ -145,6 +148,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('LOD Swaps/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Recoveries/s');
     expect(buildDebugMarkup(snapshot)).toContain('Fallback Boxes/s');
+    expect(buildDebugMarkup(snapshot)).toContain('Last LOD Failure');
+    expect(buildDebugMarkup(snapshot)).toContain('Fallback Reason');
     expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');

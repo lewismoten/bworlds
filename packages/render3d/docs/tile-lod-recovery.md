@@ -36,3 +36,5 @@ The renderer also tracks:
 - `fallbackBoxesPerSecond`: fallback-box appearances recorded by the renderer debug event stream.
 
 These counters are surfaced through the web debug snapshot, debug panel, and exported debug snapshot payload so LOD regressions can be spotted without inspecting logs.
+
+The web debug surfaces also expose the latest visible-tile recovery failure summary and the latest fallback-box reason directly from the renderer's recent debug events.

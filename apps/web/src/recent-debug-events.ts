@@ -48,3 +48,30 @@ export function collectMergedRecentDebugEvents(
   merged.reverse();
   return merged;
 }
+
+export function getMostRecentDebugEventByType(
+  events: readonly DebugSnapshotRecentEvent[],
+  type: DebugSnapshotRecentEvent['type']
+): DebugSnapshotRecentEvent | null {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (event?.type === type) {
+      return event;
+    }
+  }
+  return null;
+}
+
+export function formatRecentDebugEventReason(
+  event: Pick<DebugSnapshotRecentEvent, 'tileKey' | 'plugin' | 'summary'>
+): string | null {
+  const summary = event.summary?.trim() || '';
+  const tileKey = event.tileKey?.trim() || '';
+  const plugin = event.plugin?.trim() || '';
+  const source =
+    tileKey && plugin ? `${tileKey} / ${plugin}` : tileKey || plugin || '';
+  if (!summary) {
+    return source || null;
+  }
+  return source ? `${source}: ${summary}` : summary;
+}

@@ -262,6 +262,8 @@ export type DebugSnapshotExport = {
     swapsPerSecond: number;
     lowerDetailRecoveriesPerSecond: number;
     fallbackBoxesPerSecond: number;
+    lastFailureReason: string | null;
+    lastFallbackReason: string | null;
     thresholds: LodThresholdSummary;
   };
   budgetViolations: {
@@ -551,6 +553,8 @@ export function buildDebugSnapshotExport(
       lowerDetailRecoveriesPerSecond:
         options.snapshot.lowerLodRecoveriesPerSecond ?? 0,
       fallbackBoxesPerSecond: options.snapshot.fallbackBoxesPerSecond ?? 0,
+      lastFailureReason: options.snapshot.lastLodFailureReason?.trim() || null,
+      lastFallbackReason: options.snapshot.lastFallbackReason?.trim() || null,
       thresholds: options.lod.thresholds,
     },
     budgetViolations: {

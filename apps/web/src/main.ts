@@ -149,7 +149,11 @@ import {
   formatDebugSnapshotFilename,
   type DebugSnapshotRecentEvent,
 } from './debug-snapshot.ts';
-import { collectMergedRecentDebugEvents } from './recent-debug-events.ts';
+import {
+  collectMergedRecentDebugEvents,
+  formatRecentDebugEventReason,
+  getMostRecentDebugEventByType,
+} from './recent-debug-events.ts';
 import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
 import { collectGraphicsCapabilities } from './graphics-capabilities.ts';
 import {
@@ -2390,6 +2394,20 @@ function collectCurrentDebugSnapshot(
   const idleAllocationWarning = getIdleAllocationWarning(
     debugResourceTrendState.heapSamples
   );
+  const lastLodFailureEvent = getMostRecentDebugEventByType(
+    rendererStats.recentEvents,
+    'model-rejected'
+  );
+  const lastFallbackEvent = getMostRecentDebugEventByType(
+    rendererStats.recentEvents,
+    'fallback-box'
+  );
+  debugSnapshot.lastLodFailureReason = lastLodFailureEvent
+    ? formatRecentDebugEventReason(lastLodFailureEvent) ?? undefined
+    : undefined;
+  debugSnapshot.lastFallbackReason = lastFallbackEvent
+    ? formatRecentDebugEventReason(lastFallbackEvent) ?? undefined
+    : undefined;
   debugSnapshot.resourceWarnings = [
     ...getPerformanceWarnings(debugSnapshot),
     ...getWorkQueueWarnings(debugSnapshot),

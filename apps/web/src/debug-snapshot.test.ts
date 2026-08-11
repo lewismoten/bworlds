@@ -230,6 +230,9 @@ describe('debug snapshot', () => {
         lodReplacementsPerSecond: 3,
         lowerLodRecoveriesPerSecond: 2,
         fallbackBoxesPerSecond: 1,
+        lastLodFailureReason:
+          '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
+        lastFallbackReason: '15:-9 / tile-forest: low failed',
         object3dCount: 318,
         visibleObjectCount: 301,
         invisibleObjectCount: 17,
@@ -579,6 +582,9 @@ describe('debug snapshot', () => {
       swapsPerSecond: 3,
       lowerDetailRecoveriesPerSecond: 2,
       fallbackBoxesPerSecond: 1,
+      lastFailureReason:
+        '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
+      lastFallbackReason: '15:-9 / tile-forest: low failed',
       thresholds: {
         lowDetailDistance: 6.5,
         lowDetailEnterDistance: 6.5,
