@@ -59,7 +59,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       damage now collapses its repeated marker meshes into one shared
       `InstancedMesh` per damaged tree, and full-detail forest meadow grass
       patches now collapse into one shared `InstancedMesh` per tile, and
-      `tile-town` now collapses its
+      full-detail forest beaver-cut trunks now collapse into shared
+      `InstancedMesh` sets by severity, and `tile-town` now collapses its
       repeated full-detail building bodies, roofs, doors, windows, banner
       poles, and banner crossbars into shared `InstancedMesh` sets, and dock
       tiles now collapse their repeated rails, support piles, and dock route
@@ -110,7 +111,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       damage now instances its repeated marker meshes instead of emitting one
       mesh per damage marker, and full-detail forest meadow grass patches now
       instance their repeated foliage meshes instead of emitting one mesh per
-      meadow, and town
+      meadow, and full-detail forest beaver-cut trunks now instance their
+      repeated leaning and felled trunk meshes instead of emitting one mesh
+      per damaged trunk, and town
       tiles now instance their repeated full-detail building bodies, roofs,
       doors, windows, banner poles, and banner
       crossbars instead of emitting one mesh per building part, window pane,

@@ -4271,6 +4271,11 @@ describe('tile forest', () => {
       targetTile!.y,
       targetTile!.rivers
     );
+    const nearFelledCount = getForestBeaverDamage(
+      state as never,
+      targetTile!.x,
+      targetTile!.y
+    ).filter((damage) => damage.severity === 'near-felled').length;
     const model = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -4280,14 +4285,19 @@ describe('tile forest', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    let nearFelledCount = 0;
+    const nearFelledInstances: FakeInstancedMesh[] = [];
     model.traverse((node) => {
-      if (node.userData?.forestBeaverDamage === 'near-felled') {
-        nearFelledCount += 1;
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestBeaverDamage === 'near-felled'
+      ) {
+        nearFelledInstances.push(node);
       }
     });
 
-    expect(nearFelledCount).toBeGreaterThan(0);
+    expect(nearFelledInstances).toHaveLength(1);
+    expect(nearFelledInstances[0]?.count).toBe(nearFelledCount);
+    expect(nearFelledInstances[0]?.matrices).toHaveLength(nearFelledCount);
   });
 
   it('renders felled beaver-cut trees for some river-adjacent forest tiles', () => {
@@ -4326,6 +4336,11 @@ describe('tile forest', () => {
       targetTile!.y,
       targetTile!.rivers
     );
+    const felledCount = getForestBeaverDamage(
+      state as never,
+      targetTile!.x,
+      targetTile!.y
+    ).filter((damage) => damage.severity === 'felled').length;
     const model = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -4335,14 +4350,19 @@ describe('tile forest', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    let felledCount = 0;
+    const felledInstances: FakeInstancedMesh[] = [];
     model.traverse((node) => {
-      if (node.userData?.forestBeaverDamage === 'felled') {
-        felledCount += 1;
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestBeaverDamage === 'felled'
+      ) {
+        felledInstances.push(node);
       }
     });
 
-    expect(felledCount).toBeGreaterThan(0);
+    expect(felledInstances).toHaveLength(1);
+    expect(felledInstances[0]?.count).toBe(felledCount);
+    expect(felledInstances[0]?.matrices).toHaveLength(felledCount);
   });
 
   it('adds dew or rain glint to forest webs when conditions are damp', () => {

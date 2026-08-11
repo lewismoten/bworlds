@@ -24,7 +24,10 @@ import {
   tintHexColor,
 } from '@bworlds/procedural-style';
 import { writeHorizontalCylinderInstancedMatrix } from './floor-detail-instanced-matrix.ts';
-import { writeLowDetailInstancedMatrix } from './low-detail-instanced-matrix.ts';
+import {
+  writeLowDetailInstancedMatrix,
+  writeRotatedInstancedMatrix,
+} from './low-detail-instanced-matrix.ts';
 import {
   createTreeBiologicalState,
   createTreeLogicalState,
@@ -4479,8 +4482,32 @@ function addForestBeaverDamageInstances(
     [BEAVER_DAMAGE_KEY]: 'debris',
   };
   const debrisMatrixScratch = new three.Matrix4();
+  const nearFelledInstances = new three.InstancedMesh(
+    geometry.trunk,
+    style.trunkMaterial,
+    nearFelledDamages.length
+  );
+  nearFelledInstances.userData = {
+    ...(nearFelledInstances.userData ?? {}),
+    [BEAVER_DAMAGE_KEY]: 'near-felled',
+    forestBeaverDamageInstanced: true,
+  };
+  const nearFelledMatrixScratch = new three.Matrix4();
+  const felledInstances = new three.InstancedMesh(
+    geometry.trunk,
+    style.trunkMaterial,
+    felledDamages.length
+  );
+  felledInstances.userData = {
+    ...(felledInstances.userData ?? {}),
+    [BEAVER_DAMAGE_KEY]: 'felled',
+    forestBeaverDamageInstanced: true,
+  };
+  const felledMatrixScratch = new three.Matrix4();
 
   let debrisIndex = 0;
+  let nearFelledIndex = 0;
+  let felledIndex = 0;
   damages.forEach((damage, index) => {
     const tree = trees[damage.treeIndex];
     if (!tree) {
@@ -4544,61 +4571,55 @@ function addForestBeaverDamageInstances(
       );
       debrisIndex += 1;
     }
+    if (damage.severity === 'near-felled') {
+      nearFelledInstances.setMatrixAt(
+        nearFelledIndex,
+        writeRotatedInstancedMatrix(
+          nearFelledMatrixScratch,
+          tileX + tree.x + tree.radius * 0.22 * damage.leanDirection,
+          tree.trunkHeight * 0.42,
+          tileY + tree.y,
+          tree.radius * 0.86,
+          tree.trunkHeight * 0.92,
+          tree.radius * 0.86,
+          0,
+          damage.leanDirection * 0.72
+        )
+      );
+      nearFelledIndex += 1;
+    }
+    if (damage.severity === 'felled') {
+      felledInstances.setMatrixAt(
+        felledIndex,
+        writeRotatedInstancedMatrix(
+          felledMatrixScratch,
+          tileX + tree.x + tree.radius * 0.82 * damage.leanDirection,
+          tree.radius * 0.46,
+          tileY + tree.y,
+          tree.radius * 0.82,
+          tree.trunkHeight * 0.96,
+          tree.radius * 0.82,
+          damage.leanDirection > 0 ? 0.18 : -0.18,
+          Math.PI / 2
+        )
+      );
+      felledIndex += 1;
+    }
   });
+
+  chewInstances.count = damages.length;
+  debrisInstances.count = debrisIndex;
+  nearFelledInstances.count = nearFelledIndex;
+  felledInstances.count = felledIndex;
 
   group.add(chewInstances);
   group.add(debrisInstances);
-
-  nearFelledDamages.forEach((damage) => {
-    const tree = trees[damage.treeIndex];
-    if (!tree) {
-      return;
-    }
-
-    const leaningTrunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
-    leaningTrunk.position.set(
-      tileX + tree.x + tree.radius * 0.22 * damage.leanDirection,
-      tree.trunkHeight * 0.42,
-      tileY + tree.y
-    );
-    leaningTrunk.rotation.z = damage.leanDirection * 0.72;
-    leaningTrunk.scale.set(
-      tree.radius * 0.86,
-      tree.trunkHeight * 0.92,
-      tree.radius * 0.86
-    );
-    leaningTrunk.userData = {
-      ...(leaningTrunk.userData ?? {}),
-      [BEAVER_DAMAGE_KEY]: 'near-felled',
-    };
-    group.add(leaningTrunk);
-  });
-
-  felledDamages.forEach((damage) => {
-    const tree = trees[damage.treeIndex];
-    if (!tree) {
-      return;
-    }
-
-    const felledTrunk = new three.Mesh(geometry.trunk, style.trunkMaterial);
-    felledTrunk.position.set(
-      tileX + tree.x + tree.radius * 0.82 * damage.leanDirection,
-      tree.radius * 0.46,
-      tileY + tree.y
-    );
-    felledTrunk.rotation.z = Math.PI / 2;
-    felledTrunk.rotation.y = damage.leanDirection > 0 ? 0.18 : -0.18;
-    felledTrunk.scale.set(
-      tree.radius * 0.82,
-      tree.trunkHeight * 0.96,
-      tree.radius * 0.82
-    );
-    felledTrunk.userData = {
-      ...(felledTrunk.userData ?? {}),
-      [BEAVER_DAMAGE_KEY]: 'felled',
-    };
-    group.add(felledTrunk);
-  });
+  if (nearFelledIndex > 0) {
+    group.add(nearFelledInstances);
+  }
+  if (felledIndex > 0) {
+    group.add(felledInstances);
+  }
 }
 
 function createForestFloorDetailDescriptor(
