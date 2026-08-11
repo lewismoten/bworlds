@@ -12,7 +12,7 @@ parallelize them and the files stay easier to maintain:
 - [music-debug-snapshot-generation-variants.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-variants.long.test.ts:1)
   covers SongDNA variant exposure, motif counters, and battle-versus-boss
   duration scenarios.
-- [music-debug-snapshot-representative.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-representative.test.ts:1)
+- [music-debug-snapshot-representative.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-representative.long.test.ts:1)
   covers representative known-good snapshot prominence and section-plan
   expectations.
 - [music-debug-markup.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-markup.long.test.ts:1)
@@ -30,7 +30,7 @@ parallelize them and the files stay easier to maintain:
 - [music-debug-timeline.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline.long.test.ts:1)
   stays on the long path because it builds full debug snapshots to cover hover
   diagnostics, drift markers, motif markers, and SVG export rendering.
-- [music-debug-behavior.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-behavior.test.ts:1)
+- [music-debug-behavior.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-behavior.long.test.ts:1)
   covers smaller non-markup behavior checks that do not need the larger
   snapshot or playback suites.
 - [music-debug-test-support.ts](/Users/lewismoten/dev/bworlds/apps/web/src/testing/music-debug-test-support.ts:1)

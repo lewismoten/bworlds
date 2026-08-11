@@ -15,5 +15,5 @@ Regression coverage lives in:
 
 - [apps/web/src/procedural-music-lead-motion.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-lead-motion.test.ts:1)
   for direct scoring behavior
-- [apps/web/src/procedural-music-harmony-lead.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-harmony-lead.test.ts:1)
+- [apps/web/src/procedural-music-harmony-lead.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-harmony-lead.long.test.ts:1)
   for generated lead-note runs across sampled phrases

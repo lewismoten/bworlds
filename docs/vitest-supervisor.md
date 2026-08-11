@@ -24,16 +24,17 @@ Related commands:
   Snapshot-heavy timeline rendering coverage now stays on the long path while
   [music-debug-timeline-fast.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline-fast.test.ts:1)
   keeps the cheap timeline coordinate and label helpers in the normal check.
-  The same allowlist now keeps the broadest overworld and audio generation
-  sweeps off the default path, including
-  [ambience-debug.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/ambience-debug.test.ts:1),
-  [music-debug-preview-wav.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-preview-wav.test.ts:1),
-  [procedural-music-song-base.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-base.test.ts:1),
-  [sound-effects.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-effects.test.ts:1),
-  [packages/map-overworld/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/map-overworld/src/index.test.ts:1),
+  The remaining manual allowlist is now reserved for the broadest overworld
+  and world-network sweeps, including
+  [packages/map-overworld/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/map-overworld/src/index.test.ts:1)
   and [packages/overworld-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/overworld-support/src/index.test.ts:1).
-  Recent companion `*.long.test.ts` splits also keep brute-force cache churn and
-  seed-sweep checks off the default path, including
+  Recent `*.long.test.ts` renames and companion splits also keep brute-force
+  cache churn, seed-sweep checks, and broader audio/browser coverage off the
+  default path, including
+  [ambience-debug.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/ambience-debug.long.test.ts:1),
+  [music-debug-preview-wav.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-preview-wav.long.test.ts:1),
+  [procedural-music-song-base.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-base.long.test.ts:1),
+  [sound-effects.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-effects.long.test.ts:1),
   [music-debug-timeline.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline.long.test.ts:1),
   [procedural-music.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music.long.test.ts:1),
   [procedural-music-integration.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-integration.long.test.ts:1),
@@ -52,8 +53,9 @@ Related commands:
 - `npm run test:long`
   Runs only the known long-running suites behind the same supervisor path.
   Files named `*.long.test.ts` automatically stay off the normal fast path.
-  Once a suite has that companion file, its short `*.test.ts` file should come
-  back onto the fast path instead of staying in the manual long-file list.
+  Once a suite is broad enough to live entirely on the long path, rename it to
+  `*.long.test.ts` and remove the old short-path filename from
+  `LONG_TEST_FILES` instead of keeping a fragile manual entry around.
   The slowest audio/browser suites can be split into multiple long-suite files
   so Vitest can parallelize them without putting those checks back into the
   fast path.

@@ -25,13 +25,9 @@ describe('vitest suite mode', () => {
     expect(resolveVitestSuiteSelection('all')).toEqual({});
   });
 
-  it('keeps broad audio and world sweeps off the fast suite', () => {
+  it('keeps broad world sweeps off the fast suite through the manual list', () => {
     expect(LONG_TEST_FILES).toEqual(
       expect.arrayContaining([
-        'apps/web/src/ambience-debug.test.ts',
-        'apps/web/src/music-debug-preview-wav.test.ts',
-        'apps/web/src/procedural-music-song-base.test.ts',
-        'apps/web/src/sound-effects.test.ts',
         'packages/map-overworld/src/index.test.ts',
         'packages/overworld-support/src/index.test.ts',
         'packages/runtime-dock-traffic/src/index.test.ts',
@@ -53,6 +49,16 @@ describe('vitest suite mode', () => {
   });
 
   it('relies on the .long.test.ts glob for renamed heavy audio suites', () => {
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/ambience-debug.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-preview-wav.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/procedural-music-song-base.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain('apps/web/src/sound-effects.test.ts');
     expect(LONG_TEST_FILES).not.toContain(
       'apps/web/src/music-debug-export-bundle-archive.test.ts'
     );

@@ -31,11 +31,11 @@ into the broader buckets explicitly.
 When a file grows into a broad integration sweep that explores many seeds,
 tiles, routes, or song variants in one pass, prefer renaming it to
 `*.long.test.ts` so the fast suite excludes it through the glob-based long-path
-selection automatically. Keep `LONG_TEST_FILES` for the heavy files that have
-not been split or renamed yet. The fast suite now does that for the heaviest
-map-overworld, overworld-support, route-network, dock traffic, ambience-debug,
-and procedural-music repair files so `npm run check` stays bounded around
-unit-level feedback.
+selection automatically. Keep `LONG_TEST_FILES` only for heavyweight files that
+cannot yet move to filename-based long classification. The fast suite now does
+that for the heaviest map-overworld, overworld-support, route-network, and dock
+traffic files, while the broad audio/browser sweeps moved to `*.long.test.ts`
+filenames so `npm run check` stays bounded around unit-level feedback.
 
 When a helper can be tested with a small structural fixture, keep that as the
 fast-path unit test and move the representative full-generation determinism
@@ -101,9 +101,9 @@ The same rule applies to expensive derived artifacts such as export bundles,
 WAV previews, or other debug-package outputs: if multiple tests assert on the
 same deterministic artifact, build it once in a shared test fixture module and
 reuse it across files.
-That allowlist now also keeps the broad `sound-effects`, `music-debug-preview-wav`,
-and `procedural-music-song-base` sweeps on the long path until they are split
-into smaller fast smoke coverage plus broader representative long coverage.
+That rename now also keeps the broad `sound-effects`,
+`music-debug-preview-wav`, and `procedural-music-song-base` sweeps on the long
+path without needing manual allowlist entries.
 
 For deterministic grid or tile sweeps, precompute the sampled profile set once
 when multiple assertions need to walk the same coordinates. The tree quality
