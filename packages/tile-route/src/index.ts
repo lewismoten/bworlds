@@ -41,6 +41,7 @@ import type {
   Kind,
   CreateWorldActionContext,
   Create3DModelContext,
+  Create3DModelProgress,
   Paint2DContext,
   SurfaceProfile3D,
   ThreeHostLike,
@@ -440,8 +441,13 @@ export function createRouteTilePlugin(): RuntimePlugin {
         fillRect(context, x + 13 - postOffset, y + 2, 1, 12, '#6b3f15');
         return true;
       },
-      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-        return createDockGroup(three, state, tileX, tileY);
+      create3DModel(context: Create3DModelContext) {
+        return runDockModelBuildToCompletion(
+          createDockGroupProgressive(context)
+        );
+      },
+      create3DModelProgressive(context: Create3DModelContext) {
+        return createDockGroupProgressive(context);
       },
       createWorldAction(context: CreateWorldActionContext) {
         if (!context.state) {
@@ -491,6 +497,17 @@ export function createRouteTilePlugin(): RuntimePlugin {
       },
     },
   ]);
+}
+
+function runDockModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+) {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function classifyConnectedRoad({
@@ -1383,6 +1400,20 @@ function createDockGroup(
   tileX: number,
   tileY: number
 ) {
+  return runDockModelBuildToCompletion(
+    createDockGroupProgressive({ three, state, tileX, tileY })
+  );
+}
+
+function* createDockGroupProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+}: Pick<
+  Create3DModelContext,
+  'three' | 'state' | 'tileX' | 'tileY'
+>): Generator<Create3DModelProgress, unknown, void> {
   const info = getDockClusterInfo(state, tileX, tileY);
   const style = getDockStyle(
     three,
@@ -1393,6 +1424,7 @@ function createDockGroup(
   const alongX = info.axis === 'ew';
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
+  const totalSteps = 3;
 
   const deck = new three.Mesh(
     new three.BoxGeometry(alongX ? 1.02 : 0.64, 0.07, alongX ? 0.64 : 1.02),
@@ -1467,14 +1499,32 @@ function createDockGroup(
   }
   group.add(pileInstances);
 
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'deck-and-piles',
+  };
+
   if (shouldRenderDockBoat(state, tileX, tileY, info)) {
     addDockBoat(group, three, state, style, alongX, tileX, tileY, info);
   }
+
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'boat',
+  };
 
   const route = resolveDockBoatRoute(state, tileX, tileY);
   if (route && info.segmentIndex === 0) {
     addDockRouteSign(group, three, state, style, alongX, tileX, tileY, route);
   }
+
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'route-sign',
+  };
 
   return group;
 }

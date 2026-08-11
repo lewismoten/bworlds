@@ -299,6 +299,31 @@ function createRoutedDockModelState() {
   };
 }
 
+function captureDockModelSignature(model: FakeGroup | undefined) {
+  const signature: Array<Record<string, unknown>> = [];
+  model?.traverse((node) => {
+    signature.push({
+      type: node.constructor.name,
+      x: node.position.x,
+      y: node.position.y,
+      z: node.position.z,
+      rotationY: node.rotation.y,
+      childCount: node.children.length,
+      dockInstancedPart: node.userData?.dockInstancedPart,
+      dockRouteSignPart: node.userData?.dockRouteSignPart,
+      dockBoat: node.userData?.dockBoat,
+      dockRouteSign: node.userData?.dockRouteSign,
+      material:
+        node instanceof FakeMesh
+          ? Array.isArray(node.material)
+            ? node.material.map((material) => material.options)
+            : node.material?.options
+          : undefined,
+    });
+  });
+  return signature;
+}
+
 function createForestLogBridgeState() {
   return {
     player: { x: 0, y: 0, facing: 0 },
@@ -714,6 +739,81 @@ describe('tile route', () => {
     });
 
     expect(longDockBoatMarkers).toEqual([4, 4]);
+  });
+
+  it('builds dock models progressively before returning the final model', () => {
+    const state = createRoutedDockModelState();
+    const build = dockTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'deck-and-piles',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'boat',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'route-sign',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous dock build aligned with the progressive final model', () => {
+    const state = createRoutedDockModelState();
+    const syncModel = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+    const progressiveBuild = dockTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(captureDockModelSignature(progressiveModel)).toEqual(
+      captureDockModelSignature(syncModel)
+    );
   });
 
   it('renders lowered paddle-boat boarding ramps on non-route docks', () => {

@@ -9,4 +9,5 @@ dock sweeps stay on the long suite:
   rendering, and route boarding actions.
 - [src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-route/src/index.long.test.ts:1)
   keeps the exhaustive bridge, dock, instancing, and cache-churn coverage on
-  the dedicated long-test path.
+  the dedicated long-test path, including dock progressive-build parity
+  coverage.

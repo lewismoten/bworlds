@@ -24,7 +24,10 @@ Always run tests to make sure all tests pass
         layers instead of building the full stack in one frame, and `tile-water`
         now exposes `create3DModelProgressive(...)` for river tiles so the
         renderer can resume after the center pool, water ribbons, and highlight
-        ribbons instead of building the whole river mesh set in one frame.
+        ribbons instead of building the whole river mesh set in one frame, and
+        `tile-route` now exposes `create3DModelProgressive(...)` for dock tiles
+        so the renderer can resume after the deck-and-pile pass, boat pass, and
+        route-sign pass instead of building the full dock crossing in one frame.
 - [ ] Reduce unique materials and shader program variants.
       Progress: `tile-forest` now scopes its tree-family style material cache
       per Three host instead of sharing one process-wide material/texture
