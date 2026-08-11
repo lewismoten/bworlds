@@ -7,6 +7,10 @@ The browser reporter uses the existing
 `runtimePerformanceTrackingEnabled` session preference. When tracking is
 disabled, client error snapshots are not captured or posted.
 
+The reporter is now loaded lazily by the main game and music debug entrypoints,
+which keeps the snapshot logic out of the initial JavaScript bundle while still
+installing the same reporter once the deferred chunk resolves.
+
 Captured snapshots currently include:
 
 - the snapshot timestamp
@@ -41,6 +45,9 @@ Tests:
 - [client-error-snapshot.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/client-error-snapshot.test.ts:1)
   covers normalization, posting, disabled tracking, global error capture,
   `console.error` capture, and loop prevention.
+- [client-error-snapshot-loader.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/client-error-snapshot-loader.test.ts:1)
+  covers deferred installation, pre-resolution cleanup, and chunk-load failure
+  logging for the lazy reporter loader.
 - [client-error-snapshot-store.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/client-error-snapshot-store.test.ts:1)
   covers stable file naming, duplicate-message overwrite behavior, and newest-
   first listing plus one-shot and full-directory cleanup helpers.
