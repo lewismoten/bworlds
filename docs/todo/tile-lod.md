@@ -25,6 +25,10 @@ This is also partially due to performance issues which can be seen here, and add
 - [ ] Use color shifts to distinguish related tree species.
 - [ ] Avoid unique textures when color variation is sufficient.
 - [ ] Share material variants between compatible tree species.
+      Progress: `tile-forest` now shares one full-detail broadleaf material
+      bundle across oak and birch on the same Three host, which reduces
+      compatible-species material duplication while preserving a separate
+      conifer bundle for pine.
 
 ## Stable LOD Dimensions
 

@@ -36,6 +36,11 @@ Recent mitigation work:
   variants instead of painting a fresh road and shoulder texture pair for every
   road region. Road layout still varies by tile, but repeated footpath/cobble/
   brick style combinations now reuse the same material bundle across regions.
+- `tile-forest` now resolves full-detail broadleaf tree materials through one
+  shared host-level family bundle instead of keeping separate oak and birch
+  material sets. Broadleaf geometry and tree state still vary per tree, but
+  compatible nearby species stop duplicating trunk, foliage, and accessory
+  materials just to swap between the two broadleaf species.
 
 Captured issue reports currently include:
 

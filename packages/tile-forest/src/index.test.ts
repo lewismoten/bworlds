@@ -285,6 +285,43 @@ describe('tile forest', () => {
     });
   });
 
+  it('shares full-detail broadleaf trunk and foliage materials across oak and birch trees on one host', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    const broadleafTrunkMaterials = new Set<unknown>();
+    const broadleafFoliageMaterials = new Set<unknown>();
+    const pineTrunkMaterials = new Set<unknown>();
+    const pineFoliageMaterials = new Set<unknown>();
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const model = tile.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: { kind: 'forest' },
+          tileX,
+          tileY,
+          detailLevel: 'full',
+        }) as FakeGroup;
+        collectTreeFamilyMaterials(model, {
+          broadleafTrunkMaterials,
+          broadleafFoliageMaterials,
+          pineTrunkMaterials,
+          pineFoliageMaterials,
+        });
+      }
+    }
+
+    expect(broadleafTrunkMaterials.size).toBe(1);
+    expect(broadleafFoliageMaterials.size).toBe(1);
+    expect(pineTrunkMaterials.size).toBe(1);
+    expect(pineFoliageMaterials.size).toBe(1);
+    expect([...broadleafTrunkMaterials][0]).not.toBe([...pineTrunkMaterials][0]);
+    expect([...broadleafFoliageMaterials][0]).not.toBe(
+      [...pineFoliageMaterials][0]
+    );
+  });
+
   it('instances full-detail tree branches and foliage within each tree', () => {
     const tile = getForestTile();
     const state = createForestTestState();
@@ -393,4 +430,48 @@ function getForestAccessoryMaterialMarker(node: FakeNode): string | null {
     return `forestMeadow:${meadowMarker}`;
   }
   return null;
+}
+
+function collectTreeFamilyMaterials(
+  model: FakeGroup,
+  buckets: {
+    broadleafTrunkMaterials: Set<unknown>;
+    broadleafFoliageMaterials: Set<unknown>;
+    pineTrunkMaterials: Set<unknown>;
+    pineFoliageMaterials: Set<unknown>;
+  }
+): void {
+  for (const child of model.children) {
+    const family =
+      child.userData?.forestTreeForm === 'pine' ? 'pine' : 'broadleaf';
+    child.traverse((node) => {
+      const materialOwner = node as FakeNode & {
+        material?: unknown | unknown[];
+      };
+      if (!materialOwner.material) {
+        return;
+      }
+      const material = Array.isArray(materialOwner.material)
+        ? materialOwner.material[0]
+        : materialOwner.material;
+      if (!material) {
+        return;
+      }
+      if (
+        node.userData?.forestTreeTrunkSegment ||
+        node.userData?.forestTreeBranchInstanced
+      ) {
+        (family === 'pine'
+          ? buckets.pineTrunkMaterials
+          : buckets.broadleafTrunkMaterials
+        ).add(material);
+      }
+      if (node.userData?.forestTreeFoliageInstanced) {
+        (family === 'pine'
+          ? buckets.pineFoliageMaterials
+          : buckets.broadleafFoliageMaterials
+        ).add(material);
+      }
+    });
+  }
 }

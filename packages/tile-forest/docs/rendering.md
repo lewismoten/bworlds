@@ -47,3 +47,7 @@ Material lifetime:
   hollow, owl-eye, web, carving, and meadow flower materials across varieties,
   so repeated nearby forest tiles stop minting duplicate detail materials for
   the same visual treatment.
+- Full-detail broadleaf trees now also share one host-level trunk/foliage/
+  detail material bundle across oak and birch species, while conifers keep a
+  separate bundle. That trims compatible-species material duplication without
+  changing the broader broadleaf-versus-pine silhouette split.

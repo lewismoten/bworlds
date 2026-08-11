@@ -7,6 +7,10 @@
 - [ ] Use color shifts to distinguish related tree species.
 - [ ] Avoid unique textures when color variation is sufficient.
 - [ ] Share material variants between compatible tree species.
+      Progress: `tile-forest` now resolves full-detail broadleaf materials
+      through one shared host-level family bundle, so oak and birch nearby on
+      the same renderer reuse the same trunk, foliage, and close-detail
+      materials instead of maintaining separate species-level bundles.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First

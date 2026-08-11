@@ -3744,9 +3744,13 @@ function getTreeStyle(
   tileY: number,
   variety: number
 ) {
-  const styleSeedX = 41 + variety * 17;
-  const styleSeedY = 73 + variety * 19;
-  const key = `tree-family:${variety}`;
+  void tileX;
+  void tileY;
+  const familyId = getForestTreeFamilyId(variety);
+  const styleVariant = familyId === 'conifer' ? 1 : 0;
+  const styleSeedX = 41 + styleVariant * 17;
+  const styleSeedY = 73 + styleVariant * 19;
+  const key = `tree-family:${familyId}`;
   const treeStyleCache = getTreeStyleCache(three);
   const sharedAccessoryStyle = getSharedForestAccessoryStyle(three);
 
