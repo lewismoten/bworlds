@@ -743,6 +743,27 @@ describe('tile route', () => {
     ).toBe(true);
   });
 
+  it('places dock boat parts directly under the dock root', () => {
+    const state = createDockModelState();
+    const model = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 2,
+      tileY: 0,
+    }) as FakeGroup;
+
+    const dockBoatMarkers = model.children.filter(
+      (child) => child.userData?.dockBoat === true
+    );
+    const nestedBoatGroups = model.children.filter(
+      (child) => child instanceof FakeGroup && child.userData?.dockBoat
+    );
+
+    expect(dockBoatMarkers).toHaveLength(1);
+    expect(nestedBoatGroups).toHaveLength(0);
+  });
+
   it('renders a dock route sign with the boat name and destination stops', () => {
     const state = createRoutedDockModelState();
     const model = dockTile?.create3DModel?.({

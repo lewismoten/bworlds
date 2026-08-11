@@ -1445,18 +1445,7 @@ function createDockGroup(
   group.add(pileInstances);
 
   if (shouldRenderDockBoat(state, tileX, tileY, info)) {
-    const boat = createDockBoat(
-      three,
-      state,
-      style,
-      alongX,
-      tileX,
-      tileY,
-      info
-    );
-    if (boat) {
-      group.add(boat);
-    }
+    addDockBoat(group, three, state, style, alongX, tileX, tileY, info);
   }
 
   const route = resolveDockBoatRoute(state, tileX, tileY);
@@ -1947,7 +1936,8 @@ function getDockBoatSide(
     : waterSides[1]!.side;
 }
 
-function createDockBoat(
+function addDockBoat(
+  group: ThreeObject3DLike,
   three: ThreeHostLike,
   state: WorldStateLike,
   style: DockStyle,
@@ -1958,13 +1948,14 @@ function createDockBoat(
 ) {
   const side = getDockBoatSide(state, tileX, tileY, info.axis);
   if (side === null) {
-    return null;
+    return;
   }
   const route = resolveDockBoatRoute(state, tileX, tileY);
   const paddleBoat = !route;
-
-  const group = new three.Group();
-  group.userData = {
+  const boatOriginX = alongX ? 0 : side * 0.47;
+  const boatOriginZ = alongX ? side * 0.47 : 0;
+  const boatRotationY = (alongX ? Math.PI * 0.5 : 0) + (side < 0 ? Math.PI : 0);
+  const boatMetadata = {
     dockBoat: true,
     dockBoatClusterLength: info.length,
     dockPaddleBoat: paddleBoat,
@@ -1979,7 +1970,12 @@ function createDockBoat(
     ),
     style.boatMaterial
   );
-  hull.position.y = -0.07;
+  hull.position.set(boatOriginX, -0.07, boatOriginZ);
+  hull.rotation.y = boatRotationY;
+  hull.userData = {
+    ...(hull.userData ?? {}),
+    ...boatMetadata,
+  };
   group.add(hull);
 
   const prow = new three.Mesh(
@@ -1990,11 +1986,20 @@ function createDockBoat(
     ),
     style.trimMaterial
   );
-  if (alongX) {
-    prow.position.set(side > 0 ? 0.16 : -0.16, -0.045, 0);
-  } else {
-    prow.position.set(0, -0.045, side > 0 ? 0.16 : -0.16);
-  }
+  const prowLocalOffset = alongX
+    ? { x: side > 0 ? 0.16 : -0.16, z: 0 }
+    : { x: 0, z: side > 0 ? 0.16 : -0.16 };
+  const prowOffset = rotateRouteLocalOffset(
+    prowLocalOffset.x,
+    prowLocalOffset.z,
+    boatRotationY
+  );
+  prow.position.set(
+    boatOriginX + prowOffset.x,
+    -0.045,
+    boatOriginZ + prowOffset.z
+  );
+  prow.rotation.y = boatRotationY;
   group.add(prow);
 
   if (paddleBoat) {
@@ -2004,6 +2009,9 @@ function createDockBoat(
       style,
       alongX,
       side,
+      boatOriginX,
+      boatOriginZ,
+      boatRotationY,
       hullLength,
       hullWidth
     );
@@ -2012,31 +2020,30 @@ function createDockBoat(
       new three.BoxGeometry(0.03, 0.34, 0.03),
       style.trimMaterial
     );
-    mast.position.y = 0.12;
+    mast.position.set(boatOriginX, 0.12, boatOriginZ);
+    mast.rotation.y = boatRotationY;
     group.add(mast);
 
     const sail = new three.Mesh(
       new three.BoxGeometry(alongX ? 0.02 : 0.16, 0.18, alongX ? 0.16 : 0.02),
       style.sailMaterial
     );
-    if (alongX) {
-      sail.position.set(0.03 * side, 0.14, 0);
-    } else {
-      sail.position.set(0, 0.14, 0.03 * side);
-    }
+    const sailLocalOffset = alongX
+      ? { x: 0.03 * side, z: 0 }
+      : { x: 0, z: 0.03 * side };
+    const sailOffset = rotateRouteLocalOffset(
+      sailLocalOffset.x,
+      sailLocalOffset.z,
+      boatRotationY
+    );
+    sail.position.set(
+      boatOriginX + sailOffset.x,
+      0.14,
+      boatOriginZ + sailOffset.z
+    );
+    sail.rotation.y = boatRotationY;
     group.add(sail);
   }
-
-  if (alongX) {
-    group.position.set(0, 0, side * 0.47);
-    group.rotation.y = Math.PI * 0.5;
-  } else {
-    group.position.set(side * 0.47, 0, 0);
-  }
-  if (side < 0) {
-    group.rotation.y += Math.PI;
-  }
-  return group;
 }
 
 function addDockPaddleBoatDetails(
@@ -2045,6 +2052,9 @@ function addDockPaddleBoatDetails(
   style: DockStyle,
   alongX: boolean,
   side: -1 | 1,
+  boatOriginX: number,
+  boatOriginZ: number,
+  boatRotationY: number,
   hullLength: number,
   hullWidth: number
 ) {
@@ -2061,6 +2071,8 @@ function addDockPaddleBoatDetails(
   if (!alongX) {
     wheelInstances.rotation.z = Math.PI * 0.5;
   }
+  wheelInstances.rotation.y = boatRotationY;
+  wheelInstances.position.set(boatOriginX, 0, boatOriginZ);
   const wheelMatrixScratch = new three.Matrix4();
   for (const [index, lateral] of [-1, 1].entries()) {
     wheelInstances.setMatrixAt(
@@ -2086,7 +2098,8 @@ function addDockPaddleBoatDetails(
     ),
     style.deckMaterial
   );
-  cabin.position.y = 0.05;
+  cabin.position.set(boatOriginX, 0.05, boatOriginZ);
+  cabin.rotation.y = boatRotationY;
   group.add(cabin);
 
   const ramp = new three.Mesh(
@@ -2101,21 +2114,30 @@ function addDockPaddleBoatDetails(
     ...(ramp.userData ?? {}),
     dockPaddleBoatRampLowered: true,
   };
+  const rampLocalOffset = alongX
+    ? { x: side > 0 ? hullLength * 0.38 : -hullLength * 0.38, z: 0 }
+    : { x: 0, z: side > 0 ? hullLength * 0.38 : -hullLength * 0.38 };
+  const rampOffset = rotateRouteLocalOffset(
+    rampLocalOffset.x,
+    rampLocalOffset.z,
+    boatRotationY
+  );
   if (alongX) {
     ramp.position.set(
-      side > 0 ? hullLength * 0.38 : -hullLength * 0.38,
+      boatOriginX + rampOffset.x,
       -0.09,
-      0
+      boatOriginZ + rampOffset.z
     );
     ramp.rotation.z = side > 0 ? -0.42 : 0.42;
   } else {
     ramp.position.set(
-      0,
+      boatOriginX + rampOffset.x,
       -0.09,
-      side > 0 ? hullLength * 0.38 : -hullLength * 0.38
+      boatOriginZ + rampOffset.z
     );
     ramp.rotation.x = side > 0 ? 0.42 : -0.42;
   }
+  ramp.rotation.y = boatRotationY;
   group.add(ramp);
 }
 
