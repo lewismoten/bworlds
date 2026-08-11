@@ -10,3 +10,4 @@ coverage/
 dist-analyze*/
 .vitest-full-suite.lock
 .tmp-*
+.tmp/
