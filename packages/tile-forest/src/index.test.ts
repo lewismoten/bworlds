@@ -252,6 +252,29 @@ const fakeThree = {
   AdditiveBlending: 'additive',
 } as const;
 
+function createFakeThreeHost() {
+  return {
+    BufferGeometry: FakeGeometry,
+    Group: FakeGroup,
+    InstancedMesh: FakeInstancedMesh,
+    Matrix4: FakeMatrix4,
+    Mesh: FakeMesh,
+    Points: FakePoints,
+    PointLight: FakePointLight,
+    MeshStandardMaterial: FakeMaterial,
+    PointsMaterial: FakeMaterial,
+    ShaderMaterial: FakeMaterial,
+    CanvasTexture: class {
+      colorSpace = '';
+      needsUpdate = false;
+    },
+    Float32BufferAttribute: FakeFloat32BufferAttribute,
+    CylinderGeometry: FakeGeometry,
+    SphereGeometry: FakeGeometry,
+    AdditiveBlending: 'additive',
+  } as const;
+}
+
 function createForestTestState(
   playerX = 0,
   playerY = 0,
@@ -2205,6 +2228,68 @@ describe('tile forest', () => {
 
     expect(firstTrunk?.material).toBe(secondTrunk?.material);
     expect(firstFoliage?.material).toBe(secondFoliage?.material);
+  });
+
+  it('keeps forest style materials scoped to the current Three host', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState();
+    const firstHost = createFakeThreeHost();
+    const secondHost = createFakeThreeHost();
+    let pineTile: { x: number; y: number } | null = null;
+
+    for (let tileY = 0; tileY < 40 && pineTile === null; tileY += 1) {
+      for (let tileX = 0; tileX < 40 && pineTile === null; tileX += 1) {
+        if (getForestTreeForms(tileX, tileY).includes('pine')) {
+          pineTile = { x: tileX, y: tileY };
+        }
+      }
+    }
+
+    expect(pineTile).not.toBeNull();
+
+    const firstModel = tile?.create3DModel?.({
+      three: firstHost as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: pineTile!.x,
+      tileY: pineTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const secondModel = tile?.create3DModel?.({
+      three: secondHost as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: pineTile!.x,
+      tileY: pineTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const firstPine = firstModel.children.find(
+      (child) => child.userData?.forestTreeForm === 'pine'
+    ) as FakeGroup | undefined;
+    const secondPine = secondModel.children.find(
+      (child) => child.userData?.forestTreeForm === 'pine'
+    ) as FakeGroup | undefined;
+    const firstTrunk = firstPine?.children.find(
+      (child) => child instanceof FakeMesh
+    ) as FakeMesh | undefined;
+    const secondTrunk = secondPine?.children.find(
+      (child) => child instanceof FakeMesh
+    ) as FakeMesh | undefined;
+    const firstFoliage = firstPine?.children.find(
+      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
+    ) as FakeMesh | undefined;
+    const secondFoliage = secondPine?.children.find(
+      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
+    ) as FakeMesh | undefined;
+
+    expect(firstTrunk?.material).toBeDefined();
+    expect(secondTrunk?.material).toBeDefined();
+    expect(firstFoliage?.material).toBeDefined();
+    expect(secondFoliage?.material).toBeDefined();
+    expect(firstTrunk?.material).not.toBe(secondTrunk?.material);
+    expect(firstFoliage?.material).not.toBe(secondFoliage?.material);
   });
 
   it('uses tapered full-detail trunk geometry that matches structural trunk width', () => {

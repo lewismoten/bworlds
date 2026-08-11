@@ -346,9 +346,10 @@ const FOREST_FOLIAGE_GUST_PHASE_SEED = registerHashLabel(
 const treeDescriptorCache = createBoundedCache<string, ForestTreeDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
 );
-const treeStyleCache = createBoundedCache<string, ForestTreeStyle>(
-  FOREST_STYLE_CACHE_LIMIT
-);
+const treeStyleCacheByHost = new WeakMap<
+  ThreeHostLike,
+  ReturnType<typeof createBoundedCache<string, ForestTreeStyle>>
+>();
 const forestTrailCache = createBoundedCache<
   string,
   ForestTrailDescriptor | null
@@ -3605,6 +3606,7 @@ function getTreeStyle(
   const styleSeedX = 41 + variety * 17;
   const styleSeedY = 73 + variety * 19;
   const key = `tree-family:${variety}`;
+  const treeStyleCache = getTreeStyleCache(three);
 
   if (!treeStyleCache.has(key)) {
     const barkBase = tintHexColor(
@@ -3785,6 +3787,19 @@ function getTreeStyle(
   }
 
   return treeStyleCache.get(key)!;
+}
+
+function getTreeStyleCache(three: ThreeHostLike) {
+  const cached = treeStyleCacheByHost.get(three);
+  if (cached) {
+    return cached;
+  }
+
+  const next = createBoundedCache<string, ForestTreeStyle>(
+    FOREST_STYLE_CACHE_LIMIT
+  );
+  treeStyleCacheByHost.set(three, next);
+  return next;
 }
 
 function getForestFireflies(

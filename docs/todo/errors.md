@@ -22,6 +22,12 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
   - [ ] Let generators yield progress without creating final Three.js objects yet.
   - [ ] Keep simple/cheap plugin methods synchronous where generators add no value.
 - [ ] Reduce unique materials and shader program variants.
+      Progress: `tile-forest` now scopes its tree-family style material cache
+      per Three host instead of sharing one process-wide material/texture
+      cache, so repeated forest builds on the same renderer still reuse bark,
+      foliage, meadow, hollow, owl, spider, web, and carving materials, while
+      separate hosts no longer leak or duplicate the wrong material instances
+      across renderer boundaries.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
       Progress: `tile-quarry` now collapses its six repeated rubble stones into
       one `InstancedMesh`, its two mirrored derrick posts into one

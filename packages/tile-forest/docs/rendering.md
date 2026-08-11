@@ -15,3 +15,13 @@ Current layout:
 
 This trims repeated static landmark children from full-detail forest tiles
 without changing landmark placement or silhouette.
+
+Material lifetime:
+
+- Forest tree-family style materials are now cached per Three host, not in one
+  process-wide map.
+- That keeps repeated forest builds on the same host reusing the same bark,
+  foliage, meadow, hollow, owl, spider, web, and carving materials.
+- It also prevents one host from reusing textures or materials that were
+  created by a different host, which keeps material/shader ownership aligned
+  with the renderer that will actually dispose them.
