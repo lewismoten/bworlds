@@ -1,5 +1,6 @@
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import {
+  listKnownGoodInstrumentPatches,
   resolveVelocityShapedInstrumentTimbre,
   type MusicWaveform,
 } from './music-instrument-timbres.ts';
@@ -1266,6 +1267,10 @@ function buildSelectedInstrumentDetailsMarkup(
   const estimatedComplexity = runtimeInstrument
     ? resolveEstimatedPatchComplexity(runtimeInstrument)
     : 'Unknown';
+  const referencePatchLibraryMarkup =
+    buildSoundBankDebugReferencePatchLibraryMarkup(
+      runtimeInstrument?.role ?? selectedEntry.supportedRoles[0] ?? null
+    );
   const knownGoodPatchComparisonMarkup = effectiveInstrument
     ? buildSoundBankDebugKnownGoodPatchComparisonMarkup(effectiveInstrument)
     : '';
@@ -1365,6 +1370,7 @@ function buildSelectedInstrumentDetailsMarkup(
     ${previewOscillatorControlsMarkup}
     ${previewEnvelopeControlsMarkup}
     ${previewTimbreControlsMarkup}
+    ${referencePatchLibraryMarkup}
     ${knownGoodPatchComparisonMarkup}
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
@@ -1756,6 +1762,58 @@ function buildSoundBankDebugKnownGoodPatchComparisonMarkup(
       <ul class="sound-bank-debug-reference-differences">
         ${leadingDifferences}
       </ul>
+    </section>
+  `;
+}
+
+function buildSoundBankDebugReferencePatchLibraryMarkup(
+  selectedRole: string | null
+): string {
+  const cards = listKnownGoodInstrumentPatches()
+    .map((patch) => {
+      const selected = selectedRole === patch.role;
+      return `
+        <article class="sound-bank-debug-reference-library-card"${
+          selected ? ' data-selected="true"' : ''
+        }>
+          <div class="sound-bank-debug-reference-library-head">
+            <div>
+              <p class="sound-bank-debug-panel-kicker">Reference ${formatLabel(
+                patch.role
+              )}</p>
+              <h4>${patch.label}</h4>
+            </div>
+            <span class="sound-bank-debug-reference-library-badge">Locked reference</span>
+          </div>
+          <dl class="sound-bank-debug-audio-stats">
+            <div><dt>Family</dt><dd>${formatLabel(patch.family)}</dd></div>
+            <div><dt>Waveform</dt><dd>${patch.waveform}</dd></div>
+            <div><dt>Attack</dt><dd>${Math.round(patch.attackMs)} ms</dd></div>
+            <div><dt>Release</dt><dd>${Math.round(patch.releaseMs)} ms</dd></div>
+          </dl>
+        </article>
+      `;
+    })
+    .join('');
+
+  return `
+    <section
+      class="sound-bank-debug-preview-envelope sound-bank-debug-reference-library"
+      aria-label="Reference patch library"
+    >
+      <div class="sound-bank-debug-panel-head">
+        <div>
+          <p class="sound-bank-debug-panel-kicker">Reference Patch Library</p>
+          <h3>Locked Role References</h3>
+          <p>
+            Saved known-good patches stay read-only here so generated patches
+            always compare against stable anchors.
+          </p>
+        </div>
+      </div>
+      <div class="sound-bank-debug-reference-library-grid">
+        ${cards}
+      </div>
     </section>
   `;
 }

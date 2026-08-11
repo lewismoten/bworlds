@@ -121,6 +121,13 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-noise-mix');
     expect(normalizedMarkup).toContain('Compare to Reference Patch');
     expect(normalizedMarkup).toContain('Reference Patch Report');
+    expect(normalizedMarkup).toContain('Reference Patch Library');
+    expect(normalizedMarkup).toContain('Locked Role References');
+    expect(normalizedMarkup).toContain('Locked reference');
+    expect(normalizedMarkup).toContain('Breathy flute lead');
+    expect(normalizedMarkup).toContain('Bowed string bed');
+    expect(normalizedMarkup).toContain('Anchored upright bass');
+    expect(normalizedMarkup).toContain('Punchy kick pulse');
     expect(normalizedMarkup).toContain('Family Match');
     expect(normalizedMarkup).toContain('Waveform Match');
     expect(normalizedMarkup).toContain('Closest Dimensions');
