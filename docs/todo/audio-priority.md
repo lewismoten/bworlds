@@ -134,7 +134,7 @@
 - [x] Assign one rhythm identity to each song section.
 - [x] Repeat rhythms before adding variation.
 - [x] Place rests mainly at phrase boundaries.
-- [ ] Avoid constant note activity in every layer.
+- [x] Avoid constant note activity in every layer.
 - [ ] Avoid every layer resting at the same time.
 - [x] Give the bass a stable recurring pulse.
 - [x] Let lead notes connect into short musical sentences.
@@ -149,10 +149,11 @@
       tail-rest boundary, tightens short inter-note gaps while lengthening the
       release of connected lead attacks so nearby notes read as one short
       melodic sentence, assigns deterministic lead rhythm identity profiles to
-      intro, A, A', B, variation, return, and outro, gives the variation
-      section a measurably different lead rhythm than Section A, and keeps the
-      bass pulse repeating measure-for-measure across the repeated Section A
-      phrase cycle.
+      intro, A, A', B, variation, return, and outro, inserts planned harmony
+      and percussion breathing measures so accompaniment layers do not stay
+      continuously active through every section, gives the variation section a
+      measurably different lead rhythm than Section A, and keeps the bass pulse
+      repeating measure-for-measure across the repeated Section A phrase cycle.
 
 ## Humanization
 

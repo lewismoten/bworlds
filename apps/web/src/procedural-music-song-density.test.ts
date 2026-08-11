@@ -111,6 +111,51 @@ describe('procedural music song density', () => {
       }
     }
   });
+
+  it('adds planned accompaniment breathing measures so support layers are not constant in every section', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    for (const sectionId of [
+      'a',
+      'a-prime',
+      'b',
+      'variation',
+      'return',
+    ] as const) {
+      const section = song.sections.find(
+        (candidate) => candidate.id === sectionId
+      );
+      expect(section).toBeDefined();
+
+      const harmonyCounts = countRoleNotesByMeasure(
+        song.notes,
+        song.startMs + section!.startOffsetMs,
+        section!.durationMs,
+        section!.measureCount,
+        'harmony'
+      );
+      const percussionCounts = countRoleNotesByMeasure(
+        song.notes,
+        song.startMs + section!.startOffsetMs,
+        section!.durationMs,
+        section!.measureCount,
+        'percussion'
+      );
+
+      expect(
+        harmonyCounts.some((count) => count === 0) ||
+          percussionCounts.some((count) => count === 0)
+      ).toBe(true);
+    }
+  });
 });
 
 function createSection(

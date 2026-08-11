@@ -31,32 +31,33 @@ const SECTION_MEASURE_DENSITY_TARGETS: Partial<
   >
 > = {
   intro: {
-    harmony: [3, 3, 3, 3, 3, 3, 3, 3],
+    harmony: [3, 3, 2, 2, 3, 3, 2, 2],
     lead: [1, 2, 2, 2, 3, 3, 3, 2],
     percussion: [0, 0, 0, 0, 0, 0, 0, 0],
   },
   a: {
-    harmony: [3, 3, 3, 3, 3, 3, 3, 3],
+    harmony: [3, 2, 3, 0, 3, 2, 3, 0],
     percussion: [2, 2, 2, 1, 2, 2, 2, 1],
   },
   'a-prime': {
-    harmony: [3, 3, 3, 3, 3, 3, 3, 3],
+    harmony: [3, 2, 3, 0, 3, 2, 3, 0],
     percussion: [2, 2, 2, 1, 2, 2, 2, 1],
   },
   b: {
-    percussion: [2, 2, 2, 2, 2, 2, 2, 2],
+    harmony: [2, 1, 2, 0, 2, 1, 2, 0],
+    percussion: [2, 1, 2, 1, 2, 1, 2, 1],
   },
   variation: {
-    harmony: [2, 2, 2, 2, 3, 3, 3, 3],
+    harmony: [2, 1, 2, 0, 2, 1, 3, 1],
     lead: [2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2],
-    percussion: [1, 1, 2, 1, 1, 1, 2, 1],
+    percussion: [1, 0, 2, 1, 1, 0, 2, 1],
   },
   return: {
-    harmony: [3, 3, 3, 3, 3, 3, 3, 3],
+    harmony: [3, 2, 3, 1, 3, 2, 3, 1],
     percussion: [2, 2, 2, 1, 2, 2, 2, 1],
   },
   outro: {
-    harmony: [3, 3, 3, 3, 2, 2, 2, 2],
+    harmony: [3, 2, 2, 2, 2, 1, 1, 1],
     lead: [3, 3, 2, 2, 2, 2, 1, 1],
     percussion: [0, 0, 0, 0, 0, 0, 0, 0],
   },
