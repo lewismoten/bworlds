@@ -867,6 +867,35 @@ function resolveLeadSemitonesCached(
     currentContourStage: current.contourStage,
     currentContourRange: current.contourRange,
   });
+  const previousBassSemitones = resolveBassSemitones(
+    theme,
+    previousChord,
+    stepIndex - 1,
+    clusterX,
+    clusterY
+  );
+  const currentBassSemitones = resolveBassSemitones(
+    theme,
+    chord,
+    stepIndex,
+    clusterX,
+    clusterY
+  );
+  selectedCurrentSemitones = resolveLeadCounterMotionSemitones({
+    selectedSemitones: selectedCurrentSemitones,
+    candidates: current.candidateSemitones,
+    previousSemitones: previous.semitones,
+    previousBassSemitones,
+    currentBassSemitones,
+    cadence: current.cadence,
+    structuralAccent: current.structuralAccent,
+    strongLeadBeat: current.strongLeadBeat,
+    contourRange: current.contourRange,
+    preferredIntervals: theme.vocabulary?.preferredIntervals,
+    previousLeapDistance,
+    priorLargeLeapCount,
+    repeatedPitchRunLength,
+  });
   const leap = selectedCurrentSemitones - previous.semitones;
   const leapMagnitude = Math.abs(leap);
   const allowWideLeap =
@@ -1166,10 +1195,34 @@ function selectPreferredLeadSemitoneClass(options: {
     return fallback;
   }
 
-  const rankedCandidates = options.candidates
+  const rankedCandidates = rankLeadSemitoneCandidates(options);
+
+  return rankedCandidates[0]?.candidate ?? clampLeadSemitone(fallback);
+}
+
+function rankLeadSemitoneCandidates(options: {
+  candidates: readonly number[];
+  previousSemitones: number;
+  strongLeadBeat: boolean;
+  structuralAccent: boolean;
+  preferredIntervals?: readonly number[];
+  previousLeapDistance?: number | null;
+  priorLargeLeapCount?: number;
+  repeatedPitchRunLength?: number;
+  contourRange?: {
+    minSemitones: number;
+    targetSemitones: number;
+    maxSemitones: number;
+  };
+}): Array<{
+  candidate: number;
+  index: number;
+  distance: number;
+}> {
+  return options.candidates
     .flatMap((candidate, index) =>
       resolveLeadOctaveCandidates(
-        options.previousSemitones ?? 0,
+        options.previousSemitones,
         candidate,
         options.contourRange
       )
@@ -1181,9 +1234,7 @@ function selectPreferredLeadSemitoneClass(options: {
         .map((shiftedCandidate) => ({
           candidate: shiftedCandidate,
           index,
-          distance: Math.abs(
-            shiftedCandidate - (options.previousSemitones ?? 0)
-          ),
+          distance: Math.abs(shiftedCandidate - options.previousSemitones),
         }))
     )
     .sort((left, right) => {
@@ -1213,8 +1264,63 @@ function selectPreferredLeadSemitoneClass(options: {
       });
       return leftPenalty - rightPenalty || left.index - right.index;
     });
+}
 
-  return rankedCandidates[0]?.candidate ?? clampLeadSemitone(fallback);
+function resolveLeadCounterMotionSemitones(options: {
+  selectedSemitones: number;
+  candidates: readonly number[];
+  previousSemitones: number;
+  previousBassSemitones: number;
+  currentBassSemitones: number;
+  cadence: ProceduralLeadPhraseCadence;
+  structuralAccent: boolean;
+  strongLeadBeat: boolean;
+  contourRange?: {
+    minSemitones: number;
+    targetSemitones: number;
+    maxSemitones: number;
+  };
+  preferredIntervals?: readonly number[];
+  previousLeapDistance?: number | null;
+  priorLargeLeapCount?: number;
+  repeatedPitchRunLength?: number;
+}): number {
+  if (options.cadence !== 'neutral' || options.structuralAccent) {
+    return options.selectedSemitones;
+  }
+  if ((options.repeatedPitchRunLength ?? 0) > 0) {
+    return options.selectedSemitones;
+  }
+
+  const bassMotion = options.currentBassSemitones - options.previousBassSemitones;
+  const leadMotion = options.selectedSemitones - options.previousSemitones;
+  if (
+    Math.abs(bassMotion) < 2 ||
+    leadMotion === 0 ||
+    Math.sign(leadMotion) !== Math.sign(bassMotion)
+  ) {
+    return options.selectedSemitones;
+  }
+
+  const contraryCandidate = rankLeadSemitoneCandidates({
+    candidates: options.candidates,
+    previousSemitones: options.previousSemitones,
+    strongLeadBeat: options.strongLeadBeat,
+    structuralAccent: options.structuralAccent,
+    contourRange: options.contourRange,
+    preferredIntervals: options.preferredIntervals,
+    previousLeapDistance: options.previousLeapDistance,
+    priorLargeLeapCount: options.priorLargeLeapCount,
+    repeatedPitchRunLength: options.repeatedPitchRunLength,
+  }).find((candidate) => {
+    const candidateMotion = candidate.candidate - options.previousSemitones;
+    return (
+      candidateMotion !== 0 &&
+      Math.sign(candidateMotion) === -Math.sign(bassMotion)
+    );
+  });
+
+  return contraryCandidate?.candidate ?? options.selectedSemitones;
 }
 
 function resolveLeadOctaveCandidates(

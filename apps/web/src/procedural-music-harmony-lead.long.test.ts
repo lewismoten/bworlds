@@ -222,6 +222,77 @@ describe('procedural music harmony lead motion', () => {
     expect(resolveLeadPath(thirdTheme)).not.toEqual(resolveLeadPath(stepTheme));
   });
 
+  it('prefers contrary motion against clear bass movement on neutral lead steps', () => {
+    const sampledClusters = [
+      { clusterX: 0, clusterY: 0 },
+      { clusterX: 3, clusterY: -2 },
+      { clusterX: 8, clusterY: -4 },
+      { clusterX: -6, clusterY: 5 },
+    ];
+    let totalContraryMotionCount = 0;
+    let totalParallelMotionCount = 0;
+
+    for (const cluster of sampledClusters) {
+      const leadSemitones = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+      const bassSemitones = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'bass',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+      const compositions = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralCompositionStep(
+          TEST_THEME,
+          stepIndex,
+          cluster.clusterX,
+          cluster.clusterY
+        )
+      );
+      let contraryMotionCount = 0;
+      let parallelMotionCount = 0;
+
+      for (let stepIndex = 1; stepIndex < leadSemitones.length; stepIndex += 1) {
+        const composition = compositions[stepIndex]!;
+        const leadMotion = leadSemitones[stepIndex]! - leadSemitones[stepIndex - 1]!;
+        const bassMotion = bassSemitones[stepIndex]! - bassSemitones[stepIndex - 1]!;
+
+        if (
+          composition.cadence !== 'neutral' ||
+          composition.contourStep.stage === 'climax' ||
+          Math.abs(bassMotion) < 2 ||
+          leadMotion === 0
+        ) {
+          continue;
+        }
+
+        if (Math.sign(leadMotion) === -Math.sign(bassMotion)) {
+          contraryMotionCount += 1;
+        } else if (Math.sign(leadMotion) === Math.sign(bassMotion)) {
+          parallelMotionCount += 1;
+        }
+      }
+
+      totalContraryMotionCount += contraryMotionCount;
+      totalParallelMotionCount += parallelMotionCount;
+    }
+
+    expect(totalContraryMotionCount).toBeGreaterThan(0);
+    expect(totalContraryMotionCount).toBeGreaterThanOrEqual(
+      totalParallelMotionCount
+    );
+  });
+
   it('avoids back-to-back minor-sixth jumps in sampled lead phrases', () => {
     const sampledClusters = [
       { clusterX: 0, clusterY: 0 },

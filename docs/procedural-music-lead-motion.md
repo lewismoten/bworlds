@@ -16,6 +16,12 @@ after a larger leap. Candidate ranking keeps structural accents flexible, but
 neutral phrase motion now pays an extra penalty when it chains one large jump
 into another instead of resolving through a smaller recovery step.
 
+Neutral lead steps now also prefer contrary motion when the bass just takes a
+clear directional move. The rule stays out of cadence and climax windows, but
+when bass and lead would otherwise travel in parallel on an ordinary step, the
+lead selector now reuses its ranked candidate list to pick an opposite-direction
+option first when one is available.
+
 Regression coverage lives in:
 
 - [apps/web/src/procedural-music-lead-motion.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-lead-motion.test.ts:1)
