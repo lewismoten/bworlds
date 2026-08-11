@@ -23,6 +23,7 @@ import type {
   TilePlugin,
   ThreeMaterialLike,
   ThreeMatrix4Like,
+  ThreeObject3DLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
@@ -159,19 +160,17 @@ export function createCaveTilePlugin(): RuntimePlugin {
       const height = 0.96 + hash2D(CAVE_HEIGHT_SEED, tileX, tileY) * 0.26;
 
       if (detailLevel === 'low') {
-        group.add(
-          createLowDetailCaveModel(three, {
-            tileX,
-            tileY,
-            width,
-            depth,
-            height,
-            entrance,
-            mountainMaterial,
-            mouthVoidMaterial,
-            tunnelBackMaterial,
-          })
-        );
+        addLowDetailCaveModel(group, three, {
+          tileX,
+          tileY,
+          width,
+          depth,
+          height,
+          entrance,
+          mountainMaterial,
+          mouthVoidMaterial,
+          tunnelBackMaterial,
+        });
         return group;
       }
 
@@ -865,7 +864,8 @@ function getCaveSharedMaterials(three: Create3DModelContext['three']) {
   }));
 }
 
-function createLowDetailCaveModel(
+function addLowDetailCaveModel(
+  group: ThreeObject3DLike,
   three: Create3DModelContext['three'],
   {
     tileX,
@@ -889,14 +889,16 @@ function createLowDetailCaveModel(
     tunnelBackMaterial: ThreeMaterialLike;
   }
 ) {
-  const group = new three.Group();
-
   const mound = new three.Mesh(
     new three.SphereGeometry(0.32, 7, 6),
     mountainMaterial
   );
   mound.position.set(tileX, height * 0.46, tileY);
   mound.scale.set(width * 1.9, height * 1.22, depth * 1.55);
+  mound.userData = {
+    ...(mound.userData ?? {}),
+    caveLowDetailPart: 'mound',
+  };
   group.add(mound);
 
   const portalOriginX = tileX + entrance.dx * 0.46;
@@ -913,6 +915,10 @@ function createLowDetailCaveModel(
     portalOriginZ + mouthVoidOffset.z
   );
   mouthVoid.rotation.y = entrance.rotationY;
+  mouthVoid.userData = {
+    ...(mouthVoid.userData ?? {}),
+    caveLowDetailPart: 'mouth-void',
+  };
   group.add(mouthVoid);
 
   const tunnelBack = new three.Mesh(
@@ -926,8 +932,11 @@ function createLowDetailCaveModel(
     portalOriginZ + tunnelBackOffset.z
   );
   tunnelBack.rotation.y = entrance.rotationY;
+  tunnelBack.userData = {
+    ...(tunnelBack.userData ?? {}),
+    caveLowDetailPart: 'tunnel-back',
+  };
   group.add(tunnelBack);
-  return group;
 }
 
 function createCaveDripstoneGroup(

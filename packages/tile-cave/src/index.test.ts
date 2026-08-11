@@ -391,7 +391,8 @@ describe('tile cave', () => {
       }) as
         | {
             children?: Array<{
-              children?: Array<{ children?: unknown[] }>;
+              children?: unknown[];
+              userData?: Record<string, unknown>;
             }>;
           }
         | null
@@ -400,12 +401,12 @@ describe('tile cave', () => {
       expect(low?.children?.length ?? 0).toBeLessThan(
         full?.children?.length ?? Infinity
       );
-      expect(low?.children).toHaveLength(1);
-      expect(low?.children?.[0]?.children).toHaveLength(3);
+      expect(low?.children).toHaveLength(3);
       expect(
-        low?.children?.[0]?.children?.every(
-          (child) => !Array.isArray(child.children)
-        )
+        low?.children?.map((child) => child.userData?.caveLowDetailPart).sort()
+      ).toEqual(['mound', 'mouth-void', 'tunnel-back']);
+      expect(
+        low?.children?.every((child) => !Array.isArray(child.children))
       ).toBe(true);
     } finally {
       globalThis.document = previousDocument;
