@@ -54,7 +54,6 @@ const RUINS_RUBBLE_HEIGHT_SEED = registerHashLabel('ruins-rubble-h');
 const RUINS_RUBBLE_DEPTH_SEED = registerHashLabel('ruins-rubble-d');
 const RUINS_RUBBLE_X_SEED = registerHashLabel('ruins-rubble-x');
 const RUINS_RUBBLE_Z_SEED = registerHashLabel('ruins-rubble-z');
-const RUINS_RUBBLE_ROTATION_SEED = registerHashLabel('ruins-rubble-rot');
 const RUINS_CHIP_X_SEED = registerHashLabel('ruins-chip-x');
 const RUINS_CHIP_Y_SEED = registerHashLabel('ruins-chip-y');
 const RUINS_CHIP_SIZE_SEED = registerHashLabel('ruins-chip-size');
