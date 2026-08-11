@@ -328,6 +328,33 @@ function createForestLogBridgeState() {
   };
 }
 
+function createStandardBridgeState(centerX: number, centerY: number) {
+  return {
+    player: { x: centerX, y: centerY, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', depth: 0, type: 'overworld' as const };
+    },
+    getCurrentTile(x: number, y: number) {
+      const key = `${x - centerX}:${y - centerY}`;
+      const kinds: Record<string, string> = {
+        '0:0': 'bridge',
+        '0:-1': 'river',
+        '0:1': 'river',
+      };
+      return { kind: kinds[key] ?? 'plains' };
+    },
+    getTileDefinition(kind: string) {
+      return {
+        name: kind,
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: kind !== 'river',
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
 describe('tile route', () => {
   it('does not overwrite point-of-interest or sign tiles with roads', () => {
     expect(classifier?.(createRouteClassifierPayload())).toBeNull();
@@ -750,6 +777,42 @@ describe('tile route', () => {
     expect(signPlacardInstances).toHaveLength(1);
     expect(signPlacardInstances[0]?.count).toBe(2);
     expect(signPlacardInstances[0]?.matrices).toHaveLength(2);
+  });
+
+  it('instances repeated bridge railing posts on standard bridges', () => {
+    let railingPostInstances: FakeInstancedMesh[] = [];
+    let bridgeCoordinates: { x: number; y: number } | null = null;
+
+    for (let tileY = 0; tileY < 44 && !bridgeCoordinates; tileY += 1) {
+      for (let tileX = 0; tileX < 44; tileX += 1) {
+        const state = createStandardBridgeState(tileX, tileY);
+        const model = bridgeTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: state as never,
+          tile: { kind: 'bridge' } as never,
+          tileX,
+          tileY,
+        }) as FakeGroup;
+        const matches = collectTaggedInstancedMeshes(
+          model,
+          'routeInstancedPart'
+        ).filter(
+          (mesh) => mesh.userData?.routeInstancedPart === 'bridge-railing-post'
+        );
+        if (matches.length > 0 && (matches[0]?.count ?? 0) > 0) {
+          bridgeCoordinates = { x: tileX, y: tileY };
+          railingPostInstances = matches;
+          break;
+        }
+      }
+    }
+
+    expect(bridgeCoordinates).not.toBeNull();
+    expect(railingPostInstances).toHaveLength(1);
+    expect(railingPostInstances[0]?.count).toBeGreaterThanOrEqual(4);
+    expect(railingPostInstances[0]?.matrices).toHaveLength(
+      railingPostInstances[0]?.count ?? 0
+    );
   });
 
   it('keeps deterministic dock and bridge visuals stable after bounded cache eviction churn', () => {

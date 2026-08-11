@@ -2132,6 +2132,17 @@ function addBridgeRailings(
 ) {
   const sideOffset = deckWidth * 0.5 - 0.05;
   const postCount = Math.max(2, Math.round(deckLength / 0.32));
+  const railPostInstances = new three.InstancedMesh(
+    new three.BoxGeometry(0.05, BRIDGE_RAIL_HEIGHT, 0.05),
+    style.postMaterial,
+    postCount * 2
+  );
+  railPostInstances.userData = {
+    ...(railPostInstances.userData ?? {}),
+    routeInstancedPart: 'bridge-railing-post',
+  };
+  const railPostMatrixScratch = new three.Matrix4();
+  let nextRailPostIndex = 0;
   for (let side = -1; side <= 1; side += 2) {
     const rail = new three.Mesh(
       new three.BoxGeometry(
@@ -2151,18 +2162,37 @@ function addBridgeRailings(
     for (let index = 0; index < postCount; index += 1) {
       const t = postCount === 1 ? 0.5 : index / (postCount - 1);
       const local = -deckLength * 0.5 + t * deckLength;
-      const post = new three.Mesh(
-        new three.BoxGeometry(0.05, BRIDGE_RAIL_HEIGHT, 0.05),
-        style.postMaterial
-      );
       if (alongX) {
-        post.position.set(local, BRIDGE_RAIL_HEIGHT * 0.5, side * sideOffset);
+        railPostInstances.setMatrixAt(
+          nextRailPostIndex,
+          writeRouteInstancedScalePositionMatrix(
+            railPostMatrixScratch,
+            local,
+            BRIDGE_RAIL_HEIGHT * 0.5,
+            side * sideOffset,
+            1,
+            1,
+            1
+          )
+        );
       } else {
-        post.position.set(side * sideOffset, BRIDGE_RAIL_HEIGHT * 0.5, local);
+        railPostInstances.setMatrixAt(
+          nextRailPostIndex,
+          writeRouteInstancedScalePositionMatrix(
+            railPostMatrixScratch,
+            side * sideOffset,
+            BRIDGE_RAIL_HEIGHT * 0.5,
+            local,
+            1,
+            1,
+            1
+          )
+        );
       }
-      group.add(post);
+      nextRailPostIndex += 1;
     }
   }
+  group.add(railPostInstances);
 
   if (style.type === 'metal' && info.length > 1) {
     const truss = new three.Mesh(
