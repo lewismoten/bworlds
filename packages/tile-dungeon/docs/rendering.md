@@ -4,12 +4,13 @@ The full-detail dungeon landmark now instances its repeated corner towers,
 roof caps, gate posts, tower beacon braziers, and banner support hardware
 instead of emitting separate meshes for each one.
 
-The full-detail build now also exposes a progressive path with five phases:
+The full-detail build now also exposes a progressive path with six phases:
 
 - `shell-and-keep`
 - `towers`
-- `gate`
-- `beacons`
+- `gate-structure`
+- `gate-beacon`
+- `tower-beacons`
 - `banners`
 
 The synchronous `create3DModel()` path exhausts the same generator, so the

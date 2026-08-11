@@ -36,7 +36,9 @@ Always run tests to make sure all tests pass
         and `tile-town` now splits its full-detail building population into a
         third resumable batch so later structures no longer share one large
         follow-up population pass before town signage, banners, and night-light
-        work runs.
+        work runs, and `tile-dungeon` now yields separately for gate structure,
+        the gate beacon, tower beacons, and banners so those later landmark
+        passes no longer share one scheduler step after the tower pass.
 - [ ] Reduce unique materials and shader program variants.
       Progress: `tile-forest` now scopes its tree-family style material cache
       per Three host instead of sharing one process-wide material/texture

@@ -278,7 +278,7 @@ describe('tile dungeon', () => {
       done: false,
       value: {
         completedSteps: 1,
-        totalSteps: 5,
+        totalSteps: 6,
         label: 'shell-and-keep',
       },
     });
@@ -286,7 +286,7 @@ describe('tile dungeon', () => {
       done: false,
       value: {
         completedSteps: 2,
-        totalSteps: 5,
+        totalSteps: 6,
         label: 'towers',
       },
     });
@@ -294,23 +294,31 @@ describe('tile dungeon', () => {
       done: false,
       value: {
         completedSteps: 3,
-        totalSteps: 5,
-        label: 'gate',
+        totalSteps: 6,
+        label: 'gate-structure',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 4,
-        totalSteps: 5,
-        label: 'beacons',
+        totalSteps: 6,
+        label: 'gate-beacon',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 5,
-        totalSteps: 5,
+        totalSteps: 6,
+        label: 'tower-beacons',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 6,
+        totalSteps: 6,
         label: 'banners',
       },
     });

@@ -142,7 +142,7 @@ function* createDungeonModelProgressive({
   }
 
   const group = new three.Group();
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   const base = new three.Mesh(
     new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
@@ -320,7 +320,7 @@ function* createDungeonModelProgressive({
   yield {
     completedSteps: 3,
     totalSteps,
-    label: 'gate',
+    label: 'gate-structure',
   };
 
   createDungeonBeacon(
@@ -343,6 +343,11 @@ function* createDungeonModelProgressive({
     },
     style
   );
+  yield {
+    completedSteps: 4,
+    totalSteps,
+    label: 'gate-beacon',
+  };
 
   const towerBeacons = getDungeonTowerBeaconDescriptors(
     tileX,
@@ -377,9 +382,9 @@ function* createDungeonModelProgressive({
   });
   group.add(towerBeaconBraziers);
   yield {
-    completedSteps: 4,
+    completedSteps: 5,
     totalSteps,
-    label: 'beacons',
+    label: 'tower-beacons',
   };
 
   const banners = getDungeonBannerDescriptors(
@@ -440,7 +445,7 @@ function* createDungeonModelProgressive({
   group.add(bannerPoleInstances);
   group.add(bannerCrossbarInstances);
   yield {
-    completedSteps: 5,
+    completedSteps: 6,
     totalSteps,
     label: 'banners',
   };
