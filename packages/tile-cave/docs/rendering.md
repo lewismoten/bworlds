@@ -18,6 +18,9 @@ Current layout:
 - The repeated entrance boulders now share one `SphereGeometry`, one material,
   and one `InstancedMesh`, with per-instance scale and position stored in
   matrices.
+- The mirrored cave-mouth cheek rocks and inner pillars now each share one
+  `SphereGeometry`, one material, and one `InstancedMesh`, with local portal
+  positions and scale stored in matrices.
 - The hanging stalactite, cap, portal, lantern, and interior tunnel pieces
   remain ordinary meshes because they have distinct shapes, materials, or
   lighting behavior.

@@ -426,6 +426,14 @@ describe('tile cave', () => {
             children?: Array<{
               userData?: Record<string, unknown>;
               count?: number;
+              children?: Array<{
+                userData?: Record<string, unknown>;
+                count?: number;
+                matrices?: Array<{
+                  scale: { x: number; y: number; z: number };
+                  position?: { x: number; y: number; z: number };
+                }>;
+              }>;
               matrices?: Array<{ scale: { x: number; y: number; z: number } }>;
             }>;
           }
@@ -435,14 +443,36 @@ describe('tile cave', () => {
       const boulderInstances = model?.children?.filter(
         (child) => child.userData?.caveInstancedPart === 'entrance-boulder'
       );
+      const cheekInstances = model?.children
+        ?.flatMap((child) => child.children ?? [])
+        ?.filter(
+          (child) => child.userData?.caveInstancedPart === 'entrance-cheek'
+        );
+      const pillarInstances = model?.children
+        ?.flatMap((child) => child.children ?? [])
+        ?.filter(
+          (child) => child.userData?.caveInstancedPart === 'entrance-pillar'
+        );
 
       expect(boulderInstances).toHaveLength(1);
+      expect(cheekInstances).toHaveLength(1);
+      expect(pillarInstances).toHaveLength(1);
       expect((boulderInstances?.[0]?.count ?? 0) >= 3).toBe(true);
       expect(boulderInstances?.[0]?.matrices?.length).toBe(
         boulderInstances?.[0]?.count
       );
+      expect(cheekInstances?.[0]?.count).toBe(2);
+      expect(cheekInstances?.[0]?.matrices?.length).toBe(2);
+      expect(pillarInstances?.[0]?.count).toBe(2);
+      expect(pillarInstances?.[0]?.matrices?.length).toBe(2);
       expect(
         boulderInstances?.[0]?.matrices?.some((matrix) => matrix.scale.x > 1)
+      ).toBe(true);
+      expect(
+        cheekInstances?.[0]?.matrices?.some((matrix) => matrix.position.x < 0)
+      ).toBe(true);
+      expect(
+        cheekInstances?.[0]?.matrices?.some((matrix) => matrix.position.x > 0)
       ).toBe(true);
     } finally {
       globalThis.document = previousDocument;

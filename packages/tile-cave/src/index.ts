@@ -243,21 +243,41 @@ export function createCaveTilePlugin(): RuntimePlugin {
       crown.scale.set(2.2, 1.5, 1.05);
       portal.add(crown);
 
-      const leftCheek = new three.Mesh(
+      const cheekInstances = new three.InstancedMesh(
         new three.SphereGeometry(0.14, 7, 6),
         mountainMaterial
       );
-      leftCheek.position.set(-0.24, 0.2, 0.08);
-      leftCheek.scale.set(1.4, 1.9, 1.1);
-      portal.add(leftCheek);
-
-      const rightCheek = new three.Mesh(
-        new three.SphereGeometry(0.14, 7, 6),
-        mountainMaterial
+      cheekInstances.count = 2;
+      cheekInstances.userData = {
+        ...(cheekInstances.userData ?? {}),
+        caveInstancedPart: 'entrance-cheek',
+      };
+      const cheekMatrixScratch = new three.Matrix4();
+      cheekInstances.setMatrixAt(
+        0,
+        writeInstancedScalePositionMatrix(
+          cheekMatrixScratch,
+          -0.24,
+          0.2,
+          0.08,
+          1.4,
+          1.9,
+          1.1
+        )
       );
-      rightCheek.position.set(0.24, 0.2, 0.08);
-      rightCheek.scale.set(1.4, 1.9, 1.1);
-      portal.add(rightCheek);
+      cheekInstances.setMatrixAt(
+        1,
+        writeInstancedScalePositionMatrix(
+          cheekMatrixScratch,
+          0.24,
+          0.2,
+          0.08,
+          1.4,
+          1.9,
+          1.1
+        )
+      );
+      portal.add(cheekInstances);
 
       const mouthVoid = new three.Mesh(
         new three.CircleGeometry(0.18, 20),
@@ -297,21 +317,41 @@ export function createCaveTilePlugin(): RuntimePlugin {
       arch.rotation.z = Math.PI;
       portal.add(arch);
 
-      const leftPillar = new three.Mesh(
+      const pillarInstances = new three.InstancedMesh(
         new three.SphereGeometry(0.08, 6, 6),
         mountainMaterial
       );
-      leftPillar.position.set(-0.2, 0.16, 0.16);
-      leftPillar.scale.set(1, 1.9, 1.2);
-      portal.add(leftPillar);
-
-      const rightPillar = new three.Mesh(
-        new three.SphereGeometry(0.08, 6, 6),
-        mountainMaterial
+      pillarInstances.count = 2;
+      pillarInstances.userData = {
+        ...(pillarInstances.userData ?? {}),
+        caveInstancedPart: 'entrance-pillar',
+      };
+      const pillarMatrixScratch = new three.Matrix4();
+      pillarInstances.setMatrixAt(
+        0,
+        writeInstancedScalePositionMatrix(
+          pillarMatrixScratch,
+          -0.2,
+          0.16,
+          0.16,
+          1,
+          1.9,
+          1.2
+        )
       );
-      rightPillar.position.set(0.2, 0.16, 0.16);
-      rightPillar.scale.set(1, 1.9, 1.2);
-      portal.add(rightPillar);
+      pillarInstances.setMatrixAt(
+        1,
+        writeInstancedScalePositionMatrix(
+          pillarMatrixScratch,
+          0.2,
+          0.16,
+          0.16,
+          1,
+          1.9,
+          1.2
+        )
+      );
+      portal.add(pillarInstances);
 
       const sill = new three.Mesh(
         new three.SphereGeometry(0.1, 6, 6),
