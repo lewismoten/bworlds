@@ -9,6 +9,7 @@ import {
   resolveMusicDebugTimelineHoverDetail,
   resolveMusicDebugTimelineNoteBarColor,
   resolveMusicDebugTimelineLayout,
+  resolveMusicDebugTimelinePercussionLaneLabels,
   resolveMusicDebugTimelineNoteBars,
   resolveMusicDebugTimelineOffsetForX,
   resolveMusicDebugTimelineSeekOffset,
@@ -220,6 +221,19 @@ describe('music debug timeline', () => {
     expect(percussionBars[1]!.y).toBeGreaterThan(percussionBars[2]!.y);
   });
 
+  it('labels visible percussion lanes with readable drum-role names', () => {
+    expect(
+      resolveMusicDebugTimelinePercussionLaneLabels(
+        TIMELINE_PERCUSSION_LANES_SNAPSHOT,
+        DEFAULT_LAYOUT
+      )
+    ).toEqual([
+      expect.objectContaining({ key: 'kick-36', label: 'Kick' }),
+      expect.objectContaining({ key: 'snare-38', label: 'Snare' }),
+      expect.objectContaining({ key: 'cymbals-49', label: 'Cymbals' }),
+    ]);
+  });
+
   it('brightens note-bar colors when overlaps increase', () => {
     expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 1)).toBe('#4f8cff');
     expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 3)).toBe('#6fa1ff');
@@ -403,5 +417,16 @@ describe('music debug timeline', () => {
     expect(markup).toMatch(/<path d="M[0-9.]+ 84\.00 V296\.00"/);
     expect(markup).toContain('rgba(85,214,190,0.08)');
     expect(markup).toContain('stroke="#f5f7fb"');
+  });
+
+  it('renders percussion lane labels in the standalone svg export', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(
+      TIMELINE_PERCUSSION_LANES_SNAPSHOT
+    );
+
+    expect(markup).toContain('class="music-debug-timeline-percussion-lane-label"');
+    expect(markup).toContain('>Kick<');
+    expect(markup).toContain('>Snare<');
+    expect(markup).toContain('>Cymbals<');
   });
 });

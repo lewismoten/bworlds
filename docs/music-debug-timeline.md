@@ -18,6 +18,9 @@ Current behavior:
 - Per-track eye toggles above the timeline now hide or restore individual
   role lanes without affecting playback state, and that visibility choice is
   persisted with the rest of the debug page session.
+- The percussion row now draws readable lane labels from the resolved drum
+  families or voice names so separated kick, snare, cymbal, and similar lanes
+  can be read without relying on hover.
 - Hovering a note now shows its pitch or resolved drum voice plus duration, and
   the exported SVG note bars carry the same labels through `<title>` metadata.
 - Planned question and answer cadence markers now appear on the timeline header

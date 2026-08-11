@@ -58,7 +58,7 @@
 - [ ] Pan drum voices slightly for separation.
 - [ ] Make shaker and tambourine patches more distinct.
 - [ ] Make cymbals longer and hats shorter.
-- [ ] Add drum role labels to the report and timeline.
+- [x] Add drum role labels to the report and timeline.
 - [ ] Export one-shot drum previews for each drum voice.
 
 ## 6) Reduce oversized sample exports

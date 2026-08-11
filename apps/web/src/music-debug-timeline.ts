@@ -83,6 +83,13 @@ export type MusicDebugTimelineChordLabel = {
   endX: number;
 };
 
+export type MusicDebugTimelinePercussionLaneLabel = {
+  key: string;
+  label: string;
+  x: number;
+  y: number;
+};
+
 export function resolveMusicDebugTimelineLayout(
   width: number,
   height: number
@@ -464,12 +471,21 @@ export function drawMusicDebugTimeline(
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
     visibleRoles,
   });
+  const percussionLaneLabels = visibleRoles.includes('percussion')
+    ? resolveMusicDebugTimelinePercussionLaneLabels(snapshot, layout)
+    : [];
   for (const noteBar of noteBars) {
     context.fillStyle = resolveMusicDebugTimelineNoteBarColor(
       resolveMusicDebugDisplayRoleColor(noteBar.role),
       noteBar.overlapCount
     );
     context.fillRect(noteBar.x, noteBar.y, noteBar.width, noteBar.height);
+  }
+
+  context.fillStyle = '#7f929d';
+  context.font = '10px Trebuchet MS';
+  for (const laneLabel of percussionLaneLabels) {
+    context.fillText(laneLabel.label, laneLabel.x, laneLabel.y);
   }
 
   context.strokeStyle = 'rgba(255,255,255,0.12)';
@@ -524,6 +540,9 @@ export function buildMusicDebugTimelineSvgMarkup(
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
     visibleRoles,
   });
+  const percussionLaneLabels = visibleRoles.includes('percussion')
+    ? resolveMusicDebugTimelinePercussionLaneLabels(snapshot, layout)
+    : [];
   const chordCues = resolveMusicDebugChordCues(snapshot);
   const chordLabels = resolveMusicDebugTimelineChordLabels(
     layout,
@@ -648,6 +667,18 @@ export function buildMusicDebugTimelineSvgMarkup(
             )}</title></rect>`
         )
         .join('')}
+      ${percussionLaneLabels
+        .map(
+          (laneLabel) =>
+            `<text class="music-debug-timeline-percussion-lane-label" x="${laneLabel.x.toFixed(
+              2
+            )}" y="${laneLabel.y.toFixed(
+              2
+            )}" fill="#7f929d" font-family="Trebuchet MS, sans-serif" font-size="10">${escapeMusicDebugTimelineSvgText(
+              laneLabel.label
+            )}</text>`
+        )
+        .join('')}
       ${scaleOverlay.guides
         .map(
           (guide) =>
@@ -740,6 +771,60 @@ export function resolveMusicDebugTimelineNoteBars(
 
   applyNoteBarOverlapCounts(noteBars);
   return noteBars;
+}
+
+export function resolveMusicDebugTimelinePercussionLaneLabels(
+  snapshot: MusicDebugSnapshot,
+  layout: MusicDebugTimelineLayout
+): MusicDebugTimelinePercussionLaneLabel[] {
+  const percussionTrackIndex = layout.roleOrder.indexOf('percussion');
+  if (percussionTrackIndex < 0) {
+    return [];
+  }
+
+  const trackTop =
+    layout.topPad + percussionTrackIndex * layout.trackHeight + 10;
+  const trackBottom = trackTop + Math.max(10, layout.trackHeight - 18);
+  const laneMap = createPercussionLaneMap(snapshot.notes);
+  const familyCounts = createPercussionLaneFamilyCounts(snapshot.notes);
+  const labelsByKey = createPercussionLaneLabelsByKey(
+    snapshot.notes,
+    familyCounts
+  );
+
+  return [...laneMap.entries()]
+    .sort((left, right) => left[1] - right[1])
+    .flatMap(([key]) => {
+      const note = snapshot.notes.find((entry) => {
+        if (entry.role !== 'percussion') {
+          return false;
+        }
+        const voiceId = resolvePercussionVoiceIdFromInstrumentId(
+          entry.instrumentId
+        );
+        const family = resolvePercussionFamilyFromInstrumentId(
+          entry.instrumentId
+        );
+        return (voiceId ?? family ?? entry.instrumentId) === key;
+      });
+      if (!note) {
+        return [];
+      }
+      return [
+        {
+          key,
+          label: labelsByKey.get(key) ?? 'Percussion',
+          x: layout.leftPad + 6,
+          y:
+            resolvePercussionLaneCenterY({
+              note,
+              laneMap,
+              trackTop,
+              trackBottom,
+            }) + 3,
+        },
+      ];
+    });
 }
 
 function normalizeMusicDebugTimelineVisibleRoles(
@@ -1248,6 +1333,13 @@ function formatMusicDebugTimelinePercussionVoiceLabel(
     .join(' ');
 }
 
+function formatMusicDebugTimelinePercussionFamilyLabel(family: string): string {
+  return family
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 function formatMusicDebugTimelineHoverDuration(durationMs: number): string {
   if (durationMs < 1_000) {
     return `${Math.max(0, Math.round(durationMs))} ms`;
@@ -1338,6 +1430,49 @@ function createPercussionLaneMap(
       )
       .map((entry, index) => [entry.key, index])
   );
+}
+
+function createPercussionLaneFamilyCounts(
+  notes: readonly ProceduralMusicNote[]
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const note of notes) {
+    if (note.role !== 'percussion') {
+      continue;
+    }
+    const family = resolvePercussionFamilyFromInstrumentId(note.instrumentId);
+    if (!family) {
+      continue;
+    }
+    counts.set(family, (counts.get(family) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function createPercussionLaneLabelsByKey(
+  notes: readonly ProceduralMusicNote[],
+  familyCounts: ReadonlyMap<string, number>
+): Map<string, string> {
+  const labels = new Map<string, string>();
+
+  for (const note of notes) {
+    if (note.role !== 'percussion') {
+      continue;
+    }
+    const voiceId = resolvePercussionVoiceIdFromInstrumentId(note.instrumentId);
+    const family = resolvePercussionFamilyFromInstrumentId(note.instrumentId);
+    const key = voiceId ?? family ?? note.instrumentId;
+    if (labels.has(key)) {
+      continue;
+    }
+    const label =
+      family && (familyCounts.get(family) ?? 0) <= 1
+        ? formatMusicDebugTimelinePercussionFamilyLabel(family)
+        : formatMusicDebugTimelinePercussionVoiceLabel(note.instrumentId);
+    labels.set(key, label);
+  }
+
+  return labels;
 }
 
 function resolvePercussionLaneCenterY(options: {

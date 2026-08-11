@@ -1,5 +1,6 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import {
+  resolvePercussionGrooveRoleFromInstrumentId,
   resolvePercussionFamilyFromInstrumentId,
   resolvePercussionVoiceIdFromInstrumentId,
   resolvePercussionVoiceNameFromInstrumentId,
@@ -10,12 +11,14 @@ export type MusicDebugPercussionEventSummary = {
   startMs: number;
   durationMs: number;
   family: string | null;
+  grooveRole: string | null;
   voiceId: string | null;
   voiceName: string;
 };
 
 export type MusicDebugPercussionVoiceCount = {
   family: string | null;
+  grooveRole: string | null;
   voiceId: string | null;
   voiceName: string;
   noteCount: number;
@@ -29,6 +32,9 @@ export function createMusicDebugPercussionEventSummaries(
       return [];
     }
     const family = resolvePercussionFamilyFromInstrumentId(note.instrumentId);
+    const grooveRole = resolvePercussionGrooveRoleFromInstrumentId(
+      note.instrumentId
+    );
     const voiceId = resolvePercussionVoiceIdFromInstrumentId(note.instrumentId);
     const voiceName =
       resolvePercussionVoiceNameFromInstrumentId(note.instrumentId) ??
@@ -40,6 +46,7 @@ export function createMusicDebugPercussionEventSummaries(
         startMs: note.startMs,
         durationMs: note.durationMs,
         family,
+        grooveRole,
         voiceId,
         voiceName,
       },
@@ -61,6 +68,7 @@ export function createMusicDebugPercussionVoiceCounts(
     }
     counts.set(key, {
       family: event.family,
+      grooveRole: event.grooveRole,
       voiceId: event.voiceId,
       voiceName: event.voiceName,
       noteCount: 1,
@@ -80,7 +88,10 @@ export function formatMusicDebugPercussionEvents(
   return events
     .map(
       (event) =>
-        `P${event.noteIndex + 1} ${formatMusicDebugEventTime(event.startMs)} ${event.voiceName}`
+        `P${event.noteIndex + 1} ${formatMusicDebugEventTime(event.startMs)} ${formatMusicDebugPercussionRoleLabel(
+          event.family,
+          event.grooveRole
+        )} ${formatMusicDebugPercussionVoiceLabel(event.voiceName)}`
     )
     .join(' | ');
 }
@@ -93,8 +104,28 @@ export function formatMusicDebugPercussionVoiceCounts(
     return 'none';
   }
   return counts
-    .map((entry) => `${entry.voiceName} ${entry.noteCount}`)
+    .map(
+      (entry) =>
+        `${formatMusicDebugPercussionRoleLabel(
+          entry.family,
+          entry.grooveRole
+        )} ${formatMusicDebugPercussionVoiceLabel(entry.voiceName)} ${entry.noteCount}`
+    )
     .join(' | ');
+}
+
+function formatMusicDebugPercussionRoleLabel(
+  family: string | null,
+  grooveRole: string | null
+): string {
+  const familyLabel = family ? family.replaceAll('-', ' ') : 'percussion';
+  const grooveLabel =
+    grooveRole && grooveRole !== family ? ` / ${grooveRole}` : '';
+  return `${familyLabel}${grooveLabel}`;
+}
+
+function formatMusicDebugPercussionVoiceLabel(voiceName: string): string {
+  return `(${voiceName.replaceAll('-', ' ')})`;
 }
 
 function formatMusicDebugEventTime(startMs: number): string {

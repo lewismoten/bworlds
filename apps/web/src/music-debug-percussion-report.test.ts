@@ -25,22 +25,25 @@ describe('music debug percussion report', () => {
     expect(createMusicDebugPercussionEventSummaries(notes)).toEqual([
       expect.objectContaining({
         noteIndex: 0,
+        grooveRole: null,
         voiceId: 'kick-36',
         voiceName: 'kick-center',
       }),
       expect.objectContaining({
         noteIndex: 1,
+        grooveRole: null,
         voiceId: 'hand-percussion-54',
         voiceName: 'tambourine-hit',
       }),
       expect.objectContaining({
         noteIndex: 2,
+        grooveRole: null,
         voiceId: 'shaker-69',
         voiceName: 'cabasa',
       }),
     ]);
     expect(formatMusicDebugPercussionEvents(notes)).toBe(
-      'P1 0:00.0 kick-center | P2 0:00.8 tambourine-hit | P3 0:01.5 cabasa'
+      'P1 0:00.0 kick (kick center) | P2 0:00.8 hand percussion (tambourine hit) | P3 0:01.5 shaker (cabasa)'
     );
   });
 
@@ -53,18 +56,36 @@ describe('music debug percussion report', () => {
 
     expect(createMusicDebugPercussionVoiceCounts(notes)).toEqual([
       expect.objectContaining({
+        grooveRole: null,
         voiceId: 'kick-36',
         voiceName: 'kick-center',
         noteCount: 2,
       }),
       expect.objectContaining({
+        grooveRole: null,
         voiceId: 'shaker-69',
         voiceName: 'cabasa',
         noteCount: 1,
       }),
     ]);
     expect(formatMusicDebugPercussionVoiceCounts(notes)).toBe(
-      'kick-center 2 | cabasa 1'
+      'kick (kick center) 2 | shaker (cabasa) 1'
+    );
+  });
+
+  it('includes groove-role labels when percussion notes encode them', () => {
+    const notes = [
+      createPercussionNote(
+        'deep-forest:percussion:3:-2:perc-cymbals-49:0:groove-accent',
+        0
+      ),
+    ];
+
+    expect(formatMusicDebugPercussionEvents(notes)).toBe(
+      'P1 0:00.0 cymbals / accent (crash)'
+    );
+    expect(formatMusicDebugPercussionVoiceCounts(notes)).toBe(
+      'cymbals / accent (crash) 1'
     );
   });
 });
