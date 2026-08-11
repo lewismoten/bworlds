@@ -9,14 +9,27 @@ const DEFAULT_SUITE_TIMEOUT_MS = 60_000;
 const LOCK_FILE_NAME = '.vitest-full-suite.lock';
 const LOCK_WAIT_POLL_MS = 500;
 const TEST_FILE_PATTERN = /[A-Za-z0-9_./-]+\.test\.[cm]?[jt]sx?/g;
+const PASSTHROUGH_OPTIONS_WITH_VALUES = new Set([
+  '--reporter',
+  '--outputFile',
+  '--config',
+  '--project',
+]);
 
 export function parseSupervisorArgs(argv) {
   const passthroughArgs = [];
+  const positionalArgs = [];
   let suiteTimeoutMs = DEFAULT_SUITE_TIMEOUT_MS;
   let suiteMode = 'all';
+  let consumeNextPassthroughValue = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
+    if (consumeNextPassthroughValue) {
+      passthroughArgs.push(arg);
+      consumeNextPassthroughValue = false;
+      continue;
+    }
     if (arg === '--suite-timeout-ms') {
       const value = Number(argv[index + 1] ?? '');
       if (Number.isFinite(value) && value > 0) {
@@ -34,9 +47,19 @@ export function parseSupervisorArgs(argv) {
       }
     }
     passthroughArgs.push(arg);
+    if (
+      PASSTHROUGH_OPTIONS_WITH_VALUES.has(arg) &&
+      index + 1 < argv.length &&
+      !argv[index + 1]?.startsWith('-')
+    ) {
+      consumeNextPassthroughValue = true;
+      continue;
+    }
+    if (!arg.startsWith('-')) {
+      positionalArgs.push(arg);
+    }
   }
 
-  const positionalArgs = passthroughArgs.filter((arg) => !arg.startsWith('-'));
   return {
     passthroughArgs,
     positionalArgs,

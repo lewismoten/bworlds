@@ -6,7 +6,7 @@ export const LONG_TEST_FILES = [
   'apps/web/src/music-debug-midi-audit.test.ts',
   'apps/web/src/music-debug-export-bundle-percussion.test.ts',
   'apps/web/src/music-debug-export-bundle.test.ts',
-  'apps/web/src/music-debug-known-good-seeds.test.ts',
+  'apps/web/src/music-debug-known-good-seeds.long.test.ts',
   'apps/web/src/music-debug-midi.test.ts',
   'apps/web/src/music-debug-note-analysis.test.ts',
   'apps/web/src/music-debug-snapshot-signature.long.test.ts',

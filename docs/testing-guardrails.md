@@ -27,7 +27,10 @@ When a helper can be tested with a small structural fixture, keep that as the
 fast-path unit test and move the representative full-generation determinism
 check into a `*.long.test.ts` companion. The music snapshot signature tests now
 follow that split so normal checks do not rebuild the full procedural song just
-to verify string serialization behavior.
+to verify string serialization behavior. The known-good seed registry now does
+the same: fast-path tests keep seed-id and resolver coverage in
+`music-debug-known-good-seeds.test.ts`, while the full per-seed snapshot
+determinism sweep lives in `music-debug-known-good-seeds.long.test.ts`.
 
 When a long-running music or world-generation test needs representative
 snapshots, prefer module-level shared fixtures or named known-good seeds over

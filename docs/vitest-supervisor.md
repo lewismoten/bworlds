@@ -26,6 +26,11 @@ Related commands:
 - `npm run test:hang-debug -- <files...>`
   Re-runs suspected hanging files with one worker and the verbose reporter.
 
+Reporter and output options such as `--reporter json` and
+`--outputFile /tmp/report.json` still count as full-suite invocations unless an
+actual test file path is present, so suite-mode filtering keeps working for CI
+and profiling runs.
+
 Current timeout defaults still live in [vitest.config.ts](/Users/lewismoten/dev/bworlds/vitest.config.ts:1):
 
 - `testTimeout: 1500`

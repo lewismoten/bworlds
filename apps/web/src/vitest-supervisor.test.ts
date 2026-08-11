@@ -64,6 +64,30 @@ describe('vitest supervisor', () => {
     });
   });
 
+  it('keeps option values out of positional file detection', () => {
+    expect(
+      parseSupervisorArgs([
+        '--suite-mode',
+        'long',
+        '--reporter',
+        'json',
+        '--outputFile',
+        '/tmp/vitest.json',
+      ])
+    ).toEqual({
+      passthroughArgs: [
+        '--reporter',
+        'json',
+        '--outputFile',
+        '/tmp/vitest.json',
+      ],
+      positionalArgs: [],
+      suiteTimeoutMs: 60_000,
+      suiteMode: 'long',
+      isFullSuiteRun: true,
+    });
+  });
+
   it('tracks recent test files and the last observed verbose test label', () => {
     const state = createVitestSupervisorState();
 
