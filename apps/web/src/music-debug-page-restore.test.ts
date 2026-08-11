@@ -31,6 +31,7 @@ describe('music debug page restore', () => {
         mutedVoiceIds: ['snare-38'],
       },
       hiddenRoles: ['harmony', 'percussion'],
+      hiddenTimelineOverlays: ['motif', 'climax'],
       trackPlaybackState: {
         soloRoles: ['lead'],
         mutedRoles: ['bass'],
@@ -70,6 +71,7 @@ describe('music debug page restore', () => {
         mutedVoiceIds: ['snare-38'],
       },
       hiddenRoles: ['harmony', 'percussion'],
+      hiddenTimelineOverlays: ['motif', 'climax'],
       trackPlaybackState: {
         soloRoles: ['lead'],
         mutedRoles: ['bass'],

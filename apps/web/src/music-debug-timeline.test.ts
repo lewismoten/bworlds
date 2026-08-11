@@ -5,6 +5,7 @@ import { resolveMusicDebugChordCueAtOffset } from './music-debug-chord-cues.ts';
 import { resolveMusicDebugKnownGoodSeed } from './music-debug-known-good-seeds.ts';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
+import { resolveMusicDebugDisplayRoleColor } from './music-debug-role-display.ts';
 import {
   getProceduralScaleDegreeSemitones,
   resolveProceduralMidiNoteFrequency,
@@ -545,6 +546,20 @@ describe('music debug timeline', () => {
     expect(resolveMusicDebugTimelineNoteBarFill(warningBar!)).toBe('#ffd166');
   });
 
+  it('can hide note warning overlays while keeping the note bars visible', () => {
+    const warningBar = resolveMusicDebugTimelineNoteBars(
+      OUT_OF_SCALE_TIMELINE_SNAPSHOT,
+      DEFAULT_LAYOUT
+    ).find((bar) => bar.role === 'lead')!;
+
+    expect(resolveMusicDebugTimelineNoteBarFill(warningBar, false)).toBe(
+      resolveMusicDebugTimelineNoteBarColor(
+        resolveMusicDebugDisplayRoleColor(warningBar.role),
+        warningBar.overlapCount
+      )
+    );
+  });
+
   it('thins dense chord labels and abbreviates narrow cue spans', () => {
     const layout = resolveMusicDebugTimelineLayout(320, 320);
     const chordLabels = resolveMusicDebugTimelineChordLabels(layout, 4_000, [
@@ -722,6 +737,36 @@ describe('music debug timeline', () => {
         hoverDurationLabel: 'Phrase 1 • Q cadence • target+harmony warning',
       })
     );
+  });
+
+  it('hides cadence hover details when the cadence overlay is disabled', () => {
+    const warningMarker = resolveMusicDebugCadenceMarkers(
+      CADENCE_WARNING_TIMELINE_SNAPSHOT
+    ).find(
+      (marker) =>
+        marker.sectionId === FOREST_WARNING_MARKER.sectionId &&
+        marker.kind === FOREST_WARNING_MARKER.kind &&
+        marker.measureNumber === FOREST_WARNING_MARKER.measureNumber
+    )!;
+
+    expect(
+      resolveMusicDebugTimelineHoverDetail({
+        snapshot: CADENCE_WARNING_TIMELINE_SNAPSHOT,
+        canvas: { width: 960, height: 320 },
+        clientX:
+          resolveMusicDebugTimelineXForOffset(
+            DEFAULT_LAYOUT,
+            CADENCE_WARNING_TIMELINE_SNAPSHOT.durationMs,
+            warningMarker.offsetMs
+          ) + 10,
+        clientY: 48,
+        boundsLeft: 0,
+        boundsTop: 0,
+        boundsWidth: 960,
+        boundsHeight: 320,
+        hiddenOverlays: ['cadence'],
+      })
+    ).toBeNull();
   });
 
   it('surfaces harmony drift details when hovering a drift marker', () => {
@@ -965,6 +1010,34 @@ describe('music debug timeline', () => {
 
     expect(markup).toContain('class="music-debug-timeline-cadence-warning"');
     expect(markup).toContain('failed target and harmony checks');
+  });
+
+  it('omits hidden overlay groups from svg exports', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(
+      CADENCE_WARNING_TIMELINE_SNAPSHOT,
+      {
+        hiddenOverlays: [
+          'cadence',
+          'harmony-drift',
+          'bass-drift',
+          'motif',
+          'climax',
+          'note-warnings',
+        ],
+      }
+    );
+
+    expect(markup).not.toContain('class="music-debug-timeline-cadence-marker"');
+    expect(markup).not.toContain(
+      'class="music-debug-timeline-harmony-drift-marker"'
+    );
+    expect(markup).not.toContain(
+      'class="music-debug-timeline-bass-drift-marker"'
+    );
+    expect(markup).not.toContain('class="music-debug-timeline-motif-marker');
+    expect(markup).not.toContain('class="music-debug-timeline-climax-marker');
+    expect(markup).not.toContain('fill="#ff7b72"');
+    expect(markup).not.toContain('fill="#ffd166"');
   });
 
   it('renders harmony drift markers in svg exports', () => {

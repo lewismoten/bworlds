@@ -27,6 +27,11 @@ import {
   resolveMusicDebugCadenceMarkers,
 } from './music-debug-cadence-markers.ts';
 import {
+  isMusicDebugTimelineOverlayVisible,
+  normalizeMusicDebugTimelineHiddenOverlayKinds,
+  type MusicDebugTimelineOverlayKind,
+} from './music-debug-timeline-overlays.ts';
+import {
   resolveMusicDebugBeatSubdivisionMarkers,
   type MusicDebugMeasureMarker,
   resolveMusicDebugMeasureMarkers,
@@ -271,6 +276,7 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
   boundsWidth: number;
   boundsHeight: number;
   visibleRoles?: readonly MusicDebugDisplayRole[] | null;
+  hiddenOverlays?: readonly MusicDebugTimelineOverlayKind[] | null;
 }): MusicDebugTimelineHoverDetail | null {
   const layout = resolveMusicDebugTimelineLayout(
     options.canvas.width,
@@ -284,6 +290,9 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
     ((options.clientY - options.boundsTop) /
       Math.max(1, options.boundsHeight)) *
     options.canvas.height;
+  const hiddenOverlays = normalizeMusicDebugTimelineHiddenOverlayKinds(
+    options.hiddenOverlays
+  );
   const measureMarkers = resolveMusicDebugMeasureMarkers(options.snapshot);
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(options.snapshot);
   const motifMarkers = resolveMusicDebugTimelineMotifMarkers(options.snapshot);
@@ -303,68 +312,79 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
     visibleRoles: options.visibleRoles,
   });
 
-  for (const marker of motifMarkers) {
-    const hoverDetail = resolveMusicDebugTimelineMotifMarkerHoverDetail({
-      layout,
-      durationMs: options.snapshot.durationMs,
-      canvasX,
-      canvasY,
-      marker,
-    });
-    if (hoverDetail) {
-      return hoverDetail;
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'motif')) {
+    for (const marker of motifMarkers) {
+      const hoverDetail = resolveMusicDebugTimelineMotifMarkerHoverDetail({
+        layout,
+        durationMs: options.snapshot.durationMs,
+        canvasX,
+        canvasY,
+        marker,
+      });
+      if (hoverDetail) {
+        return hoverDetail;
+      }
     }
   }
 
-  for (const marker of climaxMarkers) {
-    const hoverDetail = resolveMusicDebugTimelineClimaxMarkerHoverDetail({
-      layout,
-      durationMs: options.snapshot.durationMs,
-      canvasX,
-      canvasY,
-      marker,
-    });
-    if (hoverDetail) {
-      return hoverDetail;
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'climax')) {
+    for (const marker of climaxMarkers) {
+      const hoverDetail = resolveMusicDebugTimelineClimaxMarkerHoverDetail({
+        layout,
+        durationMs: options.snapshot.durationMs,
+        canvasX,
+        canvasY,
+        marker,
+      });
+      if (hoverDetail) {
+        return hoverDetail;
+      }
     }
   }
 
-  for (const marker of harmonyDriftMarkers) {
-    const hoverDetail = resolveMusicDebugTimelineHarmonyDriftMarkerHoverDetail({
-      layout,
-      durationMs: options.snapshot.durationMs,
-      canvasX,
-      canvasY,
-      marker,
-    });
-    if (hoverDetail) {
-      return hoverDetail;
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'harmony-drift')) {
+    for (const marker of harmonyDriftMarkers) {
+      const hoverDetail =
+        resolveMusicDebugTimelineHarmonyDriftMarkerHoverDetail({
+          layout,
+          durationMs: options.snapshot.durationMs,
+          canvasX,
+          canvasY,
+          marker,
+        });
+      if (hoverDetail) {
+        return hoverDetail;
+      }
     }
   }
 
-  for (const marker of bassDriftMarkers) {
-    const hoverDetail = resolveMusicDebugTimelineBassDriftMarkerHoverDetail({
-      layout,
-      durationMs: options.snapshot.durationMs,
-      canvasX,
-      canvasY,
-      marker,
-    });
-    if (hoverDetail) {
-      return hoverDetail;
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'bass-drift')) {
+    for (const marker of bassDriftMarkers) {
+      const hoverDetail = resolveMusicDebugTimelineBassDriftMarkerHoverDetail({
+        layout,
+        durationMs: options.snapshot.durationMs,
+        canvasX,
+        canvasY,
+        marker,
+      });
+      if (hoverDetail) {
+        return hoverDetail;
+      }
     }
   }
 
-  for (const marker of cadenceMarkers) {
-    const hoverDetail = resolveMusicDebugTimelineCadenceMarkerHoverDetail({
-      layout,
-      durationMs: options.snapshot.durationMs,
-      canvasX,
-      canvasY,
-      marker,
-    });
-    if (hoverDetail) {
-      return hoverDetail;
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'cadence')) {
+    for (const marker of cadenceMarkers) {
+      const hoverDetail = resolveMusicDebugTimelineCadenceMarkerHoverDetail({
+        layout,
+        durationMs: options.snapshot.durationMs,
+        canvasX,
+        canvasY,
+        marker,
+      });
+      if (hoverDetail) {
+        return hoverDetail;
+      }
     }
   }
 
@@ -839,6 +859,7 @@ export function drawMusicDebugTimeline(
     playheadOffsetMs?: number;
     activeRegion?: MusicDebugPlaybackRegion | null;
     visibleRoles?: readonly MusicDebugDisplayRole[] | null;
+    hiddenOverlays?: readonly MusicDebugTimelineOverlayKind[] | null;
   } = {}
 ): void {
   const context = canvas.getContext('2d');
@@ -852,6 +873,9 @@ export function drawMusicDebugTimeline(
   const durationMs = Math.max(snapshot.durationMs, 1);
   const visibleRoles = normalizeMusicDebugTimelineVisibleRoles(
     options.visibleRoles
+  );
+  const hiddenOverlays = normalizeMusicDebugTimelineHiddenOverlayKinds(
+    options.hiddenOverlays
   );
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
@@ -925,11 +949,15 @@ export function drawMusicDebugTimeline(
   context.fillStyle = '#d8e5ef';
   context.font = '11px Trebuchet MS';
   context.textAlign = 'center';
-  for (const marker of motifMarkers) {
-    drawMusicDebugTimelineMotifMarker(context, layout, durationMs, marker);
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'motif')) {
+    for (const marker of motifMarkers) {
+      drawMusicDebugTimelineMotifMarker(context, layout, durationMs, marker);
+    }
   }
-  for (const marker of climaxMarkers) {
-    drawMusicDebugTimelineClimaxMarker(context, layout, durationMs, marker);
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'climax')) {
+    for (const marker of climaxMarkers) {
+      drawMusicDebugTimelineClimaxMarker(context, layout, durationMs, marker);
+    }
   }
   for (const chordLabel of chordLabels) {
     context.fillText(
@@ -938,38 +966,49 @@ export function drawMusicDebugTimeline(
       MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y
     );
   }
-  for (const marker of cadenceMarkers) {
-    const x = resolveMusicDebugTimelineXForOffset(
-      layout,
-      durationMs,
-      marker.offsetMs
-    );
-    context.fillStyle =
-      marker.kind === 'question' ? 'rgba(255, 204, 51, 0.9)' : '#f5f7fb';
-    context.fillRect(
-      x - 1,
-      layout.topPad - 10,
-      2,
-      layout.height - layout.topPad + 10
-    );
-    context.fillStyle = marker.kind === 'question' ? '#ffcc33' : '#f5f7fb';
-    context.fillText(
-      marker.shortLabel,
-      x,
-      MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y
-    );
-    drawMusicDebugTimelineCadenceWarningBadge(context, marker, x);
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'cadence')) {
+    for (const marker of cadenceMarkers) {
+      const x = resolveMusicDebugTimelineXForOffset(
+        layout,
+        durationMs,
+        marker.offsetMs
+      );
+      context.fillStyle =
+        marker.kind === 'question' ? 'rgba(255, 204, 51, 0.9)' : '#f5f7fb';
+      context.fillRect(
+        x - 1,
+        layout.topPad - 10,
+        2,
+        layout.height - layout.topPad + 10
+      );
+      context.fillStyle = marker.kind === 'question' ? '#ffcc33' : '#f5f7fb';
+      context.fillText(
+        marker.shortLabel,
+        x,
+        MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y
+      );
+      drawMusicDebugTimelineCadenceWarningBadge(context, marker, x);
+    }
   }
-  for (const marker of harmonyDriftMarkers) {
-    drawMusicDebugTimelineHarmonyDriftMarker(
-      context,
-      layout,
-      durationMs,
-      marker
-    );
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'harmony-drift')) {
+    for (const marker of harmonyDriftMarkers) {
+      drawMusicDebugTimelineHarmonyDriftMarker(
+        context,
+        layout,
+        durationMs,
+        marker
+      );
+    }
   }
-  for (const marker of bassDriftMarkers) {
-    drawMusicDebugTimelineBassDriftMarker(context, layout, durationMs, marker);
+  if (isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'bass-drift')) {
+    for (const marker of bassDriftMarkers) {
+      drawMusicDebugTimelineBassDriftMarker(
+        context,
+        layout,
+        durationMs,
+        marker
+      );
+    }
   }
   context.fillStyle = '#8fa4af';
   for (const measure of measureMarkers) {
@@ -995,7 +1034,10 @@ export function drawMusicDebugTimeline(
     ? resolveMusicDebugTimelinePercussionLaneLabels(snapshot, layout)
     : [];
   for (const noteBar of noteBars) {
-    context.fillStyle = resolveMusicDebugTimelineNoteBarFill(noteBar);
+    context.fillStyle = resolveMusicDebugTimelineNoteBarFill(
+      noteBar,
+      isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'note-warnings')
+    );
     context.fillRect(noteBar.x, noteBar.y, noteBar.width, noteBar.height);
   }
 
@@ -1044,6 +1086,7 @@ export function buildMusicDebugTimelineSvgMarkup(
     playheadOffsetMs?: number;
     activeRegion?: MusicDebugPlaybackRegion | null;
     visibleRoles?: readonly MusicDebugDisplayRole[] | null;
+    hiddenOverlays?: readonly MusicDebugTimelineOverlayKind[] | null;
   } = {}
 ): string {
   const width = options.width ?? MUSIC_DEBUG_TIMELINE_EXPORT_WIDTH;
@@ -1052,6 +1095,9 @@ export function buildMusicDebugTimelineSvgMarkup(
   const durationMs = Math.max(snapshot.durationMs, 1);
   const visibleRoles = normalizeMusicDebugTimelineVisibleRoles(
     options.visibleRoles
+  );
+  const hiddenOverlays = normalizeMusicDebugTimelineHiddenOverlayKinds(
+    options.hiddenOverlays
   );
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
@@ -1138,24 +1184,32 @@ export function buildMusicDebugTimelineSvgMarkup(
           ).toUpperCase()}</text>`;
         })
         .join('')}
-      ${motifMarkers
-        .map((marker) =>
-          buildMusicDebugTimelineMotifMarkerSvgMarkup(
-            layout,
-            durationMs,
-            marker
-          )
-        )
-        .join('')}
-      ${climaxMarkers
-        .map((marker) =>
-          buildMusicDebugTimelineClimaxMarkerSvgMarkup(
-            layout,
-            durationMs,
-            marker
-          )
-        )
-        .join('')}
+      ${
+        isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'motif')
+          ? motifMarkers
+              .map((marker) =>
+                buildMusicDebugTimelineMotifMarkerSvgMarkup(
+                  layout,
+                  durationMs,
+                  marker
+                )
+              )
+              .join('')
+          : ''
+      }
+      ${
+        isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'climax')
+          ? climaxMarkers
+              .map((marker) =>
+                buildMusicDebugTimelineClimaxMarkerSvgMarkup(
+                  layout,
+                  durationMs,
+                  marker
+                )
+              )
+              .join('')
+          : ''
+      }
       ${chordLabels
         .map((chordLabel) => {
           return `<text class="music-debug-timeline-chord-cue" x="${chordLabel.x.toFixed(
@@ -1165,48 +1219,62 @@ export function buildMusicDebugTimelineSvgMarkup(
           )}" fill="#d8e5ef" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${chordLabel.label}</text>`;
         })
         .join('')}
-      ${cadenceMarkers
-        .map((marker) => {
-          const x = resolveMusicDebugTimelineXForOffset(
-            layout,
-            durationMs,
-            marker.offsetMs
-          );
-          const stroke =
-            marker.kind === 'question' ? 'rgba(255,204,51,0.9)' : '#f5f7fb';
-          const fill = marker.kind === 'question' ? '#ffcc33' : '#f5f7fb';
-          return `<path class="music-debug-timeline-cadence-marker" d="M${x.toFixed(
-            2
-          )} ${(layout.topPad - 10).toFixed(2)} V${layout.height.toFixed(
-            2
-          )}" fill="none" stroke="${stroke}" stroke-width="2"></path><text x="${x.toFixed(
-            2
-          )}" y="${MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y.toFixed(
-            2
-          )}" fill="${fill}" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${marker.shortLabel}</text>${buildMusicDebugTimelineCadenceWarningBadgeSvgMarkup(
-            marker,
-            x
-          )}`;
-        })
-        .join('')}
-      ${harmonyDriftMarkers
-        .map((marker) =>
-          buildMusicDebugTimelineHarmonyDriftMarkerSvgMarkup(
-            layout,
-            durationMs,
-            marker
-          )
-        )
-        .join('')}
-      ${bassDriftMarkers
-        .map((marker) =>
-          buildMusicDebugTimelineBassDriftMarkerSvgMarkup(
-            layout,
-            durationMs,
-            marker
-          )
-        )
-        .join('')}
+      ${
+        isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'cadence')
+          ? cadenceMarkers
+              .map((marker) => {
+                const x = resolveMusicDebugTimelineXForOffset(
+                  layout,
+                  durationMs,
+                  marker.offsetMs
+                );
+                const stroke =
+                  marker.kind === 'question'
+                    ? 'rgba(255,204,51,0.9)'
+                    : '#f5f7fb';
+                const fill = marker.kind === 'question' ? '#ffcc33' : '#f5f7fb';
+                return `<path class="music-debug-timeline-cadence-marker" d="M${x.toFixed(
+                  2
+                )} ${(layout.topPad - 10).toFixed(2)} V${layout.height.toFixed(
+                  2
+                )}" fill="none" stroke="${stroke}" stroke-width="2"></path><text x="${x.toFixed(
+                  2
+                )}" y="${MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y.toFixed(
+                  2
+                )}" fill="${fill}" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${marker.shortLabel}</text>${buildMusicDebugTimelineCadenceWarningBadgeSvgMarkup(
+                  marker,
+                  x
+                )}`;
+              })
+              .join('')
+          : ''
+      }
+      ${
+        isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'harmony-drift')
+          ? harmonyDriftMarkers
+              .map((marker) =>
+                buildMusicDebugTimelineHarmonyDriftMarkerSvgMarkup(
+                  layout,
+                  durationMs,
+                  marker
+                )
+              )
+              .join('')
+          : ''
+      }
+      ${
+        isMusicDebugTimelineOverlayVisible(hiddenOverlays, 'bass-drift')
+          ? bassDriftMarkers
+              .map((marker) =>
+                buildMusicDebugTimelineBassDriftMarkerSvgMarkup(
+                  layout,
+                  durationMs,
+                  marker
+                )
+              )
+              .join('')
+          : ''
+      }
       ${measureMarkers
         .map((measure) => {
           if (!measure.label) {
@@ -1229,7 +1297,11 @@ export function buildMusicDebugTimelineSvgMarkup(
             )}" width="${noteBar.width.toFixed(2)}" height="${noteBar.height.toFixed(
               2
             )}" fill="${resolveMusicDebugTimelineNoteBarFill(
-              noteBar
+              noteBar,
+              isMusicDebugTimelineOverlayVisible(
+                hiddenOverlays,
+                'note-warnings'
+              )
             )}" rx="2" ry="2"><title>${escapeMusicDebugTimelineSvgText(
               `${noteBar.hoverLabel} (${noteBar.hoverDurationLabel})`
             )}</title></rect>`
@@ -1433,12 +1505,13 @@ export function resolveMusicDebugTimelineNoteBarFill(
   noteBar: Pick<
     MusicDebugTimelineNoteBar,
     'warningKind' | 'role' | 'overlapCount'
-  >
+  >,
+  showWarningOverlays = true
 ): string {
-  if (noteBar.warningKind === 'out-of-scale') {
+  if (showWarningOverlays && noteBar.warningKind === 'out-of-scale') {
     return '#ff7b72';
   }
-  if (noteBar.warningKind === 'non-chord-tone') {
+  if (showWarningOverlays && noteBar.warningKind === 'non-chord-tone') {
     return '#ffd166';
   }
   return resolveMusicDebugTimelineNoteBarColor(

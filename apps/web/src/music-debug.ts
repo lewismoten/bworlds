@@ -950,6 +950,11 @@ export function buildMusicDebugShellMarkup(
               class="music-debug-track-visibility"
               aria-label="Track visibility"
             ></div>
+            <div
+              id="music-debug-overlay-legend"
+              class="music-debug-overlay-legend"
+              aria-label="Timeline overlay legend"
+            ></div>
             <canvas id="music-debug-timeline" width="960" height="320"></canvas>
             <div
               id="music-debug-timeline-hover"

@@ -24,6 +24,10 @@ import {
   normalizeMusicDebugTrackPlaybackState,
   type MusicDebugTrackPlaybackState,
 } from './music-debug-track-playback.ts';
+import {
+  normalizeMusicDebugTimelineHiddenOverlayKinds,
+  type MusicDebugTimelineOverlayKind,
+} from './music-debug-timeline-overlays.ts';
 export { resolveMusicDebugPlaybackResumeOffset } from './music-debug-playback-offset.ts';
 
 const MUSIC_DEBUG_PAGE_STORAGE_KEY = 'bworlds:music-debug-page';
@@ -35,6 +39,7 @@ export type MusicDebugPagePersistenceState = {
   dryPlaybackEnabled: boolean;
   percussionPlaybackState: MusicDebugPercussionPlaybackState;
   hiddenRoles: MusicDebugDisplayRole[];
+  hiddenTimelineOverlays: MusicDebugTimelineOverlayKind[];
   trackPlaybackState: MusicDebugTrackPlaybackState;
   previewOffsetMs: number;
   shouldResume: boolean;
@@ -129,6 +134,9 @@ export function normalizeMusicDebugPagePersistenceState(
       value?.percussionPlaybackState
     ),
     hiddenRoles: normalizeMusicDebugDisplayRoles(value?.hiddenRoles),
+    hiddenTimelineOverlays: normalizeMusicDebugTimelineHiddenOverlayKinds(
+      value?.hiddenTimelineOverlays
+    ),
     trackPlaybackState: normalizeMusicDebugTrackPlaybackState(
       value?.trackPlaybackState
     ),

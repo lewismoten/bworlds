@@ -6,11 +6,13 @@ import { setMusicDebugNamedFormValue } from './music-debug-form.ts';
 import type { MusicDebugDisplayRole } from './music-debug-role-display.ts';
 import type { MusicDebugPagePersistenceState } from './music-debug-page-persistence.ts';
 import type { MusicDebugTrackPlaybackState } from './music-debug-track-playback.ts';
+import type { MusicDebugTimelineOverlayKind } from './music-debug-timeline-overlays.ts';
 
 export type RestoredMusicDebugPageState = {
   previewOffsetMs: number;
   percussionPlaybackState: MusicDebugPercussionPlaybackState;
   hiddenRoles: MusicDebugDisplayRole[];
+  hiddenTimelineOverlays: MusicDebugTimelineOverlayKind[];
   trackPlaybackState: MusicDebugTrackPlaybackState;
 };
 
@@ -99,6 +101,7 @@ export function restoreMusicDebugPageStateFromPersistence(options: {
       persistedState.percussionPlaybackState
     ),
     hiddenRoles: [...persistedState.hiddenRoles],
+    hiddenTimelineOverlays: [...persistedState.hiddenTimelineOverlays],
     trackPlaybackState: persistedState.trackPlaybackState,
   };
 }

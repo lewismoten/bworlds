@@ -69,6 +69,11 @@ import {
   resolveMusicDebugTimelineTrackLabelRoleAtPoint,
 } from './music-debug-timeline.ts';
 import {
+  MUSIC_DEBUG_TIMELINE_OVERLAY_KINDS,
+  toggleMusicDebugTimelineHiddenOverlayKind,
+  type MusicDebugTimelineOverlayKind,
+} from './music-debug-timeline-overlays.ts';
+import {
   startMusicDebugTimelinePointerDrag,
   updateMusicDebugTimelinePointerDrag,
   type MusicDebugTimelinePointerDragState,
@@ -105,6 +110,9 @@ const timelineHover = document.querySelector<HTMLElement>(
 );
 const trackVisibilityRoot = document.querySelector<HTMLElement>(
   '#music-debug-track-visibility'
+);
+const overlayLegendRoot = document.querySelector<HTMLElement>(
+  '#music-debug-overlay-legend'
 );
 const playButton =
   document.querySelector<HTMLButtonElement>('#music-debug-play');
@@ -171,6 +179,7 @@ let playbackFrameHandle: number | null = null;
 let percussionPlaybackState: MusicDebugPercussionPlaybackState =
   normalizeMusicDebugPercussionPlaybackState(null);
 let hiddenRoles: MusicDebugDisplayRole[] = [];
+let hiddenTimelineOverlays: MusicDebugTimelineOverlayKind[] = [];
 let trackPlaybackState: MusicDebugTrackPlaybackState =
   DEFAULT_MUSIC_DEBUG_TRACK_PLAYBACK_STATE;
 let timelineDragState: MusicDebugTimelinePointerDragState | null = null;
@@ -192,6 +201,7 @@ if (restoredPageState) {
   previewOffsetMs = restoredPageState.previewOffsetMs;
   percussionPlaybackState = restoredPageState.percussionPlaybackState;
   hiddenRoles = restoredPageState.hiddenRoles;
+  hiddenTimelineOverlays = restoredPageState.hiddenTimelineOverlays;
   trackPlaybackState = restoredPageState.trackPlaybackState;
 }
 
@@ -260,6 +270,7 @@ function renderTimeline(
     playheadOffsetMs: resolveDisplayedOffsetMs(),
     activeRegion: playbackVisualState?.region ?? null,
     visibleRoles: resolveVisibleTimelineRoles(),
+    hiddenOverlays: hiddenTimelineOverlays,
   });
 }
 
@@ -267,6 +278,76 @@ function resolveVisibleTimelineRoles(): MusicDebugDisplayRole[] {
   return MUSIC_DEBUG_DISPLAY_ROLE_ORDER.filter(
     (role) => !hiddenRoles.includes(role)
   );
+}
+
+function formatTimelineOverlayLabel(
+  kind: MusicDebugTimelineOverlayKind
+): string {
+  switch (kind) {
+    case 'note-warnings':
+      return 'Note warnings';
+    case 'cadence':
+      return 'Cadence';
+    case 'harmony-drift':
+      return 'Harmony drift';
+    case 'bass-drift':
+      return 'Bass drift';
+    case 'motif':
+      return 'Motif';
+    case 'climax':
+      return 'Climax';
+    default:
+      return kind;
+  }
+}
+
+function resolveTimelineOverlaySwatchColor(
+  kind: MusicDebugTimelineOverlayKind
+): string {
+  switch (kind) {
+    case 'note-warnings':
+      return '#ffd166';
+    case 'cadence':
+      return '#ffcc33';
+    case 'harmony-drift':
+      return '#ff7b72';
+    case 'bass-drift':
+      return '#ff9f43';
+    case 'motif':
+      return '#55d6be';
+    case 'climax':
+      return '#f5f7fb';
+    default:
+      return '#9db2bd';
+  }
+}
+
+function renderTimelineOverlayLegend(): void {
+  if (!overlayLegendRoot) {
+    return;
+  }
+  overlayLegendRoot.innerHTML = MUSIC_DEBUG_TIMELINE_OVERLAY_KINDS.map(
+    (kind) => {
+      const hidden = hiddenTimelineOverlays.includes(kind);
+      const label = formatTimelineOverlayLabel(kind);
+      return `
+        <button
+          type="button"
+          class="music-debug-overlay-legend-button"
+          data-overlay-kind="${kind}"
+          aria-pressed="${hidden}"
+          aria-label="${hidden ? `Show ${label}` : `Hide ${label}`}"
+        >
+          <span
+            class="music-debug-overlay-legend-swatch"
+            style="color: ${resolveTimelineOverlaySwatchColor(kind)};"
+            aria-hidden="true"
+          ></span>
+          <span>${label}</span>
+        </button>
+      `;
+    }
+  ).join('');
 }
 
 function buildTrackVisibilityButtonMarkup(role: MusicDebugDisplayRole): string {
@@ -312,6 +393,7 @@ function renderTrackVisibilityControls(): void {
 
 function renderPlaybackUi(snapshot = resolveCurrentSnapshot()): void {
   renderTransport(snapshot);
+  renderTimelineOverlayLegend();
   renderTimeline(snapshot);
 }
 
@@ -603,6 +685,7 @@ function persistPageState(
     dryPlaybackEnabled: resolveSelectedDryPlaybackEnabled(),
     percussionPlaybackState,
     hiddenRoles,
+    hiddenTimelineOverlays,
     trackPlaybackState,
     previewOffsetMs: offsetMs,
     shouldResume,
@@ -958,6 +1041,7 @@ timeline?.addEventListener('pointermove', (event) => {
     boundsWidth: bounds.width,
     boundsHeight: bounds.height,
     visibleRoles: resolveVisibleTimelineRoles(),
+    hiddenOverlays: hiddenTimelineOverlays,
   });
   if (!hoverDetail) {
     hideTimelineHover();
@@ -1017,6 +1101,27 @@ trackVisibilityRoot?.addEventListener('click', (event) => {
   }
   renderTrackVisibilityControls();
   restartPlaybackForCurrentState();
+  renderPlaybackUi();
+  persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
+});
+
+overlayLegendRoot?.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  const button = target.closest<HTMLButtonElement>(
+    '.music-debug-overlay-legend-button'
+  );
+  const kind = button?.dataset.overlayKind as
+    MusicDebugTimelineOverlayKind | undefined;
+  if (!kind) {
+    return;
+  }
+  hiddenTimelineOverlays = toggleMusicDebugTimelineHiddenOverlayKind(
+    hiddenTimelineOverlays,
+    kind
+  );
   renderPlaybackUi();
   persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
 });
