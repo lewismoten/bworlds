@@ -298,7 +298,8 @@ describe('overworld support', () => {
   });
 
   it('reuses cached sampled river curve points for the same control cell', () => {
-    const controlPointCache = createCoordinateCache<{ x: number; y: number }[]>();
+    const controlPointCache =
+      createCoordinateCache<{ x: number; y: number }[]>();
     const curvePointCache = createCoordinateCache<{ x: number; y: number }[]>();
 
     const first = getCachedRiverCurvePoints(
@@ -325,9 +326,7 @@ describe('overworld support', () => {
 
     expect(second).toBe(first);
     expect(third).not.toBe(first);
-    expect(first[0]).toEqual(
-      createRiverControlPoints('spec-seed', 1, -2)[0]
-    );
+    expect(first[0]).toEqual(createRiverControlPoints('spec-seed', 1, -2)[0]);
   });
 
   it('matches river path signals without materializing sampled curve points', () => {

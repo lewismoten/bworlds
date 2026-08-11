@@ -508,12 +508,6 @@ function sampleRiverControlPathSignal(
 
   for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
     for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
-      const points = getCachedRiverControlPoints(
-        seed,
-        cellX + offsetX,
-        cellY + offsetY,
-        controlPointCache
-      );
       const curvePoints = getCachedRiverCurvePoints(
         seed,
         cellX + offsetX,

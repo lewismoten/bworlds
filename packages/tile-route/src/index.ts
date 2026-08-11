@@ -879,9 +879,12 @@ function createCachedTerrainSignalSampler(
   if (!sampleTerrainSignals) {
     return sampleTerrainSignals;
   }
-  const cache = createCoordinateCache<
-    ReturnType<NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>>
-  >();
+  const cache =
+    createCoordinateCache<
+      ReturnType<
+        NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+      >
+    >();
   return (x: number, y: number) =>
     cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
 }

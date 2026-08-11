@@ -257,23 +257,18 @@ export function createRoadsideRouteProfile({
     { dx: 0, dy: 1 },
     { dx: -1, dy: 0 },
   ] as const;
-  const cachedSampleTerrainSignals = createCachedTerrainSignalSampler(
-    sampleTerrainSignals
-  );
+  const cachedSampleTerrainSignals =
+    createCachedTerrainSignalSampler(sampleTerrainSignals);
   const routePresenceCache = new Map<string, boolean>();
   const hasRouteAt = (targetX: number, targetY: number) =>
-    getCachedRoutePresence(
-      routePresenceCache,
-      targetX,
-      targetY,
-      () =>
-        hasPredictedRoutePresence({
-          x: targetX,
-          y: targetY,
-          townAnchors,
-          bridgeAnchors,
-          sampleTerrainSignals: cachedSampleTerrainSignals,
-        })
+    getCachedRoutePresence(routePresenceCache, targetX, targetY, () =>
+      hasPredictedRoutePresence({
+        x: targetX,
+        y: targetY,
+        townAnchors,
+        bridgeAnchors,
+        sampleTerrainSignals: cachedSampleTerrainSignals,
+      })
     );
   const adjacentRouteCells: Array<{ x: number; y: number }> = [];
   for (let index = 0; index < directions.length; index += 1) {
@@ -347,7 +342,10 @@ function createCachedTerrainSignalSampler(
   if (!sampleTerrainSignals) {
     return sampleTerrainSignals;
   }
-  const cache = new Map<string, ReturnType<NonNullable<typeof sampleTerrainSignals>>>();
+  const cache = new Map<
+    string,
+    ReturnType<NonNullable<typeof sampleTerrainSignals>>
+  >();
   return (x: number, y: number) => {
     const key = `${x}:${y}`;
     const cached = cache.get(key);
