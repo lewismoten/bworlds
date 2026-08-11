@@ -223,6 +223,6 @@ function createMockVitestStream() {
   const stream = new EventEmitter() as EventEmitter & {
     setEncoding: (encoding: string) => void;
   };
-  stream.setEncoding = (_encoding: string) => {};
+  stream.setEncoding = () => {};
   return stream;
 }
