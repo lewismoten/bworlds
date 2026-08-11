@@ -81,7 +81,7 @@
 - [ ] Add zoom for song, section, bar, and beat levels.
 - [ ] Show measure numbers and beat subdivisions.
 - [x] Show chord labels above the timeline.
-- [ ] Show section labels and cadence markers.
+- [x] Show section labels and cadence markers.
 - [ ] Show note name and duration on hover.
 - [ ] Show drum voice name on percussion hover.
 - [ ] Add per-track eye icons to hide tracks.

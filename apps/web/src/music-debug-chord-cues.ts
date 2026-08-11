@@ -85,7 +85,7 @@ export function resolveMusicDebugChordCueAtOffset(
   );
 }
 
-function resolveMusicDebugMeasureStartOffsetMs(
+export function resolveMusicDebugMeasureStartOffsetMs(
   snapshot: MusicDebugSnapshot,
   measureNumber: number
 ): number {

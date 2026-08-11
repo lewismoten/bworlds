@@ -19,18 +19,21 @@ import {
   resolveMusicDebugChordCueAtOffset,
   resolveMusicDebugChordCues,
 } from './music-debug-chord-cues.ts';
+import { resolveMusicDebugCadenceMarkers } from './music-debug-cadence-markers.ts';
 
 const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
-const MUSIC_DEBUG_TIMELINE_TOP_PAD = 52;
+const MUSIC_DEBUG_TIMELINE_TOP_PAD = 68;
 const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_WIDTH = 2;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT = 8;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT = 5;
 const MUSIC_DEBUG_TIMELINE_EXPORT_WIDTH = 960;
 const MUSIC_DEBUG_TIMELINE_EXPORT_HEIGHT = 320;
-const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 16;
-const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 32;
+const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y = 16;
+const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 32;
+const MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y = 48;
+const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 60;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -130,6 +133,7 @@ export function drawMusicDebugTimeline(
   const durationMs = Math.max(snapshot.durationMs, 1);
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
+  const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
   const activeChordCue =
     typeof options.playheadOffsetMs === 'number'
       ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
@@ -179,6 +183,27 @@ export function drawMusicDebugTimeline(
       cue.label,
       (startX + endX) * 0.5,
       MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y
+    );
+  }
+  for (const marker of cadenceMarkers) {
+    const x = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      marker.offsetMs
+    );
+    context.fillStyle =
+      marker.kind === 'question' ? 'rgba(255, 204, 51, 0.9)' : '#f5f7fb';
+    context.fillRect(
+      x - 1,
+      layout.topPad - 10,
+      2,
+      layout.height - layout.topPad + 10
+    );
+    context.fillStyle = marker.kind === 'question' ? '#ffcc33' : '#f5f7fb';
+    context.fillText(
+      marker.shortLabel,
+      x,
+      MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y
     );
   }
   context.textAlign = 'start';
@@ -239,6 +264,7 @@ export function buildMusicDebugTimelineSvgMarkup(
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
+  const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
   const activeChordCue =
     typeof options.playheadOffsetMs === 'number'
       ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
@@ -299,6 +325,27 @@ export function buildMusicDebugTimelineSvgMarkup(
           ).toFixed(2)}" y="${MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y.toFixed(
             2
           )}" fill="#d8e5ef" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${cue.label}</text>`;
+        })
+        .join('')}
+      ${cadenceMarkers
+        .map((marker) => {
+          const x = resolveMusicDebugTimelineXForOffset(
+            layout,
+            durationMs,
+            marker.offsetMs
+          );
+          const stroke =
+            marker.kind === 'question' ? 'rgba(255,204,51,0.9)' : '#f5f7fb';
+          const fill = marker.kind === 'question' ? '#ffcc33' : '#f5f7fb';
+          return `<path class="music-debug-timeline-cadence-marker" d="M${x.toFixed(
+            2
+          )} ${(layout.topPad - 10).toFixed(2)} V${layout.height.toFixed(
+            2
+          )}" fill="none" stroke="${stroke}" stroke-width="2"></path><text x="${x.toFixed(
+            2
+          )}" y="${MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y.toFixed(
+            2
+          )}" fill="${fill}" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${marker.shortLabel}</text>`;
         })
         .join('')}
       ${noteBars
@@ -475,7 +522,11 @@ function drawMusicDebugSectionBands(
       layout.height - layout.bottomPad + 8
     );
     context.fillStyle = '#d5e3ea';
-    context.fillText(section.label, startX + 6, 18);
+    context.fillText(
+      section.label,
+      startX + 6,
+      MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y
+    );
   }
 }
 
@@ -508,7 +559,7 @@ function buildMusicDebugSectionBandSvgMarkup(
         ></rect>
         <text
           x="${(startX + 6).toFixed(2)}"
-          y="18"
+          y="${MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y}"
           fill="#d5e3ea"
           font-family="Trebuchet MS, sans-serif"
           font-size="11"

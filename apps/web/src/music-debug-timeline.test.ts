@@ -142,6 +142,9 @@ describe('music debug timeline', () => {
     expect(markup).toContain('>MELODY<');
     expect(markup).toContain('class="music-debug-timeline-chord-cue"');
     expect(markup).toContain('>Chord 1 minor<');
+    expect(markup).toContain('class="music-debug-timeline-cadence-marker"');
+    expect(markup).toContain('>Q<');
+    expect(markup).toContain('>A<');
     expect(markup).toContain('class="music-debug-timeline-playhead-chord"');
     expect(markup).toContain('rgba(85,214,190,0.08)');
     expect(markup).toContain('stroke="#f5f7fb"');
