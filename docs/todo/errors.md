@@ -44,6 +44,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       poles, and banner crossbars into instanced sets, and full-detail
       dungeons now place their gate arch, portcullis, bars, darkness, and
       gate beacon pieces directly under the tile root instead of a dedicated
+      gate subgroup, and low-detail dungeons now place their gate frame,
+      opening, and beacon pieces directly under the tile root instead of a
       gate subgroup, and `tile-ruins` now
       collapses its repeated rubble fragments into one `InstancedMesh`, its
       repeated column ring into one `InstancedMesh`, and taller column caps

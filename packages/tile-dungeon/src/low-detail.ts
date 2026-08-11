@@ -75,27 +75,42 @@ export function createLowDetailDungeonModel(
     style,
   });
 
-  const gate = new three.Group();
-  gate.position.set(
-    tileX + entrance.dx * (baseDepth * 0.42),
-    0,
-    tileY + entrance.dy * (baseDepth * 0.42)
-  );
-  gate.rotation.y = entrance.rotationY;
+  const gateOriginX = tileX + entrance.dx * (baseDepth * 0.42);
+  const gateOriginZ = tileY + entrance.dy * (baseDepth * 0.42);
 
   const gateFrame = new three.Mesh(
     new three.BoxGeometry(0.34, 0.28, 0.08),
     style.wallMaterial
   );
-  gateFrame.position.set(0, 0.14, 0.03);
-  gate.add(gateFrame);
+  const gateFrameOffset = rotateDungeonLowDetailLocalOffset(
+    0,
+    0.03,
+    entrance.rotationY
+  );
+  gateFrame.position.set(
+    gateOriginX + gateFrameOffset.x,
+    0.14,
+    gateOriginZ + gateFrameOffset.z
+  );
+  gateFrame.rotation.y = entrance.rotationY;
+  group.add(gateFrame);
 
   const gateOpening = new three.Mesh(
     new three.BoxGeometry(0.18, 0.22, 0.09),
     style.roofMaterial
   );
-  gateOpening.position.set(0, 0.12, 0.04);
-  gate.add(gateOpening);
+  const gateOpeningOffset = rotateDungeonLowDetailLocalOffset(
+    0,
+    0.04,
+    entrance.rotationY
+  );
+  gateOpening.position.set(
+    gateOriginX + gateOpeningOffset.x,
+    0.12,
+    gateOriginZ + gateOpeningOffset.z
+  );
+  gateOpening.rotation.y = entrance.rotationY;
+  group.add(gateOpening);
 
   const glow = markPoiLightEmitter(
     new three.Mesh(
@@ -108,12 +123,21 @@ export function createLowDetailDungeonModel(
       nightIntensity: 1.45,
     }
   );
-  glow.position.set(0, 0.42, 0.06);
+  const glowOffset = rotateDungeonLowDetailLocalOffset(
+    0,
+    0.06,
+    entrance.rotationY
+  );
+  glow.position.set(
+    gateOriginX + glowOffset.x,
+    0.42,
+    gateOriginZ + glowOffset.z
+  );
   glow.userData = {
     ...(glow.userData ?? {}),
     dungeonBeacon: 'gate',
   };
-  gate.add(glow);
+  group.add(glow);
 
   const pointLight = markPoiLightEmitter(
     new three.PointLight('#f87171', 0, 3.6, 1.85),
@@ -123,15 +147,22 @@ export function createLowDetailDungeonModel(
       visibleThreshold: 0.04,
     }
   );
-  pointLight.position.set(0, 0.4, 0.03);
+  const pointLightOffset = rotateDungeonLowDetailLocalOffset(
+    0,
+    0.03,
+    entrance.rotationY
+  );
+  pointLight.position.set(
+    gateOriginX + pointLightOffset.x,
+    0.4,
+    gateOriginZ + pointLightOffset.z
+  );
   pointLight.visible = false;
   pointLight.userData = {
     ...(pointLight.userData ?? {}),
     dungeonBeacon: 'gate',
   };
-  gate.add(pointLight);
-
-  group.add(gate);
+  group.add(pointLight);
   return group;
 }
 
@@ -169,4 +200,17 @@ function addCornerTower(
   );
   cap.position.set(x, y + height + capHeight * 0.5 - 0.02, z);
   parent.add(cap);
+}
+
+function rotateDungeonLowDetailLocalOffset(
+  localX: number,
+  localZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return {
+    x: localX * cosRotation + localZ * sinRotation,
+    z: -localX * sinRotation + localZ * cosRotation,
+  };
 }

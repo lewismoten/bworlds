@@ -354,6 +354,9 @@ describe('tile dungeon', () => {
     }) as FakeGroup;
 
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
+    expect(
+      lowModel.children.every((child) => child.children.length === 0)
+    ).toBe(true);
   });
 
   it('instances repeated tower bodies and caps in full-detail dungeon models', () => {
