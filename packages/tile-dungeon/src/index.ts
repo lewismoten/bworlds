@@ -142,7 +142,7 @@ function* createDungeonModelProgressive({
   }
 
   const group = new three.Group();
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const base = new three.Mesh(
     new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
@@ -214,6 +214,11 @@ function* createDungeonModelProgressive({
   }
   group.add(towerInstances);
   group.add(towerCaps);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'towers',
+  };
 
   const gateOriginX = tileX + entrance.dx * (baseDepth * 0.42);
   const gateOriginZ = tileY + entrance.dy * (baseDepth * 0.42);
@@ -313,9 +318,9 @@ function* createDungeonModelProgressive({
   darkness.rotation.y = entrance.rotationY;
   group.add(darkness);
   yield {
-    completedSteps: 2,
+    completedSteps: 3,
     totalSteps,
-    label: 'towers-and-gate',
+    label: 'gate',
   };
 
   createDungeonBeacon(
@@ -372,7 +377,7 @@ function* createDungeonModelProgressive({
   });
   group.add(towerBeaconBraziers);
   yield {
-    completedSteps: 3,
+    completedSteps: 4,
     totalSteps,
     label: 'beacons',
   };
@@ -435,7 +440,7 @@ function* createDungeonModelProgressive({
   group.add(bannerPoleInstances);
   group.add(bannerCrossbarInstances);
   yield {
-    completedSteps: 4,
+    completedSteps: 5,
     totalSteps,
     label: 'banners',
   };

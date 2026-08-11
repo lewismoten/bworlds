@@ -30,6 +30,9 @@ Current groundwork:
 - `tile-town` now splits its full-detail building population into two
   resumable batches before signage, banners, and light passes, so one large
   structure loop does not dominate the first progressive step.
+- `tile-dungeon` now splits tower population and gate assembly into separate
+  resumable steps, which gives the renderer another frame boundary before the
+  beacon and banner passes.
 
 This is the typed scheduler seam for the `errors.md` frame-stall work. The
 renderer now keeps one unfinished plugin build alive across frames and resumes
