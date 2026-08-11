@@ -1,34 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { SoundBankInstrumentDefinition } from './procedural-music-sound-bank.ts';
 import {
   buildSoundBankDebugMarkup,
   createSoundBankDebugSnapshot,
-  normalizeSoundBankDebugOptions,
-  randomizeSoundBankDebugSeed,
 } from './sound-bank-debug.ts';
-import { registerSoundBankPluginInstruments } from './sound-bank-registry.ts';
 
-describe('sound bank debug page shell', () => {
-  it('normalizes partial debug options into a safe instrument-bank snapshot seed', () => {
-    expect(
-      normalizeSoundBankDebugOptions({
-        tileKind: 'tower',
-        contextType: 'town',
-        clusterX: 12.8,
-        clusterY: -5.2,
-        dayProgress: 2,
-        yearProgress: -1,
-      })
-    ).toEqual({
-      tileKind: 'tower',
-      contextType: 'town',
-      clusterX: 13,
-      clusterY: -5,
-      dayProgress: 1,
-      yearProgress: 0,
-    });
-  });
-
+describe('sound bank debug shell markup', () => {
   it('builds a dedicated instrument-bank browser with preview controls', () => {
     const snapshot = createSoundBankDebugSnapshot({
       tileKind: 'forest',
@@ -171,58 +147,6 @@ describe('sound bank debug page shell', () => {
     expect(markup).toContain('aria-pressed="false"');
   });
 
-  it('reflects audio context controls for idle and suspended states', () => {
-    const idleMarkup = buildSoundBankDebugMarkup(
-      createSoundBankDebugSnapshot(),
-      {
-        audioStatus: 'Audio idle',
-        audioContextState: 'idle',
-      }
-    );
-    const suspendedMarkup = buildSoundBankDebugMarkup(
-      createSoundBankDebugSnapshot(),
-      {
-        audioStatus: 'Audio suspended',
-        audioContextState: 'suspended',
-      }
-    );
-
-    expect(idleMarkup).toContain('Context state:');
-    expect(idleMarkup).toContain('id="sound-bank-debug-start-audio"');
-    expect(idleMarkup).toContain('Start Audio');
-    expect(idleMarkup).toContain(
-      'id="sound-bank-debug-resume-audio"\n                type="button"\n                disabled'
-    );
-    expect(suspendedMarkup).toContain('Resume Audio');
-    expect(suspendedMarkup).toContain('>suspended</span>');
-  });
-
-  it('shows browser-audio diagnostics and unavailable warnings in the status panel', () => {
-    const runningMarkup = buildSoundBankDebugMarkup(
-      createSoundBankDebugSnapshot(),
-      {
-        audioStatus: 'Audio ready',
-        audioContextState: 'running',
-        audioSampleRateHz: 48_000,
-        outputLatencySeconds: 0.012,
-      }
-    );
-    const unavailableMarkup = buildSoundBankDebugMarkup(
-      createSoundBankDebugSnapshot(),
-      {
-        audioStatus: 'Audio unavailable',
-        audioContextState: 'unavailable',
-      }
-    );
-
-    expect(runningMarkup).toContain('48,000 Hz');
-    expect(runningMarkup).toContain('12.0 ms');
-    expect(unavailableMarkup).toContain(
-      'Browser audio is unavailable. Web Audio previews cannot start here.'
-    );
-    expect(unavailableMarkup).toContain('Unavailable until audio starts');
-  });
-
   it('shows the current generated patch variant for selected programs', () => {
     const standardMarkup = buildSoundBankDebugMarkup(
       createSoundBankDebugSnapshot({
@@ -263,76 +187,5 @@ describe('sound bank debug page shell', () => {
       '<dt>Patch Variant</dt><dd>Historical</dd>'
     );
     expect(ruinedMarkup).toContain('<dt>Patch Variant</dt><dd>Ruined</dd>');
-  });
-
-  it('shows master gain controls and muted warnings when audio output is muted', () => {
-    const mutedMarkup = buildSoundBankDebugMarkup(
-      createSoundBankDebugSnapshot(),
-      {
-        audioStatus: 'Audio muted',
-        audioContextState: 'running',
-        masterGain: 0,
-        muted: true,
-      }
-    );
-
-    expect(mutedMarkup).toContain('sound-bank-debug-master-gain-value');
-    expect(mutedMarkup).toContain('Unmute Audio');
-    expect(mutedMarkup).toContain(
-      'Audio output is muted. Unmute or raise master gain to hear previews.'
-    );
-    expect(mutedMarkup).toContain('aria-pressed="true"');
-    expect(mutedMarkup).toContain('value="0"');
-  });
-
-  it('randomizes the sound bank seed within the shared debug coordinate range', () => {
-    expect(
-      randomizeSoundBankDebugSeed(
-        createSoundBankDebugSnapshot().options,
-        () => 1
-      )
-    ).toEqual(
-      expect.objectContaining({
-        clusterX: 9_999,
-        clusterY: 9_999,
-      })
-    );
-  });
-
-  it('shows invalid registered instruments in a warning list', () => {
-    const invalidDefinition: SoundBankInstrumentDefinition = {
-      id: 'plugin:bad:0:0',
-      role: 'lead',
-      generalMidiProgramNumber: 200,
-      generalMidiInstrumentName: '',
-      generalMidiFamilyName: 'Synth Lead',
-      supportedRoles: ['lead'],
-      recommendedMidiRange: { minMidiNote: 60, maxMidiNote: 84 },
-      preferredMidiRange: { minMidiNote: 90, maxMidiNote: 92 },
-      defaultVelocity: 108,
-      defaultNoteDurationMs: 320,
-    };
-    const snapshot = createSoundBankDebugSnapshot(
-      {},
-      {
-        registeredInstruments: registerSoundBankPluginInstruments({
-          pluginName: 'broken-pack',
-          definitions: [invalidDefinition],
-        }),
-      }
-    );
-    const normalizedMarkup = buildSoundBankDebugMarkup(snapshot, {
-      audioStatus: 'Audio idle',
-    }).replace(/\s+/g, ' ');
-
-    expect(normalizedMarkup).toContain('Instrument Validation');
-    expect(normalizedMarkup).toContain('plugin:bad:0:0');
-    expect(normalizedMarkup).toContain('from broken-pack');
-    expect(normalizedMarkup).toContain(
-      'General MIDI program number must be null or 0-127.'
-    );
-    expect(normalizedMarkup).toContain(
-      'General MIDI instrument name is required.'
-    );
   });
 });

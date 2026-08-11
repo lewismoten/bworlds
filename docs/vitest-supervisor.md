@@ -24,6 +24,8 @@ Related commands:
   The slowest audio/browser suites can be split into multiple long-suite files
   so Vitest can parallelize them without putting those checks back into the
   fast path.
+  Recent examples include the split sound-bank shell coverage described in
+  [docs/sound-bank-debug-shell-tests.md](/Users/lewismoten/dev/bworlds/docs/sound-bank-debug-shell-tests.md:1).
 - `npm run test -- apps/web/src/example.test.ts`
   Still forwards file arguments through to Vitest and bypasses fast/long suite filtering.
 - `npm run test:hang-debug -- <files...>`
