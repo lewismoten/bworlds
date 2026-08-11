@@ -81,6 +81,44 @@ describe('procedural music phrase support', () => {
       )
     ).toBe(true);
   });
+
+  it('holds later-starting bass roots longer in cadence measures', () => {
+    const notes = shapeProceduralPhraseSupportNotes(
+      [
+        createNote({
+          role: 'bass',
+          startMs: 3_665,
+          durationMs: 120,
+          instrumentId: 'bass:question',
+          frequency: 196,
+        }),
+        createNote({
+          role: 'bass',
+          startMs: 7_665,
+          durationMs: 120,
+          instrumentId: 'bass:answer',
+          frequency: 196,
+        }),
+      ],
+      {
+        phraseStartMs: 0,
+        phraseDurationMs: 8_000,
+      }
+    );
+
+    const questionBass = notes.find(
+      (note) => note.instrumentId === 'bass:question'
+    );
+    const answerBass = notes.find((note) => note.instrumentId === 'bass:answer');
+
+    expect(questionBass?.durationMs ?? 0).toBeGreaterThan(180);
+    expect(answerBass?.durationMs ?? 0).toBeGreaterThan(
+      questionBass?.durationMs ?? 0
+    );
+    expect((answerBass?.startMs ?? 0) + (answerBass?.durationMs ?? 0)).toBe(
+      8_000
+    );
+  });
 });
 
 function createNote(overrides: {

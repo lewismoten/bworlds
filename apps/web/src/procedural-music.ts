@@ -1873,6 +1873,15 @@ function resolveCompositionDurationMultiplier(
   if (role === 'harmony') {
     return composition.contourStep.stage === 'resolve' ? 1.08 : 1;
   }
+  if (role === 'bass') {
+    if (composition.cadence === 'answer') {
+      return 1.28;
+    }
+    if (composition.cadence === 'question') {
+      return 1.14;
+    }
+    return composition.chord.progressionIndex === 0 ? 1.04 : 1;
+  }
 
   return 1;
 }

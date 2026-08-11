@@ -7,6 +7,14 @@ const MIN_SUPPORT_DURATION_RATIO: Record<SupportRole, number> = {
   bass: 0.18,
   harmony: 0.3,
 };
+const CADENCE_BASS_DURATION_RATIO = {
+  question: 0.26,
+  answer: 0.34,
+} as const;
+const CADENCE_BASS_REMAINING_MEASURE_COVERAGE = {
+  question: 0.72,
+  answer: 0.92,
+} as const;
 
 export function shapeProceduralPhraseSupportNotes(
   notes: readonly ProceduralMusicNote[],
@@ -70,15 +78,101 @@ function extendSupportDurationsWithinMeasures(
     const nextSameRoleStartMs =
       findNextRoleStartMs(notes, role, note.startMs, index) ?? measureEndMs;
     const maxEndMs = Math.min(measureEndMs, nextSameRoleStartMs);
-    const minimumDurationMs = Math.round(
-      options.measureDurationMs * MIN_SUPPORT_DURATION_RATIO[role]
-    );
-    const desiredEndMs = Math.min(note.startMs + minimumDurationMs, maxEndMs);
+    const desiredEndMs = resolveDesiredSupportEndMs({
+      note,
+      role,
+      measureIndex,
+      maxEndMs,
+      measureEndMs,
+      measureDurationMs: options.measureDurationMs,
+    });
 
     if (desiredEndMs > note.startMs + note.durationMs) {
       note.durationMs = desiredEndMs - note.startMs;
     }
   }
+}
+
+function resolveMinimumSupportDurationRatio(
+  role: SupportRole,
+  measureIndex: number
+): number {
+  if (role !== 'bass') {
+    return MIN_SUPPORT_DURATION_RATIO[role];
+  }
+
+  const cadence = resolvePhraseMeasureCadence(measureIndex);
+  if (cadence === 'answer') {
+    return CADENCE_BASS_DURATION_RATIO.answer;
+  }
+  if (cadence === 'question') {
+    return CADENCE_BASS_DURATION_RATIO.question;
+  }
+
+  return MIN_SUPPORT_DURATION_RATIO[role];
+}
+
+function resolveDesiredSupportEndMs(options: {
+  note: ProceduralMusicNote;
+  role: SupportRole;
+  measureIndex: number;
+  maxEndMs: number;
+  measureEndMs: number;
+  measureDurationMs: number;
+}): number {
+  const minimumDurationMs = Math.round(
+    options.measureDurationMs *
+      resolveMinimumSupportDurationRatio(options.role, options.measureIndex)
+  );
+  let desiredEndMs = Math.min(
+    options.note.startMs + minimumDurationMs,
+    options.maxEndMs
+  );
+
+  if (options.role !== 'bass') {
+    return desiredEndMs;
+  }
+
+  const cadence = resolvePhraseMeasureCadence(options.measureIndex);
+  if (cadence === 'neutral') {
+    return desiredEndMs;
+  }
+
+  const remainingMeasureMs = Math.max(
+    0,
+    options.measureEndMs - options.note.startMs
+  );
+  const cadenceCoverageRatio =
+    cadence === 'answer'
+      ? CADENCE_BASS_REMAINING_MEASURE_COVERAGE.answer
+      : CADENCE_BASS_REMAINING_MEASURE_COVERAGE.question;
+  const cadenceEndMs = Math.min(
+    options.note.startMs + Math.round(remainingMeasureMs * cadenceCoverageRatio),
+    options.maxEndMs
+  );
+
+  return Math.max(desiredEndMs, cadenceEndMs);
+}
+
+function resolvePhraseMeasureCadence(
+  measureIndex: number
+): 'neutral' | 'question' | 'answer' {
+  const normalizedMeasureIndex =
+    ((measureIndex % PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT) +
+      PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT) %
+    PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+
+  if (normalizedMeasureIndex === PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT - 1) {
+    return 'answer';
+  }
+  if (
+    normalizedMeasureIndex ===
+    Math.floor(PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT / 2) - 1
+  ) {
+    return 'question';
+  }
+
+  return 'neutral';
 }
 
 function anchorLeadRestWindows(
