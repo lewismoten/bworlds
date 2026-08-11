@@ -12,6 +12,7 @@ import {
   resolveMusicDebugTimelineNoteBars,
   resolveMusicDebugTimelineOffsetForX,
   resolveMusicDebugTimelineSeekOffset,
+  resolveMusicDebugTimelineTrackLabelRoleAtPoint,
   resolveMusicDebugTimelineXForOffset,
 } from './music-debug-timeline.ts';
 
@@ -53,6 +54,42 @@ describe('music debug timeline', () => {
         boundsWidth: 960,
       })
     ).toBe(snapshot.durationMs);
+  });
+
+  it('resolves track roles from clicks on the timeline label column', () => {
+    expect(
+      resolveMusicDebugTimelineTrackLabelRoleAtPoint({
+        canvas: { width: 960, height: 320 },
+        clientX: 20,
+        clientY: 110,
+        boundsLeft: 0,
+        boundsTop: 0,
+        boundsWidth: 960,
+        boundsHeight: 320,
+      })
+    ).toBe('lead');
+    expect(
+      resolveMusicDebugTimelineTrackLabelRoleAtPoint({
+        canvas: { width: 960, height: 320 },
+        clientX: 20,
+        clientY: 250,
+        boundsLeft: 0,
+        boundsTop: 0,
+        boundsWidth: 960,
+        boundsHeight: 320,
+      })
+    ).toBe('percussion');
+    expect(
+      resolveMusicDebugTimelineTrackLabelRoleAtPoint({
+        canvas: { width: 960, height: 320 },
+        clientX: 140,
+        clientY: 110,
+        boundsLeft: 0,
+        boundsTop: 0,
+        boundsWidth: 960,
+        boundsHeight: 320,
+      })
+    ).toBeNull();
   });
 
   it('renders short note bars at pitch lanes instead of full-height track blocks', () => {

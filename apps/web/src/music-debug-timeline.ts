@@ -153,6 +153,44 @@ export function resolveMusicDebugTimelineSeekOffset(options: {
   );
 }
 
+export function resolveMusicDebugTimelineTrackLabelRoleAtPoint(options: {
+  canvas: Pick<HTMLCanvasElement, 'width' | 'height'>;
+  clientX: number;
+  clientY: number;
+  boundsLeft: number;
+  boundsTop: number;
+  boundsWidth: number;
+  boundsHeight: number;
+}): MusicDebugDisplayRole | null {
+  const layout = resolveMusicDebugTimelineLayout(
+    options.canvas.width,
+    options.canvas.height
+  );
+  const canvasX =
+    ((options.clientX - options.boundsLeft) /
+      Math.max(1, options.boundsWidth)) *
+    options.canvas.width;
+  const canvasY =
+    ((options.clientY - options.boundsTop) /
+      Math.max(1, options.boundsHeight)) *
+    options.canvas.height;
+
+  if (canvasX < 0 || canvasX > layout.leftPad - 8) {
+    return null;
+  }
+
+  for (let index = 0; index < layout.roleOrder.length; index += 1) {
+    const role = layout.roleOrder[index]!;
+    const top = layout.topPad + layout.trackHeight * index;
+    const bottom = top + layout.trackHeight;
+    if (canvasY >= top && canvasY <= bottom) {
+      return role;
+    }
+  }
+
+  return null;
+}
+
 export function resolveMusicDebugTimelineHoverDetail(options: {
   snapshot: MusicDebugSnapshot;
   canvas: Pick<HTMLCanvasElement, 'width' | 'height'>;

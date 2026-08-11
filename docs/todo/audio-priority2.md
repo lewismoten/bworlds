@@ -94,7 +94,7 @@
 - [ ] Add snap-to-measure and snap-to-section navigation.
 - [ ] In full-song view, I should be able to drag the play head with my mouse.
 - [ ] Clicking a section mode while the music is playing should move the play head to that position.
-- [ ] I sould be able to toggle each track to be mute by clicking the track name and see a visual indication
+- [x] I sould be able to toggle each track to be mute by clicking the track name and see a visual indication
 - [x] The playhead should only cover the tracks and not extend past them
 - [x] Hovering over letters like "Q" and "A" above the tracks should show some details
 - [x] Text appears at the top that says "1 min" but is vauge on what that means, as the song is only 2 minutes where 1 min appears 11 times.

@@ -60,6 +60,7 @@ import {
 import {
   drawMusicDebugTimeline,
   resolveMusicDebugTimelineHoverDetail,
+  resolveMusicDebugTimelineTrackLabelRoleAtPoint,
   resolveMusicDebugTimelineSeekOffset,
 } from './music-debug-timeline.ts';
 import {
@@ -826,6 +827,28 @@ playbackDryInput?.addEventListener('change', () => {
 
 timeline?.addEventListener('click', (event) => {
   const bounds = timeline.getBoundingClientRect();
+  const trackLabelRole = resolveMusicDebugTimelineTrackLabelRoleAtPoint({
+    canvas: timeline,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    boundsLeft: bounds.left,
+    boundsTop: bounds.top,
+    boundsWidth: bounds.width,
+    boundsHeight: bounds.height,
+  });
+  if (trackLabelRole) {
+    hiddenRoles = hiddenRoles.includes(trackLabelRole)
+      ? hiddenRoles.filter((entry) => entry !== trackLabelRole)
+      : [...hiddenRoles, trackLabelRole];
+    renderTrackVisibilityControls();
+    renderPlaybackUi();
+    hideTimelineHover();
+    persistPageState(
+      playbackController.isPlaying(),
+      resolveDisplayedOffsetMs()
+    );
+    return;
+  }
   const snapshot = pageState.refreshNow();
   const nextOffsetMs = resolveMusicDebugTimelineSeekOffset({
     snapshot,
