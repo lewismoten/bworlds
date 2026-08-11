@@ -607,7 +607,9 @@ function preserveLeadMotifStatementLane(
     }
     const nextStartMs = Math.min(
       options.phraseEndMs - 1,
-      needsMotifConnection ? displacedStartMs : Math.max(displacedStartMs, note.startMs)
+      needsMotifConnection
+        ? displacedStartMs
+        : Math.max(displacedStartMs, note.startMs)
     );
     notes[index] = {
       ...note,
