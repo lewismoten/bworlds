@@ -109,7 +109,9 @@ describe('procedural music phrase support', () => {
     const questionBass = notes.find(
       (note) => note.instrumentId === 'bass:question'
     );
-    const answerBass = notes.find((note) => note.instrumentId === 'bass:answer');
+    const answerBass = notes.find(
+      (note) => note.instrumentId === 'bass:answer'
+    );
 
     expect(questionBass?.durationMs ?? 0).toBeGreaterThan(180);
     expect(answerBass?.durationMs ?? 0).toBeGreaterThan(

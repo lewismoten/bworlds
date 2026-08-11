@@ -24,7 +24,7 @@ export function withValidCadenceValidation(
   };
 }
 
-export function withValidPercussionValidation(
+function withValidPercussionValidation(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
   return {
@@ -67,7 +67,7 @@ export function withValidPhraseIntentValidation(
   };
 }
 
-export function withValidHarmonicAlignmentValidation(
+function withValidHarmonicAlignmentValidation(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
   return {

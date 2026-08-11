@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 import { createProceduralMusicSong } from './procedural-music-song.ts';
-import { resolveMusicTheme, type ProceduralMusicNote } from './procedural-music.ts';
+import { resolveMusicTheme } from './procedural-music.ts';
 import {
   PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT,
   collectMeasurePulseInWindow,
@@ -358,9 +358,10 @@ describe('procedural music song phrasing', () => {
       clusterY: -2,
     };
     const phraseDurationMs = resolvePhraseDurationMs(options);
-    const percussionNotes = collectPhraseNotes(options, phraseDurationMs).filter(
-      (note) => note.role === 'percussion'
-    );
+    const percussionNotes = collectPhraseNotes(
+      options,
+      phraseDurationMs
+    ).filter((note) => note.role === 'percussion');
 
     expect(percussionNotes.length).toBeGreaterThan(6);
     expect(

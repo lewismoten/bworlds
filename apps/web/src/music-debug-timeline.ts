@@ -49,6 +49,7 @@ const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_PADDING_X = 8;
 const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_MIN_WIDTH = 30;
 const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_HEIGHT = 16;
 const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 32;
+const MUSIC_DEBUG_TIMELINE_CLIMAX_MARKER_Y = 40;
 const MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y = 48;
 const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 64;
 const MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_MARKER_Y = 66;
@@ -136,6 +137,16 @@ export type MusicDebugTimelineMotifMarker = {
   sectionLabel: string;
   kind: 'exact' | 'varied';
   count: number;
+  offsetMs: number;
+  label: string;
+  hoverLabel: string;
+  hoverDurationLabel: string;
+};
+
+export type MusicDebugTimelineClimaxMarker = {
+  kind: 'planned' | 'actual';
+  stepIndex: number;
+  songMeasure: number;
   offsetMs: number;
   label: string;
   hoverLabel: string;
@@ -276,6 +287,10 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
   const measureMarkers = resolveMusicDebugMeasureMarkers(options.snapshot);
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(options.snapshot);
   const motifMarkers = resolveMusicDebugTimelineMotifMarkers(options.snapshot);
+  const climaxMarkers = resolveMusicDebugTimelineClimaxMarkers(
+    options.snapshot,
+    measureMarkers
+  );
   const harmonyDriftMarkers = resolveMusicDebugTimelineHarmonyDriftMarkers(
     options.snapshot,
     measureMarkers
@@ -290,6 +305,19 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
 
   for (const marker of motifMarkers) {
     const hoverDetail = resolveMusicDebugTimelineMotifMarkerHoverDetail({
+      layout,
+      durationMs: options.snapshot.durationMs,
+      canvasX,
+      canvasY,
+      marker,
+    });
+    if (hoverDetail) {
+      return hoverDetail;
+    }
+  }
+
+  for (const marker of climaxMarkers) {
+    const hoverDetail = resolveMusicDebugTimelineClimaxMarkerHoverDetail({
       layout,
       durationMs: options.snapshot.durationMs,
       canvasX,
@@ -364,6 +392,54 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
   return null;
 }
 
+export function resolveMusicDebugTimelineClimaxMarkers(
+  snapshot: MusicDebugSnapshot,
+  measureMarkers = resolveMusicDebugMeasureMarkers(snapshot)
+): MusicDebugTimelineClimaxMarker[] {
+  const points = snapshot.leadContourAnalysis.points;
+  const plannedPoint = points.find(
+    (point) =>
+      point.stepIndex === snapshot.leadContourAnalysis.plannedClimaxStepIndex
+  );
+  const actualPoint = points.find(
+    (point) =>
+      point.stepIndex === snapshot.leadContourAnalysis.actualClimaxStepIndex
+  );
+
+  return [
+    plannedPoint
+      ? {
+          kind: 'planned' as const,
+          stepIndex: plannedPoint.stepIndex,
+          songMeasure: plannedPoint.songMeasure,
+          offsetMs: resolveMusicDebugTimelineLeadContourPointOffsetMs(
+            plannedPoint,
+            measureMarkers
+          ),
+          label: 'P',
+          hoverLabel: `Planned climax near measure ${plannedPoint.songMeasure}.`,
+          hoverDurationLabel: 'Lead contour • planned climax',
+        }
+      : null,
+    actualPoint
+      ? {
+          kind: 'actual' as const,
+          stepIndex: actualPoint.stepIndex,
+          songMeasure: actualPoint.songMeasure,
+          offsetMs: resolveMusicDebugTimelineLeadContourPointOffsetMs(
+            actualPoint,
+            measureMarkers
+          ),
+          label: 'A',
+          hoverLabel: `Actual climax at measure ${actualPoint.songMeasure}${actualPoint.actualNoteLabel ? ` on ${actualPoint.actualNoteLabel}` : ''}.`,
+          hoverDurationLabel: 'Lead contour • actual climax',
+        }
+      : null,
+  ].filter(
+    (marker): marker is MusicDebugTimelineClimaxMarker => marker !== null
+  );
+}
+
 export function resolveMusicDebugTimelineMotifMarkers(
   snapshot: MusicDebugSnapshot
 ): MusicDebugTimelineMotifMarker[] {
@@ -416,13 +492,50 @@ function resolveMusicDebugTimelineMotifMarkerHoverDetail(options: {
     options.durationMs,
     options.marker.offsetMs
   );
-  const centerX =
-    markerX + (options.marker.kind === 'exact' ? -8 : 8);
+  const centerX = markerX + (options.marker.kind === 'exact' ? -8 : 8);
   const radius = 7;
   const hoverLeft = centerX - radius;
   const hoverRight = centerX + radius;
   const hoverTop = MUSIC_DEBUG_TIMELINE_MOTIF_MARKER_Y - radius;
   const hoverBottom = MUSIC_DEBUG_TIMELINE_MOTIF_MARKER_Y + radius;
+  if (
+    options.canvasX < hoverLeft ||
+    options.canvasX > hoverRight ||
+    options.canvasY < hoverTop ||
+    options.canvasY > hoverBottom
+  ) {
+    return null;
+  }
+  return {
+    noteIndex: null,
+    role: null,
+    hoverLabel: options.marker.hoverLabel,
+    hoverDurationLabel: options.marker.hoverDurationLabel,
+    x: hoverLeft,
+    y: hoverTop,
+    width: hoverRight - hoverLeft,
+    height: hoverBottom - hoverTop,
+  };
+}
+
+function resolveMusicDebugTimelineClimaxMarkerHoverDetail(options: {
+  layout: MusicDebugTimelineLayout;
+  durationMs: number;
+  canvasX: number;
+  canvasY: number;
+  marker: MusicDebugTimelineClimaxMarker;
+}): MusicDebugTimelineHoverDetail | null {
+  const markerX = resolveMusicDebugTimelineXForOffset(
+    options.layout,
+    options.durationMs,
+    options.marker.offsetMs
+  );
+  const centerX = markerX + (options.marker.kind === 'planned' ? -8 : 8);
+  const radius = 7;
+  const hoverLeft = centerX - radius;
+  const hoverRight = centerX + radius;
+  const hoverTop = MUSIC_DEBUG_TIMELINE_CLIMAX_MARKER_Y - radius;
+  const hoverBottom = MUSIC_DEBUG_TIMELINE_CLIMAX_MARKER_Y + radius;
   if (
     options.canvasX < hoverLeft ||
     options.canvasX > hoverRight ||
@@ -747,9 +860,13 @@ export function drawMusicDebugTimeline(
     durationMs,
     chordCues
   );
+  const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
   const motifMarkers = resolveMusicDebugTimelineMotifMarkers(snapshot);
-  const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
+  const climaxMarkers = resolveMusicDebugTimelineClimaxMarkers(
+    snapshot,
+    measureMarkers
+  );
   const harmonyDriftMarkers = resolveMusicDebugTimelineHarmonyDriftMarkers(
     snapshot,
     measureMarkers
@@ -810,6 +927,9 @@ export function drawMusicDebugTimeline(
   context.textAlign = 'center';
   for (const marker of motifMarkers) {
     drawMusicDebugTimelineMotifMarker(context, layout, durationMs, marker);
+  }
+  for (const marker of climaxMarkers) {
+    drawMusicDebugTimelineClimaxMarker(context, layout, durationMs, marker);
   }
   for (const chordLabel of chordLabels) {
     context.fillText(
@@ -946,9 +1066,13 @@ export function buildMusicDebugTimelineSvgMarkup(
     durationMs,
     chordCues
   );
+  const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
   const motifMarkers = resolveMusicDebugTimelineMotifMarkers(snapshot);
-  const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
+  const climaxMarkers = resolveMusicDebugTimelineClimaxMarkers(
+    snapshot,
+    measureMarkers
+  );
   const harmonyDriftMarkers = resolveMusicDebugTimelineHarmonyDriftMarkers(
     snapshot,
     measureMarkers
@@ -1017,6 +1141,15 @@ export function buildMusicDebugTimelineSvgMarkup(
       ${motifMarkers
         .map((marker) =>
           buildMusicDebugTimelineMotifMarkerSvgMarkup(
+            layout,
+            durationMs,
+            marker
+          )
+        )
+        .join('')}
+      ${climaxMarkers
+        .map((marker) =>
+          buildMusicDebugTimelineClimaxMarkerSvgMarkup(
             layout,
             durationMs,
             marker
@@ -1297,7 +1430,10 @@ export function resolveMusicDebugTimelineNoteBarColor(
 }
 
 export function resolveMusicDebugTimelineNoteBarFill(
-  noteBar: Pick<MusicDebugTimelineNoteBar, 'warningKind' | 'role' | 'overlapCount'>
+  noteBar: Pick<
+    MusicDebugTimelineNoteBar,
+    'warningKind' | 'role' | 'overlapCount'
+  >
 ): string {
   if (noteBar.warningKind === 'out-of-scale') {
     return '#ff7b72';
@@ -1830,7 +1966,39 @@ function drawMusicDebugTimelineMotifMarker(
   context.fillStyle = '#071019';
   context.font = '10px Trebuchet MS';
   context.textAlign = 'center';
-  context.fillText(marker.label, centerX, MUSIC_DEBUG_TIMELINE_MOTIF_MARKER_Y + 3);
+  context.fillText(
+    marker.label,
+    centerX,
+    MUSIC_DEBUG_TIMELINE_MOTIF_MARKER_Y + 3
+  );
+  context.textAlign = 'start';
+}
+
+function drawMusicDebugTimelineClimaxMarker(
+  context: CanvasRenderingContext2D,
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  marker: MusicDebugTimelineClimaxMarker
+): void {
+  const markerX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.offsetMs
+  );
+  const centerX = markerX + (marker.kind === 'planned' ? -8 : 8);
+  const fill = marker.kind === 'planned' ? '#55d6be' : '#ffcc33';
+  context.fillStyle = fill;
+  context.beginPath();
+  context.arc(centerX, MUSIC_DEBUG_TIMELINE_CLIMAX_MARKER_Y, 7, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = '#071019';
+  context.font = '10px Trebuchet MS';
+  context.textAlign = 'center';
+  context.fillText(
+    marker.label,
+    centerX,
+    MUSIC_DEBUG_TIMELINE_CLIMAX_MARKER_Y + 3
+  );
   context.textAlign = 'start';
 }
 
@@ -1897,8 +2065,7 @@ function drawMusicDebugTimelineCadenceWarningBadge(
   const centerX =
     markerX + MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS + 5;
   const centerY = MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y - 6;
-  context.fillStyle =
-    marker.warningKind === 'harmony' ? '#ffb86b' : '#ff7b72';
+  context.fillStyle = marker.warningKind === 'harmony' ? '#ffb86b' : '#ff7b72';
   context.beginPath();
   context.arc(
     centerX,
@@ -1934,9 +2101,7 @@ function buildMusicDebugTimelineHarmonyDriftMarkerSvgMarkup(
   );
   return `<g class="music-debug-timeline-harmony-drift-marker"><path d="M${startX.toFixed(
     2
-  )} ${MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_MARKER_Y.toFixed(
-    2
-  )} H${endX.toFixed(
+  )} ${MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_MARKER_Y.toFixed(2)} H${endX.toFixed(
     2
   )}" fill="none" stroke="#ff7b72" stroke-width="2"></path><circle cx="${centerX.toFixed(
     2
@@ -1944,9 +2109,7 @@ function buildMusicDebugTimelineHarmonyDriftMarkerSvgMarkup(
     2
   )}" r="${MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_BADGE_RADIUS.toFixed(
     2
-  )}" fill="#ff7b72"></circle><text x="${centerX.toFixed(
-    2
-  )}" y="${(
+  )}" fill="#ff7b72"></circle><text x="${centerX.toFixed(2)}" y="${(
     MUSIC_DEBUG_TIMELINE_HARMONY_DRIFT_MARKER_Y + 3
   ).toFixed(
     2
@@ -1973,9 +2136,36 @@ function buildMusicDebugTimelineMotifMarkerSvgMarkup(
     2
   )}" cy="${MUSIC_DEBUG_TIMELINE_MOTIF_MARKER_Y.toFixed(
     2
-  )}" r="7" fill="${fill}"></circle><text x="${centerX.toFixed(
+  )}" r="7" fill="${fill}"></circle><text x="${centerX.toFixed(2)}" y="${(
+    MUSIC_DEBUG_TIMELINE_MOTIF_MARKER_Y + 3
+  ).toFixed(
     2
-  )}" y="${(MUSIC_DEBUG_TIMELINE_MOTIF_MARKER_Y + 3).toFixed(
+  )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="10" text-anchor="middle">${
+    marker.label
+  }</text><title>${escapeMusicDebugTimelineSvgText(
+    `${marker.hoverLabel} (${marker.hoverDurationLabel})`
+  )}</title></g>`;
+}
+
+function buildMusicDebugTimelineClimaxMarkerSvgMarkup(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  marker: MusicDebugTimelineClimaxMarker
+): string {
+  const markerX = resolveMusicDebugTimelineXForOffset(
+    layout,
+    durationMs,
+    marker.offsetMs
+  );
+  const centerX = markerX + (marker.kind === 'planned' ? -8 : 8);
+  const fill = marker.kind === 'planned' ? '#55d6be' : '#ffcc33';
+  return `<g class="music-debug-timeline-climax-marker music-debug-timeline-climax-marker-${marker.kind}"><circle cx="${centerX.toFixed(
+    2
+  )}" cy="${MUSIC_DEBUG_TIMELINE_CLIMAX_MARKER_Y.toFixed(
+    2
+  )}" r="7" fill="${fill}"></circle><text x="${centerX.toFixed(2)}" y="${(
+    MUSIC_DEBUG_TIMELINE_CLIMAX_MARKER_Y + 3
+  ).toFixed(
     2
   )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="10" text-anchor="middle">${
     marker.label
@@ -2006,9 +2196,7 @@ function buildMusicDebugTimelineBassDriftMarkerSvgMarkup(
   );
   return `<g class="music-debug-timeline-bass-drift-marker"><path d="M${startX.toFixed(
     2
-  )} ${MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y.toFixed(
-    2
-  )} H${endX.toFixed(
+  )} ${MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y.toFixed(2)} H${endX.toFixed(
     2
   )}" fill="none" stroke="#ffb86b" stroke-width="2"></path><circle cx="${centerX.toFixed(
     2
@@ -2016,9 +2204,7 @@ function buildMusicDebugTimelineBassDriftMarkerSvgMarkup(
     2
   )}" r="${MUSIC_DEBUG_TIMELINE_BASS_DRIFT_BADGE_RADIUS.toFixed(
     2
-  )}" fill="#ffb86b"></circle><text x="${centerX.toFixed(
-    2
-  )}" y="${(
+  )}" fill="#ffb86b"></circle><text x="${centerX.toFixed(2)}" y="${(
     MUSIC_DEBUG_TIMELINE_BASS_DRIFT_MARKER_Y + 3
   ).toFixed(
     2
@@ -2047,9 +2233,9 @@ function buildMusicDebugTimelineCadenceWarningBadgeSvgMarkup(
     2
   )}" r="${MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS.toFixed(
     2
-  )}" fill="${fill}"></circle><text x="${centerX.toFixed(
-    2
-  )}" y="${(centerY + 3).toFixed(
+  )}" fill="${fill}"></circle><text x="${centerX.toFixed(2)}" y="${(
+    centerY + 3
+  ).toFixed(
     2
   )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="10" text-anchor="middle">!</text><title>${escapeMusicDebugTimelineSvgText(
     marker.warningLabel ?? marker.label
@@ -2191,6 +2377,19 @@ function resolveMusicDebugTimelineMeasureRangeOffsets(
     endOffsetMs,
     centerOffsetMs: startOffsetMs + (endOffsetMs - startOffsetMs) * 0.5,
   };
+}
+
+function resolveMusicDebugTimelineLeadContourPointOffsetMs(
+  point: MusicDebugSnapshot['leadContourAnalysis']['points'][number],
+  measureMarkers: readonly MusicDebugMeasureMarker[]
+): number {
+  if (point.actualStartMs !== null) {
+    return point.actualStartMs;
+  }
+  const measureMarker = measureMarkers.find(
+    (measure) => measure.measureNumber === point.songMeasure
+  );
+  return measureMarker?.centerOffsetMs ?? 0;
 }
 
 const MUSIC_DEBUG_TIMELINE_PITCH_CLASS_NAMES = [

@@ -1786,11 +1786,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       detailLevel,
       tilePluginRenderContext,
     } = shell;
-    const {
-      estimateValidation,
-      pluginBuildStartMs,
-      pluginBuildDurationMs,
-    } = buildMetadata;
+    const { estimateValidation, pluginBuildStartMs, pluginBuildDurationMs } =
+      buildMetadata;
     let pluginModel = initialPluginModel;
 
     if (pluginModel) {
@@ -2300,7 +2297,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           pluginBuildDurationMs: buildResult.pluginBuildDurationMs,
         },
         buildResult.pluginModel as
-          | (Pick<THREE.Object3D, 'traverse' | 'children' | 'type' | 'position'> &
+          | (Pick<
+              THREE.Object3D,
+              'traverse' | 'children' | 'type' | 'position'
+            > &
               THREE.Object3D)
           | null
       ),
@@ -2383,7 +2383,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       !visibleWorldNextVisibleKeysBuffer.has(activePendingTileBuild.key)
     ) {
       activePendingTileBuild = null;
-      recordRecentMetric(renderChurnMetrics.pendingCancelledEntries, performance.now());
+      recordRecentMetric(
+        renderChurnMetrics.pendingCancelledEntries,
+        performance.now()
+      );
     }
     if (activePendingTileBuild) {
       visibleWorldVisibleTileKeysBuffer.add(activePendingTileBuild.key);
@@ -2428,7 +2431,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     > = {},
     frameBudget?: FrameTimeBudget
   ) {
-    if (pendingWorldBuild.queue.length === 0 && activePendingTileBuild === null) {
+    if (
+      pendingWorldBuild.queue.length === 0 &&
+      activePendingTileBuild === null
+    ) {
       return;
     }
     const context = state.getCurrentContext();
@@ -2492,8 +2498,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           {
             estimateValidation: activePendingTileBuild.estimateValidation,
             pluginBuildStartMs: activePendingTileBuild.pluginBuildStartMs,
-            pluginBuildDurationMs:
-              activePendingTileBuild.pluginBuildDurationMs,
+            pluginBuildDurationMs: activePendingTileBuild.pluginBuildDurationMs,
           },
           resumed.model as
             | (Pick<

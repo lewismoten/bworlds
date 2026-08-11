@@ -257,10 +257,7 @@ describe('tile lighthouse', () => {
         .length
     );
     expect(
-      collectTaggedInstancedMeshes(
-        progressiveModel,
-        'lighthousePaneInstanced'
-      )
+      collectTaggedInstancedMeshes(progressiveModel, 'lighthousePaneInstanced')
     ).toHaveLength(
       collectTaggedInstancedMeshes(syncModel, 'lighthousePaneInstanced').length
     );

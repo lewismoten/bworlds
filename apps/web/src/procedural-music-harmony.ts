@@ -1413,11 +1413,7 @@ function countTrailingRepeatedLeadPitchInPhrase(options: {
   );
   let runLength = 1;
 
-  for (
-    let index = previousStepIndex - 1;
-    index >= phraseStart;
-    index -= 1
-  ) {
+  for (let index = previousStepIndex - 1; index >= phraseStart; index -= 1) {
     const currentSemitones = resolveLeadSemitonesCached(
       options.theme,
       resolveProceduralChordAtStep(

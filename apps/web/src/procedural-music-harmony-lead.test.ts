@@ -11,11 +11,6 @@ const TEST_THEME: ProceduralHarmonyTheme = {
   scale: [0, 3, 5, 7, 10, 12],
   stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
 };
-const MIXOLYDIAN_THEME: ProceduralHarmonyTheme = {
-  id: 'frontier-plains',
-  scale: [0, 2, 4, 5, 7, 9, 10],
-  stepPattern: [0, 2, 4, 2, 5, 4, 2, 0],
-};
 
 describe('procedural music harmony lead motion', () => {
   it('keeps lead notes on chord tones at strong melodic beats', () => {
@@ -188,7 +183,11 @@ describe('procedural music harmony lead motion', () => {
       }
 
       for (const run of repeatedRuns) {
-        for (let stepIndex = run.startIndex; stepIndex <= run.endIndex; stepIndex += 1) {
+        for (
+          let stepIndex = run.startIndex;
+          stepIndex <= run.endIndex;
+          stepIndex += 1
+        ) {
           expect(compositions[stepIndex]!.cadence).not.toBe('neutral');
         }
       }

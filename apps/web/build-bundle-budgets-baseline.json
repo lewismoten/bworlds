@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T00:00:00.000Z",
+  "generatedAt": "2026-08-11T06:12:00.000Z",
   "initialJavaScript": {
     "baselineBytes": 1557922,
     "maxIncreaseBytes": 49152
@@ -15,15 +15,15 @@
   "majorChunks": {
     "minimumTrackedBytes": 64000,
     "baselineBytesByName": {
-      "main": 1153645,
-      "music-debug-instrument-preview": 168275,
-      "procedural-music-audio-sink": 136881,
-      "sound-effects": 144366,
-      "src": 102071
+      "main": 1167889,
+      "music-debug": 182155,
+      "procedural-music-audio-sink": 101266,
+      "sound-effects": 139964,
+      "src": 141676
     },
     "maxIncreaseBytesByName": {
       "main": 40960,
-      "music-debug-instrument-preview": 12288,
+      "music-debug": 12288,
       "procedural-music-audio-sink": 12288,
       "sound-effects": 12288,
       "src": 8192

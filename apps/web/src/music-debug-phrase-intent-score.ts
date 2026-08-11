@@ -52,7 +52,8 @@ function createMotifIntentComponent(
     motifValidation.totalMatchCount <= 0
       ? 0
       : roundIntentScore(
-          (motifValidation.exactMatchCount + motifValidation.variedMatchCount * 0.75) /
+          (motifValidation.exactMatchCount +
+            motifValidation.variedMatchCount * 0.75) /
             motifValidation.totalMatchCount
         );
 

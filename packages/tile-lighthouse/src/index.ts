@@ -315,524 +315,520 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
 }
 
 function* createLighthouseModelProgressive({
-      three,
-      tileX,
-      tileY,
-      detailLevel = 'full',
-    }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
-      const group = new three.Group();
-      const {
-        wallMaterial,
-        stripeMaterial,
-        stoneMaterial,
-        paneMaterial,
-        glassMaterial,
-        frameMaterial,
-        lensMaterial,
-        balconyMaterial,
+  three,
+  tileX,
+  tileY,
+  detailLevel = 'full',
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const group = new three.Group();
+  const {
+    wallMaterial,
+    stripeMaterial,
+    stoneMaterial,
+    paneMaterial,
+    glassMaterial,
+    frameMaterial,
+    lensMaterial,
+    balconyMaterial,
+    wallGlowMaterial,
+    beamColor,
+    rotationDurationMs,
+    rotationDirection,
+    beamMaterials,
+  } = resolveRegionalLighthouseStyle(three, tileX, tileY);
+
+  if (detailLevel === 'low') {
+    return createLowDetailLighthouseModel(three, tileX, tileY, {
+      wallMaterial,
+      stripeMaterial,
+      beamMaterial: beamMaterials.near,
+      beamColor,
+      rotationDurationMs,
+      rotationDirection,
+      beamPivotKey: LIGHTHOUSE_BEAM_PIVOT_KEY,
+      beamKey: LIGHTHOUSE_BEAM_KEY,
+      beamStartOffset: LIGHTHOUSE_BEAM_START_OFFSET,
+      beamSegments: LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS,
+    });
+  }
+  const totalSteps = 4;
+
+  const base = markStructuralRenderBudgetPart(
+    new three.Mesh(
+      getSharedCylinderGeometry(three, 0.46, 0.6, 0.32, 10),
+      stoneMaterial
+    ),
+    { label: 'base' }
+  );
+  base.position.set(tileX, 0.16, tileY);
+  group.add(base);
+
+  const tower = markStructuralRenderBudgetPart(
+    new three.Mesh(
+      getSharedCylinderGeometry(three, 0.34, 0.42, 1.8, 10),
+      wallMaterial
+    ),
+    { label: 'tower' }
+  );
+  tower.position.set(tileX, 1.06, tileY);
+  group.add(tower);
+
+  const stripe = markStructuralRenderBudgetPart(
+    new three.Mesh(
+      getSharedCylinderGeometry(three, 0.35, 0.41, 0.22, 10),
+      stripeMaterial
+    ),
+    {
+      label: 'stripe',
+      priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
+    }
+  );
+  stripe.position.set(tileX, 0.92, tileY);
+  group.add(stripe);
+
+  const cap = markStructuralRenderBudgetPart(
+    new three.Mesh(
+      getSharedConeGeometry(three, 0.42, 0.34, 10),
+      stripeMaterial
+    ),
+    { label: 'cap' }
+  );
+  cap.position.set(tileX, 2.1, tileY);
+  group.add(cap);
+
+  const lanternRoom = markStructuralRenderBudgetPart(
+    new three.Mesh(
+      getSharedCylinderGeometry(three, 0.24, 0.24, 0.28, 8),
+      wallMaterial
+    ),
+    {
+      label: 'lantern-room',
+      priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
+    }
+  );
+  lanternRoom.position.set(tileX, 1.86, tileY);
+  group.add(lanternRoom);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'tower-shell',
+  };
+
+  const lanternGlass = markOptionalDecorativeRenderBudgetPart(
+    new three.Mesh(
+      getSharedCylinderGeometry(three, 0.27, 0.27, 0.3, 8),
+      glassMaterial
+    ),
+    { label: 'lantern-glass' }
+  );
+  lanternGlass.userData = {
+    ...(lanternGlass.userData ?? {}),
+    [LIGHTHOUSE_GLASS_KEY]: true,
+  };
+  lanternGlass.position.set(tileX, 1.86, tileY);
+  group.add(lanternGlass);
+
+  const frameRingInstances = markOptionalDecorativeRenderBudgetPart(
+    new three.InstancedMesh(
+      getSharedCylinderGeometry(three, 0.29, 0.29, 0.03, 8),
+      frameMaterial,
+      2
+    ),
+    { label: 'frame-ring' }
+  );
+  frameRingInstances.userData = {
+    ...(frameRingInstances.userData ?? {}),
+    [LIGHTHOUSE_FRAME_KEY]: true,
+    [LIGHTHOUSE_FRAME_RING_INSTANCED_KEY]: true,
+  };
+  const frameRingMatrixScratch = new three.Matrix4();
+  [-0.13, 0.13].forEach((yOffset, index) => {
+    frameRingInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        frameRingMatrixScratch,
+        tileX,
+        1.86 + yOffset,
+        tileY,
+        1,
+        1,
+        1
+      )
+    );
+  });
+  group.add(frameRingInstances);
+
+  const framePostInstances = markOptionalDecorativeRenderBudgetPart(
+    new three.InstancedMesh(
+      getSharedBoxGeometry(three, 0.03, 0.28, 0.03),
+      frameMaterial,
+      4
+    ),
+    { label: 'frame-post' }
+  );
+  framePostInstances.userData = {
+    ...(framePostInstances.userData ?? {}),
+    [LIGHTHOUSE_FRAME_KEY]: true,
+    [LIGHTHOUSE_FRAME_POST_INSTANCED_KEY]: true,
+  };
+  const framePostMatrixScratch = new three.Matrix4();
+  [
+    { x: 0.18, z: 0 },
+    { x: -0.18, z: 0 },
+    { x: 0, z: 0.18 },
+    { x: 0, z: -0.18 },
+  ].forEach((offset, index) => {
+    framePostInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        framePostMatrixScratch,
+        tileX + offset.x,
+        1.86,
+        tileY + offset.z,
+        1,
+        1,
+        1
+      )
+    );
+  });
+  group.add(framePostInstances);
+
+  const verticalWallGlowInstances = markOptionalDecorativeRenderBudgetPart(
+    markPoiLightEmitter(
+      new three.InstancedMesh(
+        getSharedBoxGeometry(three, 0.04, 0.34, 0.22),
         wallGlowMaterial,
-        beamColor,
-        rotationDurationMs,
-        rotationDirection,
-        beamMaterials,
-      } = resolveRegionalLighthouseStyle(three, tileX, tileY);
-
-      if (detailLevel === 'low') {
-        return createLowDetailLighthouseModel(three, tileX, tileY, {
-          wallMaterial,
-          stripeMaterial,
-          beamMaterial: beamMaterials.near,
-          beamColor,
-          rotationDurationMs,
-          rotationDirection,
-          beamPivotKey: LIGHTHOUSE_BEAM_PIVOT_KEY,
-          beamKey: LIGHTHOUSE_BEAM_KEY,
-          beamStartOffset: LIGHTHOUSE_BEAM_START_OFFSET,
-          beamSegments: LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS,
-        });
+        2
+      ),
+      {
+        kind: 'emissive-mesh',
+        dayIntensity: 0.03,
+        nightIntensity: 0.46,
       }
-      const totalSteps = 4;
+    ),
+    {
+      label: 'wall-glow',
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+    }
+  );
+  verticalWallGlowInstances.userData = {
+    ...(verticalWallGlowInstances.userData ?? {}),
+    [LIGHTHOUSE_WALL_GLOW_KEY]: true,
+    [LIGHTHOUSE_WALL_GLOW_INSTANCED_KEY]: 'vertical',
+  };
+  const verticalWallGlowMatrixScratch = new three.Matrix4();
+  verticalWallGlowInstances.setMatrixAt(
+    0,
+    writeInstancedScalePositionMatrix(
+      verticalWallGlowMatrixScratch,
+      tileX + 0.255,
+      1.7,
+      tileY,
+      1,
+      1,
+      1
+    )
+  );
+  verticalWallGlowInstances.setMatrixAt(
+    1,
+    writeInstancedScalePositionMatrix(
+      verticalWallGlowMatrixScratch,
+      tileX - 0.255,
+      1.7,
+      tileY,
+      1,
+      1,
+      1
+    )
+  );
+  group.add(verticalWallGlowInstances);
 
-      const base = markStructuralRenderBudgetPart(
-        new three.Mesh(
-          getSharedCylinderGeometry(three, 0.46, 0.6, 0.32, 10),
-          stoneMaterial
-        ),
-        { label: 'base' }
-      );
-      base.position.set(tileX, 0.16, tileY);
-      group.add(base);
-
-      const tower = markStructuralRenderBudgetPart(
-        new three.Mesh(
-          getSharedCylinderGeometry(three, 0.34, 0.42, 1.8, 10),
-          wallMaterial
-        ),
-        { label: 'tower' }
-      );
-      tower.position.set(tileX, 1.06, tileY);
-      group.add(tower);
-
-      const stripe = markStructuralRenderBudgetPart(
-        new three.Mesh(
-          getSharedCylinderGeometry(three, 0.35, 0.41, 0.22, 10),
-          stripeMaterial
-        ),
-        {
-          label: 'stripe',
-          priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
-        }
-      );
-      stripe.position.set(tileX, 0.92, tileY);
-      group.add(stripe);
-
-      const cap = markStructuralRenderBudgetPart(
-        new three.Mesh(
-          getSharedConeGeometry(three, 0.42, 0.34, 10),
-          stripeMaterial
-        ),
-        { label: 'cap' }
-      );
-      cap.position.set(tileX, 2.1, tileY);
-      group.add(cap);
-
-      const lanternRoom = markStructuralRenderBudgetPart(
-        new three.Mesh(
-          getSharedCylinderGeometry(three, 0.24, 0.24, 0.28, 8),
-          wallMaterial
-        ),
-        {
-          label: 'lantern-room',
-          priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
-        }
-      );
-      lanternRoom.position.set(tileX, 1.86, tileY);
-      group.add(lanternRoom);
-      yield {
-        completedSteps: 1,
-        totalSteps,
-        label: 'tower-shell',
-      };
-
-      const lanternGlass = markOptionalDecorativeRenderBudgetPart(
-        new three.Mesh(
-          getSharedCylinderGeometry(three, 0.27, 0.27, 0.3, 8),
-          glassMaterial
-        ),
-        { label: 'lantern-glass' }
-      );
-      lanternGlass.userData = {
-        ...(lanternGlass.userData ?? {}),
-        [LIGHTHOUSE_GLASS_KEY]: true,
-      };
-      lanternGlass.position.set(tileX, 1.86, tileY);
-      group.add(lanternGlass);
-
-      const frameRingInstances = markOptionalDecorativeRenderBudgetPart(
-        new three.InstancedMesh(
-          getSharedCylinderGeometry(three, 0.29, 0.29, 0.03, 8),
-          frameMaterial,
-          2
-        ),
-        { label: 'frame-ring' }
-      );
-      frameRingInstances.userData = {
-        ...(frameRingInstances.userData ?? {}),
-        [LIGHTHOUSE_FRAME_KEY]: true,
-        [LIGHTHOUSE_FRAME_RING_INSTANCED_KEY]: true,
-      };
-      const frameRingMatrixScratch = new three.Matrix4();
-      [-0.13, 0.13].forEach((yOffset, index) => {
-        frameRingInstances.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            frameRingMatrixScratch,
-            tileX,
-            1.86 + yOffset,
-            tileY,
-            1,
-            1,
-            1
-          )
-        );
-      });
-      group.add(frameRingInstances);
-
-      const framePostInstances = markOptionalDecorativeRenderBudgetPart(
-        new three.InstancedMesh(
-          getSharedBoxGeometry(three, 0.03, 0.28, 0.03),
-          frameMaterial,
-          4
-        ),
-        { label: 'frame-post' }
-      );
-      framePostInstances.userData = {
-        ...(framePostInstances.userData ?? {}),
-        [LIGHTHOUSE_FRAME_KEY]: true,
-        [LIGHTHOUSE_FRAME_POST_INSTANCED_KEY]: true,
-      };
-      const framePostMatrixScratch = new three.Matrix4();
-      [
-        { x: 0.18, z: 0 },
-        { x: -0.18, z: 0 },
-        { x: 0, z: 0.18 },
-        { x: 0, z: -0.18 },
-      ].forEach((offset, index) => {
-        framePostInstances.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            framePostMatrixScratch,
-            tileX + offset.x,
-            1.86,
-            tileY + offset.z,
-            1,
-            1,
-            1
-          )
-        );
-      });
-      group.add(framePostInstances);
-
-      const verticalWallGlowInstances = markOptionalDecorativeRenderBudgetPart(
-        markPoiLightEmitter(
-          new three.InstancedMesh(
-            getSharedBoxGeometry(three, 0.04, 0.34, 0.22),
-            wallGlowMaterial,
-            2
-          ),
-          {
-            kind: 'emissive-mesh',
-            dayIntensity: 0.03,
-            nightIntensity: 0.46,
-          }
-        ),
-        {
-          label: 'wall-glow',
-          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
-        }
-      );
-      verticalWallGlowInstances.userData = {
-        ...(verticalWallGlowInstances.userData ?? {}),
-        [LIGHTHOUSE_WALL_GLOW_KEY]: true,
-        [LIGHTHOUSE_WALL_GLOW_INSTANCED_KEY]: 'vertical',
-      };
-      const verticalWallGlowMatrixScratch = new three.Matrix4();
-      verticalWallGlowInstances.setMatrixAt(
-        0,
-        writeInstancedScalePositionMatrix(
-          verticalWallGlowMatrixScratch,
-          tileX + 0.255,
-          1.7,
-          tileY,
-          1,
-          1,
-          1
-        )
-      );
-      verticalWallGlowInstances.setMatrixAt(
-        1,
-        writeInstancedScalePositionMatrix(
-          verticalWallGlowMatrixScratch,
-          tileX - 0.255,
-          1.7,
-          tileY,
-          1,
-          1,
-          1
-        )
-      );
-      group.add(verticalWallGlowInstances);
-
-      const horizontalWallGlowInstances =
-        markOptionalDecorativeRenderBudgetPart(
-          markPoiLightEmitter(
-            new three.InstancedMesh(
-              getSharedBoxGeometry(three, 0.22, 0.34, 0.04),
-              wallGlowMaterial,
-              2
-            ),
-            {
-              kind: 'emissive-mesh',
-              dayIntensity: 0.03,
-              nightIntensity: 0.46,
-            }
-          ),
-          {
-            label: 'wall-glow',
-            priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
-          }
-        );
-      horizontalWallGlowInstances.userData = {
-        ...(horizontalWallGlowInstances.userData ?? {}),
-        [LIGHTHOUSE_WALL_GLOW_KEY]: true,
-        [LIGHTHOUSE_WALL_GLOW_INSTANCED_KEY]: 'horizontal',
-      };
-      const horizontalWallGlowMatrixScratch = new three.Matrix4();
-      horizontalWallGlowInstances.setMatrixAt(
-        0,
-        writeInstancedScalePositionMatrix(
-          horizontalWallGlowMatrixScratch,
-          tileX,
-          1.7,
-          tileY + 0.255,
-          1,
-          1,
-          1
-        )
-      );
-      horizontalWallGlowInstances.setMatrixAt(
-        1,
-        writeInstancedScalePositionMatrix(
-          horizontalWallGlowMatrixScratch,
-          tileX,
-          1.7,
-          tileY - 0.255,
-          1,
-          1,
-          1
-        )
-      );
-      group.add(horizontalWallGlowInstances);
-      yield {
-        completedSteps: 2,
-        totalSteps,
-        label: 'lantern-frame',
-      };
-
-      const lens = markOptionalDecorativeRenderBudgetPart(
-        markPoiLightEmitter(
-          new three.Mesh(
-            getSharedSphereGeometry(three, 0.08, 10, 8),
-            lensMaterial
-          ),
-          {
-            kind: 'emissive-mesh',
-            dayIntensity: 0.12,
-            nightIntensity: 1.9,
-          }
-        ),
-        {
-          label: 'lens',
-          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
-        }
-      );
-      lens.userData = {
-        ...(lens.userData ?? {}),
-        [LIGHTHOUSE_LENS_KEY]: true,
-      };
-      lens.position.set(tileX, 1.86, tileY);
-      group.add(lens);
-
-      const balconyDeck = markOptionalDecorativeRenderBudgetPart(
-        new three.Mesh(
-          getSharedCylinderGeometry(three, 0.38, 0.38, 0.05, 12),
-          balconyMaterial
-        ),
-        { label: 'balcony-deck' }
-      );
-      balconyDeck.userData = {
-        ...(balconyDeck.userData ?? {}),
-        [LIGHTHOUSE_BALCONY_KEY]: true,
-      };
-      balconyDeck.position.set(tileX, 1.67, tileY);
-      group.add(balconyDeck);
-
-      const balconyRailRing = markOptionalDecorativeRenderBudgetPart(
-        new three.Mesh(
-          getSharedCylinderGeometry(three, 0.41, 0.41, 0.03, 12),
-          frameMaterial
-        ),
-        { label: 'balcony-rail-ring' }
-      );
-      balconyRailRing.userData = {
-        ...(balconyRailRing.userData ?? {}),
-        [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
-      };
-      balconyRailRing.position.set(tileX, 1.83, tileY);
-      group.add(balconyRailRing);
-
-      const balconyRailPostInstances = markOptionalDecorativeRenderBudgetPart(
-        new three.InstancedMesh(
-          getSharedBoxGeometry(three, 0.03, 0.18, 0.03),
-          frameMaterial,
-          4
-        ),
-        { label: 'balcony-rail-post' }
-      );
-      balconyRailPostInstances.userData = {
-        ...(balconyRailPostInstances.userData ?? {}),
-        [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
-        [LIGHTHOUSE_BALCONY_RAIL_POST_INSTANCED_KEY]: true,
-      };
-      const balconyRailPostMatrixScratch = new three.Matrix4();
-      [
-        { x: 0.34, z: 0 },
-        { x: -0.34, z: 0 },
-        { x: 0, z: 0.34 },
-        { x: 0, z: -0.34 },
-      ].forEach((offset, index) => {
-        balconyRailPostInstances.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            balconyRailPostMatrixScratch,
-            tileX + offset.x,
-            1.75,
-            tileY + offset.z,
-            1,
-            1,
-            1
-          )
-        );
-      });
-      group.add(balconyRailPostInstances);
-
-      const verticalPaneInstances = markOptionalDecorativeRenderBudgetPart(
-        markPoiLightEmitter(
-          new three.InstancedMesh(
-            new three.PlaneGeometry(0.16, 0.12),
-            paneMaterial,
-            2
-          ),
-          {
-            kind: 'emissive-mesh',
-            dayIntensity: 0.08,
-            nightIntensity: 1.3,
-          }
-        ),
-        {
-          label: 'pane',
-          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
-        }
-      );
-      verticalPaneInstances.userData = {
-        ...(verticalPaneInstances.userData ?? {}),
-        [LIGHTHOUSE_PANE_INSTANCED_KEY]: 'vertical',
-      };
-      const verticalPaneMatrixScratch = new three.Matrix4();
-      writeInstancedScalePositionMatrix(
-        verticalPaneMatrixScratch,
-        0.22,
-        1.86,
-        0,
-        1,
-        1,
-        1
-      );
-      verticalPaneInstances.setMatrixAt(0, verticalPaneMatrixScratch);
-      writeInstancedScalePositionMatrix(
-        verticalPaneMatrixScratch,
-        -0.22,
-        1.86,
-        0,
-        1,
-        1,
-        1
-      );
-      verticalPaneInstances.setMatrixAt(1, verticalPaneMatrixScratch);
-      group.add(verticalPaneInstances);
-
-      const horizontalPaneInstances = markOptionalDecorativeRenderBudgetPart(
-        markPoiLightEmitter(
-          new three.InstancedMesh(
-            new three.PlaneGeometry(0.16, 0.12),
-            paneMaterial,
-            2
-          ),
-          {
-            kind: 'emissive-mesh',
-            dayIntensity: 0.08,
-            nightIntensity: 1.3,
-          }
-        ),
-        {
-          label: 'pane',
-          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
-        }
-      );
-      horizontalPaneInstances.userData = {
-        ...(horizontalPaneInstances.userData ?? {}),
-        [LIGHTHOUSE_PANE_INSTANCED_KEY]: 'horizontal',
-      };
-      horizontalPaneInstances.position.set(tileX, 0, tileY);
-      horizontalPaneInstances.rotation.y = Math.PI / 2;
-      const horizontalPaneMatrixScratch = new three.Matrix4();
-      writeInstancedScalePositionMatrix(
-        horizontalPaneMatrixScratch,
-        0,
-        1.86,
-        0.22,
-        1,
-        1,
-        1
-      );
-      horizontalPaneInstances.setMatrixAt(0, horizontalPaneMatrixScratch);
-      writeInstancedScalePositionMatrix(
-        horizontalPaneMatrixScratch,
-        0,
-        1.86,
-        -0.22,
-        1,
-        1,
-        1
-      );
-      horizontalPaneInstances.setMatrixAt(1, horizontalPaneMatrixScratch);
-      group.add(horizontalPaneInstances);
-      yield {
-        completedSteps: 3,
-        totalSteps,
-        label: 'balcony-and-panes',
-      };
-
-      const beamPivot = new three.Group();
-      beamPivot.userData = {
-        ...(beamPivot.userData ?? {}),
-        [LIGHTHOUSE_BEAM_PIVOT_KEY]: true,
-        lighthouseBeamRotationDurationMs: rotationDurationMs,
-        lighthouseBeamRotationDirection: rotationDirection,
-      };
-      beamPivot.position.set(tileX, 1.88, tileY);
-
-      let beamOffset = LIGHTHOUSE_BEAM_START_OFFSET;
-      for (const segment of LIGHTHOUSE_BEAM_SEGMENTS) {
-        const beam = new three.Mesh(
-          getSharedConeGeometry(three, segment.radius, segment.length, 12),
-          beamMaterials[segment.key]
-        ) as BeamNodeLike;
-        beam.userData = {
-          ...(beam.userData ?? {}),
-          [LIGHTHOUSE_BEAM_KEY]: true,
-          lighthouseBeamColor: beamColor,
-          lighthouseBeamOpacity: segment.opacity,
-          lighthouseBeamEmissiveIntensity: segment.emissiveIntensity,
-        };
-        beam.rotation.z = Math.PI / 2;
-        beam.position.set(beamOffset + segment.length * 0.5, 0, 0);
-        beam.castShadow = false;
-        beam.receiveShadow = false;
-        beam.visible = false;
-        beamPivot.add(beam);
-        beamOffset += segment.length - 0.04;
+  const horizontalWallGlowInstances = markOptionalDecorativeRenderBudgetPart(
+    markPoiLightEmitter(
+      new three.InstancedMesh(
+        getSharedBoxGeometry(three, 0.22, 0.34, 0.04),
+        wallGlowMaterial,
+        2
+      ),
+      {
+        kind: 'emissive-mesh',
+        dayIntensity: 0.03,
+        nightIntensity: 0.46,
       }
-      group.add(beamPivot);
+    ),
+    {
+      label: 'wall-glow',
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+    }
+  );
+  horizontalWallGlowInstances.userData = {
+    ...(horizontalWallGlowInstances.userData ?? {}),
+    [LIGHTHOUSE_WALL_GLOW_KEY]: true,
+    [LIGHTHOUSE_WALL_GLOW_INSTANCED_KEY]: 'horizontal',
+  };
+  const horizontalWallGlowMatrixScratch = new three.Matrix4();
+  horizontalWallGlowInstances.setMatrixAt(
+    0,
+    writeInstancedScalePositionMatrix(
+      horizontalWallGlowMatrixScratch,
+      tileX,
+      1.7,
+      tileY + 0.255,
+      1,
+      1,
+      1
+    )
+  );
+  horizontalWallGlowInstances.setMatrixAt(
+    1,
+    writeInstancedScalePositionMatrix(
+      horizontalWallGlowMatrixScratch,
+      tileX,
+      1.7,
+      tileY - 0.255,
+      1,
+      1,
+      1
+    )
+  );
+  group.add(horizontalWallGlowInstances);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'lantern-frame',
+  };
 
-      const beacon = markPoiLightEmitter(
-        new three.PointLight(beamColor, 0, 6.2, 1.6),
-        {
-          kind: 'point-light',
-          nightIntensity: 1.15,
-          visibleThreshold: 0.05,
-        }
-      );
-      beacon.position.set(tileX, 1.88, tileY);
-      beacon.visible = false;
-      group.add(beacon);
-      yield {
-        completedSteps: 4,
-        totalSteps,
-        label: 'beam-and-beacon',
-      };
+  const lens = markOptionalDecorativeRenderBudgetPart(
+    markPoiLightEmitter(
+      new three.Mesh(getSharedSphereGeometry(three, 0.08, 10, 8), lensMaterial),
+      {
+        kind: 'emissive-mesh',
+        dayIntensity: 0.12,
+        nightIntensity: 1.9,
+      }
+    ),
+    {
+      label: 'lens',
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+    }
+  );
+  lens.userData = {
+    ...(lens.userData ?? {}),
+    [LIGHTHOUSE_LENS_KEY]: true,
+  };
+  lens.position.set(tileX, 1.86, tileY);
+  group.add(lens);
 
-      return group;
+  const balconyDeck = markOptionalDecorativeRenderBudgetPart(
+    new three.Mesh(
+      getSharedCylinderGeometry(three, 0.38, 0.38, 0.05, 12),
+      balconyMaterial
+    ),
+    { label: 'balcony-deck' }
+  );
+  balconyDeck.userData = {
+    ...(balconyDeck.userData ?? {}),
+    [LIGHTHOUSE_BALCONY_KEY]: true,
+  };
+  balconyDeck.position.set(tileX, 1.67, tileY);
+  group.add(balconyDeck);
+
+  const balconyRailRing = markOptionalDecorativeRenderBudgetPart(
+    new three.Mesh(
+      getSharedCylinderGeometry(three, 0.41, 0.41, 0.03, 12),
+      frameMaterial
+    ),
+    { label: 'balcony-rail-ring' }
+  );
+  balconyRailRing.userData = {
+    ...(balconyRailRing.userData ?? {}),
+    [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
+  };
+  balconyRailRing.position.set(tileX, 1.83, tileY);
+  group.add(balconyRailRing);
+
+  const balconyRailPostInstances = markOptionalDecorativeRenderBudgetPart(
+    new three.InstancedMesh(
+      getSharedBoxGeometry(three, 0.03, 0.18, 0.03),
+      frameMaterial,
+      4
+    ),
+    { label: 'balcony-rail-post' }
+  );
+  balconyRailPostInstances.userData = {
+    ...(balconyRailPostInstances.userData ?? {}),
+    [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
+    [LIGHTHOUSE_BALCONY_RAIL_POST_INSTANCED_KEY]: true,
+  };
+  const balconyRailPostMatrixScratch = new three.Matrix4();
+  [
+    { x: 0.34, z: 0 },
+    { x: -0.34, z: 0 },
+    { x: 0, z: 0.34 },
+    { x: 0, z: -0.34 },
+  ].forEach((offset, index) => {
+    balconyRailPostInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        balconyRailPostMatrixScratch,
+        tileX + offset.x,
+        1.75,
+        tileY + offset.z,
+        1,
+        1,
+        1
+      )
+    );
+  });
+  group.add(balconyRailPostInstances);
+
+  const verticalPaneInstances = markOptionalDecorativeRenderBudgetPart(
+    markPoiLightEmitter(
+      new three.InstancedMesh(
+        new three.PlaneGeometry(0.16, 0.12),
+        paneMaterial,
+        2
+      ),
+      {
+        kind: 'emissive-mesh',
+        dayIntensity: 0.08,
+        nightIntensity: 1.3,
+      }
+    ),
+    {
+      label: 'pane',
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+    }
+  );
+  verticalPaneInstances.userData = {
+    ...(verticalPaneInstances.userData ?? {}),
+    [LIGHTHOUSE_PANE_INSTANCED_KEY]: 'vertical',
+  };
+  const verticalPaneMatrixScratch = new three.Matrix4();
+  writeInstancedScalePositionMatrix(
+    verticalPaneMatrixScratch,
+    0.22,
+    1.86,
+    0,
+    1,
+    1,
+    1
+  );
+  verticalPaneInstances.setMatrixAt(0, verticalPaneMatrixScratch);
+  writeInstancedScalePositionMatrix(
+    verticalPaneMatrixScratch,
+    -0.22,
+    1.86,
+    0,
+    1,
+    1,
+    1
+  );
+  verticalPaneInstances.setMatrixAt(1, verticalPaneMatrixScratch);
+  group.add(verticalPaneInstances);
+
+  const horizontalPaneInstances = markOptionalDecorativeRenderBudgetPart(
+    markPoiLightEmitter(
+      new three.InstancedMesh(
+        new three.PlaneGeometry(0.16, 0.12),
+        paneMaterial,
+        2
+      ),
+      {
+        kind: 'emissive-mesh',
+        dayIntensity: 0.08,
+        nightIntensity: 1.3,
+      }
+    ),
+    {
+      label: 'pane',
+      priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+    }
+  );
+  horizontalPaneInstances.userData = {
+    ...(horizontalPaneInstances.userData ?? {}),
+    [LIGHTHOUSE_PANE_INSTANCED_KEY]: 'horizontal',
+  };
+  horizontalPaneInstances.position.set(tileX, 0, tileY);
+  horizontalPaneInstances.rotation.y = Math.PI / 2;
+  const horizontalPaneMatrixScratch = new three.Matrix4();
+  writeInstancedScalePositionMatrix(
+    horizontalPaneMatrixScratch,
+    0,
+    1.86,
+    0.22,
+    1,
+    1,
+    1
+  );
+  horizontalPaneInstances.setMatrixAt(0, horizontalPaneMatrixScratch);
+  writeInstancedScalePositionMatrix(
+    horizontalPaneMatrixScratch,
+    0,
+    1.86,
+    -0.22,
+    1,
+    1,
+    1
+  );
+  horizontalPaneInstances.setMatrixAt(1, horizontalPaneMatrixScratch);
+  group.add(horizontalPaneInstances);
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'balcony-and-panes',
+  };
+
+  const beamPivot = new three.Group();
+  beamPivot.userData = {
+    ...(beamPivot.userData ?? {}),
+    [LIGHTHOUSE_BEAM_PIVOT_KEY]: true,
+    lighthouseBeamRotationDurationMs: rotationDurationMs,
+    lighthouseBeamRotationDirection: rotationDirection,
+  };
+  beamPivot.position.set(tileX, 1.88, tileY);
+
+  let beamOffset = LIGHTHOUSE_BEAM_START_OFFSET;
+  for (const segment of LIGHTHOUSE_BEAM_SEGMENTS) {
+    const beam = new three.Mesh(
+      getSharedConeGeometry(three, segment.radius, segment.length, 12),
+      beamMaterials[segment.key]
+    ) as BeamNodeLike;
+    beam.userData = {
+      ...(beam.userData ?? {}),
+      [LIGHTHOUSE_BEAM_KEY]: true,
+      lighthouseBeamColor: beamColor,
+      lighthouseBeamOpacity: segment.opacity,
+      lighthouseBeamEmissiveIntensity: segment.emissiveIntensity,
+    };
+    beam.rotation.z = Math.PI / 2;
+    beam.position.set(beamOffset + segment.length * 0.5, 0, 0);
+    beam.castShadow = false;
+    beam.receiveShadow = false;
+    beam.visible = false;
+    beamPivot.add(beam);
+    beamOffset += segment.length - 0.04;
+  }
+  group.add(beamPivot);
+
+  const beacon = markPoiLightEmitter(
+    new three.PointLight(beamColor, 0, 6.2, 1.6),
+    {
+      kind: 'point-light',
+      nightIntensity: 1.15,
+      visibleThreshold: 0.05,
+    }
+  );
+  beacon.position.set(tileX, 1.88, tileY);
+  beacon.visible = false;
+  group.add(beacon);
+  yield {
+    completedSteps: 4,
+    totalSteps,
+    label: 'beam-and-beacon',
+  };
+
+  return group;
 }
 
 function runLighthouseModelBuildToCompletion(

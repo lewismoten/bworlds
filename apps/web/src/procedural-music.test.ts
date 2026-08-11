@@ -27,7 +27,6 @@ import {
   createProceduralInstrumentBank,
   type ProceduralInstrument,
 } from './procedural-music-sound-bank.ts';
-import { createProceduralMusicSong } from './procedural-music-song.ts';
 import { resolveProceduralMusicLoudness } from './procedural-music-loudness.ts';
 import { createProceduralPercussionNotes } from './procedural-music-percussion.ts';
 import {

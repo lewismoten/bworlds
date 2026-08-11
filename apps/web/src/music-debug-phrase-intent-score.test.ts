@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMusicDebugPhraseIntentScore, formatMusicDebugPhraseIntentScore } from './music-debug-phrase-intent-score.ts';
+import {
+  createMusicDebugPhraseIntentScore,
+  formatMusicDebugPhraseIntentScore,
+} from './music-debug-phrase-intent-score.ts';
 
 describe('music debug phrase intent score', () => {
   it('combines motif, contour, and cadence diagnostics into one phrase-intent score', () => {
@@ -68,7 +71,9 @@ describe('music debug phrase intent score', () => {
           },
         ],
         isValidForMidiExport: false,
-        messages: ['Outro answer cadence at measure 8 missed its target tones.'],
+        messages: [
+          'Outro answer cadence at measure 8 missed its target tones.',
+        ],
       },
     });
 

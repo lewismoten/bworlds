@@ -3,9 +3,7 @@ import type { MusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugMeasureStartOffsetMs } from './music-debug-chord-cues.ts';
 
 export type MusicDebugCadenceMarkerWarningKind =
-  | 'target'
-  | 'harmony'
-  | 'target+harmony';
+  'target' | 'harmony' | 'target+harmony';
 
 export type MusicDebugCadenceMarker = {
   sectionId: string;

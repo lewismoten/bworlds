@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  getDockBoatPlacements,
-  resolveDockBoatRoute,
-} from './index.ts';
+import { getDockBoatPlacements, resolveDockBoatRoute } from './index.ts';
 
 function createCircularDockRouteState() {
   const dockTiles = new Set(['0:0', '1:0', '22:0', '23:0', '11:22', '12:22']);

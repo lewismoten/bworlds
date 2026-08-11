@@ -86,7 +86,9 @@ export function repairProceduralMusicSongCriticalFailures(options: {
   songStartMs: number;
   songDurationMs: number;
   music: MusicUpdateOptions;
-  finalizeNotes: (notes: readonly ProceduralMusicNote[]) => ProceduralMusicNote[];
+  finalizeNotes: (
+    notes: readonly ProceduralMusicNote[]
+  ) => ProceduralMusicNote[];
 }): {
   affectedPhraseIndexes: Set<number>;
   remainingCriticalPhraseIndexes: Set<number>;

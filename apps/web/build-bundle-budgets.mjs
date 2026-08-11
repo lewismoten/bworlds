@@ -17,9 +17,9 @@ export const BUILD_BUNDLE_BUDGETS = {
     minimumTrackedBytes: 64_000,
     hardLimitToleranceBytes: 1_024,
     maxBytesByName: {
-      src: 110_000,
       main: 1_325_000,
-      'music-debug-instrument-preview': 172_500,
+      'music-debug': 186_000,
+      src: 145_000,
       'procedural-music-audio-sink': 140_000,
       'sound-effects': 160_000,
     },

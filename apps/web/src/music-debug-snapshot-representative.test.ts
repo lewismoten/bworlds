@@ -6,7 +6,10 @@ import {
 
 describe('music debug representative snapshots', () => {
   it("keeps Section A' lead prominence above Section A in representative snapshots", () => {
-    for (const snapshot of [FOREST_KNOWN_GOOD_SNAPSHOT, TOWN_KNOWN_GOOD_SNAPSHOT]) {
+    for (const snapshot of [
+      FOREST_KNOWN_GOOD_SNAPSHOT,
+      TOWN_KNOWN_GOOD_SNAPSHOT,
+    ]) {
       const prominenceById = new Map(
         snapshot.sectionProminence.map((section) => [
           section.sectionId,
@@ -25,7 +28,10 @@ describe('music debug representative snapshots', () => {
   }, 10_000);
 
   it('keeps Section B harmony prominence below Section A in representative snapshots', () => {
-    for (const snapshot of [FOREST_KNOWN_GOOD_SNAPSHOT, TOWN_KNOWN_GOOD_SNAPSHOT]) {
+    for (const snapshot of [
+      FOREST_KNOWN_GOOD_SNAPSHOT,
+      TOWN_KNOWN_GOOD_SNAPSHOT,
+    ]) {
       const prominenceById = new Map(
         snapshot.sectionProminence.map((section) => [
           section.sectionId,

@@ -14,8 +14,8 @@ import { resolveProceduralMusicBlueprint } from '../procedural-music-blueprint.t
 
 export { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT };
 
-export const REPRESENTATIVE_FOREST_EXPLORATION_SONG =
-  createProceduralMusicSong({
+export const REPRESENTATIVE_FOREST_EXPLORATION_SONG = createProceduralMusicSong(
+  {
     nowMs: 1_000,
     tileKind: 'forest',
     contextType: 'overworld',
@@ -23,10 +23,11 @@ export const REPRESENTATIVE_FOREST_EXPLORATION_SONG =
     yearProgress: 0.25,
     clusterX: 3,
     clusterY: -2,
-  });
+  }
+);
 
-export const REPRESENTATIVE_PLAINS_EXPLORATION_SONG =
-  createProceduralMusicSong({
+export const REPRESENTATIVE_PLAINS_EXPLORATION_SONG = createProceduralMusicSong(
+  {
     nowMs: 1_000,
     tileKind: 'plains',
     contextType: 'overworld',
@@ -34,7 +35,8 @@ export const REPRESENTATIVE_PLAINS_EXPLORATION_SONG =
     yearProgress: 0.25,
     clusterX: 0,
     clusterY: 0,
-  });
+  }
+);
 
 export function resolveMidiNote(frequency: number): number {
   return Math.round(69 + 12 * Math.log2(frequency / 440));
@@ -270,7 +272,9 @@ export function averageNoteVelocity(
   return averageCounts(notes.map((note) => note.velocity));
 }
 
-export function averageNoteVolume(notes: readonly ProceduralMusicNote[]): number {
+export function averageNoteVolume(
+  notes: readonly ProceduralMusicNote[]
+): number {
   return averageCounts(notes.map((note) => note.volume));
 }
 

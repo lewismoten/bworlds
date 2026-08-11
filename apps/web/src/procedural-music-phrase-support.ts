@@ -124,7 +124,7 @@ function resolveDesiredSupportEndMs(options: {
     options.measureDurationMs *
       resolveMinimumSupportDurationRatio(options.role, options.measureIndex)
   );
-  let desiredEndMs = Math.min(
+  const desiredEndMs = Math.min(
     options.note.startMs + minimumDurationMs,
     options.maxEndMs
   );
@@ -147,7 +147,8 @@ function resolveDesiredSupportEndMs(options: {
       ? CADENCE_BASS_REMAINING_MEASURE_COVERAGE.answer
       : CADENCE_BASS_REMAINING_MEASURE_COVERAGE.question;
   const cadenceEndMs = Math.min(
-    options.note.startMs + Math.round(remainingMeasureMs * cadenceCoverageRatio),
+    options.note.startMs +
+      Math.round(remainingMeasureMs * cadenceCoverageRatio),
     options.maxEndMs
   );
 

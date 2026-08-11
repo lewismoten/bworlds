@@ -135,7 +135,8 @@ describe('procedural music song repair', () => {
           .map((note) => ({
             ...note,
             instrumentId: `${note.instrumentId}:damaged`,
-            frequency: note.role === 'lead' ? note.frequency * 0.5 : note.frequency,
+            frequency:
+              note.role === 'lead' ? note.frequency * 0.5 : note.frequency,
           }))
       )
       .sort((left, right) => left.startMs - right.startMs);
@@ -184,9 +185,7 @@ describe('procedural music song repair', () => {
       );
       return !repaired.affectedPhraseIndexes.has(notePhraseIndex);
     };
-    expect(
-      repaired.repairedRepeatedNotes.filter(unaffectedNote)
-    ).toEqual(
+    expect(repaired.repairedRepeatedNotes.filter(unaffectedNote)).toEqual(
       damagedRepeatedNotes.filter(unaffectedNote)
     );
   });

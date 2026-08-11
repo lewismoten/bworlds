@@ -1,50 +1,31 @@
 import { describe, expect, it } from 'vitest';
 
-import type { MusicDebugSnapshot } from './music-debug.ts';
+import {
+  createMusicDebugSnapshot,
+  type MusicDebugSnapshot,
+} from './music-debug.ts';
 import { createMusicDebugSnapshotSignature } from './music-debug-snapshot-signature.ts';
 
+const SOURCE_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+  clusterX: 4,
+  clusterY: -1,
+});
+
 const BASE_SNAPSHOT = {
-  theme: { id: 'forest-theme' },
-  songDna: { identityId: 'forest-song-dna' },
-  notes: [
-    {
-      role: 'lead',
-      startMs: 0,
-      durationMs: 500,
-      frequency: 440,
-      velocity: 0.8,
-      instrumentId: 'lead-flute',
-    },
-    {
-      role: 'bass',
-      startMs: 500,
-      durationMs: 750,
-      frequency: 220,
-      velocity: 0.6,
-      instrumentId: 'bass-pluck',
-    },
-  ],
-  sectionLayerComparisons: [
-    {
-      sectionId: 'a',
-      sectionLabel: 'A',
-      matchesPlan: true,
-      matchedRules: ['lead'],
-      mismatchRules: [],
-    },
-  ],
-  sectionMotifMatches: [
-    {
-      sectionId: 'a',
-      sectionLabel: 'A',
-      exactMatchCount: 2,
-      variedMatchCount: 1,
-      matchCount: 3,
-    },
-  ],
+  theme: SOURCE_SNAPSHOT.theme,
+  songDna: SOURCE_SNAPSHOT.songDna,
+  notes: SOURCE_SNAPSHOT.notes.slice(0, 2),
+  sectionLayerComparisons: SOURCE_SNAPSHOT.sectionLayerComparisons.slice(0, 1),
+  sectionMotifMatches: SOURCE_SNAPSHOT.sectionMotifMatches.slice(0, 1),
 } satisfies Pick<
   MusicDebugSnapshot,
-  'theme' | 'songDna' | 'notes' | 'sectionLayerComparisons' | 'sectionMotifMatches'
+  | 'theme'
+  | 'songDna'
+  | 'notes'
+  | 'sectionLayerComparisons'
+  | 'sectionMotifMatches'
 >;
 
 describe('music debug snapshot signature', () => {

@@ -39,7 +39,8 @@ const FOREST_SNAPSHOT = createMusicDebugSnapshot({
 const PLAINS_MOTIF_SNAPSHOT = createMusicDebugSnapshot(
   resolveMusicDebugKnownGoodSeed('plains-motif-baseline').options
 );
-const FOREST_WARNING_MARKER = resolveMusicDebugCadenceMarkers(FOREST_SNAPSHOT)[0]!;
+const FOREST_WARNING_MARKER =
+  resolveMusicDebugCadenceMarkers(FOREST_SNAPSHOT)[0]!;
 const DEFAULT_NOTE_BARS = resolveMusicDebugTimelineNoteBars(
   DEFAULT_SNAPSHOT,
   DEFAULT_LAYOUT
@@ -92,7 +93,7 @@ const OUT_OF_SCALE_TIMELINE_SNAPSHOT = (() => {
           ? {
               ...diagnostic,
               inMode: false,
-              accidentalReason: 'unresolved-chromatic',
+              accidentalReason: 'unresolved-chromatic' as const,
             }
           : diagnostic
     ),
@@ -240,7 +241,8 @@ const CLIMAX_TIMELINE_SNAPSHOT = (() => {
   const points = DEFAULT_SNAPSHOT.leadContourAnalysis.points.filter(
     (point) => point.actualRelativeSemitones !== null
   );
-  const plannedStepIndex = DEFAULT_SNAPSHOT.leadContourAnalysis.plannedClimaxStepIndex;
+  const plannedStepIndex =
+    DEFAULT_SNAPSHOT.leadContourAnalysis.plannedClimaxStepIndex;
   const actualPoint =
     [...points]
       .filter(
@@ -333,7 +335,7 @@ const NON_CHORD_TONE_TIMELINE_SNAPSHOT = (() => {
               scaleDegreeLabel: `degree ${nonChordDegreeIndex + 1}`,
               isBlackKey,
               inMode: true,
-              accidentalReason: 'in-mode',
+              accidentalReason: 'in-mode' as const,
               accidentalRuleLabel: 'In mode',
               accidentalExplanation: 'Matches the active mode.',
             }
@@ -723,10 +725,9 @@ describe('music debug timeline', () => {
   });
 
   it('surfaces harmony drift details when hovering a drift marker', () => {
-    const marker =
-      resolveMusicDebugTimelineHarmonyDriftMarkers(
-        HARMONY_DRIFT_TIMELINE_SNAPSHOT
-      )[0]!;
+    const marker = resolveMusicDebugTimelineHarmonyDriftMarkers(
+      HARMONY_DRIFT_TIMELINE_SNAPSHOT
+    )[0]!;
 
     const hoverDetail = resolveMusicDebugTimelineHoverDetail({
       snapshot: HARMONY_DRIFT_TIMELINE_SNAPSHOT,
@@ -756,8 +757,9 @@ describe('music debug timeline', () => {
   });
 
   it('surfaces bass drift details when hovering a drift marker', () => {
-    const marker =
-      resolveMusicDebugTimelineBassDriftMarkers(BASS_DRIFT_TIMELINE_SNAPSHOT)[0]!;
+    const marker = resolveMusicDebugTimelineBassDriftMarkers(
+      BASS_DRIFT_TIMELINE_SNAPSHOT
+    )[0]!;
 
     const hoverDetail = resolveMusicDebugTimelineHoverDetail({
       snapshot: BASS_DRIFT_TIMELINE_SNAPSHOT,
@@ -940,7 +942,9 @@ describe('music debug timeline', () => {
       TIMELINE_PERCUSSION_LANES_SNAPSHOT
     );
 
-    expect(markup).toContain('class="music-debug-timeline-percussion-lane-label"');
+    expect(markup).toContain(
+      'class="music-debug-timeline-percussion-lane-label"'
+    );
     expect(markup).toContain('>Kick<');
     expect(markup).toContain('>Snare<');
     expect(markup).toContain('>Cymbals<');
@@ -968,13 +972,17 @@ describe('music debug timeline', () => {
       HARMONY_DRIFT_TIMELINE_SNAPSHOT
     );
 
-    expect(markup).toContain('class="music-debug-timeline-harmony-drift-marker"');
+    expect(markup).toContain(
+      'class="music-debug-timeline-harmony-drift-marker"'
+    );
     expect(markup).toContain('D-F-A vs C-E-G');
     expect(markup).toContain('harmony drift');
   });
 
   it('renders bass drift markers in svg exports', () => {
-    const markup = buildMusicDebugTimelineSvgMarkup(BASS_DRIFT_TIMELINE_SNAPSHOT);
+    const markup = buildMusicDebugTimelineSvgMarkup(
+      BASS_DRIFT_TIMELINE_SNAPSHOT
+    );
 
     expect(markup).toContain('class="music-debug-timeline-bass-drift-marker"');
     expect(markup).toContain('D vs C');

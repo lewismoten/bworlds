@@ -252,7 +252,10 @@ const TEST_DIAGNOSTICS: MusicDebugNotePitchDiagnostic[] = [
 ];
 
 function createDiagnostic(
-  overrides: Pick<MusicDebugNotePitchDiagnostic, 'role' | 'midiNote' | 'scaleDegree'>
+  overrides: Pick<
+    MusicDebugNotePitchDiagnostic,
+    'role' | 'midiNote' | 'scaleDegree'
+  >
 ): MusicDebugNotePitchDiagnostic {
   return {
     noteIndex: 0,

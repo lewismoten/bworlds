@@ -20,8 +20,11 @@ import {
   type SoundBankDebugPercussionBrowserState,
   type SoundBankDebugSnapshot,
 } from './sound-bank-debug.ts';
-import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import type { MusicDebugInstrumentPreviewTarget } from './music-debug-instrument-panel.ts';
+import type {
+  MusicDebugInstrumentPreviewAudioState,
+  MusicDebugInstrumentPreviewPlayer,
+} from './music-debug-instrument-preview.ts';
 import type {
   MusicDebugContextType,
   MusicDebugTileKind,
@@ -31,7 +34,9 @@ const root = document.querySelector<HTMLElement>('#app');
 const pageLifecycleAbortController =
   typeof AbortController === 'function' ? new AbortController() : null;
 const pageLifecycleSignal = pageLifecycleAbortController?.signal;
-const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
+let instrumentPreviewPlayer: MusicDebugInstrumentPreviewPlayer | null = null;
+let instrumentPreviewPlayerPromise: Promise<MusicDebugInstrumentPreviewPlayer> | null =
+  null;
 let options = DEFAULT_SOUND_BANK_DEBUG_OPTIONS;
 let generalMidiBrowserState =
   DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
@@ -60,21 +65,60 @@ const SOUND_BANK_CONTEXT_TYPES: readonly MusicDebugContextType[] = [
   'cave',
   'dungeon',
 ];
+
+async function ensureInstrumentPreviewPlayer(): Promise<MusicDebugInstrumentPreviewPlayer> {
+  if (instrumentPreviewPlayer) {
+    return instrumentPreviewPlayer;
+  }
+  if (!instrumentPreviewPlayerPromise) {
+    instrumentPreviewPlayerPromise =
+      import('./music-debug-instrument-preview.ts').then(
+        ({ createMusicDebugInstrumentPreviewPlayer }) => {
+          const player = createMusicDebugInstrumentPreviewPlayer();
+          instrumentPreviewPlayer = player;
+          return player;
+        }
+      );
+  }
+  return instrumentPreviewPlayerPromise;
+}
+
+function getInstrumentPreviewAudioState(): MusicDebugInstrumentPreviewAudioState {
+  return instrumentPreviewPlayer?.getAudioState() ?? 'idle';
+}
+
+function getInstrumentPreviewAudioSampleRate(): number | null {
+  return instrumentPreviewPlayer?.getAudioSampleRate() ?? null;
+}
+
+function getInstrumentPreviewOutputLatencySeconds(): number | null {
+  return instrumentPreviewPlayer?.getOutputLatencySeconds() ?? null;
+}
+
+function getInstrumentPreviewMasterGain(): number {
+  return instrumentPreviewPlayer?.getMasterGain() ?? 1;
+}
+
+function isInstrumentPreviewMuted(): boolean {
+  return instrumentPreviewPlayer?.isMuted() ?? false;
+}
+
 function stopPreview(): void {
-  instrumentPreviewPlayer.stop();
+  instrumentPreviewPlayer?.stop();
 }
 
 function disposePreview(): void {
-  instrumentPreviewPlayer.dispose();
+  instrumentPreviewPlayer?.dispose();
+  instrumentPreviewPlayer = null;
+  instrumentPreviewPlayerPromise = null;
 }
 
 function syncAudioContextUi(): void {
-  const audioContextState = instrumentPreviewPlayer.getAudioState();
-  const sampleRate = instrumentPreviewPlayer.getAudioSampleRate();
-  const outputLatencySeconds =
-    instrumentPreviewPlayer.getOutputLatencySeconds();
-  const masterGain = instrumentPreviewPlayer.getMasterGain();
-  const muted = instrumentPreviewPlayer.isMuted();
+  const audioContextState = getInstrumentPreviewAudioState();
+  const sampleRate = getInstrumentPreviewAudioSampleRate();
+  const outputLatencySeconds = getInstrumentPreviewOutputLatencySeconds();
+  const masterGain = getInstrumentPreviewMasterGain();
+  const muted = isInstrumentPreviewMuted();
   document
     .querySelector<HTMLElement>('#sound-bank-debug-context-state')
     ?.replaceChildren(document.createTextNode(audioContextState));
@@ -265,11 +309,11 @@ function renderPage(): void {
   const snapshot = createSoundBankDebugSnapshot(options);
   root.innerHTML = buildSoundBankDebugMarkup(snapshot, {
     audioStatus,
-    audioContextState: instrumentPreviewPlayer.getAudioState(),
-    audioSampleRateHz: instrumentPreviewPlayer.getAudioSampleRate(),
-    outputLatencySeconds: instrumentPreviewPlayer.getOutputLatencySeconds(),
-    masterGain: instrumentPreviewPlayer.getMasterGain(),
-    muted: instrumentPreviewPlayer.isMuted(),
+    audioContextState: getInstrumentPreviewAudioState(),
+    audioSampleRateHz: getInstrumentPreviewAudioSampleRate(),
+    outputLatencySeconds: getInstrumentPreviewOutputLatencySeconds(),
+    masterGain: getInstrumentPreviewMasterGain(),
+    muted: isInstrumentPreviewMuted(),
     layoutMode,
     errorMessage,
     generalMidiBrowserState,
@@ -323,10 +367,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     .querySelector<HTMLButtonElement>('#sound-bank-debug-toggle-mute')
     ?.addEventListener(
       'click',
-      () => {
-        const nextMuted = instrumentPreviewPlayer.setMuted(
-          !instrumentPreviewPlayer.isMuted()
-        );
+      async () => {
+        const player = await ensureInstrumentPreviewPlayer();
+        const nextMuted = player.setMuted(!player.isMuted());
         setAudioFeedback(
           nextMuted ? 'Audio muted' : 'Audio unmuted',
           errorMessage
@@ -339,11 +382,10 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     .querySelector<HTMLInputElement>('#sound-bank-debug-master-gain')
     ?.addEventListener(
       'input',
-      (event) => {
+      async (event) => {
         const target = event.currentTarget as HTMLInputElement;
-        const nextGain = instrumentPreviewPlayer.setMasterGain(
-          Number(target.value) / 100
-        );
+        const player = await ensureInstrumentPreviewPlayer();
+        const nextGain = player.setMasterGain(Number(target.value) / 100);
         const nextStatus =
           nextGain <= 0
             ? 'Audio muted'
@@ -357,8 +399,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     .querySelector<HTMLButtonElement>('#sound-bank-debug-start-audio')
     ?.addEventListener(
       'click',
-      () => {
-        const audioContextState = instrumentPreviewPlayer.start();
+      async () => {
+        const player = await ensureInstrumentPreviewPlayer();
+        const audioContextState = player.start();
         if (audioContextState === 'unavailable') {
           setAudioFeedback(
             'Audio unavailable',
@@ -380,8 +423,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     .querySelector<HTMLButtonElement>('#sound-bank-debug-resume-audio')
     ?.addEventListener(
       'click',
-      () => {
-        const audioContextState = instrumentPreviewPlayer.resume();
+      async () => {
+        const player = await ensureInstrumentPreviewPlayer();
+        const audioContextState = player.resume();
         if (audioContextState === 'unavailable') {
           setAudioFeedback(
             'Audio unavailable',
@@ -437,12 +481,13 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     .forEach((button) => {
       button.addEventListener(
         'click',
-        () => {
+        async () => {
           const previewTarget = button.dataset.previewId;
           if (!isSoundBankPreviewRole(previewTarget)) {
             return;
           }
-          if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
+          const player = await ensureInstrumentPreviewPlayer();
+          if (player.getAudioState() === 'unavailable') {
             setAudioFeedback(
               'Audio unavailable',
               'This browser does not expose the Web Audio API for previews.'
@@ -462,7 +507,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
             return;
           }
           stopPreview();
-          instrumentPreviewPlayer.play(previewNote);
+          player.play(previewNote);
           setAudioFeedback(
             `Previewing ${previewTarget.replace('percussion:', 'percussion / ')}`,
             null
@@ -478,8 +523,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     )
     ?.addEventListener(
       'click',
-      () => {
-        if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
+      async () => {
+        const player = await ensureInstrumentPreviewPlayer();
+        if (player.getAudioState() === 'unavailable') {
           setAudioFeedback(
             'Audio unavailable',
             'This browser does not expose the Web Audio API for previews.'
@@ -500,7 +546,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         }
         stopPreview();
         for (const note of notes) {
-          instrumentPreviewPlayer.play(note);
+          player.play(note);
         }
         setAudioFeedback(
           `Previewing percussion range (${notes.length} hits)`,
@@ -516,8 +562,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     )
     ?.addEventListener(
       'click',
-      () => {
-        if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
+      async () => {
+        const player = await ensureInstrumentPreviewPlayer();
+        if (player.getAudioState() === 'unavailable') {
           setAudioFeedback(
             'Audio unavailable',
             'This browser does not expose the Web Audio API for previews.'
@@ -538,7 +585,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         }
         stopPreview();
         for (const note of notes) {
-          instrumentPreviewPlayer.play(note);
+          player.play(note);
         }
         setAudioFeedback(
           `Previewing standard percussion pattern (${notes.length} hits)`,
@@ -554,8 +601,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     )
     ?.addEventListener(
       'click',
-      () => {
-        if (instrumentPreviewPlayer.getAudioState() === 'unavailable') {
+      async () => {
+        const player = await ensureInstrumentPreviewPlayer();
+        if (player.getAudioState() === 'unavailable') {
           setAudioFeedback(
             'Audio unavailable',
             'This browser does not expose the Web Audio API for previews.'
@@ -576,7 +624,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         }
         stopPreview();
         for (const note of notes) {
-          instrumentPreviewPlayer.play(note);
+          player.play(note);
         }
         setAudioFeedback(
           `Previewing quiet percussion pattern (${notes.length} hits)`,

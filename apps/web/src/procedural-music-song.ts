@@ -23,9 +23,7 @@ import { regeneratePhrasesContainingUnresolvedChromaticNotes } from './procedura
 import { resolveSongFinalCadence } from './procedural-music-song-cadence.ts';
 import { applyProceduralSongDensityPlan } from './procedural-music-song-density.ts';
 import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
-import {
-  repairProceduralMusicSongCriticalFailures,
-} from './procedural-music-song-repair.ts';
+import { repairProceduralMusicSongCriticalFailures } from './procedural-music-song-repair.ts';
 
 export type ProceduralMusicSongSection = {
   id: ProceduralMusicSongSectionId;

@@ -77,7 +77,9 @@ describe('music debug cadence markers', () => {
     expect(marker).toEqual(
       expect.objectContaining({
         warningKind: 'target+harmony',
-        warningLabel: expect.stringContaining('failed target and harmony checks'),
+        warningLabel: expect.stringContaining(
+          'failed target and harmony checks'
+        ),
       })
     );
   });

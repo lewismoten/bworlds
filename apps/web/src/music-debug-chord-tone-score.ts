@@ -1,12 +1,13 @@
 import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.ts';
-import {
-  getProceduralScaleDegreeSemitones,
-} from './procedural-music-scale.ts';
+import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
 import type { ProceduralChordTimelineEntry } from './procedural-music-chord-timeline.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 
-type ChordToneRole = Extract<ProceduralMusicNote['role'], 'bass' | 'harmony' | 'lead'>;
+type ChordToneRole = Extract<
+  ProceduralMusicNote['role'],
+  'bass' | 'harmony' | 'lead'
+>;
 
 export type MusicDebugChordToneMeasureRoleScore = {
   noteCount: number;
@@ -37,7 +38,11 @@ export type MusicDebugChordToneScores = {
   tracks: Record<ChordToneRole, MusicDebugChordToneTrackScore>;
 };
 
-const CHORD_TONE_ROLES = ['bass', 'harmony', 'lead'] as const satisfies readonly ChordToneRole[];
+const CHORD_TONE_ROLES = [
+  'bass',
+  'harmony',
+  'lead',
+] as const satisfies readonly ChordToneRole[];
 const CHORD_TONE_DEGREE_OFFSETS = [0, 2, 4] as const;
 
 export function createMusicDebugChordToneScores(options: {
@@ -121,7 +126,10 @@ function collectMeasureScores(options: {
         ? section.durationMs / section.measureCount
         : section.durationMs;
 
-    for (const window of collectSectionChordWindows(section, options.chordTimeline)) {
+    for (const window of collectSectionChordWindows(
+      section,
+      options.chordTimeline
+    )) {
       const plannedLabel = createPlannedChordLabel(
         options.scale,
         options.rootMidiNote,
@@ -146,7 +154,11 @@ function collectMeasureScores(options: {
         for (let index = 0; index < options.notes.length; index += 1) {
           const note = options.notes[index];
           const diagnostic = options.notePitchDiagnostics[index];
-          if (!note || !diagnostic || !CHORD_TONE_ROLES.includes(note.role as ChordToneRole)) {
+          if (
+            !note ||
+            !diagnostic ||
+            !CHORD_TONE_ROLES.includes(note.role as ChordToneRole)
+          ) {
             continue;
           }
 
@@ -169,7 +181,9 @@ function collectMeasureScores(options: {
 
           if (
             diagnostic.scaleDegree !== null &&
-            chordToneScaleDegrees.has(mod(diagnostic.scaleDegree - 1, options.scale.length))
+            chordToneScaleDegrees.has(
+              mod(diagnostic.scaleDegree - 1, options.scale.length)
+            )
           ) {
             roleScore.chordToneDurationMs += clippedDurationMs;
             if (note.startMs >= measureStartMs && note.startMs < measureEndMs) {
@@ -219,7 +233,10 @@ function createEmptyMeasureRoleScore(): MusicDebugChordToneMeasureRoleScore {
   };
 }
 
-function createEmptyTrackScores(): Record<ChordToneRole, MusicDebugChordToneTrackScore> {
+function createEmptyTrackScores(): Record<
+  ChordToneRole,
+  MusicDebugChordToneTrackScore
+> {
   return {
     bass: createEmptyTrackScore(),
     harmony: createEmptyTrackScore(),
@@ -313,7 +330,8 @@ function createPlannedChordLabel(
 ): string {
   return CHORD_TONE_DEGREE_OFFSETS.map((offset) =>
     resolvePitchClassLabel(
-      rootMidiNote + getProceduralScaleDegreeSemitones(scale, degreeIndex + offset)
+      rootMidiNote +
+        getProceduralScaleDegreeSemitones(scale, degreeIndex + offset)
     )
   ).join('-');
 }

@@ -47,15 +47,12 @@ import {
   getForestWebs,
 } from './index.ts';
 import {
-  FakeFloat32BufferAttribute,
   FakeGeometry,
   FakeGroup,
   FakeInstancedMesh,
   FakeMaterial,
   FakeMesh,
   FakeNode,
-  FakePointLight,
-  FakePoints,
   createFakeThreeHost,
   createForestTestState,
   fakeThree,
@@ -4320,5 +4317,4 @@ describe('tile forest', () => {
     expect(wetMaterial?.opacity ?? 0).toBeGreaterThan(dryOpacity);
     expect(wetMaterial?.emissiveIntensity ?? 0).toBeGreaterThan(dryEmissive);
   });
-
 });
