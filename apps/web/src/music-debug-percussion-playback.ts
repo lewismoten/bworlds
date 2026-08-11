@@ -77,8 +77,11 @@ export function toggleMusicDebugPercussionMutedVoice(
 }
 
 export function createMusicDebugPercussionPlaybackVoices(
-  snapshot: MusicDebugSnapshot
+  snapshot: MusicDebugSnapshot | null
 ): readonly MusicDebugPercussionPlaybackVoice[] {
+  if (!snapshot) {
+    return [];
+  }
   return createMusicDebugPercussionVoiceCounts(snapshot.notes)
     .filter(
       (
@@ -95,7 +98,7 @@ export function createMusicDebugPercussionPlaybackVoices(
 }
 
 export function resolveMusicDebugPercussionVoiceIdsForPlayback(
-  snapshot: MusicDebugSnapshot,
+  snapshot: MusicDebugSnapshot | null,
   state: MusicDebugPercussionPlaybackState
 ): readonly string[] | null {
   const availableVoiceIds = createMusicDebugPercussionPlaybackVoices(
@@ -135,10 +138,13 @@ export function resolveMusicDebugPercussionVoiceId(
 }
 
 export function createMusicDebugDrumKitAuditionNotes(
-  snapshot: MusicDebugSnapshot,
+  snapshot: MusicDebugSnapshot | null,
   state: MusicDebugPercussionPlaybackState,
   nowMs: number
 ): readonly ProceduralMusicNote[] {
+  if (!snapshot) {
+    return [];
+  }
   const allowedVoiceIds =
     resolveMusicDebugPercussionVoiceIdsForPlayback(snapshot, state) ??
     createMusicDebugPercussionPlaybackVoices(snapshot).map(
@@ -173,7 +179,7 @@ export function createMusicDebugDrumKitAuditionNotes(
 }
 
 export function buildMusicDebugPercussionPlaybackControlsMarkup(
-  snapshot: MusicDebugSnapshot,
+  snapshot: MusicDebugSnapshot | null,
   state: MusicDebugPercussionPlaybackState
 ): string {
   const voices = createMusicDebugPercussionPlaybackVoices(snapshot);
@@ -235,7 +241,7 @@ export function buildMusicDebugPercussionPlaybackControlsMarkup(
 }
 
 export function buildMusicDebugPercussionLaneTogglesMarkup(
-  snapshot: MusicDebugSnapshot,
+  snapshot: MusicDebugSnapshot | null,
   state: MusicDebugPercussionPlaybackState
 ): string {
   const voices = createMusicDebugPercussionPlaybackVoices(snapshot);

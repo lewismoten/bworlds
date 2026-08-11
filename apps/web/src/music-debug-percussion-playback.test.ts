@@ -76,6 +76,25 @@ describe('music debug percussion playback', () => {
     ).toEqual(FOREST_DISTINCT_VOICE_IDS.slice(1));
   });
 
+  it('treats a missing snapshot as having no available percussion voices yet', () => {
+    const state = normalizeMusicDebugPercussionPlaybackState({
+      soloVoiceIds: ['kick-35'],
+      mutedVoiceIds: ['snare-38'],
+    });
+
+    expect(createMusicDebugPercussionPlaybackVoices(null)).toEqual([]);
+    expect(
+      resolveMusicDebugPercussionVoiceIdsForPlayback(null, state)
+    ).toBeNull();
+    expect(buildMusicDebugPercussionPlaybackControlsMarkup(null, state)).toBe(
+      ''
+    );
+    expect(buildMusicDebugPercussionLaneTogglesMarkup(null, state)).toBe('');
+    expect(createMusicDebugDrumKitAuditionNotes(null, state, 12_000)).toEqual(
+      []
+    );
+  });
+
   it('renders solo and mute controls for each percussion voice', () => {
     const markup = buildMusicDebugPercussionPlaybackControlsMarkup(
       FOREST_SNAPSHOT,
