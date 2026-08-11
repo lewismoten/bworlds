@@ -21,9 +21,9 @@ Do not work on this file. These are just ideas for later.
   - Allow players to setup their own music bank
   - Allow players to invent new instruments
 
-| Need            | Library            | Why                                      |
-| --------------- | ------------------ | ---------------------------------------- |
-| Runtime schemas | Zod                | Validate JSON, plugins, saves, updates   |
-| Server/API data | TanStack Query     | Cache Vite API and async debug data      |
-| Icons           | Lucide             | Consistent control icons                 |
-| Browser tests   | Playwright         | Test the actual game/debug pages         |
+| Need            | Library        | Why                                    |
+| --------------- | -------------- | -------------------------------------- |
+| Runtime schemas | Zod            | Validate JSON, plugins, saves, updates |
+| Server/API data | TanStack Query | Cache Vite API and async debug data    |
+| Icons           | Lucide         | Consistent control icons               |
+| Browser tests   | Playwright     | Test the actual game/debug pages       |

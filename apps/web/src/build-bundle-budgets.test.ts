@@ -246,4 +246,30 @@ describe('build bundle budgets', () => {
       },
     });
   });
+
+  it('keeps tracked major chunk hard limits at or above the committed regression windows', () => {
+    const baseline = loadBundleBudgetBaseline();
+    const toleranceBytes =
+      BUILD_BUNDLE_BUDGETS.majorChunks.hardLimitToleranceBytes ?? 0;
+
+    for (const [name, baselineBytes] of Object.entries(
+      baseline.majorChunks.baselineBytesByName
+    )) {
+      const maxIncreaseBytes =
+        baseline.majorChunks.maxIncreaseBytesByName[name];
+      const hardLimitBytes =
+        BUILD_BUNDLE_BUDGETS.majorChunks.maxBytesByName[name];
+
+      expect(
+        maxIncreaseBytes,
+        `missing regression window for ${name}`
+      ).toBeTypeOf('number');
+      expect(hardLimitBytes, `missing hard limit for ${name}`).toBeTypeOf(
+        'number'
+      );
+      expect((hardLimitBytes ?? 0) + toleranceBytes).toBeGreaterThanOrEqual(
+        baselineBytes + (maxIncreaseBytes ?? 0)
+      );
+    }
+  });
 });

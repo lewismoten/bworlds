@@ -18,8 +18,8 @@ export const BUILD_BUNDLE_BUDGETS = {
     hardLimitToleranceBytes: 1_024,
     maxBytesByName: {
       main: 1_325_000,
-      'music-debug': 186_000,
-      src: 145_000,
+      'music-debug': 194_000,
+      src: 150_000,
       'procedural-music-audio-sink': 140_000,
       'sound-effects': 160_000,
       'sound-bank-debug-page': 72_000,

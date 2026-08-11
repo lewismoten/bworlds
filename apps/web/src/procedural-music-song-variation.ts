@@ -458,9 +458,7 @@ function resolveRoleTimingOffsetMs(options: {
     options.role
   ).timingOffsetMs;
   const patternIndex = options.phrasePosition % pattern.length;
-  return (
-    (pattern[patternIndex] ?? 0) + (sectionPattern[patternIndex] ?? 0)
-  );
+  return (pattern[patternIndex] ?? 0) + (sectionPattern[patternIndex] ?? 0);
 }
 
 function resolveRoleVelocityMultiplier(options: {
@@ -479,9 +477,7 @@ function resolveRoleVelocityMultiplier(options: {
     options.role
   ).velocityMultiplier;
   const patternIndex = options.phrasePosition % pattern.length;
-  return (
-    (pattern[patternIndex] ?? 1) * (sectionPattern[patternIndex] ?? 1)
-  );
+  return (pattern[patternIndex] ?? 1) * (sectionPattern[patternIndex] ?? 1);
 }
 
 function resolveSectionRoleIdentity(
