@@ -146,6 +146,48 @@ describe('music debug note analysis', () => {
     });
   });
 
+  it('counts accidentals relative to G Mixolydian instead of treating every black key as chromatic', () => {
+    const notes: ProceduralMusicNote[] = [
+      createNote('lead', 196),
+      createNote('lead', 349.23),
+    ];
+
+    const mixolydianValidation = analyzeMusicDebugPitches({
+      notes,
+      rootHz: 196,
+      modePitchOffsets: [0, 2, 4, 5, 7, 9, 10],
+      encounterMode: 'ambient',
+      themeId: 'frontier-plains',
+    });
+    const majorValidation = analyzeMusicDebugPitches({
+      notes,
+      rootHz: 196,
+      modePitchOffsets: [0, 2, 4, 5, 7, 9, 11],
+      encounterMode: 'ambient',
+      themeId: 'frontier-plains',
+    });
+
+    expect(mixolydianValidation.blackKeyNoteCount).toBe(0);
+    expect(mixolydianValidation.accidentalNoteCount).toBe(0);
+    expect(mixolydianValidation.notePitchDiagnostics[1]).toEqual(
+      expect.objectContaining({
+        role: 'lead',
+        isBlackKey: false,
+        inMode: true,
+        scaleDegree: 7,
+        accidentalReason: 'in-mode',
+      })
+    );
+    expect(majorValidation.accidentalNoteCount).toBe(1);
+    expect(majorValidation.notePitchDiagnostics[1]).toEqual(
+      expect.objectContaining({
+        role: 'lead',
+        isBlackKey: false,
+        inMode: false,
+      })
+    );
+  });
+
   it('limits chromatic passing tones more tightly in ambient exploration music', () => {
     const notes: ProceduralMusicNote[] = [
       createNote('lead', 196),

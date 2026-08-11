@@ -472,13 +472,17 @@ added directly as semitones instead of moving through the selected scale.
 
 - [x] Define what the reported 226 accidentals represent.
 - [x] Distinguish chromatic notes from MIDI black-key notes.
-- [ ] Count accidentals relative to G Mixolydian.
+- [x] Count accidentals relative to G Mixolydian.
 - [x] Report accidental counts separately by track.
 - [x] Permit accidentals only through named embellishments.
 - [x] Limit chromatic passing tones in exploration music.
 - [x] Resolve chromatic notes by step.
 - [x] Reject chromatic leaps without harmonic support.
 - [x] Show accidental reasons in note-level debug output.
+      Regression coverage now proves the plains accidental analysis counts notes
+      against G Mixolydian rather than treating every MIDI black key as
+      chromatic, while still reporting chromatic and black-key totals
+      separately.
 
 ## Shared Track Context
 
