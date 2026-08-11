@@ -660,39 +660,17 @@ function collectHarmonyChordLabels(options: {
   notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
   section: ProceduralMusicSongSection;
 }): string[] {
-  const groups = new Map<number, string>();
   const sectionStartMs = options.notes[0]?.startMs ?? 0;
   const sectionStart = sectionStartMs + options.section.startOffsetMs;
   const sectionEnd = sectionStart + options.section.durationMs;
-
-  for (let index = 0; index < options.notes.length; index += 1) {
-    const note = options.notes[index]!;
-    const diagnostic = options.notePitchDiagnostics[index];
-    if (
-      !diagnostic ||
-      note.role !== 'harmony' ||
-      diagnostic.midiNote === null
-    ) {
-      continue;
-    }
-    if (note.startMs < sectionStart || note.startMs >= sectionEnd) {
-      continue;
-    }
-    const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
-    const existing = groups.get(note.startMs);
-    groups.set(
-      note.startMs,
-      existing ? `${existing},${pitchClassLabel}` : pitchClassLabel
-    );
-  }
-
   const labelCounts = new Map<string, number>();
-  for (const group of groups.values()) {
-    const dedupedLabel = normalizeChordLabel(group);
-    if (!dedupedLabel) {
-      continue;
-    }
-    labelCounts.set(dedupedLabel, (labelCounts.get(dedupedLabel) ?? 0) + 1);
+  for (const label of collectHarmonyChordStartLabels({
+    notes: options.notes,
+    notePitchDiagnostics: options.notePitchDiagnostics,
+    startMs: sectionStart,
+    endMs: sectionEnd,
+  })) {
+    labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
   }
 
   return Array.from(labelCounts.entries())
@@ -711,38 +689,17 @@ function collectOrderedHarmonyChordLabels(options: {
   notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
   section: ProceduralMusicSongSection;
 }): string[] {
-  const groups = new Map<number, string>();
   const sectionStartMs = options.notes[0]?.startMs ?? 0;
   const sectionStart = sectionStartMs + options.section.startOffsetMs;
   const sectionEnd = sectionStart + options.section.durationMs;
-
-  for (let index = 0; index < options.notes.length; index += 1) {
-    const note = options.notes[index]!;
-    const diagnostic = options.notePitchDiagnostics[index];
-    if (
-      !diagnostic ||
-      note.role !== 'harmony' ||
-      diagnostic.midiNote === null ||
-      note.startMs < sectionStart ||
-      note.startMs >= sectionEnd
-    ) {
-      continue;
-    }
-
-    const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
-    const existing = groups.get(note.startMs);
-    groups.set(
-      note.startMs,
-      existing ? `${existing},${pitchClassLabel}` : pitchClassLabel
-    );
-  }
-
-  const orderedLabels = Array.from(groups.entries())
-    .sort((left, right) => left[0] - right[0])
-    .map(([, group]) => normalizeChordLabel(group))
-    .filter((label): label is string => Boolean(label));
-
-  return collapseConsecutiveChordLabels(orderedLabels);
+  return collapseConsecutiveChordLabels(
+    collectHarmonyChordStartLabels({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      startMs: sectionStart,
+      endMs: sectionEnd,
+    })
+  );
 }
 
 function collectPlannedSectionChordLabels(options: {
@@ -1105,36 +1062,14 @@ function detectHarmonyChordLabelForWindow(options: {
   startMs: number;
   endMs: number;
 }): string | null {
-  const groups = new Map<number, string>();
-
-  for (let index = 0; index < options.notes.length; index += 1) {
-    const note = options.notes[index]!;
-    const diagnostic = options.notePitchDiagnostics[index];
-    if (
-      !diagnostic ||
-      note.role !== 'harmony' ||
-      diagnostic.midiNote === null ||
-      note.startMs >= options.endMs ||
-      note.startMs + note.durationMs <= options.startMs
-    ) {
-      continue;
-    }
-
-    const overlapStartMs = Math.max(note.startMs, options.startMs);
-    const existing = groups.get(overlapStartMs);
-    const pitchClassLabel = resolvePitchClassLabel(diagnostic.midiNote);
-    groups.set(
-      overlapStartMs,
-      existing ? `${existing},${pitchClassLabel}` : pitchClassLabel
-    );
-  }
-
-  const orderedLabels = Array.from(groups.entries())
-    .sort((left, right) => left[0] - right[0])
-    .map(([, group]) => normalizeChordLabel(group))
-    .filter((label): label is string => Boolean(label));
-
-  return orderedLabels[0] ?? null;
+  return (
+    collectHarmonyChordStartLabels({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      startMs: options.startMs,
+      endMs: options.endMs,
+    })[0] ?? null
+  );
 }
 
 function resolveHarmonyNoteLabelsForWindow(options: {
@@ -1143,7 +1078,34 @@ function resolveHarmonyNoteLabelsForWindow(options: {
   startMs: number;
   endMs: number;
 }): string[] {
-  const noteLabels = new Map<number, Set<string>>();
+  return (
+    collectHarmonyChordStartEvents({
+      notes: options.notes,
+      notePitchDiagnostics: options.notePitchDiagnostics,
+      startMs: options.startMs,
+      endMs: options.endMs,
+    })[0]?.noteLabels ?? []
+  );
+}
+
+function collectHarmonyChordStartLabels(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  startMs: number;
+  endMs: number;
+}): string[] {
+  return collectHarmonyChordStartEvents(options)
+    .map((event) => normalizeChordLabel(event.pitchClassLabels.join(',')))
+    .filter((label): label is string => Boolean(label));
+}
+
+function collectHarmonyChordStartEvents(options: {
+  notes: readonly ProceduralMusicNote[];
+  notePitchDiagnostics: readonly MusicDebugNotePitchDiagnostic[];
+  startMs: number;
+  endMs: number;
+}): Array<{ atMs: number; pitchClassLabels: string[]; noteLabels: string[] }> {
+  const startTimes = new Set<number>();
 
   for (let index = 0; index < options.notes.length; index += 1) {
     const note = options.notes[index]!;
@@ -1152,25 +1114,43 @@ function resolveHarmonyNoteLabelsForWindow(options: {
       !diagnostic ||
       note.role !== 'harmony' ||
       diagnostic.midiNote === null ||
-      note.startMs >= options.endMs ||
-      note.startMs + note.durationMs <= options.startMs
+      note.startMs < options.startMs ||
+      note.startMs >= options.endMs
     ) {
       continue;
     }
-
-    const overlapStartMs = Math.max(note.startMs, options.startMs);
-    let labelsAtStart = noteLabels.get(overlapStartMs);
-    if (!labelsAtStart) {
-      labelsAtStart = new Set<string>();
-      noteLabels.set(overlapStartMs, labelsAtStart);
-    }
-    labelsAtStart.add(formatMidiNoteLabel(diagnostic.midiNote));
+    startTimes.add(note.startMs);
   }
 
-  const earliestLabels = [...noteLabels.entries()].sort(
-    (left, right) => left[0] - right[0]
-  )[0]?.[1];
-  return earliestLabels ? [...earliestLabels].sort(compareNoteLabels) : [];
+  return [...startTimes]
+    .sort((left, right) => left - right)
+    .map((atMs) => {
+      const pitchClassLabels = new Set<string>();
+      const noteLabels = new Set<string>();
+
+      for (let index = 0; index < options.notes.length; index += 1) {
+        const note = options.notes[index]!;
+        const diagnostic = options.notePitchDiagnostics[index];
+        if (
+          !diagnostic ||
+          note.role !== 'harmony' ||
+          diagnostic.midiNote === null ||
+          note.startMs > atMs ||
+          note.startMs + note.durationMs <= atMs
+        ) {
+          continue;
+        }
+        pitchClassLabels.add(resolvePitchClassLabel(diagnostic.midiNote));
+        noteLabels.add(formatMidiNoteLabel(diagnostic.midiNote));
+      }
+
+      return {
+        atMs,
+        pitchClassLabels: [...pitchClassLabels],
+        noteLabels: [...noteLabels].sort(compareNoteLabels),
+      };
+    })
+    .filter((event) => event.pitchClassLabels.length > 0);
 }
 
 function resolveBassNoteLabelsForWindow(options: {

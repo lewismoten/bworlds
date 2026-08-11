@@ -205,7 +205,10 @@ describe('music debug', () => {
       )
     ).toBe(true);
     expect(
-      first.sectionLayerComparisons.some((entry) => entry.matchesPlan)
+      first.sectionLayerComparisons.some(
+        (entry) =>
+          entry.matchedRules.length > 0 || entry.mismatchRules.length > 0
+      )
     ).toBe(true);
     expect(first.midiExportValidation.accidentalNoteCount).toBe(
       first.accidentalNoteCount
@@ -923,18 +926,28 @@ describe('music debug', () => {
       snapshot.sectionLayerComparisons.filter(
         (comparison) => comparison.matchesPlan
       )
-    ).toHaveLength(snapshot.song.sections.length - 1);
-    expect(
-      snapshot.sectionLayerComparisons.find(
-        (comparison) => !comparison.matchesPlan
-      )
-    ).toEqual(
-      expect.objectContaining({
-        sectionId: 'b',
-        mismatchRules: [
-          'percussion occupancy 3% stayed below blueprint minimum 5%',
-        ],
-      })
+    ).toHaveLength(0);
+    expect(snapshot.sectionLayerComparisons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sectionId: 'intro',
+          mismatchRules: ['lead occupancy 42% exceeded blueprint maximum 35%'],
+        }),
+        expect.objectContaining({
+          sectionId: 'b',
+          mismatchRules: [
+            'harmony occupancy 17% stayed below blueprint minimum 20%',
+            'lead occupancy 48% exceeded blueprint maximum 38%',
+            'percussion occupancy 3% stayed below blueprint minimum 5%',
+          ],
+        }),
+        expect.objectContaining({
+          sectionId: 'outro',
+          mismatchRules: [
+            'harmony occupancy 41% stayed below blueprint minimum 55%',
+          ],
+        }),
+      ])
     );
   });
 });
