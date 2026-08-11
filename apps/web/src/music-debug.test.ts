@@ -328,6 +328,8 @@ describe('music debug', () => {
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('Bass Progression');
     expect(summary).toContain('Section Checks');
+    expect(markup).toContain('Section Validation');
+    expect(markup).toContain('music-debug-section-validation-card');
     expect(summary).toContain('Cadence Harmony Conflicts');
     expect(summary).toContain('Percussion Substitutions');
     expect(summary).toContain('Drum Counts');

@@ -73,6 +73,7 @@ import {
   formatMusicDebugPercussionEvents,
   formatMusicDebugPercussionVoiceCounts,
 } from './music-debug-percussion-report.ts';
+import { buildMusicDebugSectionValidationPanelMarkup } from './music-debug-section-validation-panel.ts';
 import { buildMusicDebugPercussionSubstitutionPanelMarkup } from './music-debug-percussion-substitution-panel.ts';
 import {
   createMusicDebugIntervalComparison,
@@ -1033,6 +1034,9 @@ export function buildMusicDebugSummaryMarkup(
     <div class="music-debug-role-counts">
       <span>Section Checks ${formatMusicDebugSectionValidationSummary(snapshot.sectionValidationSummary)}</span>
     </div>
+    ${buildMusicDebugSectionValidationPanelMarkup(
+      snapshot.sectionValidationSummary
+    )}
     <div class="music-debug-role-counts">
       <span>Percussion Check ${formatMusicDebugPercussionValidationSummary(snapshot.percussionValidation)}</span>
     </div>

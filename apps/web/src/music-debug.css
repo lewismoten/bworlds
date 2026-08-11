@@ -230,6 +230,134 @@ body {
   font-size: 0.86rem;
 }
 
+.music-debug-section-validation-panel {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 75%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.music-debug-section-validation-head h3,
+.music-debug-section-validation-head p {
+  margin: 0;
+}
+
+.music-debug-section-validation-head p {
+  margin-top: 0.35rem;
+  color: var(--music-muted);
+  font-size: 0.82rem;
+}
+
+.music-debug-section-validation-grid {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.85rem;
+}
+
+.music-debug-section-validation-card {
+  padding: 0.85rem 0.9rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(8, 19, 27, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.music-debug-section-validation-card-pass {
+  border-color: rgba(85, 214, 190, 0.22);
+}
+
+.music-debug-section-validation-card-fail {
+  border-color: rgba(255, 90, 95, 0.32);
+}
+
+.music-debug-section-validation-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.music-debug-section-validation-card-head h4,
+.music-debug-section-validation-card-head p {
+  margin: 0;
+}
+
+.music-debug-section-validation-card-head p {
+  margin-top: 0.25rem;
+  color: var(--music-muted);
+  font-size: 0.8rem;
+}
+
+.music-debug-section-validation-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.22rem 0.62rem;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.music-debug-section-validation-status-pass {
+  color: #ebfffb;
+  background: rgba(85, 214, 190, 0.18);
+}
+
+.music-debug-section-validation-status-fail {
+  color: #fff1f2;
+  background: rgba(255, 90, 95, 0.2);
+}
+
+.music-debug-section-validation-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 0.55rem;
+  margin: 0.75rem 0 0;
+}
+
+.music-debug-section-validation-checks div {
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.music-debug-section-validation-checks dt,
+.music-debug-section-validation-checks dd {
+  margin: 0;
+}
+
+.music-debug-section-validation-checks dt {
+  color: var(--music-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.music-debug-section-validation-checks dd {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.music-debug-section-validation-reasons,
+.music-debug-section-validation-reasons-empty {
+  margin: 0.75rem 0 0;
+}
+
+.music-debug-section-validation-reasons {
+  padding-left: 1rem;
+  color: var(--music-muted);
+  font-size: 0.8rem;
+}
+
+.music-debug-section-validation-reasons-empty {
+  color: var(--music-muted);
+  font-size: 0.8rem;
+}
+
 .music-debug-percussion-playback-panel {
   margin-top: 1rem;
   padding: 0.95rem 1rem 1rem;
