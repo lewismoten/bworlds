@@ -10,6 +10,7 @@ import type {
   Kind,
   RuntimePlugin,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeHostLike,
 } from '@bworlds/plugin-api';
 
@@ -89,22 +90,56 @@ function createRailGroup(
       getSharedBoxGeometry(three, 0.92, 0.05, 0.06),
       railMaterial
     );
+    rail.userData = {
+      ...rail.userData,
+      railPart: 'rail',
+    };
     rail.position.set(0, 0.08, offset);
     rail.rotation.y = rotation;
     group.add(rail);
   }
 
-  for (const offset of [-0.32, -0.12, 0.08, 0.28]) {
-    const sleeper = new three.Mesh(
-      getSharedBoxGeometry(three, 0.14, 0.04, 0.56),
-      sleeperMaterial
+  const sleeperInstances = new three.InstancedMesh(
+    getSharedBoxGeometry(three, 0.14, 0.04, 0.56),
+    sleeperMaterial,
+    4
+  );
+  sleeperInstances.userData = {
+    ...sleeperInstances.userData,
+    railInstancedPart: 'sleeper',
+  };
+  sleeperInstances.rotation.y = rotation;
+  const sleeperMatrixScratch = new three.Matrix4();
+  const sleeperOffsets = [-0.32, -0.12, 0.08, 0.28];
+  for (let index = 0; index < sleeperOffsets.length; index += 1) {
+    sleeperInstances.setMatrixAt(
+      index,
+      writeScalePositionMatrix(
+        sleeperMatrixScratch,
+        sleeperOffsets[index]!,
+        0.04,
+        0,
+        1,
+        1,
+        1
+      )
     );
-    sleeper.position.set(offset, 0.04, 0);
-    sleeper.rotation.y = rotation;
-    group.add(sleeper);
   }
+  group.add(sleeperInstances);
 
   return group;
+}
+
+function writeScalePositionMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return target.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
 
 function getRailSharedMaterials(three: ThreeHostLike) {

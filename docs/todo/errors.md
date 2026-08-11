@@ -74,8 +74,9 @@ Always run tests to make sure all tests pass
 - [x] Stop cloning materials when shared materials can be reused.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
       Progress: `tile-quarry` now collapses its six repeated rubble stones into
-      one `InstancedMesh`, which removes a small cluster of redundant static
-      child nodes from each visible quarry landmark.
+      one `InstancedMesh`, and `tile-rail` now collapses four repeated sleepers
+      into one `InstancedMesh`, which removes small clusters of redundant
+      static child nodes from each visible landmark or track tile.
 - [x] Disable matrix updates for static objects and static subtrees.
 - [x] Remove has() + get() double cache lookups.
 - [x] Cache nearby overworld anchor queries by region or tile.
@@ -83,8 +84,9 @@ Always run tests to make sure all tests pass
 - [x] Cache sky-position calculations unless celestial state changes.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
-      already instanced, and quarry landmarks now instance their repeated
-      rubble stones instead of emitting six separate meshes per tile.
+      already instanced, quarry landmarks now instance their repeated rubble
+      stones, and rail tiles now instance their repeated sleepers instead of
+      emitting one mesh per repeated prop.
 
 - [x] Cache whole generation contexts/results instead of caching tiny calculations individually.
       I see `createOverworldGenerationContext()`, terrain sampling, anchor resolution, river paths, route detection, etc. Rather than repeatedly asking multiple small caches about the same coordinate, compute a reusable per-tile/per-cell context once and pass it down through plugins.

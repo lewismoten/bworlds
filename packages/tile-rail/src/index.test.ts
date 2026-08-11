@@ -33,7 +33,42 @@ describe('tile rail', () => {
       tileY: 0,
     }) as { children?: unknown[] } | null | undefined;
 
-    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(6);
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(3);
+  });
+
+  it('instances repeated sleepers instead of emitting four standalone meshes', () => {
+    const plugin = createRailTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'rail');
+    const three = createFakeThree() as never;
+    const model = tile?.create3DModel?.({
+      tile: { kind: 'rail' },
+      three,
+      state: {
+        getCurrentContext() {
+          return { type: 'overworld' };
+        },
+        getCurrentTile() {
+          return { kind: 'rail' };
+        },
+      } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as
+      | {
+          children?: Array<{
+            userData?: Record<string, unknown>;
+            count?: number;
+          }>;
+        }
+      | null
+      | undefined;
+
+    const sleeperInstances = model?.children?.filter(
+      (child) => child.userData?.railInstancedPart === 'sleeper'
+    );
+
+    expect(sleeperInstances).toHaveLength(1);
+    expect(sleeperInstances?.[0]?.count).toBe(4);
   });
 
   it('reuses shared rail materials across repeated builds on the same host', () => {
@@ -56,7 +91,13 @@ describe('tile rail', () => {
       tileX: 0,
       tileY: 0,
     }) as
-      | { children?: Array<{ material: unknown; geometry: unknown }> }
+      | {
+          children?: Array<{
+            material: unknown;
+            geometry: unknown;
+            userData?: Record<string, unknown>;
+          }>;
+        }
       | null
       | undefined;
     const second = tile?.create3DModel?.({
@@ -66,18 +107,45 @@ describe('tile rail', () => {
       tileX: 1,
       tileY: 0,
     }) as
-      | { children?: Array<{ material: unknown; geometry: unknown }> }
+      | {
+          children?: Array<{
+            material: unknown;
+            geometry: unknown;
+            userData?: Record<string, unknown>;
+          }>;
+        }
       | null
       | undefined;
 
-    expect(first?.children[0]?.material).toBe(second?.children[0]?.material);
-    expect(first?.children[2]?.material).toBe(second?.children[2]?.material);
-    expect(first?.children[0]?.geometry).toBe(second?.children[0]?.geometry);
-    expect(first?.children[2]?.geometry).toBe(second?.children[2]?.geometry);
+    const firstRail = first?.children?.find(
+      (child) => child.userData?.railPart === 'rail'
+    );
+    const secondRail = second?.children?.find(
+      (child) => child.userData?.railPart === 'rail'
+    );
+    const firstSleepers = first?.children?.find(
+      (child) => child.userData?.railInstancedPart === 'sleeper'
+    );
+    const secondSleepers = second?.children?.find(
+      (child) => child.userData?.railInstancedPart === 'sleeper'
+    );
+
+    expect(firstRail?.material).toBe(secondRail?.material);
+    expect(firstSleepers?.material).toBe(secondSleepers?.material);
+    expect(firstRail?.geometry).toBe(secondRail?.geometry);
+    expect(firstSleepers?.geometry).toBe(secondSleepers?.geometry);
   });
 });
 
 function createFakeThree() {
+  class Matrix4 {
+    makeScale() {
+      return this;
+    }
+    setPosition() {
+      return this;
+    }
+  }
   class Group {
     children: unknown[] = [];
     position = {
@@ -96,10 +164,23 @@ function createFakeThree() {
       },
     };
     rotation = { y: 0 };
+    userData: Record<string, unknown> = { railPart: 'rail' };
     constructor(
       public geometry: unknown,
       public material: unknown
     ) {}
+  }
+  class InstancedMesh {
+    rotation = { y: 0 };
+    userData: Record<string, unknown> = {};
+    constructor(
+      public geometry: unknown,
+      public material: unknown,
+      public count: number
+    ) {}
+    setMatrixAt() {
+      return undefined;
+    }
   }
   class MeshBasicMaterial {
     constructor(public options: unknown) {}
@@ -115,6 +196,8 @@ function createFakeThree() {
   return {
     Group,
     Mesh,
+    InstancedMesh,
+    Matrix4,
     MeshBasicMaterial,
     BoxGeometry,
   };
