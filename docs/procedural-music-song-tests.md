@@ -18,6 +18,9 @@ can parallelize them and the file boundaries match the behavior under test:
   covers arrangement density, dynamics, and motif-versus-filler emphasis.
 - [procedural-music-song-arrangement-boundaries.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-arrangement-boundaries.test.ts:1)
   covers section-window boundary safety for transformed notes.
+- [procedural-music-song-repair.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-repair.test.ts:1)
+  covers localized phrase regeneration and the rerun-validation repair loop for
+  critical harmony, cadence, bass, or contour failures.
 - [procedural-music-song-test-support.ts](/Users/lewismoten/dev/bworlds/apps/web/src/testing/procedural-music-song-test-support.ts:1)
   centralizes phrase and section helpers plus the representative exploration
   song fixture shared across the test split.

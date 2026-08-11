@@ -24,8 +24,7 @@ import { resolveSongFinalCadence } from './procedural-music-song-cadence.ts';
 import { applyProceduralSongDensityPlan } from './procedural-music-song-density.ts';
 import { stateLeadMotifInFirstASection } from './procedural-music-song-motif.ts';
 import {
-  collectCriticalFailurePhraseIndexes,
-  regenerateProceduralMusicSongPhrases,
+  repairProceduralMusicSongCriticalFailures,
 } from './procedural-music-song-repair.ts';
 
 export type ProceduralMusicSongSection = {
@@ -75,38 +74,22 @@ export function createProceduralMusicSong(
     songStartMs: startMs,
     songDurationMs: durationMs,
   });
-  const initialNotes = finalizeProceduralMusicSongNotes({
-    notes: basePhrasePlan.repeatedNotes,
-    sections,
-    songStartMs: startMs,
-    phraseDurationMs: basePhrasePlan.phraseDurationMs,
-    leadMotif: dna.leadMotif,
-    theme,
-  });
-  const failedPhraseIndexes = collectCriticalFailurePhraseIndexes({
-    notes: initialNotes,
+  const { repairedNotes: notes } = repairProceduralMusicSongCriticalFailures({
+    repeatedNotes: basePhrasePlan.repeatedNotes,
     sections,
     phraseDurationMs: basePhrasePlan.phraseDurationMs,
     songStartMs: startMs,
+    songDurationMs: durationMs,
     music: options,
-  });
-  const repairedRepeatedNotes = regenerateProceduralMusicSongPhrases(
-    basePhrasePlan.repeatedNotes,
-    {
-      affectedPhraseIndexes: failedPhraseIndexes,
-      music: options,
-      phraseDurationMs: basePhrasePlan.phraseDurationMs,
-      songStartMs: startMs,
-      songDurationMs: durationMs,
-    }
-  );
-  const notes = finalizeProceduralMusicSongNotes({
-    notes: repairedRepeatedNotes,
-    sections,
-    songStartMs: startMs,
-    phraseDurationMs: basePhrasePlan.phraseDurationMs,
-    leadMotif: dna.leadMotif,
-    theme,
+    finalizeNotes: (notesToFinalize) =>
+      finalizeProceduralMusicSongNotes({
+        notes: notesToFinalize,
+        sections,
+        songStartMs: startMs,
+        phraseDurationMs: basePhrasePlan.phraseDurationMs,
+        leadMotif: dna.leadMotif,
+        theme,
+      }),
   });
   const loopStartOffsetMs = sections[1]?.startOffsetMs ?? 0;
   const outro = sections[sections.length - 1];
@@ -126,7 +109,7 @@ export function createProceduralMusicSong(
   };
 }
 
-function finalizeProceduralMusicSongNotes(options: {
+export function finalizeProceduralMusicSongNotes(options: {
   notes: readonly ProceduralMusicNote[];
   sections: readonly ProceduralMusicSongSection[];
   songStartMs: number;

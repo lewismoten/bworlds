@@ -79,6 +79,55 @@ export function regenerateProceduralMusicSongPhrases(
   return repairedNotes;
 }
 
+export function repairProceduralMusicSongCriticalFailures(options: {
+  repeatedNotes: readonly ProceduralMusicNote[];
+  sections: readonly ProceduralMusicSongSection[];
+  phraseDurationMs: number;
+  songStartMs: number;
+  songDurationMs: number;
+  music: MusicUpdateOptions;
+  finalizeNotes: (notes: readonly ProceduralMusicNote[]) => ProceduralMusicNote[];
+}): {
+  affectedPhraseIndexes: Set<number>;
+  remainingCriticalPhraseIndexes: Set<number>;
+  repairedRepeatedNotes: ProceduralMusicNote[];
+  repairedNotes: ProceduralMusicNote[];
+} {
+  const initialNotes = options.finalizeNotes(options.repeatedNotes);
+  const affectedPhraseIndexes = collectCriticalFailurePhraseIndexes({
+    notes: initialNotes,
+    sections: options.sections,
+    phraseDurationMs: options.phraseDurationMs,
+    songStartMs: options.songStartMs,
+    music: options.music,
+  });
+  const repairedRepeatedNotes = regenerateProceduralMusicSongPhrases(
+    options.repeatedNotes,
+    {
+      affectedPhraseIndexes,
+      music: options.music,
+      phraseDurationMs: options.phraseDurationMs,
+      songStartMs: options.songStartMs,
+      songDurationMs: options.songDurationMs,
+    }
+  );
+  const repairedNotes = options.finalizeNotes(repairedRepeatedNotes);
+  const remainingCriticalPhraseIndexes = collectCriticalFailurePhraseIndexes({
+    notes: repairedNotes,
+    sections: options.sections,
+    phraseDurationMs: options.phraseDurationMs,
+    songStartMs: options.songStartMs,
+    music: options.music,
+  });
+
+  return {
+    affectedPhraseIndexes,
+    remainingCriticalPhraseIndexes,
+    repairedRepeatedNotes,
+    repairedNotes,
+  };
+}
+
 export function collectCriticalFailurePhraseIndexes(options: {
   notes: readonly ProceduralMusicNote[];
   sections: readonly ProceduralMusicSongSection[];
