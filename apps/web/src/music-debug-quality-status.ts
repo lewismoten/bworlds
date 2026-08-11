@@ -1,4 +1,5 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { collectMusicDebugPatchQualityWarnings } from './music-debug-patch-quality.ts';
 
 export type MusicDebugQualityStatus = {
   isGood: boolean;
@@ -20,6 +21,7 @@ export function createMusicDebugQualityStatus(
     | 'harmonicAlignmentValidation'
     | 'leadContourAnalysis'
     | 'midiAudit'
+    | 'instrumentBank'
   >
 ): MusicDebugQualityStatus {
   const blockingReasons = [
@@ -55,6 +57,9 @@ export function createMusicDebugQualityStatus(
     blockingReasons: [...new Set(blockingReasons)],
     warningReasons: [
       ...new Set([
+        ...collectMusicDebugPatchQualityWarnings(snapshot.instrumentBank).map(
+          (warning) => warning.message
+        ),
         ...snapshot.percussionValidation.messages,
         ...snapshot.midiAudit.warningMessages,
       ]),

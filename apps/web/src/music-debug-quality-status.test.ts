@@ -95,6 +95,65 @@ describe('music debug quality status', () => {
       'good with warnings: Intro should not contain percussion notes.'
     );
   });
+
+  it('surfaces patch quality drift as a pre-export warning', () => {
+    const warnedSnapshot = {
+      ...PASSING_FOREST_SNAPSHOT,
+      instrumentBank: {
+        ...PASSING_FOREST_SNAPSHOT.instrumentBank,
+        instruments: {
+          ...PASSING_FOREST_SNAPSHOT.instrumentBank.instruments,
+          lead: {
+            ...PASSING_FOREST_SNAPSHOT.instrumentBank.instruments.lead,
+            knownGoodPatchComparison: {
+              ...PASSING_FOREST_SNAPSHOT.instrumentBank.instruments.lead
+                .knownGoodPatchComparison,
+              similarityScore: 0.58,
+              familyMatches: false,
+              waveformMatches: false,
+              prominentDifferences: [
+                {
+                  key: 'brightness',
+                  similarity: 0.2,
+                  generatedValue: 1.25,
+                  referenceValue: 0.9,
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    const qualityStatus = createMusicDebugQualityStatus(warnedSnapshot);
+    const summary = buildMusicDebugSummaryMarkup({
+      ...warnedSnapshot,
+      qualityStatus,
+    });
+    const report = buildMusicDebugParameterReport({
+      ...warnedSnapshot,
+      qualityStatus,
+    });
+
+    expect(qualityStatus.isGood).toBe(true);
+    expect(qualityStatus.blockingReasons).toEqual([]);
+    expect(qualityStatus.warningReasons).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          'Lead patch sounds unlike its target reference'
+        ),
+      ])
+    );
+    expect(summary).toContain('good with warnings');
+    expect(report.patchQualityWarnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: 'lead',
+          severity: 'failure',
+        }),
+      ])
+    );
+  });
 });
 
 function createPassingSnapshot(
@@ -161,6 +220,39 @@ function createPassingSnapshot(
       warningMessages: [],
       isConsistent: true,
     },
+    instrumentBank: {
+      ...snapshot.instrumentBank,
+      instruments: {
+        lead: withPerfectPatchComparison(
+          snapshot.instrumentBank.instruments.lead
+        ),
+        harmony: withPerfectPatchComparison(
+          snapshot.instrumentBank.instruments.harmony
+        ),
+        bass: withPerfectPatchComparison(
+          snapshot.instrumentBank.instruments.bass
+        ),
+        percussion: withPerfectPatchComparison(
+          snapshot.instrumentBank.instruments.percussion
+        ),
+      },
+    },
     qualityStatus,
+  };
+}
+
+function withPerfectPatchComparison<
+  T extends
+    MusicDebugSnapshot['instrumentBank']['instruments'][keyof MusicDebugSnapshot['instrumentBank']['instruments']],
+>(instrument: T): T {
+  return {
+    ...instrument,
+    knownGoodPatchComparison: {
+      ...instrument.knownGoodPatchComparison,
+      similarityScore: 1,
+      familyMatches: true,
+      waveformMatches: true,
+      prominentDifferences: [],
+    },
   };
 }

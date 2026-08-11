@@ -1,4 +1,5 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { collectMusicDebugPatchQualityWarnings } from './music-debug-patch-quality.ts';
 import { createMusicDebugQualityStatus } from './music-debug-quality-status.ts';
 import {
   createMusicDebugPercussionEventSummaries,
@@ -23,6 +24,9 @@ export function buildMusicDebugParameterReport(
     exportVariant: metadataOptions.variant ?? 'full',
     exportedAt: (metadataOptions.createdAt ?? new Date()).toISOString(),
     qualityStatus,
+    patchQualityWarnings: collectMusicDebugPatchQualityWarnings(
+      snapshot.instrumentBank
+    ),
     options: snapshot.options,
     theme: {
       id: snapshot.theme.id,

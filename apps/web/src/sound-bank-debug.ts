@@ -18,6 +18,7 @@ import {
   type MusicDebugSnapshot,
   type MusicDebugTileKind,
 } from './music-debug.ts';
+import { resolveMusicDebugPatchQualityTone } from './music-debug-patch-quality.ts';
 import {
   listGeneralMidiPercussionNotesForFamily,
   type GeneralMidiPercussionNote,
@@ -1695,12 +1696,7 @@ function buildSoundBankDebugKnownGoodPatchComparisonMarkup(
 ): string {
   const comparison = instrument.knownGoodPatchComparison;
   const similarityPercent = Math.round(comparison.similarityScore * 100);
-  const reportTone =
-    comparison.similarityScore >= 0.75
-      ? 'pass'
-      : comparison.similarityScore >= 0.6
-        ? 'warning'
-        : 'failure';
+  const reportTone = resolveMusicDebugPatchQualityTone(comparison);
   const leadingDifferences =
     comparison.prominentDifferences.length === 0
       ? '<li>No prominent differences detected.</li>'
