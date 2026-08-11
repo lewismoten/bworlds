@@ -149,6 +149,8 @@ export function buildMusicDebugLeadContourGraphMarkup(
         <span class="music-debug-contour-legend-band">planned range</span>
         <span class="music-debug-contour-legend-target">planned target</span>
         <span class="music-debug-contour-legend-actual">actual melody</span>
+        <span class="music-debug-contour-legend-drift">Drift</span>
+        <span class="music-debug-contour-legend-missing">Missing</span>
       </div>
       ${buildMusicDebugLeadContourGraphSvgMarkup(analysis)}
     </section>

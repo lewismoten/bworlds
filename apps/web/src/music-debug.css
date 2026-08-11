@@ -378,6 +378,14 @@ body {
   background: #8ae0ff;
 }
 
+.music-debug-contour-legend-drift::before {
+  background: #ff8a65;
+}
+
+.music-debug-contour-legend-missing::before {
+  background: #9db2bd;
+}
+
 .music-debug-contour-graph-svg {
   display: block;
   width: 100%;

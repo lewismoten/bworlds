@@ -22,6 +22,8 @@ describe('music debug lead contour graph', () => {
     expect(markup).toContain('m3');
     expect(markup).toContain('planned range');
     expect(markup).toContain('actual melody');
+    expect(markup).toContain('Drift');
+    expect(markup).toContain('Missing');
   });
 
   it('renders an unavailable state when contour checkpoints are missing', () => {
