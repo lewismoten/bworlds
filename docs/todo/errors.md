@@ -48,8 +48,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       detail forest mushroom-ring landmarks now collapse their repeated stems
       and caps into two `InstancedMesh` nodes, and `tile-town` now collapses
       its repeated full-detail building bodies, roofs, doors, and windows
-      into shared `InstancedMesh` sets, which removes small clusters of
-      redundant static child nodes from each visible landmark or track tile.
+      into shared `InstancedMesh` sets, and dock tiles now collapse their
+      repeated rails and support piles into shared `InstancedMesh` sets,
+      which removes small clusters of redundant static child nodes from each
+      visible landmark or track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
@@ -72,7 +74,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       instance their repeated stems and caps instead of emitting one mesh per
       mushroom piece, and town tiles now instance their repeated full-detail
       building bodies, roofs, doors, and windows instead of emitting one mesh
-      per building part or window pane.
+      per building part or window pane, and dock tiles now instance their
+      repeated rails and support piles instead of emitting one mesh per part.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

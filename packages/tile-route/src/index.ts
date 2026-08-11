@@ -1362,20 +1362,33 @@ function createDockGroup(
   deck.position.y = -0.035;
   group.add(deck);
 
-  for (const side of [-1, 1]) {
-    const rail = new three.Mesh(
-      new three.BoxGeometry(alongX ? 1.04 : 0.04, 0.04, alongX ? 0.04 : 1.04),
-      style.railMaterial
+  const railInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.railMaterial,
+    2
+  );
+  railInstances.userData = {
+    ...(railInstances.userData ?? {}),
+    dockInstancedPart: 'rail',
+  };
+  const railMatrixScratch = new three.Matrix4();
+  for (const [index, side] of [-1, 1].entries()) {
+    railInstances.setMatrixAt(
+      index,
+      writeRouteInstancedScalePositionMatrix(
+        railMatrixScratch,
+        alongX ? 0 : side * 0.24,
+        0.08,
+        alongX ? side * 0.24 : 0,
+        alongX ? 1.04 : 0.04,
+        0.04,
+        alongX ? 0.04 : 1.04
+      )
     );
-    if (alongX) {
-      rail.position.set(0, 0.08, side * 0.24);
-    } else {
-      rail.position.set(side * 0.24, 0.08, 0);
-    }
-    group.add(rail);
   }
+  group.add(railInstances);
 
-  for (const [xOffset, zOffset] of alongX
+  const pileOffsets = alongX
     ? [
         [-0.36, -0.22],
         [0.36, -0.22],
@@ -1387,14 +1400,33 @@ function createDockGroup(
         [-0.22, 0.36],
         [0.22, -0.36],
         [0.22, 0.36],
-      ]) {
-    const pile = new three.Mesh(
-      new three.BoxGeometry(0.06, 0.2, 0.06),
-      style.pileMaterial
+      ];
+  const pileInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.pileMaterial,
+    pileOffsets.length
+  );
+  pileInstances.userData = {
+    ...(pileInstances.userData ?? {}),
+    dockInstancedPart: 'pile',
+  };
+  const pileMatrixScratch = new three.Matrix4();
+  for (let index = 0; index < pileOffsets.length; index += 1) {
+    const [xOffset, zOffset] = pileOffsets[index]!;
+    pileInstances.setMatrixAt(
+      index,
+      writeRouteInstancedScalePositionMatrix(
+        pileMatrixScratch,
+        xOffset,
+        -0.03,
+        zOffset,
+        0.06,
+        0.2,
+        0.06
+      )
     );
-    pile.position.set(xOffset, -0.03, zOffset);
-    group.add(pile);
   }
+  group.add(pileInstances);
 
   if (shouldRenderDockBoat(state, tileX, tileY, info)) {
     const boat = createDockBoat(
@@ -2234,6 +2266,35 @@ function addBridgePillars(
   pillar.position.y = -0.12 + pillarHeight * 0.5;
   pillar.rotation.y = alongX ? 0 : Math.PI * 0.5;
   group.add(pillar);
+}
+
+function writeRouteInstancedScalePositionMatrix(
+  target: InstanceType<ThreeHostLike['Matrix4']>,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+) {
+  return target.set(
+    scaleX,
+    0,
+    0,
+    x,
+    0,
+    scaleY,
+    0,
+    y,
+    0,
+    0,
+    scaleZ,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
 }
 
 function getBridgeClusterInfo(

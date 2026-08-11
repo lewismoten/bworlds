@@ -57,6 +57,19 @@ class FakeMaterial {
   constructor(public options: Record<string, unknown> = {}) {}
 }
 
+class FakeMatrix4 {
+  elements = Array<number>(16).fill(0);
+
+  set(...elements: number[]) {
+    this.elements = [...elements];
+    return this;
+  }
+
+  clone() {
+    return new FakeMatrix4().set(...this.elements);
+  }
+}
+
 class FakeNode {
   position = {
     x: 0,
@@ -94,9 +107,27 @@ class FakeMesh extends FakeNode {
   }
 }
 
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[],
+    public count = 0
+  ) {
+    super();
+  }
+
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
+  }
+}
+
 const fakeThree = {
   Group: FakeGroup,
   Mesh: FakeMesh,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
@@ -825,6 +856,33 @@ describe('tile route', () => {
     );
   });
 
+  it('instances repeated dock rails and piles instead of emitting one mesh per part', () => {
+    const state = createDockModelState();
+    const model = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    const railInstances = collectTaggedInstancedMeshes(
+      model,
+      'dockInstancedPart'
+    ).filter((mesh) => mesh.userData?.dockInstancedPart === 'rail');
+    const pileInstances = collectTaggedInstancedMeshes(
+      model,
+      'dockInstancedPart'
+    ).filter((mesh) => mesh.userData?.dockInstancedPart === 'pile');
+
+    expect(railInstances).toHaveLength(1);
+    expect(railInstances[0]?.count).toBe(2);
+    expect(railInstances[0]?.matrices).toHaveLength(2);
+    expect(pileInstances).toHaveLength(1);
+    expect(pileInstances[0]?.count).toBe(4);
+    expect(pileInstances[0]?.matrices).toHaveLength(4);
+  });
+
   it('reuses shared bridge materials across repeated bridge model builds', () => {
     const state = createForestLogBridgeState();
     const first = bridgeTile?.create3DModel?.({
@@ -918,7 +976,7 @@ function countSharedMaterialReferences(
 function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root?.traverse((node) => {
-    if (node instanceof FakeMesh) {
+    if (node instanceof FakeMesh || node instanceof FakeInstancedMesh) {
       if (Array.isArray(node.material)) {
         node.material.forEach((material) => materials.add(material));
       } else if (node.material) {
@@ -927,4 +985,17 @@ function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
     }
   });
   return materials;
+}
+
+function collectTaggedInstancedMeshes(
+  root: FakeNode | undefined,
+  key: string
+): FakeInstancedMesh[] {
+  const meshes: FakeInstancedMesh[] = [];
+  root?.traverse((node) => {
+    if (node instanceof FakeInstancedMesh && node.userData?.[key]) {
+      meshes.push(node);
+    }
+  });
+  return meshes;
 }
