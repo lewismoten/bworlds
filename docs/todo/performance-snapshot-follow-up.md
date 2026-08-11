@@ -4,9 +4,9 @@
 
 ## Fix Measurement Problems First
 
-- [ ] Verify average FPS agrees with average frame duration.
-- [ ] Verify p50, p95, and p99 use enough frame samples.
-- [ ] Do not report every percentile from one frame sample.
+- [x] Verify average FPS agrees with average frame duration.
+- [x] Verify p50, p95, and p99 use enough frame samples.
+- [x] Do not report every percentile from one frame sample.
 - [ ] Record a longer frame history before exporting snapshots.
 - [ ] Explain why 59 FPS reports a 33.3 ms average frame.
 - [ ] Do not report performance as healthy with critical limits.

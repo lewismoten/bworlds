@@ -182,10 +182,11 @@ export type DebugSnapshotExport = {
     currentFps: number;
     averageFps: number;
     minimumFps: number;
+    frameSampleCount: number;
     averageFrameMs: number;
-    p50FrameMs: number;
-    p95FrameMs: number;
-    p99FrameMs: number;
+    p50FrameMs: number | null;
+    p95FrameMs: number | null;
+    p99FrameMs: number | null;
     worstRecentFrameMs: number;
     targetFrameMs: number;
     performanceTier: string;
@@ -412,14 +413,23 @@ export function buildDebugSnapshotExport(
   const latestHistoryTime =
     options.history[options.history.length - 1]?.nowMs ??
     options.snapshot.frameMs;
-  const frameSamples =
-    options.history.length > 0
-      ? options.history.map((sample) => sample.frameMs)
-      : [options.snapshot.frameMs];
-  const fpsSamples =
-    options.history.length > 0
-      ? options.history.map((sample) => sample.fps)
-      : [options.snapshot.fps];
+  const frameSamples = options.history.map((sample) => sample.frameMs);
+  const fpsSamples = options.history.map((sample) => sample.fps);
+  const effectiveFrameSamples =
+    frameSamples.length > 0 ? frameSamples : [options.snapshot.frameMs];
+  const rawAverageFrameMs = getAverage(effectiveFrameSamples);
+  const percentileFrameMs =
+    frameSamples.length >= 2
+      ? {
+          p50: roundTenths(getPercentile(frameSamples, 0.5)),
+          p95: roundTenths(getPercentile(frameSamples, 0.95)),
+          p99: roundTenths(getPercentile(frameSamples, 0.99)),
+        }
+      : {
+          p50: null,
+          p95: null,
+          p99: null,
+        };
   const resourceBudgetSnapshot = buildResourceBudgetSnapshot(options);
   return {
     metadata: {
@@ -439,12 +449,14 @@ export function buildDebugSnapshotExport(
     },
     summary: {
       currentFps: options.snapshot.fps,
-      averageFps: options.snapshot.averageFps,
-      minimumFps: Math.min(...fpsSamples),
-      averageFrameMs: roundTenths(getAverage(frameSamples)),
-      p50FrameMs: roundTenths(getPercentile(frameSamples, 0.5)),
-      p95FrameMs: roundTenths(getPercentile(frameSamples, 0.95)),
-      p99FrameMs: roundTenths(getPercentile(frameSamples, 0.99)),
+      averageFps: roundTenths(1000 / Math.max(1, rawAverageFrameMs)),
+      minimumFps:
+        fpsSamples.length > 0 ? Math.min(...fpsSamples) : options.snapshot.fps,
+      frameSampleCount: frameSamples.length,
+      averageFrameMs: roundTenths(rawAverageFrameMs),
+      p50FrameMs: percentileFrameMs.p50,
+      p95FrameMs: percentileFrameMs.p95,
+      p99FrameMs: percentileFrameMs.p99,
       worstRecentFrameMs: options.snapshot.worstRecentFrameMs,
       targetFrameMs: 1000 / options.snapshot.targetFps,
       performanceTier: options.snapshot.performanceTier,
