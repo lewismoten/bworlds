@@ -83,18 +83,23 @@
 
 ## Melody Shape
 
-- [ ] Build each melody from two or more related phrases.
-- [ ] Give every phrase a clear opening gesture.
+- [x] Build each melody from two or more related phrases.
+- [x] Give every phrase a clear opening gesture.
 - [ ] Give every phrase a clear closing gesture.
 - [ ] Make motif notes more prominent than filler notes.
-- [ ] Repeat the motif before introducing a variation.
-- [ ] Change only one motif feature in each variation.
+- [x] Repeat the motif before introducing a variation.
+- [x] Change only one motif feature in each variation.
 - [ ] Keep filler notes connected to nearby motif notes.
-- [ ] Place phrase peaks near planned contour checkpoints.
+- [x] Place phrase peaks near planned contour checkpoints.
 - [ ] Reserve the song's highest note for the main climax.
-- [ ] Descend gradually after the main climax.
-- [ ] End answer phrases on stable chord tones.
-- [ ] End the final phrase on scale degree one.
+- [x] Descend gradually after the main climax.
+- [x] End answer phrases on stable chord tones.
+- [x] End the final phrase on scale degree one.
+      Regression coverage now proves the melody opens with a repeated Section A
+      phrase before A' introduces a pitch-only variation, keeps phrase peaks
+      near the planned climax checkpoint, descends gradually after the climax,
+      resolves answer cadences onto stable chord tones, and lands the final
+      outro phrase on tonic.
 
 ## Harmony and Bass
 

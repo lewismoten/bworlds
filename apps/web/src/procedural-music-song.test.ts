@@ -359,6 +359,39 @@ describe('procedural music song', () => {
     expect(sectionAPrimePitches).toHaveLength(sectionAPitches.length);
   });
 
+  it("repeats Section A's opening phrase before introducing the A' variation", () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionAPrime = song.sections.find(
+      (section) => section.id === 'a-prime'
+    )!;
+    const openingPhraseA1 = collectLeadPhraseOpening(song, sectionA, 0);
+    const openingPhraseA2 = collectLeadPhraseOpening(song, sectionA, 1);
+    const openingPhraseAPrime = collectLeadPhraseOpening(
+      song,
+      sectionAPrime,
+      0
+    );
+
+    expect(openingPhraseA1.length).toBe(4);
+    expect(openingPhraseA2.map((note) => note.midiNote)).toEqual(
+      openingPhraseA1.map((note) => note.midiNote)
+    );
+    expectPhraseRhythmToMatch(openingPhraseA2, openingPhraseA1);
+    expectPhraseRhythmToMatch(openingPhraseAPrime, openingPhraseA1);
+    expect(openingPhraseAPrime.map((note) => note.midiNote)).not.toEqual(
+      openingPhraseA1.map((note) => note.midiNote)
+    );
+  });
+
   it('builds an eight-measure phrase before repeating it across the full song', () => {
     const options = {
       nowMs: 1_000,
@@ -1070,6 +1103,62 @@ function collectLeadMotifRhythmShape(
       ),
       durationRatio: Number((note.durationMs / section.durationMs).toFixed(3)),
     }));
+}
+
+function collectLeadPhraseOpening(
+  song: ReturnType<typeof createProceduralMusicSong>,
+  section: ReturnType<typeof createProceduralMusicSong>['sections'][number],
+  phraseIndexWithinSection: number
+): Array<{ offsetRatio: number; durationRatio: number; midiNote: number }> {
+  const measureDurationMs =
+    section.durationMs / Math.max(1, section.measureCount);
+  const phraseStartMs =
+    song.startMs +
+    section.startOffsetMs +
+    phraseIndexWithinSection *
+      measureDurationMs *
+      PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+  const phraseDurationMs =
+    measureDurationMs * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+
+  return song.notes
+    .filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= phraseStartMs &&
+        note.startMs < phraseStartMs + phraseDurationMs
+    )
+    .slice(0, 4)
+    .map((note) => ({
+      offsetRatio: Number(
+        (
+          (note.startMs - phraseStartMs) /
+          Math.max(1, phraseDurationMs)
+        ).toFixed(3)
+      ),
+      durationRatio: Number(
+        (note.durationMs / Math.max(1, phraseDurationMs)).toFixed(3)
+      ),
+      midiNote: resolveMidiNote(note.frequency),
+    }));
+}
+
+function expectPhraseRhythmToMatch(
+  actual: ReadonlyArray<{ offsetRatio: number; durationRatio: number }>,
+  expected: ReadonlyArray<{ offsetRatio: number; durationRatio: number }>
+): void {
+  expect(actual).toHaveLength(expected.length);
+
+  for (let index = 0; index < expected.length; index += 1) {
+    expect(actual[index]?.offsetRatio).toBeCloseTo(
+      expected[index]?.offsetRatio ?? 0,
+      2
+    );
+    expect(actual[index]?.durationRatio).toBeCloseTo(
+      expected[index]?.durationRatio ?? 0,
+      2
+    );
+  }
 }
 
 function collectLeadSectionPitches(
