@@ -9,3 +9,4 @@ coverage/
 .client-error-snapshots/
 dist-analyze*/
 .vitest-full-suite.lock
+.tmp-*
