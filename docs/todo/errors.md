@@ -49,8 +49,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       and caps into two `InstancedMesh` nodes, and full-detail forest floor
       detail tiles now collapse their repeated stump and fallen-tree props
       into shared `InstancedMesh` sets, and full-detail forest owls now
-      collapse their repeated eye meshes into one shared `InstancedMesh`,
-      and `tile-town` now collapses its
+      collapse their repeated eye meshes into one shared `InstancedMesh`, and
+      full-detail historical forest trees now collapse their repeated marker
+      stones into one shared `InstancedMesh` per landmark tree, and `tile-town` now collapses its
       repeated full-detail building bodies, roofs, doors, windows, banner
       poles, and banner crossbars into shared `InstancedMesh` sets, and dock
       tiles now collapse their repeated rails, support piles, and dock route
@@ -91,7 +92,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       mushroom piece, and full-detail forest floor-detail tiles now instance
       their repeated stump and fallen-tree props instead of emitting one mesh
       per floor-detail prop, and full-detail forest owls now instance their
-      repeated eye meshes instead of emitting one mesh per eye, and town
+      repeated eye meshes instead of emitting one mesh per eye, and full-
+      detail historical forest trees now instance their repeated marker
+      stones instead of emitting one mesh per landmark marker, and town
       tiles now instance their repeated full-detail building bodies, roofs,
       doors, windows, banner poles, and banner
       crossbars instead of emitting one mesh per building part, window pane,

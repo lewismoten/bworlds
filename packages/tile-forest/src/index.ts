@@ -1466,30 +1466,35 @@ export function createForestTilePlugin(): RuntimePlugin {
           }
 
           if (historical.landmark) {
+            const markerInstances = new three.InstancedMesh(
+              geometry.foliage,
+              style.stoneMaterial,
+              3
+            );
+            markerInstances.userData = {
+              ...(markerInstances.userData ?? {}),
+              [HISTORICAL_TREE_KEY]: historical.title,
+              forestHistoricalTreeRecord: historical.record,
+              forestHistoricalTreeMarker: true,
+            };
+            const markerMatrixScratch = new three.Matrix4();
             for (let markerIndex = 0; markerIndex < 3; markerIndex += 1) {
               const angle =
                 (markerIndex / 3) * Math.PI * 2 + historical.prominence;
-              const marker = new three.Mesh(
-                geometry.foliage,
-                style.stoneMaterial
+              markerInstances.setMatrixAt(
+                markerIndex,
+                writeLowDetailInstancedMatrix(
+                  markerMatrixScratch,
+                  Math.cos(angle) * structure.radius * 1.8,
+                  0.04 + markerIndex * 0.01,
+                  Math.sin(angle) * structure.radius * 1.8,
+                  0.05 + historical.prominence * 0.035,
+                  0.07 + historical.prominence * 0.05,
+                  0.05 + historical.prominence * 0.035
+                )
               );
-              marker.position.set(
-                Math.cos(angle) * structure.radius * 1.8,
-                0.04 + markerIndex * 0.01,
-                Math.sin(angle) * structure.radius * 1.8
-              );
-              marker.scale.set(
-                0.05 + historical.prominence * 0.035,
-                0.07 + historical.prominence * 0.05,
-                0.05 + historical.prominence * 0.035
-              );
-              marker.userData = {
-                ...(marker.userData ?? {}),
-                [HISTORICAL_TREE_KEY]: historical.title,
-                forestHistoricalTreeRecord: historical.record,
-              };
-              tree.add(marker);
             }
+            tree.add(markerInstances);
           }
 
           group.add(tree);

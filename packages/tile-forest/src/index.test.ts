@@ -3724,12 +3724,19 @@ describe('tile forest', () => {
 
     const fullTitles = new Set<string>();
     const fullRecords = new Set<string>();
+    const historicalMarkerInstances: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
       if (typeof node.userData?.forestHistoricalTree === 'string') {
         fullTitles.add(node.userData.forestHistoricalTree);
       }
       if (typeof node.userData?.forestHistoricalTreeRecord === 'string') {
         fullRecords.add(node.userData.forestHistoricalTreeRecord);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestHistoricalTreeMarker
+      ) {
+        historicalMarkerInstances.push(node);
       }
     });
 
@@ -3742,6 +3749,13 @@ describe('tile forest', () => {
 
     expect(fullTitles.size).toBeGreaterThan(0);
     expect(fullRecords.size).toBeGreaterThan(0);
+    expect(historicalMarkerInstances.length).toBeGreaterThan(0);
+    expect(historicalMarkerInstances.every((mesh) => mesh.count === 3)).toBe(
+      true
+    );
+    expect(
+      historicalMarkerInstances.every((mesh) => mesh.matrices.length === 3)
+    ).toBe(true);
     expect([...fullTitles].some((title) => /Oak|Birch|Pine/.test(title))).toBe(
       true
     );
