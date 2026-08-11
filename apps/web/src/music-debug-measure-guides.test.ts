@@ -1,22 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMusicDebugSnapshot } from './music-debug.ts';
+import type { MusicDebugSnapshot } from './music-debug.ts';
 import {
   resolveMusicDebugBeatSubdivisionMarkers,
   resolveMusicDebugMeasureMarkers,
 } from './music-debug-measure-guides.ts';
 
-const FOREST_SNAPSHOT = createMusicDebugSnapshot({
-  tileKind: 'forest',
-  contextType: 'overworld',
-  clusterX: 4,
-  clusterY: -1,
+const FOREST_SNAPSHOT = createMeasureGuideSnapshot({
+  sections: [createSection(1, 8, 0, 8_000), createSection(9, 16, 8_000, 8_000)],
 });
-const TOWN_SNAPSHOT = createMusicDebugSnapshot({
-  tileKind: 'town',
-  contextType: 'town',
-  clusterX: 3,
-  clusterY: -2,
+const TOWN_SNAPSHOT = createMeasureGuideSnapshot({
+  sections: [createSection(1, 4, 0, 4_000), createSection(5, 8, 4_000, 4_000)],
 });
 const FOREST_MEASURE_MARKERS = resolveMusicDebugMeasureMarkers(FOREST_SNAPSHOT);
 const TOWN_BEAT_MARKERS =
@@ -60,3 +54,35 @@ describe('music debug measure guides', () => {
     ).toBe(true);
   });
 });
+
+function createMeasureGuideSnapshot(options: {
+  sections: NonNullable<MusicDebugSnapshot['song']>['sections'];
+}): MusicDebugSnapshot {
+  const measureCount = options.sections.at(-1)?.endMeasure ?? 0;
+  const durationMs = options.sections.reduce(
+    (max, section) => Math.max(max, section.startOffsetMs + section.durationMs),
+    0
+  );
+
+  return {
+    measureCount,
+    durationMs,
+    song: {
+      sections: options.sections,
+    },
+  } as MusicDebugSnapshot;
+}
+
+function createSection(
+  startMeasure: number,
+  endMeasure: number,
+  startOffsetMs: number,
+  durationMs: number
+): MusicDebugSnapshot['song']['sections'][number] {
+  return {
+    startMeasure,
+    endMeasure,
+    startOffsetMs,
+    durationMs,
+  } as MusicDebugSnapshot['song']['sections'][number];
+}

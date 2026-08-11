@@ -101,4 +101,13 @@ Tests that open handles with longer lifetimes can register them through
 - `trackClosableTestResource(resource)` for callback-style `close()` handles and promise-based `terminate()`/`destroy()` handles
 - cleanup promises that never settle now fail after 100ms instead of hanging the suite teardown
 
+Fast-suite tests should also avoid building full representative songs or debug
+snapshots when the assertion only reads a narrow slice of the result. Recent
+examples include lightweight fixture-only coverage in
+[music-debug-export-preflight.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-export-preflight.test.ts:1)
+and
+[music-debug-measure-guides.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-measure-guides.test.ts:1),
+which keep utility assertions on the normal check path without paying the cost
+of unrelated procedural audio generation.
+
 That split keeps per-test/hook limits in Vitest itself while the supervisor handles whole-suite process cleanup.
