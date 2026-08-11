@@ -14,6 +14,14 @@ import {
 } from './music-debug.ts';
 import { resolveMusicDebugKnownGoodSeed } from './music-debug-known-good-seeds.ts';
 
+const FOREST_KNOWN_GOOD_SNAPSHOT = createMusicDebugSnapshot(
+  resolveMusicDebugKnownGoodSeed('forest-structure-baseline').options
+);
+const TOWN_KNOWN_GOOD_SNAPSHOT = createMusicDebugSnapshot(
+  resolveMusicDebugKnownGoodSeed('town-blueprint-baseline').options,
+  1000
+);
+
 describe('music debug', () => {
   it('normalizes partial options into a safe debug snapshot configuration', () => {
     expect(
@@ -842,15 +850,7 @@ describe('music debug', () => {
   });
 
   it("keeps Section A' lead prominence above Section A in representative snapshots", () => {
-    const forest = createMusicDebugSnapshot(
-      resolveMusicDebugKnownGoodSeed('forest-structure-baseline').options
-    );
-    const town = createMusicDebugSnapshot(
-      resolveMusicDebugKnownGoodSeed('town-blueprint-baseline').options,
-      1000
-    );
-
-    for (const snapshot of [forest, town]) {
+    for (const snapshot of [FOREST_KNOWN_GOOD_SNAPSHOT, TOWN_KNOWN_GOOD_SNAPSHOT]) {
       const prominenceById = new Map(
         snapshot.sectionProminence.map((section) => [
           section.sectionId,
@@ -869,15 +869,7 @@ describe('music debug', () => {
   }, 10_000);
 
   it('keeps Section B harmony prominence below Section A in representative snapshots', () => {
-    const forest = createMusicDebugSnapshot(
-      resolveMusicDebugKnownGoodSeed('forest-structure-baseline').options
-    );
-    const town = createMusicDebugSnapshot(
-      resolveMusicDebugKnownGoodSeed('town-blueprint-baseline').options,
-      1000
-    );
-
-    for (const snapshot of [forest, town]) {
+    for (const snapshot of [FOREST_KNOWN_GOOD_SNAPSHOT, TOWN_KNOWN_GOOD_SNAPSHOT]) {
       const prominenceById = new Map(
         snapshot.sectionProminence.map((section) => [
           section.sectionId,
@@ -899,9 +891,7 @@ describe('music debug', () => {
   }, 10_000);
 
   it('reports stable section-plan rule matches for representative snapshots', () => {
-    const snapshot = createMusicDebugSnapshot(
-      resolveMusicDebugKnownGoodSeed('forest-structure-baseline').options
-    );
+    const snapshot = FOREST_KNOWN_GOOD_SNAPSHOT;
     const comparisonsById = new Map(
       snapshot.sectionLayerComparisons.map((comparison) => [
         comparison.sectionId,
@@ -925,10 +915,7 @@ describe('music debug', () => {
   });
 
   it('keeps settled blueprint occupancy comparisons stable for the representative town snapshot', () => {
-    const snapshot = createMusicDebugSnapshot(
-      resolveMusicDebugKnownGoodSeed('town-blueprint-baseline').options,
-      1000
-    );
+    const snapshot = TOWN_KNOWN_GOOD_SNAPSHOT;
 
     expect(snapshot.sectionLayerComparisons).toHaveLength(
       snapshot.song.sections.length
