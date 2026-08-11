@@ -259,6 +259,10 @@ export type DebugSnapshotExport = {
     tileBuildsPerSecond: number;
     averageTileBuildMs: number;
     worstTileBuildMs: number;
+    averageFullTileBuildMs: number;
+    worstFullTileBuildMs: number;
+    averageLowTileBuildMs: number;
+    worstLowTileBuildMs: number;
     tileKinds: string;
   };
   lod: {
@@ -568,6 +572,10 @@ export function buildDebugSnapshotExport(
       tileBuildsPerSecond: options.snapshot.tileBuildsPerSecond,
       averageTileBuildMs: options.snapshot.averageTileBuildMs,
       worstTileBuildMs: options.snapshot.maxTileBuildMs,
+      averageFullTileBuildMs: options.snapshot.averageFullTileBuildMs ?? 0,
+      worstFullTileBuildMs: options.snapshot.maxFullTileBuildMs ?? 0,
+      averageLowTileBuildMs: options.snapshot.averageLowTileBuildMs ?? 0,
+      worstLowTileBuildMs: options.snapshot.maxLowTileBuildMs ?? 0,
       tileKinds: options.snapshot.visibleTileKindSummary,
     },
     lod: {

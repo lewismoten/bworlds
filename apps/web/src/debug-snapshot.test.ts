@@ -221,6 +221,10 @@ describe('debug snapshot', () => {
         maxPendingFlushTiles: 5,
         averageTileBuildMs: 2.4,
         maxTileBuildMs: 6.8,
+        averageFullTileBuildMs: 3.6,
+        maxFullTileBuildMs: 6.8,
+        averageLowTileBuildMs: 1.2,
+        maxLowTileBuildMs: 1.5,
         tileModelBudgetViolationsPerSecond: 2,
         tileModelBudgetViolationTopPluginLabel: 'tile-forest',
         tileModelBudgetViolationSummary: 'tile-forest:2, tile-town:1',
@@ -593,6 +597,10 @@ describe('debug snapshot', () => {
       tileBuildsPerSecond: 11,
       averageTileBuildMs: 2.4,
       worstTileBuildMs: 6.8,
+      averageFullTileBuildMs: 3.6,
+      worstFullTileBuildMs: 6.8,
+      averageLowTileBuildMs: 1.2,
+      worstLowTileBuildMs: 1.5,
       tileKinds: 'forest:48, plains:32',
     });
     expect(result.lod).toMatchObject({

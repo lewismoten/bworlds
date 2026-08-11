@@ -59,6 +59,10 @@ describe('debug panel', () => {
       maxPendingFlushTiles: 5,
       averageTileBuildMs: 2.45,
       maxTileBuildMs: 6.75,
+      averageFullTileBuildMs: 3.4,
+      maxFullTileBuildMs: 6.75,
+      averageLowTileBuildMs: 1.25,
+      maxLowTileBuildMs: 1.5,
       tileModelBudgetViolationsPerSecond: 2,
       tileModelBudgetViolationTopPluginLabel: 'tile-forest',
       tileModelBudgetViolationSummary: 'tile-forest:2, tile-town:1',
@@ -131,6 +135,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Draw Call Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Draw Call Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
+    expect(buildDebugMarkup(snapshot)).toContain('Avg Full Tile Build');
+    expect(buildDebugMarkup(snapshot)).toContain('Avg Low Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Frame Target');
     expect(buildDebugMarkup(snapshot)).toContain('Perf Tier');
     expect(buildDebugMarkup(snapshot)).toContain('Render Quality');

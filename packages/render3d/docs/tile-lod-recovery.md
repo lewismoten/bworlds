@@ -34,6 +34,10 @@ Visible-tile LOD selection also runs through `getTileModelDetailLevelForFrameBud
 
 Landmark-style tiles that intentionally hold full detail longer, such as lighthouses, keep their `full` requests even under that tighter budget gate.
 
+## Per-LOD Build Timing
+
+The renderer now records recent visible-tile build durations both overall and by resolved detail level. The web debug panel and exported debug snapshot surface separate rolling average and max timings for `full` and `low` tile builds, which makes it easier to tell whether LOD recovery is helping or whether one detail tier is dominating frame time.
+
 ## Failure Reasons and Metrics
 
 Visible recovery attempts keep per-attempt `fallbackReason` data so the debug event stream can summarize the full chain that failed.
@@ -73,5 +77,6 @@ The current implementation already covers these `docs/todo/tile-lod.md` items:
 - Reserve fallback boxes for hard generation failures.
 - Log every fallback box with its tile and failure reason.
 - Lower requested LOD when frame time exceeds budget.
+- Measure generation time for every LOD.
 
 The existing renderer tests in `packages/render3d/src/index.test.ts` also cover the currently checked fallback-path test items from that checklist.

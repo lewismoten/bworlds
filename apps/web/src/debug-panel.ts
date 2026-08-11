@@ -27,6 +27,10 @@ export type DebugSnapshot = {
   maxPendingFlushTiles: number;
   averageTileBuildMs: number;
   maxTileBuildMs: number;
+  averageFullTileBuildMs?: number;
+  maxFullTileBuildMs?: number;
+  averageLowTileBuildMs?: number;
+  maxLowTileBuildMs?: number;
   averageTilePluginBuildMs?: number;
   maxTilePluginBuildMs?: number;
   slowestTilePluginLabel?: string;
@@ -212,6 +216,10 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.maxPendingFlushTiles.toFixed(0),
     snapshot.averageTileBuildMs.toFixed(2),
     snapshot.maxTileBuildMs.toFixed(2),
+    (snapshot.averageFullTileBuildMs ?? 0).toFixed(2),
+    (snapshot.maxFullTileBuildMs ?? 0).toFixed(2),
+    (snapshot.averageLowTileBuildMs ?? 0).toFixed(2),
+    (snapshot.maxLowTileBuildMs ?? 0).toFixed(2),
     (snapshot.averageTilePluginBuildMs ?? 0).toFixed(2),
     (snapshot.maxTilePluginBuildMs ?? 0).toFixed(2),
     snapshot.slowestTilePluginLabel ?? '',
@@ -362,6 +370,10 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Max Flush Tiles</dt><dd>${snapshot.maxPendingFlushTiles}</dd></div>
     <div><dt>Avg Tile Build</dt><dd>${snapshot.averageTileBuildMs.toFixed(2)} ms</dd></div>
     <div><dt>Max Tile Build</dt><dd>${snapshot.maxTileBuildMs.toFixed(2)} ms</dd></div>
+    <div><dt>Avg Full Tile Build</dt><dd>${(snapshot.averageFullTileBuildMs ?? 0).toFixed(2)} ms</dd></div>
+    <div><dt>Max Full Tile Build</dt><dd>${(snapshot.maxFullTileBuildMs ?? 0).toFixed(2)} ms</dd></div>
+    <div><dt>Avg Low Tile Build</dt><dd>${(snapshot.averageLowTileBuildMs ?? 0).toFixed(2)} ms</dd></div>
+    <div><dt>Max Low Tile Build</dt><dd>${(snapshot.maxLowTileBuildMs ?? 0).toFixed(2)} ms</dd></div>
     <div><dt>Avg Plugin Build</dt><dd>${(snapshot.averageTilePluginBuildMs ?? 0).toFixed(2)} ms</dd></div>
     <div><dt>Max Plugin Build</dt><dd>${(snapshot.maxTilePluginBuildMs ?? 0).toFixed(2)} ms</dd></div>
     <div><dt>Slowest Plugin</dt><dd>${snapshot.slowestTilePluginLabel || 'None'}</dd></div>

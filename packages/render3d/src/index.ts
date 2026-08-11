@@ -324,6 +324,10 @@ type Render3DController = {
     maxPendingFlushTiles: number;
     averageTileBuildMs: number;
     maxTileBuildMs: number;
+    averageFullTileBuildMs: number;
+    maxFullTileBuildMs: number;
+    averageLowTileBuildMs: number;
+    maxLowTileBuildMs: number;
     averageTilePluginBuildMs: number;
     maxTilePluginBuildMs: number;
     slowestTilePluginLabel: string;
@@ -1492,6 +1496,7 @@ type RenderChurnMetrics = {
   fallbackBoxLabels: RecentLabeledCountSample[];
   pendingFlushCounts: RecentCountSample[];
   tileBuildDurations: RecentDurationSample[];
+  tileBuildDurationsByDetail: RecentLabeledDurationSample[];
   tilePluginBuildDurations: RecentLabeledDurationSample[];
   tileModelBudgetViolations: RecentLabeledCountSample[];
 };
@@ -1716,6 +1721,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     fallbackBoxLabels: [] as RecentLabeledCountSample[],
     pendingFlushCounts: [] as RecentCountSample[],
     tileBuildDurations: [] as RecentDurationSample[],
+    tileBuildDurationsByDetail: [] as RecentLabeledDurationSample[],
     tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
     tileModelBudgetViolations: [] as RecentLabeledCountSample[],
   } satisfies RenderChurnMetrics;
@@ -2604,6 +2610,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           nowMs,
           durationMs: buildDurationMs,
         });
+        recordRecentLabeledDurationMetric(
+          renderChurnMetrics.tileBuildDurationsByDetail,
+          {
+            nowMs,
+            durationMs: buildDurationMs,
+            label: tileNode.detailLevel ?? 'full',
+          }
+        );
         activePendingTileBuild = null;
       } else {
         return;
@@ -2680,6 +2694,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           nowMs,
           durationMs: buildDurationMs,
         });
+        recordRecentLabeledDurationMetric(
+          renderChurnMetrics.tileBuildDurationsByDetail,
+          {
+            nowMs,
+            durationMs: buildDurationMs,
+            label: pendingBuild.tileNode.detailLevel ?? detailLevel,
+          }
+        );
       }
     }
 
@@ -2866,6 +2888,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileBuildDurations,
       nowMs
     );
+    const recentFullTileBuildStats = getRecentFilteredLabeledDurationStats(
+      renderChurnMetrics.tileBuildDurationsByDetail,
+      nowMs,
+      'full'
+    );
+    const recentLowTileBuildStats = getRecentFilteredLabeledDurationStats(
+      renderChurnMetrics.tileBuildDurationsByDetail,
+      nowMs,
+      'low'
+    );
     const recentPendingFlushStats = getRecentCountStats(
       renderChurnMetrics.pendingFlushCounts,
       nowMs
@@ -2915,6 +2947,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       maxPendingFlushTiles: recentPendingFlushStats.maxCount,
       averageTileBuildMs: recentTileBuildStats.averageMs,
       maxTileBuildMs: recentTileBuildStats.maxMs,
+      averageFullTileBuildMs: recentFullTileBuildStats.averageMs,
+      maxFullTileBuildMs: recentFullTileBuildStats.maxMs,
+      averageLowTileBuildMs: recentLowTileBuildStats.averageMs,
+      maxLowTileBuildMs: recentLowTileBuildStats.maxMs,
       averageTilePluginBuildMs: recentTilePluginBuildStats.averageMs,
       maxTilePluginBuildMs: recentTilePluginBuildStats.maxMs,
       slowestTilePluginLabel: recentTilePluginBuildStats.maxLabel,
@@ -5351,6 +5387,39 @@ export function getRecentLabeledDurationStats(
     averageMs: totalMs / samples.length,
     maxMs,
     maxLabel,
+  };
+}
+
+export function getRecentFilteredLabeledDurationStats(
+  samples: RecentLabeledDurationSample[],
+  nowMs: number,
+  label: string,
+  windowMs = 1000
+): {
+  averageMs: number;
+  maxMs: number;
+} {
+  pruneRecentDurationSamples(samples, nowMs, windowMs);
+  let totalMs = 0;
+  let maxMs = 0;
+  let count = 0;
+  for (const sample of samples) {
+    if (sample.label !== label) {
+      continue;
+    }
+    totalMs += sample.durationMs;
+    maxMs = Math.max(maxMs, sample.durationMs);
+    count += 1;
+  }
+  if (count === 0) {
+    return {
+      averageMs: 0,
+      maxMs: 0,
+    };
+  }
+  return {
+    averageMs: totalMs / count,
+    maxMs,
   };
 }
 

@@ -207,7 +207,7 @@ This is also partially due to performance issues which can be seen here, and add
 
 ## Metrics
 
-- [ ] Measure generation time for every LOD.
+- [x] Measure generation time for every LOD.
 - [ ] Measure generation time for consolidated groups.
 - [ ] Measure triangles produced by each LOD.
 - [ ] Measure draw calls produced by each LOD.

@@ -145,6 +145,7 @@ import {
   getRecentLabeledCountStats,
   getRecentCountStats,
   getRecentDurationStats,
+  getRecentFilteredLabeledDurationStats,
   getRecentLabeledDurationStats,
   getRecentOwnedMaterialLifecycleCounts,
   getRenderChurnStats,
@@ -1235,6 +1236,7 @@ describe('render3d visibility helpers', () => {
           fallbackBoxLabels: [],
           pendingFlushCounts: [],
           tileBuildDurations: [],
+          tileBuildDurationsByDetail: [],
           tilePluginBuildDurations: [],
           tileModelBudgetViolations: [],
         },
@@ -1264,6 +1266,7 @@ describe('render3d visibility helpers', () => {
           fallbackBoxLabels: [],
           pendingFlushCounts: [],
           tileBuildDurations: [],
+          tileBuildDurationsByDetail: [],
           tilePluginBuildDurations: [],
           tileModelBudgetViolations: [],
         },
@@ -4609,6 +4612,37 @@ describe('render3d visibility helpers', () => {
       averageMs: 3,
       maxMs: 3,
       maxLabel: 'tile-cave',
+    });
+  });
+
+  it('tracks recent tile build durations separately for each lod label', () => {
+    const samples = [
+      { nowMs: 100, durationMs: 2, label: 'full' },
+      { nowMs: 450, durationMs: 6, label: 'low' },
+      { nowMs: 900, durationMs: 4, label: 'full' },
+    ];
+
+    expect(getRecentFilteredLabeledDurationStats(samples, 950, 'full')).toEqual(
+      {
+        averageMs: 3,
+        maxMs: 4,
+      }
+    );
+    expect(getRecentFilteredLabeledDurationStats(samples, 950, 'low')).toEqual({
+      averageMs: 6,
+      maxMs: 6,
+    });
+    expect(
+      getRecentFilteredLabeledDurationStats(samples, 1405, 'full')
+    ).toEqual({
+      averageMs: 4,
+      maxMs: 4,
+    });
+    expect(
+      getRecentFilteredLabeledDurationStats(samples, 1405, 'missing')
+    ).toEqual({
+      averageMs: 0,
+      maxMs: 0,
     });
   });
 
