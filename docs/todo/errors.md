@@ -204,6 +204,10 @@ Always run tests to make sure all tests pass
       `overworld-support` now uses a packed bounded cache for default cell-
       anchor terrain evaluations so repeated anchor suitability and conflict
       checks stop rebuilding string keys in the hot generation path, and
+      `runtime-overworld-anchors` now wraps each anchor-resolution pass in a
+      per-call coordinate cache for `sampleTerrainSignals()` so overlapping
+      mountain, forest, coastline, and summit-cluster checks stop re-sampling
+      the same nearby coordinates within one deterministic anchor scan, and
       `overworld-support` now caches fully composed overworld tiles for
       repeated generation requests that share the same plugin registry, terrain
       sampler, world-state revision, seed, coordinates, and starting tile kind

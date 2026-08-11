@@ -1,3 +1,4 @@
+import { createCoordinateCache } from '@bworlds/cache-support';
 import {
   createOverworldAnchorResolver,
   createGeneratedNamedOverworldCellAnchorSpec,
@@ -371,25 +372,39 @@ const POI_SPECS: Record<PoiType, OverworldCellAnchorSpec<NamedPoiAnchor>> = {
 };
 
 export function createOverworldAnchorsRuntimePlugin(): RuntimePlugin {
+  const resolveOverworldAnchors = createOverworldAnchorResolver({
+    town: {
+      spec: TOWN_ANCHOR_SPEC,
+    },
+    bridge: {
+      spec: BRIDGE_ANCHOR_SPEC,
+    },
+    poi: {
+      specs: POI_SPECS,
+      minSpacing: MIN_POI_SPACING,
+      baseAnchors({ townAnchors }) {
+        return townAnchors.map((anchor) => ({
+          ...anchor,
+          type: 'town',
+        }));
+      },
+    },
+  });
+
   return createRuntimePlugin('runtime-overworld-anchors', {
-    resolveOverworldAnchors: createOverworldAnchorResolver({
-      town: {
-        spec: TOWN_ANCHOR_SPEC,
-      },
-      bridge: {
-        spec: BRIDGE_ANCHOR_SPEC,
-      },
-      poi: {
-        specs: POI_SPECS,
-        minSpacing: MIN_POI_SPACING,
-        baseAnchors({ townAnchors }) {
-          return townAnchors.map((anchor) => ({
-            ...anchor,
-            type: 'town',
-          }));
-        },
-      },
-    }),
+    resolveOverworldAnchors(payload) {
+      const cache =
+        createCoordinateCache<ReturnType<OverworldTerrainSignalSampler>>();
+      const cachedSampleTerrainSignals: OverworldTerrainSignalSampler = (
+        x,
+        y
+      ) => cache.getOrCreate(x, y, () => payload.sampleTerrainSignals(x, y));
+
+      return resolveOverworldAnchors({
+        ...payload,
+        sampleTerrainSignals: cachedSampleTerrainSignals,
+      });
+    },
   });
 }
 

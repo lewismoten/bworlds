@@ -123,4 +123,30 @@ describe('runtime overworld anchors', () => {
       );
     });
   });
+
+  it('reuses terrain samples across overlapping anchor suitability scans', () => {
+    const sampleCounts = new Map<string, number>();
+
+    plugin.resolveOverworldAnchors?.(
+      createAnchorPayload({
+        seed: 'terrain-cache-spec',
+        x: 0,
+        y: 0,
+        sampleTerrainSignals(x, y) {
+          const key = `${x},${y}`;
+          sampleCounts.set(key, (sampleCounts.get(key) ?? 0) + 1);
+          return {
+            continent: 0.64,
+            elevation: 0.56,
+            moisture: 0.62,
+            riverSignal: 0.22,
+            roadSignal: 0.46,
+          };
+        },
+      })
+    );
+
+    expect(sampleCounts.size).toBeGreaterThan(1);
+    expect(Math.max(...sampleCounts.values())).toBe(1);
+  });
 });
