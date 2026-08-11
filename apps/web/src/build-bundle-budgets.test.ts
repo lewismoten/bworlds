@@ -237,9 +237,11 @@ describe('build bundle budgets', () => {
         minimumTrackedBytes: expect.any(Number),
         baselineBytesByName: expect.objectContaining({
           main: expect.any(Number),
+          'sound-bank-debug-page': expect.any(Number),
         }),
         maxIncreaseBytesByName: expect.objectContaining({
           main: expect.any(Number),
+          'sound-bank-debug-page': expect.any(Number),
         }),
       },
     });

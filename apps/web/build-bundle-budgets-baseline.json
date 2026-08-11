@@ -18,6 +18,7 @@
       "main": 1167889,
       "music-debug": 182155,
       "procedural-music-audio-sink": 101266,
+      "sound-bank-debug-page": 64485,
       "sound-effects": 139964,
       "src": 141676
     },
@@ -25,6 +26,7 @@
       "main": 40960,
       "music-debug": 12288,
       "procedural-music-audio-sink": 12288,
+      "sound-bank-debug-page": 8192,
       "sound-effects": 12288,
       "src": 8192
     }

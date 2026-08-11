@@ -22,6 +22,7 @@ export const BUILD_BUNDLE_BUDGETS = {
       src: 145_000,
       'procedural-music-audio-sink': 140_000,
       'sound-effects': 160_000,
+      'sound-bank-debug-page': 72_000,
     },
   },
 };

@@ -17,16 +17,6 @@ function createAnchorSignals(): OverworldSignals {
   };
 }
 
-function createDenseForestSignals(): OverworldSignals {
-  return {
-    continent: 0.62,
-    elevation: 0.48,
-    moisture: 0.72,
-    riverSignal: 0.32,
-    roadSignal: 0.45,
-  };
-}
-
 function createAnchorPayload(
   overrides: Partial<ResolveOverworldAnchorsPayload> = {}
 ): ResolveOverworldAnchorsPayload {
@@ -133,5 +123,4 @@ describe('runtime overworld anchors', () => {
       );
     });
   });
-
 });

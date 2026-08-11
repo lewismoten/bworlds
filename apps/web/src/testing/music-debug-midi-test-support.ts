@@ -11,7 +11,7 @@ export const EXPORTABLE_TOWN_MIDI_SNAPSHOT = toExportableSnapshot(
   })
 );
 
-export function withValidCadenceValidation(
+function withValidCadenceValidation(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
   return {
