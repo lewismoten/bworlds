@@ -17,6 +17,8 @@ That same chain applies when the requested `full` build is rejected for render-b
 
 `shouldReplaceVisibleTileModelDetailEntry` then prevents a fallback-only rebuild from replacing an existing visible model that still has a real `modelRoot`.
 
+That guard is what keeps upgrade attempts from swapping a valid visible model out for a fallback box. If the replacement entry only resolved to a fallback shell and the current visible tile still has a real model, the renderer disposes the failed replacement and leaves the existing model on screen.
+
 ## Cached Successful Detail
 
 `lastSuccessfulVisibleTileDetailLevels` records the last visible detail level that produced a real model for each tile key.
@@ -71,6 +73,7 @@ The current implementation already covers these `docs/todo/tile-lod.md` items:
 - Use a box only when no cached or lower LOD can render.
 - Keep the old model visible while a new LOD is being built.
 - Swap LODs only after the replacement model is ready.
+- Never replace a valid model with a box during upgrades.
 - Cache the last successful LOD for each visible tile.
 - Track why each requested LOD failed to build.
 - Prefer cached LODs over new high-detail generation.

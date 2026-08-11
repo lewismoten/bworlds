@@ -178,7 +178,7 @@ This is also partially due to performance issues which can be seen here, and add
 
 ## Visual Transition Quality
 
-- [ ] Never replace a valid model with a box during upgrades.
+- [x] Never replace a valid model with a box during upgrades.
 - [ ] Keep silhouettes similar between neighboring LODs.
 - [ ] Preserve major landmarks at every LOD.
 - [ ] Introduce small details only at higher LODs.
