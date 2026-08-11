@@ -20,6 +20,7 @@ import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
 import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { normalizeMusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
 import { downloadMusicDebugExportBundle } from './music-debug-export-bundle.ts';
+import { confirmMusicDebugExportPreflight } from './music-debug-export-preflight.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import { saveRejectedMusicDebugReport } from './music-debug-rejection-report-storage.ts';
 import {
@@ -748,6 +749,13 @@ downloadButton?.addEventListener('click', () => {
   instrumentPreviewPlayer.stop();
   playbackController.stop();
   const snapshot = pageState.refreshNow();
+  if (
+    !confirmMusicDebugExportPreflight(snapshot, {
+      confirm: globalThis.confirm?.bind(globalThis),
+    })
+  ) {
+    return;
+  }
   const startedAtMs = performance.now();
   downloadMusicDebugMidiFile(snapshot, undefined, {
     variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
@@ -761,6 +769,13 @@ downloadBundleButton?.addEventListener('click', () => {
   instrumentPreviewPlayer.stop();
   playbackController.stop();
   const snapshot = pageState.refreshNow();
+  if (
+    !confirmMusicDebugExportPreflight(snapshot, {
+      confirm: globalThis.confirm?.bind(globalThis),
+    })
+  ) {
+    return;
+  }
   const metrics = downloadMusicDebugExportBundle(snapshot, undefined, {
     variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
   });
