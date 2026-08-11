@@ -55,6 +55,9 @@ Current behavior:
 - Render churn stats now count successful lower-LOD visible recoveries
   separately from ordinary LOD replacements, so recovery activity can be
   measured directly in the debug stats.
+- Render churn stats now also count fallback-box appearances directly, so hard
+  recovery failures are measurable without scanning the recent debug-event
+  stream by hand.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

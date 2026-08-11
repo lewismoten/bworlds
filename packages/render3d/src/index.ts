@@ -324,6 +324,7 @@ type Render3DController = {
     lodChecksPerSecond: number;
     lodReplacementsPerSecond: number;
     lowerLodRecoveriesPerSecond: number;
+    fallbackBoxesPerSecond: number;
     object3dCount: number;
     visibleObjectCount: number;
     invisibleObjectCount: number;
@@ -1463,6 +1464,7 @@ type RenderChurnMetrics = {
   lodChecks: number[];
   lodReplacements: number[];
   lowerLodRecoveries: number[];
+  fallbackBoxes: number[];
   pendingFlushCounts: RecentCountSample[];
   tileBuildDurations: RecentDurationSample[];
   tilePluginBuildDurations: RecentLabeledDurationSample[];
@@ -1684,6 +1686,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     lodChecks: [] as number[],
     lodReplacements: [] as number[],
     lowerLodRecoveries: [] as number[],
+    fallbackBoxes: [] as number[],
     pendingFlushCounts: [] as RecentCountSample[],
     tileBuildDurations: [] as RecentDurationSample[],
     tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
@@ -2169,6 +2172,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           usedTilePluginModelFactory
         ),
       });
+      recordRecentMetric(renderChurnMetrics.fallbackBoxes, pluginBuildStartMs);
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
       const wallMesh = new THREE.Mesh(
         getSharedBoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
@@ -2872,6 +2876,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
       lodReplacementsPerSecond: renderChurnStats.lodReplacementsPerSecond,
       lowerLodRecoveriesPerSecond: renderChurnStats.lowerLodRecoveriesPerSecond,
+      fallbackBoxesPerSecond: renderChurnStats.fallbackBoxesPerSecond,
       object3dCount: sceneResourceStats.object3dCount,
       visibleObjectCount: sceneResourceStats.visibleObjectCount,
       invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
@@ -5298,6 +5303,7 @@ export function getRenderChurnStats(
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
   lowerLodRecoveriesPerSecond: number;
+  fallbackBoxesPerSecond: number;
 } {
   return {
     tileNodeBuildsPerSecond: countRecentMetricEvents(
@@ -5327,6 +5333,11 @@ export function getRenderChurnStats(
     ),
     lowerLodRecoveriesPerSecond: countRecentMetricEvents(
       metrics.lowerLodRecoveries,
+      nowMs,
+      windowMs
+    ),
+    fallbackBoxesPerSecond: countRecentMetricEvents(
+      metrics.fallbackBoxes,
       nowMs,
       windowMs
     ),
