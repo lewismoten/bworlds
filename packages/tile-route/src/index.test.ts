@@ -1083,6 +1083,26 @@ describe('tile route', () => {
     expect(pileInstances[0]?.matrices).toHaveLength(4);
   });
 
+  it('instances repeated paddle-boat side wheels on non-route docks', () => {
+    const state = createDockModelState();
+    const model = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 2,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    const paddleWheelInstances = collectTaggedInstancedMeshes(
+      model,
+      'dockInstancedPart'
+    ).filter((mesh) => mesh.userData?.dockInstancedPart === 'paddle-wheel');
+
+    expect(paddleWheelInstances).toHaveLength(1);
+    expect(paddleWheelInstances[0]?.count).toBe(2);
+    expect(paddleWheelInstances[0]?.matrices).toHaveLength(2);
+  });
+
   it('reuses shared bridge materials across repeated bridge model builds', () => {
     const state = createForestLogBridgeState();
     const first = bridgeTile?.create3DModel?.({

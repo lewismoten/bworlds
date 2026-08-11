@@ -52,18 +52,20 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       repeated full-detail building bodies, roofs, doors, windows, banner
       poles, and banner crossbars into shared `InstancedMesh` sets, and dock
       tiles now collapse their repeated rails, support piles, and dock route
-      sign stop placards into shared `InstancedMesh` sets, and forest log
-      bridges now collapse their repeated support posts into one shared
-      `InstancedMesh`, and standard bridge railings and covered bridge spans
-      now collapse their repeated rails and posts into shared `InstancedMesh`
-      sets, and stone bridges now collapse their repeated parapets into one
-      shared `InstancedMesh`, and drawbridges now collapse their repeated
-      tower frames into one shared `InstancedMesh`, and low-detail town tiles
-      now collapse their repeated distant building bodies into one shared
-      `InstancedMesh`, and full-detail sign tiles now collapse their repeated
-      placard support bars and trim edge caps into shared `InstancedMesh`
-      sets, which removes small clusters of redundant static child nodes from
-      each visible landmark or track tile.
+      sign stop placards into shared `InstancedMesh` sets, and dock paddle
+      boats now collapse their repeated side wheels into one shared
+      `InstancedMesh`, and forest log bridges now collapse their repeated
+      support posts into one shared `InstancedMesh`, and standard bridge
+      railings and covered bridge spans now collapse their repeated rails and
+      posts into shared `InstancedMesh` sets, and stone bridges now collapse
+      their repeated parapets into one shared `InstancedMesh`, and
+      drawbridges now collapse their repeated tower frames into one shared
+      `InstancedMesh`, and low-detail town tiles now collapse their repeated
+      distant building bodies into one shared `InstancedMesh`, and full-
+      detail sign tiles now collapse their repeated placard support bars and
+      trim edge caps into shared `InstancedMesh` sets, which removes small
+      clusters of redundant static child nodes from each visible landmark or
+      track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
@@ -91,17 +93,19 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       crossbars instead of emitting one mesh per building part, window pane,
       or banner hardware piece, and dock tiles now instance their repeated
       rails, support piles, and dock route sign stop placards instead of
-      emitting one mesh per part, and forest log bridges now instance their
-      repeated support posts instead of emitting one mesh per post, and
-      standard bridges now instance their repeated railing rails and covered-
-      span support posts instead of emitting one mesh per rail or post, and
-      stone bridges now instance their repeated parapets instead of emitting
-      one mesh per wall, and drawbridges now instance their repeated tower
-      frames instead of emitting one mesh per frame, and low-detail town
-      tiles now instance their repeated building bodies instead of emitting
-      one mesh per distant building body, and full-detail sign tiles now
-      instance their repeated placard support bars and trim edge caps instead
-      of emitting one mesh per placard hardware piece.
+      emitting one mesh per part, and dock paddle boats now instance their
+      repeated side wheels instead of emitting one mesh per wheel, and forest
+      log bridges now instance their repeated support posts instead of
+      emitting one mesh per post, and standard bridges now instance their
+      repeated railing rails and covered-span support posts instead of
+      emitting one mesh per rail or post, and stone bridges now instance
+      their repeated parapets instead of emitting one mesh per wall, and
+      drawbridges now instance their repeated tower frames instead of
+      emitting one mesh per frame, and low-detail town tiles now instance
+      their repeated building bodies instead of emitting one mesh per distant
+      building body, and full-detail sign tiles now instance their repeated
+      placard support bars and trim edge caps instead of emitting one mesh
+      per placard hardware piece.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

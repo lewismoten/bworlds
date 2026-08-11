@@ -2031,20 +2031,35 @@ function addDockPaddleBoatDetails(
   hullLength: number,
   hullWidth: number
 ) {
-  for (const lateral of [-1, 1] as const) {
-    const wheel = new three.Mesh(
-      new three.CylinderGeometry(0.09, 0.09, 0.04, 10),
-      style.trimMaterial
-    );
-    wheel.rotation.x = Math.PI * 0.5;
-    if (alongX) {
-      wheel.position.set(0, -0.03, lateral * (hullWidth * 0.65));
-    } else {
-      wheel.position.set(lateral * (hullWidth * 0.65), -0.03, 0);
-      wheel.rotation.z = Math.PI * 0.5;
-    }
-    group.add(wheel);
+  const wheelInstances = new three.InstancedMesh(
+    new three.CylinderGeometry(0.09, 0.09, 0.04, 10),
+    style.trimMaterial,
+    2
+  );
+  wheelInstances.userData = {
+    ...(wheelInstances.userData ?? {}),
+    dockInstancedPart: 'paddle-wheel',
+  };
+  wheelInstances.rotation.x = Math.PI * 0.5;
+  if (!alongX) {
+    wheelInstances.rotation.z = Math.PI * 0.5;
   }
+  const wheelMatrixScratch = new three.Matrix4();
+  for (const [index, lateral] of [-1, 1].entries()) {
+    wheelInstances.setMatrixAt(
+      index,
+      writeRouteInstancedScalePositionMatrix(
+        wheelMatrixScratch,
+        alongX ? 0 : lateral * (hullWidth * 0.65),
+        -0.03,
+        alongX ? lateral * (hullWidth * 0.65) : 0,
+        1,
+        1,
+        1
+      )
+    );
+  }
+  group.add(wheelInstances);
 
   const cabin = new three.Mesh(
     new three.BoxGeometry(
