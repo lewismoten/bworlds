@@ -448,6 +448,58 @@ describe('procedural music song', () => {
     }
   });
 
+  it('keeps a stable recurring bass pulse when the generated phrase repeats', () => {
+    const options = {
+      nowMs: 1_000,
+      tileKind: 'forest' as const,
+      contextType: 'overworld' as const,
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    };
+    const durationMs = resolveProceduralMusicSongDurationMs(options);
+    const blueprint = resolveProceduralMusicBlueprint(options);
+    const sections = buildProceduralMusicSongSections(blueprint, durationMs);
+    const totalMeasures = sections.reduce(
+      (sum, section) => sum + section.measureCount,
+      0
+    );
+    const phraseDurationMs = Math.round(
+      (durationMs / totalMeasures) * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT
+    );
+    const phraseNotes = collectProceduralMusicPhraseNotes(
+      options,
+      phraseDurationMs
+    );
+    const repeatedNotes = repeatProceduralMusicPhraseNotes(phraseNotes, {
+      phraseStartMs: options.nowMs,
+      phraseDurationMs,
+      songStartMs: options.nowMs,
+      songDurationMs: phraseDurationMs * 2,
+    });
+    const firstCycle = collectMeasurePulseInWindow(
+      repeatedNotes,
+      'bass',
+      options.nowMs,
+      phraseDurationMs,
+      8
+    );
+    const secondCycle = collectMeasurePulseInWindow(
+      repeatedNotes,
+      'bass',
+      options.nowMs + phraseDurationMs,
+      phraseDurationMs,
+      8
+    );
+
+    expect(firstCycle).toHaveLength(8);
+    expect(secondCycle).toEqual(firstCycle);
+    expect(
+      firstCycle.filter((measure) => measure.attackCount > 0).length
+    ).toBeGreaterThanOrEqual(6);
+  });
+
   it('builds an eight-measure phrase before repeating it across the full song', () => {
     const options = {
       nowMs: 1_000,
@@ -1295,6 +1347,46 @@ function countRoleNotesByMeasure(
           note.startMs >= sectionStartMs + measureIndex * measureDurationMs &&
           note.startMs < sectionStartMs + (measureIndex + 1) * measureDurationMs
       ).length
+  );
+}
+
+function collectMeasurePulseInWindow(
+  notes: readonly ProceduralMusicNote[],
+  role: 'lead' | 'harmony' | 'bass' | 'percussion',
+  windowStartMs: number,
+  windowDurationMs: number,
+  measureCount: number
+): Array<{ attackCount: number; firstAttackOffsetRatio: number | null }> {
+  const measureDurationMs = windowDurationMs / Math.max(1, measureCount);
+
+  return Array.from(
+    { length: Math.max(0, measureCount) },
+    (_, measureIndex) => {
+      const measureStartMs = windowStartMs + measureIndex * measureDurationMs;
+      const measureEndMs = measureStartMs + measureDurationMs;
+      const measureNotes = notes
+        .filter(
+          (note) =>
+            note.role === role &&
+            note.startMs >= measureStartMs &&
+            note.startMs < measureEndMs
+        )
+        .sort((left, right) => left.startMs - right.startMs);
+      const firstAttack = measureNotes[0];
+
+      return {
+        attackCount: measureNotes.length,
+        firstAttackOffsetRatio:
+          firstAttack === undefined
+            ? null
+            : Number(
+                (
+                  (firstAttack.startMs - measureStartMs) /
+                  Math.max(1, measureDurationMs)
+                ).toFixed(3)
+              ),
+      };
+    }
   );
 }
 
