@@ -1,5 +1,7 @@
 # Tile LOD and Consolidation Optimization
 
+This is also partially due to performance issues which can be seen here, and addressed while working on LOD optimization: [Performance Snapshot Follow-Up](performance-snapshot-follow-up.md)
+
 ## LOD Recovery
 
 - [ ] Prefer the last valid cached LOD before using a fallback box.
