@@ -2,7 +2,7 @@
 
 Always run tests to make sure all tests pass
 
-- [ ] When the page resizes, the rendered game view just becomes a solid color that flashes other colors when moving
+- [x] When the page resizes, the rendered game view just becomes a solid color that flashes other colors when moving
 - [x] Complete client-error-snapshot.md
 - [ ] Complete [Performance Snapshot Follow-Up](performance-snapshot-follow-up.md)
 - [ ] Complete audio-priority2.md

@@ -238,6 +238,7 @@ import {
 } from './ui-signatures.ts';
 import { annotateTextViewportGridWithVisibleTileLods } from './text-viewport-lod.ts';
 import { createViewportHudView } from './status-view.ts';
+import { getViewportRenderSize } from './viewport-resize.ts';
 import {
   loadPersistedPageScrollY,
   restorePersistedPageScrollY,
@@ -1693,9 +1694,9 @@ function updateStatus(
 
 function resizeCanvas(): void {
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
-  const rect = viewport2d.getBoundingClientRect();
-  viewport2d.width = Math.floor(rect.width * ratio);
-  viewport2d.height = Math.floor(rect.height * ratio);
+  const viewportSize = getViewportRenderSize(viewportStage, viewport2d);
+  viewport2d.width = Math.floor(viewportSize.width * ratio);
+  viewport2d.height = Math.floor(viewportSize.height * ratio);
   if (compassDialCanvas) {
     const compassSize = Math.floor(320 * ratio);
     compassDialCanvas.width = compassSize;
@@ -1703,7 +1704,7 @@ function resizeCanvas(): void {
     compassDialCanvas.style.width = '100%';
     compassDialCanvas.style.maxWidth = '320px';
   }
-  renderer3d.resize(rect.width, rect.height, ratio);
+  renderer3d.resize(viewportSize.width, viewportSize.height, ratio);
   celestialPreview.resize();
   solarSystemPreview.resize();
 }
@@ -2304,7 +2305,8 @@ function collectCurrentDebugSnapshot(
     options.recordDiagnostics &&
     previousSnapshot &&
     (previousSnapshot.targetFps !== renderBudgetState.targetFps ||
-      previousSnapshot.visibilityRadius !== renderBudgetState.visibilityRadius ||
+      previousSnapshot.visibilityRadius !==
+        renderBudgetState.visibilityRadius ||
       previousSnapshot.renderQualityLevel !== renderQualityLevel)
       ? {
           nowMs,
@@ -2440,7 +2442,8 @@ function collectCurrentDebugSnapshot(
     meshSummary: rendererStats.meshSummary,
     instancedMeshTopPluginLabel: rendererStats.instancedMeshTopPluginLabel,
     instancedMeshSummary: rendererStats.instancedMeshSummary,
-    renderedInstanceTopPluginLabel: rendererStats.renderedInstanceTopPluginLabel,
+    renderedInstanceTopPluginLabel:
+      rendererStats.renderedInstanceTopPluginLabel,
     renderedInstanceSummary: rendererStats.renderedInstanceSummary,
     instancingWarningTopPluginLabel:
       rendererStats.instancingWarningTopPluginLabel,
