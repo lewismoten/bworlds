@@ -309,6 +309,55 @@ describe('tile cave', () => {
     }
   });
 
+  it('instances repeated cave obstacle boulders as one shared set', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+
+    const three = createFakeThree() as never;
+    const obstacleTile = plugin.tiles?.find(
+      (tile) => tile.kind === 'cave-obstacle'
+    );
+
+    try {
+      const model = obstacleTile?.create3DModel?.({
+        tile: { kind: 'cave-obstacle' },
+        three,
+        state: {} as never,
+        tileX: 2,
+        tileY: 3,
+      }) as
+        | {
+            children?: Array<{
+              userData?: Record<string, unknown>;
+              count?: number;
+              matrices?: Array<{
+                scale: { x: number; y: number; z: number };
+              }>;
+            }>;
+          }
+        | null
+        | undefined;
+
+      const boulderInstances = model?.children?.filter(
+        (child) => child.userData?.caveInstancedPart === 'obstacle-boulder'
+      );
+
+      expect(boulderInstances).toHaveLength(1);
+      expect((boulderInstances?.[0]?.count ?? 0) >= 2).toBe(true);
+      expect(boulderInstances?.[0]?.matrices?.length).toBe(
+        boulderInstances?.[0]?.count
+      );
+      expect(
+        boulderInstances?.[0]?.matrices?.some((matrix) => matrix.scale.x > 1)
+      ).toBe(true);
+      expect(
+        boulderInstances?.[0]?.matrices?.some((matrix) => matrix.scale.y > 1)
+      ).toBe(true);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
+
   it('builds a lightweight low-detail cave mouth silhouette for distant rendering', () => {
     const previousDocument = globalThis.document;
     globalThis.document = createFakeDocument() as never;

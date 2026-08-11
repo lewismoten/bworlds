@@ -869,24 +869,36 @@ function createCaveObstacleGroup(
   const group = new three.Group();
   const count =
     2 + Math.floor(hash2D(CAVE_OBSTACLE_COUNT_SEED, tileX, tileY) * 3);
+  const boulderInstances = new three.InstancedMesh(
+    new three.SphereGeometry(0.16, 7, 6),
+    mountainMaterial,
+    count
+  );
+  const boulderMatrix = new three.Matrix4();
+  boulderInstances.userData = {
+    caveInstancedPart: 'obstacle-boulder',
+  };
 
   for (let index = 0; index < count; index += 1) {
-    const boulder = new three.Mesh(
-      new three.SphereGeometry(0.16, 7, 6),
-      mountainMaterial
-    );
     const scale =
       0.75 + hash2D(CAVE_OBSTACLE_SCALE_SEED, tileX + index, tileY) * 0.5;
-    boulder.position.set(
-      tileX +
-        (hash2D(CAVE_OBSTACLE_X_SEED, tileX * 23 + index, tileY) - 0.5) * 0.34,
-      0.12 + index * 0.04,
-      tileY +
-        (hash2D(CAVE_OBSTACLE_Z_SEED, tileX, tileY * 29 + index) - 0.5) * 0.3
+    boulderInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        boulderMatrix,
+        tileX +
+          (hash2D(CAVE_OBSTACLE_X_SEED, tileX * 23 + index, tileY) - 0.5) *
+            0.34,
+        0.12 + index * 0.04,
+        tileY +
+          (hash2D(CAVE_OBSTACLE_Z_SEED, tileX, tileY * 29 + index) - 0.5) * 0.3,
+        scale,
+        0.7 + scale * 0.35,
+        scale
+      )
     );
-    boulder.scale.set(scale, 0.7 + scale * 0.35, scale);
-    group.add(boulder);
   }
+  group.add(boulderInstances);
 
   return group;
 }

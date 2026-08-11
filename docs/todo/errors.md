@@ -28,25 +28,27 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       and `tile-rail` now collapses its two repeated rails and four repeated
       sleepers into instanced sets, and full-detail cave mouths now collapse
       their repeated entrance boulders into one `InstancedMesh`, cave mushroom
-      their repeated entrance boulders into one `InstancedMesh`, cave mushroom
       tiles now collapse their repeated stems and caps into two `InstancedMesh`
       nodes, cave dripstone tiles now collapse their repeated floor spires into
-      one `InstancedMesh`, and full-detail dungeons now collapse their repeated
-      tower bodies, caps, and gate posts into instanced sets, and `tile-ruins`
-      now collapses its repeated rubble fragments into one `InstancedMesh`,
-      tall ships now collapse their repeated masts, yards, and sails into
-      instanced sets, and `tile-lighthouse` now collapses its repeated
-      lantern-room frame posts, balcony rail posts, four lantern-room panes,
-      and four wall-glow boxes into instanced sets, and full-detail forest
-      stone-ring landmarks now collapse their repeated stones into one
-      `InstancedMesh`, which removes small clusters of redundant static child
-      nodes from each visible landmark or track tile.
+      one `InstancedMesh`, cave obstacle tiles now collapse their repeated
+      fallen-rock boulders into one `InstancedMesh`, and full-detail dungeons
+      now collapse their repeated tower bodies, caps, and gate posts into
+      instanced sets, and `tile-ruins` now collapses its repeated rubble
+      fragments into one `InstancedMesh`, tall ships now collapse their
+      repeated masts, yards, and sails into instanced sets, and
+      `tile-lighthouse` now collapses its repeated lantern-room frame posts,
+      balcony rail posts, four lantern-room panes, and four wall-glow boxes
+      into instanced sets, and full-detail forest stone-ring landmarks now
+      collapse their repeated stones into one `InstancedMesh`, which removes
+      small clusters of redundant static child nodes from each visible landmark
+      or track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
       stones and cart wheels, rail tiles now instance their repeated rails and
       sleepers, cave mushroom tiles now instance their repeated stems and caps,
-      cave dripstone tiles now instance their repeated floor spires, and
+      cave dripstone tiles now instance their repeated floor spires, cave
+      obstacle tiles now instance their repeated fallen-rock boulders, and
       full-detail cave mouths now instance their repeated entrance boulders,
       and full-detail dungeons now instance their repeated tower bodies, caps,
       and gate posts instead of emitting one mesh per repeated prop, tall

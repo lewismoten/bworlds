@@ -1,8 +1,8 @@
 # Cave Rendering
 
-The cave tile now instances its repeated mushroom props, dripstone spires, and
-full-detail entrance boulders instead of emitting one mesh per repeated
-decoration.
+The cave tile now instances its repeated mushroom props, dripstone spires,
+fallen-rock obstacle boulders, and full-detail entrance boulders instead of
+emitting one mesh per repeated decoration.
 
 Current layout:
 
@@ -11,6 +11,9 @@ Current layout:
   position stored in matrices for the stem and cap sets.
 - The repeated cave dripstone floor spires now share one `ConeGeometry`, one
   material, and one `InstancedMesh`, with per-instance height and position
+  stored in matrices.
+- The repeated cave obstacle boulders now share one `SphereGeometry`, one
+  material, and one `InstancedMesh`, with per-instance scale and position
   stored in matrices.
 - The repeated entrance boulders now share one `SphereGeometry`, one material,
   and one `InstancedMesh`, with per-instance scale and position stored in
