@@ -1,4 +1,4 @@
-import { createBoundedCache, createCoordinateCache } from '@bworlds/cache-support';
+import { createBoundedCache, createCoordinateCache, type CoordinateCache } from '@bworlds/cache-support';
 import { clamp } from '@bworlds/core';
 import {
   appendHashSeedLabel,
@@ -37,7 +37,7 @@ export type RailTrainPlacement = {
 type RailRegionSnapshot = {
   stations: StationAnchorLike[];
   connections: RailConnection[];
-  tileMap: Map<string, TileLike>;
+  tileMap: CoordinateCache<TileLike>;
 };
 
 const STATION_CELL_SIZE = 24;
@@ -83,7 +83,7 @@ export function resolveRailTile({
       regionX,
       regionY,
       sampleTerrainSignals,
-    }).tileMap.get(`${x},${y}`) ?? null
+    }).tileMap.get(x, y) ?? null
   );
 }
 
@@ -95,7 +95,8 @@ export function collectNearbyStationAnchors(
 ): StationAnchorLike[] {
   const centerCellX = Math.floor(x / STATION_CELL_SIZE);
   const centerCellY = Math.floor(y / STATION_CELL_SIZE);
-  const anchors = new Map<string, StationAnchorLike>();
+  const seenAnchors = createCoordinateCache<boolean>();
+  const anchors: StationAnchorLike[] = [];
 
   for (
     let offsetY = -STATION_SCAN_RADIUS_CELLS;
@@ -119,12 +120,16 @@ export function collectNearbyStationAnchors(
         if (anchor.type !== 'station' || typeof anchor.name !== 'string') {
           continue;
         }
-        anchors.set(`${anchor.x},${anchor.y}`, anchor as StationAnchorLike);
+        if (seenAnchors.has(anchor.x, anchor.y)) {
+          continue;
+        }
+        seenAnchors.set(anchor.x, anchor.y, true);
+        anchors.push(anchor as StationAnchorLike);
       }
     }
   }
 
-  return [...anchors.values()].sort(compareStationAnchors);
+  return anchors.sort(compareStationAnchors);
 }
 
 export function buildRailConnections({
@@ -137,15 +142,14 @@ export function buildRailConnections({
   sampleTerrainSignals: SampleTerrainSignalsLike;
 }): RailConnection[] {
   const connections: RailConnection[] = [];
-  const degrees = new Map<string, number>();
+  const degrees = createCoordinateCache<number>();
   const claimed = new Set<string>();
   const sortedStations = [...stationAnchors].sort(compareStationAnchors);
   const cachedSampleTerrainSignals =
     createCachedRailTerrainSignalSampler(sampleTerrainSignals);
 
   for (const station of sortedStations) {
-    const stationKey = `${station.x},${station.y}`;
-    const used = degrees.get(stationKey) ?? 0;
+    const used = degrees.get(station.x, station.y) ?? 0;
     if (used >= MAX_CONNECTIONS_PER_STATION) {
       continue;
     }
@@ -172,15 +176,22 @@ export function buildRailConnections({
     );
 
     for (const { other } of candidates) {
-      const otherKey = `${other.x},${other.y}`;
-      const connectionKey = [stationKey, otherKey].sort().join('|');
+      const connectionKey = [
+        `${station.x},${station.y}`,
+        `${other.x},${other.y}`,
+      ]
+        .sort()
+        .join('|');
       if (claimed.has(connectionKey)) {
         continue;
       }
-      if ((degrees.get(stationKey) ?? 0) >= MAX_CONNECTIONS_PER_STATION) {
+      if (
+        (degrees.get(station.x, station.y) ?? 0) >=
+        MAX_CONNECTIONS_PER_STATION
+      ) {
         break;
       }
-      if ((degrees.get(otherKey) ?? 0) >= MAX_CONNECTIONS_PER_STATION) {
+      if ((degrees.get(other.x, other.y) ?? 0) >= MAX_CONNECTIONS_PER_STATION) {
         continue;
       }
 
@@ -193,8 +204,8 @@ export function buildRailConnections({
 
       connections.push({ from: station, to: other, points });
       claimed.add(connectionKey);
-      degrees.set(stationKey, (degrees.get(stationKey) ?? 0) + 1);
-      degrees.set(otherKey, (degrees.get(otherKey) ?? 0) + 1);
+      degrees.set(station.x, station.y, (degrees.get(station.x, station.y) ?? 0) + 1);
+      degrees.set(other.x, other.y, (degrees.get(other.x, other.y) ?? 0) + 1);
     }
   }
 
@@ -444,7 +455,7 @@ function buildRailRegionSnapshot({
     stationAnchors: stations,
     sampleTerrainSignals,
   });
-  const tileMap = new Map<string, TileLike>();
+  const tileMap = createCoordinateCache<TileLike>();
 
   for (const connection of connections) {
     for (let index = 1; index < connection.points.length - 1; index += 1) {
@@ -458,7 +469,7 @@ function buildRailRegionSnapshot({
           segmentIndex: index,
         },
       };
-      tileMap.set(`${point.x},${point.y}`, tile);
+      tileMap.set(point.x, point.y, tile);
     }
   }
 

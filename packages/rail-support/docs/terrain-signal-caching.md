@@ -12,6 +12,9 @@ Current behavior:
 - The memoized terrain reads now live in a numeric coordinate cache rather than
   a temporary composite-string map, which avoids allocating `${x},${y}` keys in
   the hot path.
+- The same coordinate-cache approach now also backs per-pass station dedupe,
+  per-station degree tracking, and regional rail tile lookups so those
+  coordinate-only maps stop churning composite string keys too.
 - The cache stays local to one connection-build pass, so it preserves the
   existing API and determinism while trimming repeated terrain lookups in the
   rail overlay generation path.
