@@ -33,6 +33,10 @@ Related commands:
   [packages/dock-route-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/dock-route-support/src/index.long.test.ts:1),
   [packages/town-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/town-support/src/index.long.test.ts:1),
   and [packages/tile-sign/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-sign/src/index.long.test.ts:1).
+- `npm run test:fast`
+  Runs the same supervised fast suite through an explicit named command. Use
+  this when you want to call out the intended suite directly in local or CI
+  automation while keeping `npm test -- <file>` argument forwarding unchanged.
 - `npm run test:all`
   Runs the supervised full suite without fast-suite exclusions.
 - `npm run test:long`
@@ -50,6 +54,14 @@ Related commands:
   `music-debug-snapshot-generation-*.long.test.ts`,
   `music-debug-markup.long.test.ts`, and
   `music-debug-song-playback.long.test.ts` suites.
+- `npm run test:watch`
+  Runs Vitest watch mode against the fast suite by default so iterative local
+  runs do not automatically pull the long audio and world sweeps back in.
+- `npm run test:watch:all`
+  Runs watch mode against the whole suite when broad local coverage is
+  intentional.
+- `npm run test:watch:long`
+  Runs watch mode only for the long-suite bucket.
 - `npm run test -- apps/web/src/example.test.ts`
   Still forwards file arguments through to Vitest and bypasses fast/long suite filtering.
 - `npm run test:hang-debug -- <files...>`

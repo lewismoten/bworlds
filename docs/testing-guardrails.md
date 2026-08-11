@@ -23,6 +23,11 @@ dedicated long-suite files that are only included by `npm run test:long` and
 Keep the normal `*.test.ts` files for behavior checks that should run during
 every `npm run check`.
 
+Default watch mode should follow the same rule. `npm run test:watch` now pins
+`BWORLDS_VITEST_SUITE_MODE=fast` so day-to-day iterative runs stay on the short
+path, while `npm run test:watch:all` and `npm run test:watch:long` opt back
+into the broader buckets explicitly.
+
 When a file grows into a broad integration sweep that explores many seeds,
 tiles, routes, or song variants in one pass, prefer renaming it to
 `*.long.test.ts` so the fast suite excludes it through the glob-based long-path
