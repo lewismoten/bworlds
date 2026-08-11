@@ -29,6 +29,7 @@ import {
 } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   RenderBudgetQualityLevel,
   RuntimePlugin,
   ThreeHostLike,
@@ -203,181 +204,13 @@ export function createRuinsTilePlugin(): RuntimePlugin {
             return true;
           }
         ),
-        create3DModel({
-          three,
-          tileX,
-          tileY,
-          renderBudget,
-        }: Create3DModelContext) {
-          const style = getRuinsStyle(
-            three,
-            tileX,
-            tileY,
-            renderBudget?.quality
+        create3DModel(context: Create3DModelContext) {
+          return runRuinsModelBuildToCompletion(
+            createRuinsModelProgressive(context)
           );
-          const group = new three.Group();
-          group.position.set(tileX, 0, tileY);
-
-          const base = new three.Mesh(
-            new three.BoxGeometry(0.82, 0.1, 0.82),
-            style.stoneMaterial
-          );
-          base.position.y = 0.05;
-          group.add(base);
-
-          const columnCount =
-            3 + Math.floor(hash2D(RUINS_COLUMNS_SEED, tileX, tileY) * 3);
-          const columnInstances = new three.InstancedMesh(
-            new three.BoxGeometry(1, 1, 1),
-            style.stoneMaterial,
-            columnCount
-          );
-          columnInstances.userData = {
-            ...columnInstances.userData,
-            ruinsInstancedPart: 'column',
-          };
-          const capPositions: Array<{ x: number; y: number; z: number }> = [];
-          const columnMatrixScratch = new three.Matrix4();
-          for (let index = 0; index < columnCount; index += 1) {
-            const angle = (index / columnCount) * Math.PI * 2;
-            const radius =
-              0.18 +
-              hash2D(RUINS_COLUMN_RADIUS_SEED, tileX + index, tileY) * 0.16;
-            const height =
-              0.28 +
-              hash2D(RUINS_COLUMN_HEIGHT_SEED, tileX, tileY + index) * 0.36;
-            const columnX = Math.cos(angle) * radius;
-            const columnY = 0.1 + height * 0.5;
-            const columnZ = Math.sin(angle) * radius;
-            columnInstances.setMatrixAt(
-              index,
-              writeInstancedScalePositionMatrix(
-                columnMatrixScratch,
-                tileX + columnX,
-                columnY,
-                tileY + columnZ,
-                0.1,
-                height,
-                0.1
-              )
-            );
-
-            if (height > 0.44) {
-              capPositions.push({
-                x: columnX,
-                y: columnY + height * 0.5 - 0.02,
-                z: columnZ,
-              });
-            }
-          }
-          group.add(columnInstances);
-
-          if (capPositions.length > 0) {
-            const capInstances = new three.InstancedMesh(
-              new three.BoxGeometry(1, 1, 1),
-              style.accentMaterial,
-              capPositions.length
-            );
-            capInstances.userData = {
-              ...capInstances.userData,
-              ruinsInstancedPart: 'column-cap',
-            };
-            const capMatrixScratch = new three.Matrix4();
-            for (let index = 0; index < capPositions.length; index += 1) {
-              const capPosition = capPositions[index];
-              capInstances.setMatrixAt(
-                index,
-                writeInstancedScalePositionMatrix(
-                  capMatrixScratch,
-                  tileX + capPosition.x,
-                  capPosition.y,
-                  tileY + capPosition.z,
-                  0.16,
-                  0.06,
-                  0.16
-                )
-              );
-            }
-            group.add(capInstances);
-          }
-
-          if (hash2D(RUINS_ARCH_SEED, tileX, tileY) > 0.28) {
-            const arch = new three.Mesh(
-              new three.BoxGeometry(0.46, 0.12, 0.14),
-              style.accentMaterial
-            );
-            arch.position.set(
-              (hash2D(RUINS_ARCH_X_SEED, tileX, tileY) - 0.5) * 0.16,
-              0.5 + hash2D(RUINS_ARCH_HEIGHT_SEED, tileX, tileY) * 0.12,
-              (hash2D(RUINS_ARCH_Z_SEED, tileX, tileY) - 0.5) * 0.16
-            );
-            arch.rotation.y =
-              hash2D(RUINS_ARCH_ROTATION_SEED, tileX, tileY) * Math.PI;
-            group.add(arch);
-          }
-
-          const rubbleCount =
-            4 + Math.floor(hash2D(RUINS_RUBBLE_COUNT_SEED, tileX, tileY) * 4);
-          const rubbleInstances = new three.InstancedMesh(
-            new three.BoxGeometry(1, 1, 1),
-            style.stoneMaterial,
-            rubbleCount
-          );
-          rubbleInstances.userData = {
-            ...rubbleInstances.userData,
-            ruinsInstancedPart: 'rubble-stone',
-          };
-          const rubbleMatrixScratch = new three.Matrix4();
-          for (let index = 0; index < rubbleCount; index += 1) {
-            rubbleInstances.setMatrixAt(
-              index,
-              writeInstancedScalePositionMatrix(
-                rubbleMatrixScratch,
-                tileX +
-                  (hash2D(RUINS_RUBBLE_X_SEED, tileX + index, tileY) - 0.5) *
-                    0.6,
-                0.11,
-                tileY +
-                  (hash2D(RUINS_RUBBLE_Z_SEED, tileX, tileY + index) - 0.5) *
-                    0.6,
-                0.08 +
-                  hash2D(RUINS_RUBBLE_WIDTH_SEED, tileX + index, tileY) * 0.08,
-                0.05 +
-                  hash2D(RUINS_RUBBLE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
-                0.08 +
-                  hash2D(RUINS_RUBBLE_DEPTH_SEED, tileX - index, tileY) * 0.08
-              )
-            );
-          }
-          group.add(rubbleInstances);
-
-          const glowCore = markPoiLightEmitter(
-            new three.Mesh(
-              getSharedSphereGeometry(three, 0.05, 8, 8),
-              style.glowMaterial
-            ),
-            {
-              kind: 'emissive-mesh',
-              dayIntensity: 0.01,
-              nightIntensity: 0.62,
-            }
-          );
-          glowCore.position.set(0, 0.24, 0);
-          group.add(glowCore);
-
-          const glowLight = markPoiLightEmitter(
-            new three.PointLight('#60a5fa', 0, 2.6, 1.9),
-            {
-              kind: 'point-light',
-              nightIntensity: 0.38,
-              visibleThreshold: 0.03,
-            }
-          );
-          glowLight.position.set(0, 0.22, 0);
-          glowLight.visible = false;
-          group.add(glowLight);
-
-          return group;
+        },
+        create3DModelProgressive(context: Create3DModelContext) {
+          return createRuinsModelProgressive(context);
         },
         sync3DModel({ model, cycle }) {
           if (!model || typeof model !== 'object') {
@@ -392,6 +225,195 @@ export function createRuinsTilePlugin(): RuntimePlugin {
       classifyRuinsTile
     ),
   ]);
+}
+
+function* createRuinsModelProgressive({
+  three,
+  tileX,
+  tileY,
+  renderBudget,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const style = getRuinsStyle(three, tileX, tileY, renderBudget?.quality);
+  const group = new three.Group();
+  group.position.set(tileX, 0, tileY);
+  const totalSteps = 3;
+
+  const base = new three.Mesh(
+    new three.BoxGeometry(0.82, 0.1, 0.82),
+    style.stoneMaterial
+  );
+  base.position.y = 0.05;
+  group.add(base);
+
+  const columnCount =
+    3 + Math.floor(hash2D(RUINS_COLUMNS_SEED, tileX, tileY) * 3);
+  const columnInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.stoneMaterial,
+    columnCount
+  );
+  columnInstances.userData = {
+    ...columnInstances.userData,
+    ruinsInstancedPart: 'column',
+  };
+  const capPositions: Array<{ x: number; y: number; z: number }> = [];
+  const columnMatrixScratch = new three.Matrix4();
+  for (let index = 0; index < columnCount; index += 1) {
+    const angle = (index / columnCount) * Math.PI * 2;
+    const radius =
+      0.18 + hash2D(RUINS_COLUMN_RADIUS_SEED, tileX + index, tileY) * 0.16;
+    const height =
+      0.28 + hash2D(RUINS_COLUMN_HEIGHT_SEED, tileX, tileY + index) * 0.36;
+    const columnX = Math.cos(angle) * radius;
+    const columnY = 0.1 + height * 0.5;
+    const columnZ = Math.sin(angle) * radius;
+    columnInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        columnMatrixScratch,
+        tileX + columnX,
+        columnY,
+        tileY + columnZ,
+        0.1,
+        height,
+        0.1
+      )
+    );
+
+    if (height > 0.44) {
+      capPositions.push({
+        x: columnX,
+        y: columnY + height * 0.5 - 0.02,
+        z: columnZ,
+      });
+    }
+  }
+  group.add(columnInstances);
+
+  if (capPositions.length > 0) {
+    const capInstances = new three.InstancedMesh(
+      new three.BoxGeometry(1, 1, 1),
+      style.accentMaterial,
+      capPositions.length
+    );
+    capInstances.userData = {
+      ...capInstances.userData,
+      ruinsInstancedPart: 'column-cap',
+    };
+    const capMatrixScratch = new three.Matrix4();
+    for (let index = 0; index < capPositions.length; index += 1) {
+      const capPosition = capPositions[index]!;
+      capInstances.setMatrixAt(
+        index,
+        writeInstancedScalePositionMatrix(
+          capMatrixScratch,
+          tileX + capPosition.x,
+          capPosition.y,
+          tileY + capPosition.z,
+          0.16,
+          0.06,
+          0.16
+        )
+      );
+    }
+    group.add(capInstances);
+  }
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'plinth-columns',
+  };
+
+  if (hash2D(RUINS_ARCH_SEED, tileX, tileY) > 0.28) {
+    const arch = new three.Mesh(
+      new three.BoxGeometry(0.46, 0.12, 0.14),
+      style.accentMaterial
+    );
+    arch.position.set(
+      (hash2D(RUINS_ARCH_X_SEED, tileX, tileY) - 0.5) * 0.16,
+      0.5 + hash2D(RUINS_ARCH_HEIGHT_SEED, tileX, tileY) * 0.12,
+      (hash2D(RUINS_ARCH_Z_SEED, tileX, tileY) - 0.5) * 0.16
+    );
+    arch.rotation.y = hash2D(RUINS_ARCH_ROTATION_SEED, tileX, tileY) * Math.PI;
+    group.add(arch);
+  }
+
+  const rubbleCount =
+    4 + Math.floor(hash2D(RUINS_RUBBLE_COUNT_SEED, tileX, tileY) * 4);
+  const rubbleInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.stoneMaterial,
+    rubbleCount
+  );
+  rubbleInstances.userData = {
+    ...rubbleInstances.userData,
+    ruinsInstancedPart: 'rubble-stone',
+  };
+  const rubbleMatrixScratch = new three.Matrix4();
+  for (let index = 0; index < rubbleCount; index += 1) {
+    rubbleInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        rubbleMatrixScratch,
+        tileX + (hash2D(RUINS_RUBBLE_X_SEED, tileX + index, tileY) - 0.5) * 0.6,
+        0.11,
+        tileY + (hash2D(RUINS_RUBBLE_Z_SEED, tileX, tileY + index) - 0.5) * 0.6,
+        0.08 + hash2D(RUINS_RUBBLE_WIDTH_SEED, tileX + index, tileY) * 0.08,
+        0.05 + hash2D(RUINS_RUBBLE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
+        0.08 + hash2D(RUINS_RUBBLE_DEPTH_SEED, tileX - index, tileY) * 0.08
+      )
+    );
+  }
+  group.add(rubbleInstances);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'arch-rubble',
+  };
+
+  const glowCore = markPoiLightEmitter(
+    new three.Mesh(
+      getSharedSphereGeometry(three, 0.05, 8, 8),
+      style.glowMaterial
+    ),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: 0.01,
+      nightIntensity: 0.62,
+    }
+  );
+  glowCore.position.set(0, 0.24, 0);
+  group.add(glowCore);
+
+  const glowLight = markPoiLightEmitter(
+    new three.PointLight('#60a5fa', 0, 2.6, 1.9),
+    {
+      kind: 'point-light',
+      nightIntensity: 0.38,
+      visibleThreshold: 0.03,
+    }
+  );
+  glowLight.position.set(0, 0.22, 0);
+  glowLight.visible = false;
+  group.add(glowLight);
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'glow',
+  };
+
+  return group;
+}
+
+function runRuinsModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function getRuinsStyle(

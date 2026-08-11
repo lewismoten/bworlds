@@ -1,6 +1,18 @@
 # Ruins Rendering
 
-The ruins tile now instances its repeated column ring and rubble fragments
+The ruins tile now exposes a progressive build path so the renderer can spread
+the heavier landmark mesh creation across multiple frames.
+
+Current progressive phases:
+
+- `plinth-columns`
+- `arch-rubble`
+- `glow`
+
+The synchronous `create3DModel()` path exhausts the same generator so the
+progressive and eager builds stay structurally aligned.
+
+The ruins tile also instances its repeated column ring and rubble fragments
 instead of emitting one mesh per repeated stone.
 
 Current layout:

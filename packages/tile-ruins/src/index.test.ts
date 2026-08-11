@@ -330,6 +330,84 @@ describe('tile ruins', () => {
     );
   });
 
+  it('builds the ruins progressively before returning the final model', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createRuinsState(),
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'plinth-columns',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'arch-rubble',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'glow',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous ruins build aligned with the progressive final model', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const state = createRuinsState();
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel as FakeGroup)).toEqual(
+      createModelSignature(syncModel)
+    );
+  });
+
   it('instances repeated rubble stones instead of emitting one standalone mesh per fragment', () => {
     const plugin = createRuinsTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
