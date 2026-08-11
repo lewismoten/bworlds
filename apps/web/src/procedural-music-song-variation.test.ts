@@ -71,6 +71,70 @@ describe('procedural music song variation', () => {
     expect(transformed?.durationMs).toBeGreaterThan(BASE_NOTE.durationMs);
   });
 
+  it('assigns deterministic lead rhythm identities to each named song section', () => {
+    const noteIndexInSection = 2;
+    const intro = transformSongSectionNote(
+      BASE_NOTE,
+      createSection('intro'),
+      noteIndexInSection,
+      0
+    );
+    const sectionA = transformSongSectionNote(
+      BASE_NOTE,
+      createSection('a'),
+      noteIndexInSection,
+      0
+    );
+    const sectionAPrime = transformSongSectionNote(
+      BASE_NOTE,
+      createSection('a-prime'),
+      noteIndexInSection,
+      0
+    );
+    const sectionB = transformSongSectionNote(
+      BASE_NOTE,
+      createSection('b'),
+      noteIndexInSection,
+      0
+    );
+    const variation = transformSongSectionNote(
+      BASE_NOTE,
+      createSection('variation'),
+      noteIndexInSection,
+      0
+    );
+    const sectionReturn = transformSongSectionNote(
+      BASE_NOTE,
+      createSection('return'),
+      noteIndexInSection,
+      0
+    );
+    const outro = transformSongSectionNote(
+      BASE_NOTE,
+      createSection('outro'),
+      noteIndexInSection,
+      0
+    );
+
+    expect(intro).not.toBeNull();
+    expect(sectionA).not.toBeNull();
+    expect(sectionAPrime).not.toBeNull();
+    expect(sectionB).not.toBeNull();
+    expect(variation).not.toBeNull();
+    expect(sectionReturn).not.toBeNull();
+    expect(outro).not.toBeNull();
+    expect(sectionA).toEqual(BASE_NOTE);
+    expect(sectionAPrime?.startMs).toBe(sectionA?.startMs);
+    expect(sectionAPrime?.durationMs).toBeGreaterThanOrEqual(
+      sectionA?.durationMs ?? 0
+    );
+    expect(intro?.durationMs).toBeGreaterThan(sectionA?.durationMs ?? 0);
+    expect(sectionB?.startMs).not.toBe(sectionA?.startMs);
+    expect(variation?.startMs).not.toBe(sectionA?.startMs);
+    expect(sectionReturn?.startMs).not.toBe(sectionA?.startMs);
+    expect(outro?.durationMs).toBeGreaterThan(sectionA?.durationMs ?? 0);
+  });
+
   it('keeps repaired lead density notes from picking up extra section transposition', () => {
     const repairedLeadNote: ProceduralMusicNote = {
       ...BASE_NOTE,

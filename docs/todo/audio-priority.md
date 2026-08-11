@@ -131,7 +131,7 @@
 ## Rhythm and Phrasing
 
 - [x] Create a small library of phrase rhythm templates.
-- [ ] Assign one rhythm identity to each song section.
+- [x] Assign one rhythm identity to each song section.
 - [x] Repeat rhythms before adding variation.
 - [x] Place rests mainly at phrase boundaries.
 - [ ] Avoid constant note activity in every layer.
@@ -148,9 +148,11 @@
       the last lead attack in those phrase-ending measures up to the reserved
       tail-rest boundary, tightens short inter-note gaps while lengthening the
       release of connected lead attacks so nearby notes read as one short
-      melodic sentence, gives the variation section a measurably different lead
-      rhythm than Section A, and keeps the bass pulse repeating measure-for-
-      measure across the repeated Section A phrase cycle.
+      melodic sentence, assigns deterministic lead rhythm identity profiles to
+      intro, A, A', B, variation, return, and outro, gives the variation
+      section a measurably different lead rhythm than Section A, and keeps the
+      bass pulse repeating measure-for-measure across the repeated Section A
+      phrase cycle.
 
 ## Humanization
 

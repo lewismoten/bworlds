@@ -420,6 +420,67 @@ describe('procedural music song', () => {
     expect(variationRhythm).not.toEqual(sectionARhythm);
   });
 
+  it('assigns a stable lead rhythm identity to each song section', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const intro = song.sections.find((section) => section.id === 'intro')!;
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionAPrime = song.sections.find(
+      (section) => section.id === 'a-prime'
+    )!;
+    const sectionB = song.sections.find((section) => section.id === 'b')!;
+    const variation = song.sections.find(
+      (section) => section.id === 'variation'
+    )!;
+    const sectionReturn = song.sections.find(
+      (section) => section.id === 'return'
+    )!;
+    const outro = song.sections.find((section) => section.id === 'outro')!;
+
+    const introRhythm = collectLeadMotifRhythmShape(song, intro).slice(0, 4);
+    const sectionARhythm = collectLeadMotifRhythmShape(song, sectionA).slice(
+      0,
+      4
+    );
+    const sectionAPrimeRhythm = collectLeadMotifRhythmShape(
+      song,
+      sectionAPrime
+    ).slice(0, 4);
+    const sectionBRhythm = collectLeadMotifRhythmShape(song, sectionB).slice(
+      0,
+      4
+    );
+    const variationRhythm = collectLeadMotifRhythmShape(song, variation).slice(
+      0,
+      4
+    );
+    const returnRhythm = collectLeadMotifRhythmShape(song, sectionReturn).slice(
+      0,
+      4
+    );
+    const outroRhythm = collectLeadMotifRhythmShape(song, outro).slice(0, 4);
+
+    expect(introRhythm).toHaveLength(4);
+    expect(sectionARhythm).toHaveLength(4);
+    expect(sectionAPrimeRhythm).toEqual(sectionARhythm);
+    expect(sectionBRhythm).toHaveLength(4);
+    expect(variationRhythm).toHaveLength(4);
+    expect(returnRhythm).toHaveLength(4);
+    expect(outroRhythm).toHaveLength(4);
+    expect(introRhythm).not.toEqual(sectionARhythm);
+    expect(sectionBRhythm).not.toEqual(sectionARhythm);
+    expect(variationRhythm).not.toEqual(sectionARhythm);
+    expect(returnRhythm).not.toEqual(sectionARhythm);
+    expect(outroRhythm).not.toEqual(sectionARhythm);
+  });
+
   it('ends repeated and varied lead phrases with a closing note before the planned boundary rest', () => {
     const song = createProceduralMusicSong({
       nowMs: 1_000,
