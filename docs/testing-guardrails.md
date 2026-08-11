@@ -60,6 +60,11 @@ too: [packages/tile-route/src/index.test.ts](/Users/lewismoten/dev/bworlds/packa
 keeps the fast-path route classifier and dock smoke checks, while
 [packages/tile-route/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-route/src/index.long.test.ts:1)
 holds the heavier bridge/dock scan and cache-churn coverage.
+Town quest coverage follows the same rule: [packages/town-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/town-support/src/index.test.ts:1)
+keeps deterministic roster, schedule, and one-step quest smoke coverage in the
+fast suite, while
+[packages/town-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/town-support/src/index.long.test.ts:1)
+holds the broad coordinate-and-time quest availability sweeps.
 
 When a fast-path assertion only needs one derived field from a large generated
 object, prefer a tiny purpose-built fixture over a full snapshot bootstrap.

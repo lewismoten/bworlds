@@ -1,119 +1,296 @@
-import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
 import { describe, expect, it } from 'vitest';
-import {
-  getTownBuildingServiceState,
-  getTownBuildings,
-  getTownNpcPlacements,
-  getTownNpcQuestStates,
-  getTownNpcs,
-  getTownProfile,
-} from './index.ts';
+import { DEFAULT_DAY_LENGTH_MS } from '@bworlds/core';
+import { getTownNpcQuestStates } from './index.ts';
 
-describe('town support long checks', () => {
-  it('keeps deterministic town data stable after many cache evictions', () => {
-    const profile = {
-      level: 5,
-      profession: 'courier',
-      completedQuestIds: ['quest:one'],
-    };
-    const captureBuildings = () =>
-      getTownBuildings(3, 7).map((building) => ({
-        ...building,
-        residentNpcIds: [...building.residentNpcIds],
-        workerNpcIds: [...building.workerNpcIds],
-      }));
+const TOWN_SAMPLES: Array<[number, number]> = [
+  [3, 7],
+  [10, -4],
+  [25, 9],
+  [48, -16],
+  [120, -80],
+];
+const GRID_TOWN_SAMPLES: Array<[number, number]> = [];
+for (let x = -4; x <= 12; x += 1) {
+  for (let y = -4; y <= 12; y += 1) {
+    GRID_TOWN_SAMPLES.push([x, y]);
+  }
+}
 
-    const baselineNpcs = getTownNpcs(3, 7);
-    const baselineBuildings = captureBuildings();
-    const baselinePlacements = getTownNpcPlacements(
-      3,
-      7,
-      DEFAULT_DAY_LENGTH_MS * 0.5
-    );
-    const baselineQuestStates = getTownNpcQuestStates(
-      3,
-      7,
-      DEFAULT_DAY_LENGTH_MS * 0.5,
-      profile
-    );
-    const baselineServices = getTownBuildingServiceState(
-      3,
-      7,
-      baselineBuildings[0]!.id,
-      DEFAULT_DAY_LENGTH_MS * 0.5,
-      profile
-    );
-    const baselineProfile = getTownProfile(3, 7);
+type QuestStates = ReturnType<typeof getTownNpcQuestStates>;
+type QuestOfferType = QuestStates[number]['offers'][number]['type'];
+type QuestSearchResult = {
+  x: number;
+  y: number;
+  minute: number;
+  states: QuestStates;
+};
 
-    for (let index = 0; index < 800; index += 1) {
-      const tileX = index % 40;
-      const tileY = Math.floor(index / 40) - 15;
-      const timeMs = DEFAULT_DAY_LENGTH_MS * ((index % 48) / 48);
-      const buildings = getTownBuildings(tileX, tileY);
-      getTownNpcs(tileX, tileY);
-      getTownNpcPlacements(tileX, tileY, timeMs);
-      getTownNpcQuestStates(tileX, tileY, timeMs, {
-        level: 1 + (index % 6),
-        profession: index % 2 === 0 ? 'guard' : 'scholar',
-        completedQuestIds: [`quest:${index % 9}`],
-      });
-      if (buildings[0]) {
-        getTownBuildingServiceState(tileX, tileY, buildings[0].id, timeMs, {
-          level: 1 + (index % 6),
-          profession: index % 2 === 0 ? 'guard' : 'scholar',
-          completedQuestIds: [`quest:${index % 9}`],
-        });
+function hasOffer(states: QuestStates, type: QuestOfferType): boolean {
+  return states.some((entry) =>
+    entry.offers.some((offer) => offer.type === type)
+  );
+}
+
+function findQuestStates(
+  predicate: (result: QuestSearchResult) => boolean,
+  options: Parameters<typeof getTownNpcQuestStates>[3],
+  minutes: Iterable<number>,
+  coordinates: readonly [number, number][] = TOWN_SAMPLES
+): QuestSearchResult | null {
+  for (const [x, y] of coordinates) {
+    for (const minute of minutes) {
+      const states = getTownNpcQuestStates(
+        x,
+        y,
+        DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+        options
+      );
+      const result = { x, y, minute, states };
+      if (predicate(result)) {
+        return result;
       }
-      getTownProfile(tileX, tileY);
     }
+  }
+  return null;
+}
 
-    expect(getTownNpcs(3, 7)).toEqual(baselineNpcs);
-    expect(captureBuildings()).toEqual(baselineBuildings);
-    expect(getTownNpcPlacements(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5)).toEqual(
-      baselinePlacements
+function createMinuteRange(start: number, end: number, step = 30): number[] {
+  const minutes: number[] = [];
+  for (let minute = start; minute <= end; minute += step) {
+    minutes.push(minute);
+  }
+  return minutes;
+}
+
+describe('town support long-running checks', () => {
+  it('surfaces rescue and revenge quest offers from generated town schedules', () => {
+    const rescueStates = findQuestStates(
+      ({ states }) => hasOffer(states, 'rescue'),
+      {
+        level: 4,
+        profession: 'healer',
+      },
+      createMinuteRange(0, 23 * 60 + 30)
     );
-    expect(
-      getTownNpcQuestStates(3, 7, DEFAULT_DAY_LENGTH_MS * 0.5, profile)
-    ).toEqual(baselineQuestStates);
-    expect(
-      getTownBuildingServiceState(
-        3,
-        7,
-        baselineBuildings[0]!.id,
-        DEFAULT_DAY_LENGTH_MS * 0.5,
-        profile
-      )
-    ).toEqual(baselineServices);
-    expect(getTownProfile(3, 7)).toEqual(baselineProfile);
-  }, 4000);
 
-  it('keeps household rosters stable after bounded town cache churn', () => {
-    const baseline = getTownNpcs(10, -4).map((npc) => ({
-      id: npc.id,
-      name: npc.name,
-      age: npc.age,
-      mother: npc.mother.name,
-      father: npc.father.name,
-      profession: npc.profession,
-      workplaceBuildingId: npc.workplaceBuildingId,
-    }));
+    const revengeStates = findQuestStates(
+      ({ x, y, minute, states }) => {
+        const prerequisiteIds = states
+          .flatMap((entry) => entry.offers)
+          .filter(
+            (offer) => offer.type === 'recovery' || offer.type === 'tracking'
+          )
+          .map((offer) => offer.id);
+        if (prerequisiteIds.length === 0) {
+          return false;
+        }
+        return hasOffer(
+          getTownNpcQuestStates(
+            x,
+            y,
+            DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+            {
+              level: 6,
+              profession: 'guard',
+              completedQuestIds: prerequisiteIds,
+            }
+          ),
+          'revenge'
+        );
+      },
+      {
+        level: 6,
+        profession: 'guard',
+      },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
 
-    for (let index = 0; index < 320; index += 1) {
-      getTownProfile(index - 160, Math.floor(index / 8) - 20);
-      getTownBuildings(index - 160, Math.floor(index / 8) - 20);
-      getTownNpcs(index - 160, Math.floor(index / 8) - 20);
-    }
+    expect(hasOffer(rescueStates?.states ?? [], 'rescue')).toBe(true);
+    expect(revengeStates).not.toBeNull();
+  });
 
-    expect(
-      getTownNpcs(10, -4).map((npc) => ({
-        id: npc.id,
-        name: npc.name,
-        age: npc.age,
-        mother: npc.mother.name,
-        father: npc.father.name,
-        profession: npc.profession,
-        workplaceBuildingId: npc.workplaceBuildingId,
-      }))
-    ).toEqual(baseline);
+  it('surfaces broad guard, healer, and scout quest variants across representative towns', () => {
+    const killStates = findQuestStates(
+      ({ states }) => hasOffer(states, 'kill'),
+      { level: 6, profession: 'guard' },
+      createMinuteRange(9 * 60, 16 * 60),
+      GRID_TOWN_SAMPLES
+    );
+    const defenseStates = findQuestStates(
+      ({ states }) => hasOffer(states, 'defense'),
+      { level: 6, profession: 'healer' },
+      createMinuteRange(15 * 60, 23 * 60),
+      GRID_TOWN_SAMPLES
+    );
+    const stealthStates = findQuestStates(
+      ({ states }) => hasOffer(states, 'stealth'),
+      { level: 7, profession: 'scout' },
+      createMinuteRange(14 * 60, 22 * 60),
+      GRID_TOWN_SAMPLES
+    );
+
+    expect(hasOffer(killStates?.states ?? [], 'kill')).toBe(true);
+    expect(hasOffer(defenseStates?.states ?? [], 'defense')).toBe(true);
+    expect(hasOffer(stealthStates?.states ?? [], 'stealth')).toBe(true);
+  });
+
+  it('surfaces higher-level combat and trust follow-up quests', () => {
+    const assassinationStates = findQuestStates(
+      ({ states }) => hasOffer(states, 'assassination'),
+      { level: 8, profession: 'guard' },
+      createMinuteRange(10 * 60, 17 * 60),
+      GRID_TOWN_SAMPLES
+    );
+    const captureStates = findQuestStates(
+      ({ states }) => hasOffer(states, 'capture'),
+      { level: 8, profession: 'guard' },
+      createMinuteRange(10 * 60, 17 * 60),
+      GRID_TOWN_SAMPLES
+    );
+
+    const companionStates = findQuestStates(
+      ({ x, y, minute, states }) => {
+        const prerequisiteIds = states
+          .flatMap((entry) => entry.offers)
+          .filter((offer) =>
+            [
+              'escort',
+              'tracking',
+              'rescue',
+              'training',
+              'puzzle',
+              'investigation',
+              'challenge',
+              'survival',
+              'delivery',
+              'diplomacy',
+            ].includes(offer.type)
+          )
+          .map((offer) => offer.id);
+        if (prerequisiteIds.length === 0) {
+          return false;
+        }
+
+        return hasOffer(
+          getTownNpcQuestStates(
+            x,
+            y,
+            DEFAULT_DAY_LENGTH_MS * (minute / (24 * 60)),
+            {
+              level: 7,
+              profession: 'scholar',
+              completedQuestIds: prerequisiteIds,
+            }
+          ),
+          'companion'
+        );
+      },
+      { level: 7, profession: 'scholar' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+
+    expect(hasOffer(assassinationStates?.states ?? [], 'assassination')).toBe(
+      true
+    );
+    expect(hasOffer(captureStates?.states ?? [], 'capture')).toBe(true);
+    expect(companionStates).not.toBeNull();
+  });
+
+  it('surfaces profession-specific and schedule-sensitive town quest offers', () => {
+    const crafting = findQuestStates(
+      ({ states }) => hasOffer(states, 'crafting'),
+      { level: 5, profession: 'smith' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const training = findQuestStates(
+      ({ states }) => hasOffer(states, 'training'),
+      { level: 2, profession: 'scholar' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const recovery = findQuestStates(
+      ({ states }) => hasOffer(states, 'recovery'),
+      { level: 5, profession: 'guard' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const tracking = findQuestStates(
+      ({ states }) => hasOffer(states, 'tracking'),
+      { level: 4, profession: 'scout' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const timed = findQuestStates(
+      ({ states }) => hasOffer(states, 'timed'),
+      { level: 4, profession: 'courier' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+
+    expect(hasOffer(crafting?.states ?? [], 'crafting')).toBe(true);
+    expect(hasOffer(training?.states ?? [], 'training')).toBe(true);
+    expect(hasOffer(recovery?.states ?? [], 'recovery')).toBe(true);
+    expect(hasOffer(tracking?.states ?? [], 'tracking')).toBe(true);
+    expect(hasOffer(timed?.states ?? [], 'timed')).toBe(true);
+  });
+
+  it('surfaces exploration, puzzle, faction, and outcome-branching quest variants', () => {
+    const exploration = findQuestStates(
+      ({ states }) => hasOffer(states, 'exploration'),
+      { level: 4, profession: 'scout' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const activation = findQuestStates(
+      ({ states }) => hasOffer(states, 'activation'),
+      { level: 4, profession: 'healer' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const puzzle = findQuestStates(
+      ({ states }) => hasOffer(states, 'puzzle'),
+      { level: 4, profession: 'scholar' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const survival = findQuestStates(
+      ({ states }) => hasOffer(states, 'survival'),
+      { level: 5, profession: 'healer' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const challenge = findQuestStates(
+      ({ states }) => hasOffer(states, 'challenge'),
+      { level: 4, profession: 'courier' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const destruction = findQuestStates(
+      ({ states }) => hasOffer(states, 'destruction'),
+      { level: 5, profession: 'guard' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const diplomacy = findQuestStates(
+      ({ states }) => hasOffer(states, 'diplomacy'),
+      { level: 5, profession: 'merchant' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const choice = findQuestStates(
+      ({ states }) => hasOffer(states, 'choice'),
+      { level: 6, profession: 'guard' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const faction = findQuestStates(
+      ({ states }) => hasOffer(states, 'faction'),
+      { level: 5, profession: 'merchant' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+    const construction = findQuestStates(
+      ({ states }) => hasOffer(states, 'construction'),
+      { level: 4, profession: 'smith' },
+      createMinuteRange(0, 23 * 60 + 30)
+    );
+
+    expect(hasOffer(exploration?.states ?? [], 'exploration')).toBe(true);
+    expect(hasOffer(activation?.states ?? [], 'activation')).toBe(true);
+    expect(hasOffer(puzzle?.states ?? [], 'puzzle')).toBe(true);
+    expect(hasOffer(survival?.states ?? [], 'survival')).toBe(true);
+    expect(hasOffer(challenge?.states ?? [], 'challenge')).toBe(true);
+    expect(hasOffer(destruction?.states ?? [], 'destruction')).toBe(true);
+    expect(hasOffer(diplomacy?.states ?? [], 'diplomacy')).toBe(true);
+    expect(hasOffer(choice?.states ?? [], 'choice')).toBe(true);
+    expect(hasOffer(faction?.states ?? [], 'faction')).toBe(true);
+    expect(hasOffer(construction?.states ?? [], 'construction')).toBe(true);
   });
 });
