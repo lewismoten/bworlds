@@ -4,6 +4,7 @@ export const LONG_TEST_GLOBS = [
 ] as const;
 
 export const LONG_TEST_FILES = [
+  'apps/web/src/ambience-debug.test.ts',
   'apps/web/src/music-debug-midi-audit-baseline.test.ts',
   'apps/web/src/music-debug-midi-audit-mismatch.test.ts',
   'apps/web/src/music-debug-midi-audit-warnings.test.ts',
@@ -28,6 +29,8 @@ export const LONG_TEST_FILES = [
   'apps/web/src/music-debug-snapshot-representative.test.ts',
   'apps/web/src/music-debug-timeline.test.ts',
   'apps/web/src/procedural-music.long.test.ts',
+  'apps/web/src/procedural-music-song-repair.test.ts',
+  'apps/web/src/procedural-music.test.ts',
   'apps/web/src/testing/test-source-audit-repository.test.ts',
   'apps/web/src/music-debug-track-stats.test.ts',
   'apps/web/src/procedural-music-harmony-chords.test.ts',
@@ -45,7 +48,16 @@ export const LONG_TEST_FILES = [
   'apps/web/src/sound-bank-debug-shell-markup.test.ts',
   'apps/web/src/sound-bank-debug-shell-options.test.ts',
   'apps/web/src/tree-debug-quality.test.ts',
+  'packages/dock-route-support/src/index.test.ts',
+  'packages/map-overworld/src/index.test.ts',
+  'packages/map-station/src/index.test.ts',
+  'packages/map-town/src/index.test.ts',
+  'packages/overworld-support/src/index.test.ts',
+  'packages/runtime-dock-traffic/src/index.test.ts',
+  'packages/runtime-rail-network/src/index.test.ts',
   'packages/tile-forest/src/index.test.ts',
+  'packages/tile-route/src/index.test.ts',
+  'packages/town-support/src/index.test.ts',
   'packages/worldgen/src/index.test.ts',
 ] as const;
 

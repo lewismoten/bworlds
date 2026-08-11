@@ -20,6 +20,13 @@ Related commands:
   Snapshot-heavy timeline rendering coverage now stays on the long path while
   [music-debug-timeline-fast.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline-fast.test.ts:1)
   keeps the cheap timeline coordinate and label helpers in the normal check.
+  The same allowlist now keeps the broadest overworld and audio generation
+  sweeps off the default path, including
+  [procedural-music.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music.test.ts:1),
+  [procedural-music-song-repair.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-repair.test.ts:1),
+  [ambience-debug.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/ambience-debug.test.ts:1),
+  [packages/map-overworld/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/map-overworld/src/index.test.ts:1),
+  and [packages/overworld-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/overworld-support/src/index.test.ts:1).
 - `npm run test:all`
   Runs the supervised full suite without fast-suite exclusions.
 - `npm run test:long`

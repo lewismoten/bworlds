@@ -24,4 +24,19 @@ describe('vitest suite mode', () => {
     });
     expect(resolveVitestSuiteSelection('all')).toEqual({});
   });
+
+  it('keeps broad audio and world sweeps off the fast suite', () => {
+    expect(LONG_TEST_FILES).toEqual(
+      expect.arrayContaining([
+        'apps/web/src/ambience-debug.test.ts',
+        'apps/web/src/procedural-music-song-repair.test.ts',
+        'apps/web/src/procedural-music.test.ts',
+        'packages/map-overworld/src/index.test.ts',
+        'packages/overworld-support/src/index.test.ts',
+        'packages/runtime-dock-traffic/src/index.test.ts',
+        'packages/tile-route/src/index.test.ts',
+        'packages/worldgen/src/index.test.ts',
+      ])
+    );
+  });
 });
