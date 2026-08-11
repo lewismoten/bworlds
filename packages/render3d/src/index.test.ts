@@ -4952,6 +4952,51 @@ describe('render3d visibility helpers', () => {
     expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
   });
 
+  it('prefers the cached low-detail recovery build before retrying full detail', () => {
+    const lowEntry = {
+      detailLevel: 'low' as const,
+      modelRoot: { type: 'Group' } as never,
+    };
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') =>
+      detailLevel === 'low'
+        ? lowEntry
+        : {
+            detailLevel,
+            modelRoot: { type: 'Group' } as never,
+          }
+    );
+
+    expect(
+      buildRecoverableVisibleTileModelDetailEntry('full', buildEntry, 'low')
+    ).toEqual({
+      entry: lowEntry,
+      resolvedDetailLevel: 'low',
+    });
+    expect(buildEntry.mock.calls).toEqual([['low']]);
+  });
+
+  it('falls through to the requested full-detail build when the cached low-detail recovery still fails', () => {
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') =>
+      detailLevel === 'low'
+        ? {
+            detailLevel,
+            modelRoot: null,
+          }
+        : {
+            detailLevel,
+            modelRoot: { type: 'Group' } as never,
+          }
+    );
+
+    expect(
+      buildRecoverableVisibleTileModelDetailEntry('full', buildEntry, 'low')
+    ).toEqual({
+      entry: { detailLevel: 'full', modelRoot: { type: 'Group' } },
+      resolvedDetailLevel: 'full',
+    });
+    expect(buildEntry.mock.calls).toEqual([['low'], ['full']]);
+  });
+
   it('returns the low-detail fallback only after the recovery chain is exhausted', () => {
     const buildEntry = vi.fn((detailLevel: 'full' | 'low') => ({
       detailLevel,

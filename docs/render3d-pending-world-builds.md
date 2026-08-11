@@ -41,6 +41,9 @@ Current behavior:
   allowed back into `syncTileModelDetailLevels()` even when the requested
   detail level has not changed, so those fallback-only entries can retry a real
   build instead of getting stuck permanently.
+- When visible LOD recovery already knows the last successful tile detail was
+  `low`, it now retries that cached low-detail path before spending work on
+  another full-detail rebuild attempt.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

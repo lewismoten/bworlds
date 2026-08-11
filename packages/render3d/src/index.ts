@@ -3074,7 +3074,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
                 ? getRemainingFrameTimeBudgetMs(frameBudget)
                 : undefined
             )
-          )
+          ),
+        lastSuccessfulVisibleTileDetailLevels.get(key)
       );
       if ((entry.detailLevel ?? 'full') === resolvedDetailLevel) {
         disposeObject3DResources(nextEntry.node);
@@ -4005,11 +4006,25 @@ export function buildRecoverableVisibleTileModelDetailEntry<
   Entry extends { modelRoot?: THREE.Object3D | null }
 >(
   requestedDetailLevel: RenderBudgetDetailLevel,
-  buildEntry: (detailLevel: RenderBudgetDetailLevel) => Entry
+  buildEntry: (detailLevel: RenderBudgetDetailLevel) => Entry,
+  preferredRecoveryDetailLevel?: RenderBudgetDetailLevel
 ): {
   entry: Entry;
   resolvedDetailLevel: RenderBudgetDetailLevel;
 } {
+  if (
+    requestedDetailLevel === 'full' &&
+    preferredRecoveryDetailLevel === 'low'
+  ) {
+    const preferredEntry = buildEntry('low');
+    if (preferredEntry.modelRoot) {
+      return {
+        entry: preferredEntry,
+        resolvedDetailLevel: 'low',
+      };
+    }
+  }
+
   const requestedEntry = buildEntry(requestedDetailLevel);
   if (requestedDetailLevel !== 'full' || requestedEntry.modelRoot) {
     return {
