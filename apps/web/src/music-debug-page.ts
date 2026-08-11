@@ -61,8 +61,12 @@ import {
   drawMusicDebugTimeline,
   resolveMusicDebugTimelineHoverDetail,
   resolveMusicDebugTimelineTrackLabelRoleAtPoint,
-  resolveMusicDebugTimelineSeekOffset,
 } from './music-debug-timeline.ts';
+import {
+  startMusicDebugTimelinePointerDrag,
+  updateMusicDebugTimelinePointerDrag,
+  type MusicDebugTimelinePointerDragState,
+} from './music-debug-timeline-drag.ts';
 import {
   createMusicDebugDrumKitAuditionNotes,
   normalizeMusicDebugPercussionPlaybackState,
@@ -155,6 +159,9 @@ let playbackFrameHandle: number | null = null;
 let percussionPlaybackState: MusicDebugPercussionPlaybackState =
   normalizeMusicDebugPercussionPlaybackState(null);
 let hiddenRoles: MusicDebugDisplayRole[] = [];
+let timelineDragState: MusicDebugTimelinePointerDragState | null = null;
+let timelineDragOffsetMs: number | null = null;
+let suppressTimelineClick = false;
 const pagePersistence = createMusicDebugPagePersistenceController({
   storage: globalThis.localStorage ?? null,
   hmr: import.meta.hot,
@@ -167,6 +174,9 @@ function resolveCurrentSnapshot() {
 }
 
 function resolveDisplayedOffsetMs(nowMs = performance.now()): number {
+  if (timelineDragOffsetMs !== null) {
+    return timelineDragOffsetMs;
+  }
   return resolveMusicDebugDisplayedOffsetMs({
     playback: playbackVisualState,
     snapshot: resolveCurrentSnapshot(),
@@ -363,6 +373,7 @@ function updatePreviewOffset(nextOffsetMs: number): void {
 function seekToOffset(nextOffsetMs: number): void {
   const snapshot = pageState.refreshNow();
   previewOffsetMs = clampMusicDebugPreviewOffset(snapshot, nextOffsetMs);
+  timelineDragOffsetMs = null;
   if (playbackController.isPlaying()) {
     playbackController.start(snapshot, {
       ...resolveMusicDebugPlaybackIntent({
@@ -826,6 +837,10 @@ playbackDryInput?.addEventListener('change', () => {
 });
 
 timeline?.addEventListener('click', (event) => {
+  if (suppressTimelineClick) {
+    suppressTimelineClick = false;
+    return;
+  }
   const bounds = timeline.getBoundingClientRect();
   const trackLabelRole = resolveMusicDebugTimelineTrackLabelRoleAtPoint({
     canvas: timeline,
@@ -850,17 +865,103 @@ timeline?.addEventListener('click', (event) => {
     return;
   }
   const snapshot = pageState.refreshNow();
-  const nextOffsetMs = resolveMusicDebugTimelineSeekOffset({
+  const dragState = startMusicDebugTimelinePointerDrag({
     snapshot,
     canvas: timeline,
+    pointerId: -1,
+    button: 0,
     clientX: event.clientX,
+    clientY: event.clientY,
     boundsLeft: bounds.left,
+    boundsTop: bounds.top,
     boundsWidth: bounds.width,
+    boundsHeight: bounds.height,
   });
-  seekToOffset(nextOffsetMs);
+  if (dragState) {
+    seekToOffset(dragState.offsetMs);
+  }
+});
+
+timeline?.addEventListener('pointerdown', (event) => {
+  const snapshot = resolveCurrentSnapshot();
+  if (!snapshot) {
+    return;
+  }
+  const bounds = timeline.getBoundingClientRect();
+  const dragState = startMusicDebugTimelinePointerDrag({
+    snapshot,
+    canvas: timeline,
+    pointerId: event.pointerId,
+    button: event.button,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    boundsLeft: bounds.left,
+    boundsTop: bounds.top,
+    boundsWidth: bounds.width,
+    boundsHeight: bounds.height,
+  });
+  if (!dragState) {
+    return;
+  }
+  timelineDragState = dragState;
+  timelineDragOffsetMs = null;
+  timeline.setPointerCapture?.(event.pointerId);
 });
 
 timeline?.addEventListener('pointermove', (event) => {
+  if (!timelineDragState || timelineDragState.pointerId !== event.pointerId) {
+    return;
+  }
+  const snapshot = resolveCurrentSnapshot();
+  if (!snapshot) {
+    return;
+  }
+  const bounds = timeline.getBoundingClientRect();
+  timelineDragState = updateMusicDebugTimelinePointerDrag(timelineDragState, {
+    snapshot,
+    canvas: timeline,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    boundsLeft: bounds.left,
+    boundsWidth: bounds.width,
+  });
+  if (!timelineDragState.dragging) {
+    return;
+  }
+  timelineDragOffsetMs = timelineDragState.offsetMs;
+  hideTimelineHover();
+  renderPlaybackUi(snapshot);
+});
+
+function finishTimelinePointerDrag(pointerId: number): void {
+  if (!timelineDragState || timelineDragState.pointerId !== pointerId) {
+    return;
+  }
+  const finalOffsetMs = timelineDragState.offsetMs;
+  const dragging = timelineDragState.dragging;
+  timelineDragState = null;
+  timelineDragOffsetMs = null;
+  if (!dragging) {
+    return;
+  }
+  suppressTimelineClick = true;
+  seekToOffset(finalOffsetMs);
+}
+
+timeline?.addEventListener('pointerup', (event) => {
+  timeline.releasePointerCapture?.(event.pointerId);
+  finishTimelinePointerDrag(event.pointerId);
+});
+
+timeline?.addEventListener('pointercancel', (event) => {
+  timeline.releasePointerCapture?.(event.pointerId);
+  finishTimelinePointerDrag(event.pointerId);
+});
+
+timeline?.addEventListener('pointermove', (event) => {
+  if (timelineDragState) {
+    return;
+  }
   if (!timelineHover) {
     return;
   }

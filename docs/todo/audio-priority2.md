@@ -92,7 +92,7 @@
 - [ ] Add a mini overview strip for fast scrubbing.
 - [ ] Add loop-range drag handles on the timeline.
 - [ ] Add snap-to-measure and snap-to-section navigation.
-- [ ] In full-song view, I should be able to drag the play head with my mouse.
+- [x] In full-song view, I should be able to drag the play head with my mouse.
 - [ ] Clicking a section mode while the music is playing should move the play head to that position.
 - [x] I sould be able to toggle each track to be mute by clicking the track name and see a visual indication
 - [x] The playhead should only cover the tracks and not extend past them
