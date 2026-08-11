@@ -25,6 +25,17 @@ export const REPRESENTATIVE_FOREST_EXPLORATION_SONG =
     clusterY: -2,
   });
 
+export const REPRESENTATIVE_PLAINS_EXPLORATION_SONG =
+  createProceduralMusicSong({
+    nowMs: 1_000,
+    tileKind: 'plains',
+    contextType: 'overworld',
+    dayProgress: 0.45,
+    yearProgress: 0.25,
+    clusterX: 0,
+    clusterY: 0,
+  });
+
 export function resolveMidiNote(frequency: number): number {
   return Math.round(69 + 12 * Math.log2(frequency / 440));
 }

@@ -3,8 +3,12 @@
 The long-running song-generation checks are split into smaller suites so Vitest
 can parallelize them and the file boundaries match the behavior under test:
 
-- [procedural-music-song-structure.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-structure.test.ts:1)
-  covers section layout, motif identity, and section-level phrase structure.
+- [procedural-music-song-structure-duration.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-structure-duration.test.ts:1)
+  covers duration-band checks that do not need the long-suite path.
+- [procedural-music-song-structure-layout.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-structure-layout.test.ts:1)
+  covers section layout, deterministic loop structure, and section rhythm identity.
+- [procedural-music-song-structure-motif.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-structure-motif.test.ts:1)
+  covers motif identity, phrase repetition, transposition, and cadence-boundary structure.
 - [procedural-music-song-phrasing.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-phrasing.test.ts:1)
   covers phrase repetition, cadence behavior, and recurring percussion pulse
   generation.
