@@ -2177,6 +2177,20 @@ function addBridgeRailings(
 ) {
   const sideOffset = deckWidth * 0.5 - 0.05;
   const postCount = Math.max(2, Math.round(deckLength / 0.32));
+  const railInstances = new three.InstancedMesh(
+    new three.BoxGeometry(
+      alongX ? deckLength + 0.02 : 0.05,
+      0.05,
+      alongX ? 0.05 : deckLength + 0.02
+    ),
+    style.railMaterial,
+    2
+  );
+  railInstances.userData = {
+    ...(railInstances.userData ?? {}),
+    routeInstancedPart: 'bridge-railing-rail',
+  };
+  const railMatrixScratch = new three.Matrix4();
   const railPostInstances = new three.InstancedMesh(
     new three.BoxGeometry(0.05, BRIDGE_RAIL_HEIGHT, 0.05),
     style.postMaterial,
@@ -2188,21 +2202,36 @@ function addBridgeRailings(
   };
   const railPostMatrixScratch = new three.Matrix4();
   let nextRailPostIndex = 0;
+  let nextRailIndex = 0;
   for (let side = -1; side <= 1; side += 2) {
-    const rail = new three.Mesh(
-      new three.BoxGeometry(
-        alongX ? deckLength + 0.02 : 0.05,
-        0.05,
-        alongX ? 0.05 : deckLength + 0.02
-      ),
-      style.railMaterial
-    );
     if (alongX) {
-      rail.position.set(0, BRIDGE_RAIL_HEIGHT, side * sideOffset);
+      railInstances.setMatrixAt(
+        nextRailIndex,
+        writeRouteInstancedScalePositionMatrix(
+          railMatrixScratch,
+          0,
+          BRIDGE_RAIL_HEIGHT,
+          side * sideOffset,
+          1,
+          1,
+          1
+        )
+      );
     } else {
-      rail.position.set(side * sideOffset, BRIDGE_RAIL_HEIGHT, 0);
+      railInstances.setMatrixAt(
+        nextRailIndex,
+        writeRouteInstancedScalePositionMatrix(
+          railMatrixScratch,
+          side * sideOffset,
+          BRIDGE_RAIL_HEIGHT,
+          0,
+          1,
+          1,
+          1
+        )
+      );
     }
-    group.add(rail);
+    nextRailIndex += 1;
 
     for (let index = 0; index < postCount; index += 1) {
       const t = postCount === 1 ? 0.5 : index / (postCount - 1);
@@ -2237,6 +2266,7 @@ function addBridgeRailings(
       nextRailPostIndex += 1;
     }
   }
+  group.add(railInstances);
   group.add(railPostInstances);
 
   if (style.type === 'metal' && info.length > 1) {

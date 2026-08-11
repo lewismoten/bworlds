@@ -780,6 +780,7 @@ describe('tile route', () => {
   });
 
   it('instances repeated bridge railing posts on standard bridges', () => {
+    let railingRailInstances: FakeInstancedMesh[] = [];
     let railingPostInstances: FakeInstancedMesh[] = [];
     let bridgeCoordinates: { x: number; y: number } | null = null;
 
@@ -796,19 +797,31 @@ describe('tile route', () => {
         const matches = collectTaggedInstancedMeshes(
           model,
           'routeInstancedPart'
-        ).filter(
+        );
+        const railMatches = matches.filter(
+          (mesh) => mesh.userData?.routeInstancedPart === 'bridge-railing-rail'
+        );
+        const postMatches = matches.filter(
           (mesh) => mesh.userData?.routeInstancedPart === 'bridge-railing-post'
         );
-        if (matches.length > 0 && (matches[0]?.count ?? 0) > 0) {
+        if (
+          railMatches.length > 0 &&
+          postMatches.length > 0 &&
+          (postMatches[0]?.count ?? 0) > 0
+        ) {
           bridgeCoordinates = { x: tileX, y: tileY };
-          railingPostInstances = matches;
+          railingRailInstances = railMatches;
+          railingPostInstances = postMatches;
           break;
         }
       }
     }
 
     expect(bridgeCoordinates).not.toBeNull();
+    expect(railingRailInstances).toHaveLength(1);
     expect(railingPostInstances).toHaveLength(1);
+    expect(railingRailInstances[0]?.count).toBe(2);
+    expect(railingRailInstances[0]?.matrices).toHaveLength(2);
     expect(railingPostInstances[0]?.count).toBeGreaterThanOrEqual(4);
     expect(railingPostInstances[0]?.matrices).toHaveLength(
       railingPostInstances[0]?.count ?? 0
