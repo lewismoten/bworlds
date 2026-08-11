@@ -5,7 +5,7 @@ type ProceduralHarmonyTriad = {
 };
 
 const HARMONY_VOICING_MIN_SEMITONES = 8;
-const HARMONY_VOICING_MAX_SEMITONES = 32;
+const HARMONY_VOICING_MAX_SEMITONES = 24;
 
 export function resolveProceduralHarmonyChordVoicing(options: {
   chord: ProceduralHarmonyTriad;

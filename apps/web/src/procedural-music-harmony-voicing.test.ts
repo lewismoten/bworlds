@@ -72,4 +72,17 @@ describe('procedural music harmony voicing', () => {
       )
     ).toBe(true);
   });
+
+  it('keeps voiced harmony triads out of the lead register ceiling', () => {
+    const voicing = resolveProceduralHarmonyChordVoicing({
+      chord: {
+        rootSemitones: 9,
+        thirdSemitones: 12,
+        fifthSemitones: 16,
+      },
+    });
+
+    expect(voicing).toHaveLength(3);
+    expect(Math.max(...voicing)).toBeLessThanOrEqual(26);
+  });
 });

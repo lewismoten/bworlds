@@ -579,6 +579,7 @@ export function resolveMusicArrangement(options: {
           harmonicGainMultiplier: 1.12,
           pulseRateMultiplier: 1.02,
           brightnessMultiplier: 0.92,
+          octaveShiftSemitones: -12,
         },
         bass: {
           volumeMultiplier: 1.1,
@@ -621,7 +622,7 @@ export function resolveMusicArrangement(options: {
           harmonicGainMultiplier: 1.4,
           pulseRateMultiplier: 0.62,
           brightnessMultiplier: 1.06,
-          octaveShiftSemitones: 12,
+          octaveShiftSemitones: -12,
           waveformOverride: 'sine',
           skipEvery: 2,
         },
@@ -665,6 +666,7 @@ export function resolveMusicArrangement(options: {
           harmonicGainMultiplier: 1.16,
           pulseRateMultiplier: 0.84,
           brightnessMultiplier: 0.82,
+          octaveShiftSemitones: -12,
         },
         bass: {
           volumeMultiplier: 0.94,
@@ -705,6 +707,7 @@ export function resolveMusicArrangement(options: {
           harmonicGainMultiplier: 1.08,
           pulseRateMultiplier: 0.92,
           brightnessMultiplier: 0.9,
+          octaveShiftSemitones: -12,
         },
         bass: {
           volumeMultiplier: 0.92,
@@ -744,6 +747,7 @@ export function resolveMusicArrangement(options: {
         harmonicGainMultiplier: 1,
         pulseRateMultiplier: 1,
         brightnessMultiplier: 1,
+        octaveShiftSemitones: -12,
       },
       bass: {
         volumeMultiplier: 1,
@@ -1179,13 +1183,7 @@ function resolveThemeNoteOctaveBoost(options: {
     return 0;
   }
   if (options.role === 'harmony') {
-    return hash2DWithSeed(
-      getThemePropertySeed(options.themeId, 'octave'),
-      options.clusterX + options.stepIndex,
-      options.clusterY
-    ) > 0.9
-      ? 12
-      : 0;
+    return 0;
   }
   if (
     options.composition.contourStep.stage !== 'climax' &&
