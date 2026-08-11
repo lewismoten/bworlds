@@ -182,6 +182,7 @@ describe('music debug export bundle', () => {
         messages: [
           'Outro answer cadence at measure 80 drifted outside the active harmony (G#; lead B4, bass B1).',
         ],
+        detections: [],
       },
     };
 
