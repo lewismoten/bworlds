@@ -158,9 +158,13 @@
 - [ ] Let bass play slightly ahead or behind the beat.
 - [ ] Let percussion timing vary within strict limits.
 - [ ] Avoid randomizing every note independently.
-- [ ] Keep repeated phrases similar enough to recognize.
+- [x] Keep repeated phrases similar enough to recognize.
 - [ ] Change articulation at musical phrase boundaries.
 - [ ] Add subtle vibrato only to suitable sustained notes.
+      Regression coverage now proves phrase-repetition analysis keeps exact
+      repeats and near matches distinguishable, and representative debug
+      snapshots retain non-zero average phrase similarity instead of drifting
+      into unrelated material.
 
 ## Mixing
 
