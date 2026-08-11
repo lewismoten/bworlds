@@ -815,6 +815,40 @@ describe('tile route', () => {
     );
   });
 
+  it('instances repeated stone bridge parapets', () => {
+    let parapetInstances: FakeInstancedMesh[] = [];
+    let bridgeCoordinates: { x: number; y: number } | null = null;
+
+    for (let tileY = 0; tileY < 44 && !bridgeCoordinates; tileY += 1) {
+      for (let tileX = 0; tileX < 44; tileX += 1) {
+        const state = createStandardBridgeState(tileX, tileY);
+        const model = bridgeTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: state as never,
+          tile: { kind: 'bridge' } as never,
+          tileX,
+          tileY,
+        }) as FakeGroup;
+        const matches = collectTaggedInstancedMeshes(
+          model,
+          'routeInstancedPart'
+        ).filter(
+          (mesh) => mesh.userData?.routeInstancedPart === 'bridge-parapet'
+        );
+        if (matches.length > 0 && (matches[0]?.count ?? 0) > 0) {
+          bridgeCoordinates = { x: tileX, y: tileY };
+          parapetInstances = matches;
+          break;
+        }
+      }
+    }
+
+    expect(bridgeCoordinates).not.toBeNull();
+    expect(parapetInstances).toHaveLength(1);
+    expect(parapetInstances[0]?.count).toBe(2);
+    expect(parapetInstances[0]?.matrices).toHaveLength(2);
+  });
+
   it('instances repeated covered bridge support posts', () => {
     let coverPostInstances: FakeInstancedMesh[] = [];
     let bridgeCoordinates: { x: number; y: number } | null = null;

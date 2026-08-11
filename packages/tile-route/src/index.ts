@@ -2098,27 +2098,72 @@ function addBridgeParapets(
   const railThickness = 0.08;
   const sideOffset = deckWidth * 0.5 - railThickness * 0.35;
   const length = deckLength + 0.02;
-  const createWall = () =>
-    new three.Mesh(
-      new three.BoxGeometry(
-        alongX ? length : railThickness,
-        BRIDGE_RAIL_HEIGHT,
-        alongX ? railThickness : length
-      ),
-      style.railMaterial
-    );
-
-  const first = createWall();
-  const second = createWall();
+  const parapetInstances = new three.InstancedMesh(
+    new three.BoxGeometry(
+      alongX ? length : railThickness,
+      BRIDGE_RAIL_HEIGHT,
+      alongX ? railThickness : length
+    ),
+    style.railMaterial,
+    2
+  );
+  parapetInstances.userData = {
+    ...(parapetInstances.userData ?? {}),
+    routeInstancedPart: 'bridge-parapet',
+  };
+  const parapetMatrixScratch = new three.Matrix4();
   if (alongX) {
-    first.position.set(0, BRIDGE_RAIL_HEIGHT * 0.5, -sideOffset);
-    second.position.set(0, BRIDGE_RAIL_HEIGHT * 0.5, sideOffset);
+    parapetInstances.setMatrixAt(
+      0,
+      writeRouteInstancedScalePositionMatrix(
+        parapetMatrixScratch,
+        0,
+        BRIDGE_RAIL_HEIGHT * 0.5,
+        -sideOffset,
+        1,
+        1,
+        1
+      )
+    );
+    parapetInstances.setMatrixAt(
+      1,
+      writeRouteInstancedScalePositionMatrix(
+        parapetMatrixScratch,
+        0,
+        BRIDGE_RAIL_HEIGHT * 0.5,
+        sideOffset,
+        1,
+        1,
+        1
+      )
+    );
   } else {
-    first.position.set(-sideOffset, BRIDGE_RAIL_HEIGHT * 0.5, 0);
-    second.position.set(sideOffset, BRIDGE_RAIL_HEIGHT * 0.5, 0);
+    parapetInstances.setMatrixAt(
+      0,
+      writeRouteInstancedScalePositionMatrix(
+        parapetMatrixScratch,
+        -sideOffset,
+        BRIDGE_RAIL_HEIGHT * 0.5,
+        0,
+        1,
+        1,
+        1
+      )
+    );
+    parapetInstances.setMatrixAt(
+      1,
+      writeRouteInstancedScalePositionMatrix(
+        parapetMatrixScratch,
+        sideOffset,
+        BRIDGE_RAIL_HEIGHT * 0.5,
+        0,
+        1,
+        1,
+        1
+      )
+    );
   }
-  group.add(first);
-  group.add(second);
+  group.add(parapetInstances);
 }
 
 function addBridgeRailings(
