@@ -18,13 +18,15 @@ export function createMusicDebugMidiFile(
     ...snapshot.timingValidation.messages,
     ...snapshot.percussionValidation.messages,
     ...snapshot.songDnaValidation.messages,
+    ...snapshot.harmonicAlignmentValidation.messages,
   ];
   if (
     !snapshot.midiExportValidation.isValidForMidiExport ||
     !snapshot.motifValidation.isValidForMidiExport ||
     !snapshot.timingValidation.isValidForMidiExport ||
     !snapshot.percussionValidation.isValidForMidiExport ||
-    !snapshot.songDnaValidation.isValidForMidiExport
+    !snapshot.songDnaValidation.isValidForMidiExport ||
+    !snapshot.harmonicAlignmentValidation.isValidForMidiExport
   ) {
     throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);
   }

@@ -91,6 +91,10 @@ import {
   type MusicDebugPhraseIntentScore,
 } from './music-debug-phrase-intent-score.ts';
 import {
+  validateMusicDebugHarmonicAlignment,
+  type MusicDebugHarmonicAlignmentValidation,
+} from './music-debug-harmonic-alignment-validation.ts';
+import {
   MUSIC_DEBUG_MIDI_EXPORT_VARIANTS,
   formatMusicDebugMidiExportVariantLabel,
 } from './music-debug-midi-export-variant.ts';
@@ -242,6 +246,7 @@ export type MusicDebugSnapshot = {
   sectionMotifMatches: MusicDebugSectionMotifMatch[];
   motifValidation: MusicDebugMotifValidation;
   chordToneScores: MusicDebugChordToneScores;
+  harmonicAlignmentValidation: MusicDebugHarmonicAlignmentValidation;
   harmonyChordDetections: MusicDebugHarmonyChordDetection[];
   bassProgressionDetections: MusicDebugBassProgressionDetection[];
   cadenceDetections: MusicDebugCadenceDetection[];
@@ -607,6 +612,10 @@ export function createMusicDebugSnapshot(
     leadContourAnalysis,
     cadenceValidation,
   });
+  const harmonicAlignmentValidation = validateMusicDebugHarmonicAlignment({
+    chordToneScores,
+    bassProgressionDetections,
+  });
 
   const snapshotBase = {
     options,
@@ -650,6 +659,7 @@ export function createMusicDebugSnapshot(
     sectionMotifMatches,
     motifValidation,
     chordToneScores,
+    harmonicAlignmentValidation,
     harmonyChordDetections,
     bassProgressionDetections,
     cadenceDetections: cadenceValidation.detections,
@@ -1048,6 +1058,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Chord-Tone Score ${formatMusicDebugChordToneTrackScores(snapshot.chordToneScores)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Harmony/Bass Check ${snapshot.harmonicAlignmentValidation.isValidForMidiExport ? 'ok' : snapshot.harmonicAlignmentValidation.messages.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Chord Measures ${formatMusicDebugChordMeasureWindows(snapshot.harmonyChordDetections)}</span>

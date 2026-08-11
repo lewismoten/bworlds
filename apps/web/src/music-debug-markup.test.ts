@@ -114,6 +114,7 @@ describe('music debug markup', () => {
     expect(summary).toContain('Motif Matches');
     expect(summary).toContain('Motif Validation');
     expect(summary).toContain('Chord-Tone Score');
+    expect(summary).toContain('Harmony/Bass Check');
     expect(summary).toContain('Chord Measures');
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('Bass Progression');

@@ -141,6 +141,7 @@ describe('music debug snapshot generation baseline', () => {
     expect(first.chordToneScores.tracks.bass.noteCount).toBeGreaterThan(0);
     expect(first.chordToneScores.tracks.harmony.score).not.toBeNull();
     expect(first.chordToneScores.tracks.lead.score).not.toBeNull();
+    expect(first.harmonicAlignmentValidation.messages).toBeDefined();
     expect(first.harmonyChordDetections).toHaveLength(
       first.song.sections.length
     );

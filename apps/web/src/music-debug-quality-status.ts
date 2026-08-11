@@ -16,6 +16,7 @@ export function createMusicDebugQualityStatus(
     | 'cadenceValidation'
     | 'percussionValidation'
     | 'songDnaValidation'
+    | 'harmonicAlignmentValidation'
     | 'leadContourAnalysis'
     | 'midiAudit'
   >
@@ -26,6 +27,7 @@ export function createMusicDebugQualityStatus(
     ...snapshot.timingValidation.messages,
     ...snapshot.cadenceValidation.messages,
     ...snapshot.songDnaValidation.messages,
+    ...snapshot.harmonicAlignmentValidation.messages,
     ...snapshot.midiAudit.mismatchMessages,
     ...snapshot.midiAudit.criticalWarningMessages,
   ];
