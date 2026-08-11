@@ -46,6 +46,7 @@ const LIGHTHOUSE_FRAME_POST_INSTANCED_KEY = 'lighthouseFramePostInstanced';
 const LIGHTHOUSE_BALCONY_RAIL_POST_INSTANCED_KEY =
   'lighthouseBalconyRailPostInstanced';
 const LIGHTHOUSE_PANE_INSTANCED_KEY = 'lighthousePaneInstanced';
+const LIGHTHOUSE_WALL_GLOW_INSTANCED_KEY = 'lighthouseWallGlowInstanced';
 const LIGHTHOUSE_REGION_SIZE = 18;
 export const LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES = 96;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
@@ -85,10 +86,10 @@ const LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS = [
   { radius: 0.24, length: 1.5, opacity: 0.1, emissiveIntensity: 0.58 },
 ] as const;
 const LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
-  object3dCount: 25,
+  object3dCount: 23,
   groupCount: 2,
-  meshCount: 22,
-  geometryCount: 22,
+  meshCount: 20,
+  geometryCount: 20,
   materialCount: 9,
   lightCount: 1,
   shadowLightCount: 0,
@@ -444,17 +445,63 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       });
       group.add(framePostInstances);
 
-      for (const offset of [
-        { x: 0.255, z: 0, width: 0.04, depth: 0.22 },
-        { x: -0.255, z: 0, width: 0.04, depth: 0.22 },
-        { x: 0, z: 0.255, width: 0.22, depth: 0.04 },
-        { x: 0, z: -0.255, width: 0.22, depth: 0.04 },
-      ]) {
-        const wallGlow = markOptionalDecorativeRenderBudgetPart(
+      const verticalWallGlowInstances = markOptionalDecorativeRenderBudgetPart(
+        markPoiLightEmitter(
+          new three.InstancedMesh(
+            getSharedBoxGeometry(three, 0.04, 0.34, 0.22),
+            wallGlowMaterial,
+            2
+          ),
+          {
+            kind: 'emissive-mesh',
+            dayIntensity: 0.03,
+            nightIntensity: 0.46,
+          }
+        ),
+        {
+          label: 'wall-glow',
+          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+        }
+      );
+      verticalWallGlowInstances.userData = {
+        ...(verticalWallGlowInstances.userData ?? {}),
+        [LIGHTHOUSE_WALL_GLOW_KEY]: true,
+        [LIGHTHOUSE_WALL_GLOW_INSTANCED_KEY]: 'vertical',
+      };
+      const verticalWallGlowMatrixScratch = new three.Matrix4();
+      verticalWallGlowInstances.setMatrixAt(
+        0,
+        writeInstancedScalePositionMatrix(
+          verticalWallGlowMatrixScratch,
+          tileX + 0.255,
+          1.7,
+          tileY,
+          1,
+          1,
+          1
+        )
+      );
+      verticalWallGlowInstances.setMatrixAt(
+        1,
+        writeInstancedScalePositionMatrix(
+          verticalWallGlowMatrixScratch,
+          tileX - 0.255,
+          1.7,
+          tileY,
+          1,
+          1,
+          1
+        )
+      );
+      group.add(verticalWallGlowInstances);
+
+      const horizontalWallGlowInstances =
+        markOptionalDecorativeRenderBudgetPart(
           markPoiLightEmitter(
-            new three.Mesh(
-              getSharedBoxGeometry(three, offset.width, 0.34, offset.depth),
-              wallGlowMaterial
+            new three.InstancedMesh(
+              getSharedBoxGeometry(three, 0.22, 0.34, 0.04),
+              wallGlowMaterial,
+              2
             ),
             {
               kind: 'emissive-mesh',
@@ -467,13 +514,37 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
             priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
           }
         );
-        wallGlow.userData = {
-          ...(wallGlow.userData ?? {}),
-          [LIGHTHOUSE_WALL_GLOW_KEY]: true,
-        };
-        wallGlow.position.set(tileX + offset.x, 1.7, tileY + offset.z);
-        group.add(wallGlow);
-      }
+      horizontalWallGlowInstances.userData = {
+        ...(horizontalWallGlowInstances.userData ?? {}),
+        [LIGHTHOUSE_WALL_GLOW_KEY]: true,
+        [LIGHTHOUSE_WALL_GLOW_INSTANCED_KEY]: 'horizontal',
+      };
+      const horizontalWallGlowMatrixScratch = new three.Matrix4();
+      horizontalWallGlowInstances.setMatrixAt(
+        0,
+        writeInstancedScalePositionMatrix(
+          horizontalWallGlowMatrixScratch,
+          tileX,
+          1.7,
+          tileY + 0.255,
+          1,
+          1,
+          1
+        )
+      );
+      horizontalWallGlowInstances.setMatrixAt(
+        1,
+        writeInstancedScalePositionMatrix(
+          horizontalWallGlowMatrixScratch,
+          tileX,
+          1.7,
+          tileY - 0.255,
+          1,
+          1,
+          1
+        )
+      );
+      group.add(horizontalWallGlowInstances);
 
       const lens = markOptionalDecorativeRenderBudgetPart(
         markPoiLightEmitter(
