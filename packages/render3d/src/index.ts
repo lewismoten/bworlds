@@ -348,6 +348,12 @@ type Render3DController = {
     fallbackBoxSummary: string;
     drawCallTopPluginLabel: string;
     drawCallSummary: string;
+    objectTopPluginLabel: string;
+    objectSummary: string;
+    meshTopPluginLabel: string;
+    meshSummary: string;
+    materialTopPluginLabel: string;
+    materialSummary: string;
     staticMatrixUpdateTopPluginLabel: string;
     staticMatrixUpdateSummary: string;
     object3dCount: number;
@@ -944,6 +950,7 @@ type DynamicTileNode = {
   tilePluginOwnerLabel?: string;
   tileX: number;
   tileY: number;
+  object3dCount: number;
   drawCallCount: number;
   visibleObjectCount: number;
   lightCount: number;
@@ -2239,6 +2246,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tilePluginOwnerLabel,
       tileX: x,
       tileY: y,
+      object3dCount: finalSceneResourceStats.object3dCount,
       drawCallCount: finalSceneResourceStats.drawCallCount,
       visibleObjectCount: finalSceneResourceStats.visibleObjectCount,
       lightCount: finalSceneResourceStats.lightCount,
@@ -2925,6 +2933,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const visibleTileDrawCallStats = summarizeVisibleTileDrawCallsByPlugin(
       visibleTileNodes.values()
     );
+    const visibleTileObjectStats = summarizeVisibleTileObjectsByPlugin(
+      visibleTileNodes.values()
+    );
+    const visibleTileMeshStats = summarizeVisibleTileMeshesByPlugin(
+      visibleTileNodes.values()
+    );
+    const visibleTileMaterialStats = summarizeVisibleTileMaterialsByPlugin(
+      visibleTileNodes.values()
+    );
     const visibleTileStaticMatrixUpdateStats =
       summarizeVisibleTileStaticMatrixUpdatesByPlugin(
         visibleTileNodes.values()
@@ -2975,6 +2992,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       fallbackBoxSummary: recentFallbackBoxStats.summary,
       drawCallTopPluginLabel: visibleTileDrawCallStats.topLabel,
       drawCallSummary: visibleTileDrawCallStats.summary,
+      objectTopPluginLabel: visibleTileObjectStats.topLabel,
+      objectSummary: visibleTileObjectStats.summary,
+      meshTopPluginLabel: visibleTileMeshStats.topLabel,
+      meshSummary: visibleTileMeshStats.summary,
+      materialTopPluginLabel: visibleTileMaterialStats.topLabel,
+      materialSummary: visibleTileMaterialStats.summary,
       staticMatrixUpdateTopPluginLabel:
         visibleTileStaticMatrixUpdateStats.topLabel,
       staticMatrixUpdateSummary: visibleTileStaticMatrixUpdateStats.summary,
@@ -5548,10 +5571,14 @@ export function summarizeVisibleTileStaticMatrixUpdatesByPlugin(
   };
 }
 
-export function summarizeVisibleTileDrawCallsByPlugin(
-  entries: Iterable<
-    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'drawCallCount'>
-  >
+function summarizeVisibleTileCountByPlugin<
+  K extends keyof Pick<
+    DynamicTileNode,
+    'object3dCount' | 'visibleMeshCount' | 'materialCount' | 'drawCallCount'
+  >,
+>(
+  entries: Iterable<Pick<DynamicTileNode, 'tilePluginOwnerLabel' | K>>,
+  countKey: K
 ): {
   totalCount: number;
   topCount: number;
@@ -5561,7 +5588,7 @@ export function summarizeVisibleTileDrawCallsByPlugin(
   let totalCount = 0;
   const counts = new Map<string, number>();
   for (const entry of entries) {
-    const count = Math.max(0, entry.drawCallCount ?? 0);
+    const count = Math.max(0, entry[countKey] ?? 0);
     if (count === 0) {
       continue;
     }
@@ -5584,6 +5611,58 @@ export function summarizeVisibleTileDrawCallsByPlugin(
     topLabel: labeledSummary.topLabel,
     summary: labeledSummary.summary,
   };
+}
+
+export function summarizeVisibleTileObjectsByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'object3dCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(entries, 'object3dCount');
+}
+
+export function summarizeVisibleTileMeshesByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'visibleMeshCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(entries, 'visibleMeshCount');
+}
+
+export function summarizeVisibleTileMaterialsByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'materialCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(entries, 'materialCount');
+}
+
+export function summarizeVisibleTileDrawCallsByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'drawCallCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(entries, 'drawCallCount');
 }
 
 export function getRenderChurnStats(

@@ -214,8 +214,12 @@ export type DebugSnapshotExport = {
     object3dCount: number;
     visibleObjectCount: number;
     invisibleObjectCount: number;
+    topObjectPlugin: string | null;
+    objectSummary: string;
     groupCount: number;
     meshCount: number;
+    topMeshPlugin: string | null;
+    meshSummary: string;
     instancedMeshCount: number;
     renderedInstanceCount: number;
     maxHierarchyDepth: number;
@@ -348,6 +352,8 @@ export type DebugSnapshotExport = {
   resources: {
     totalMaterialReferences: number;
     uniqueMaterialCount: number;
+    topMaterialPlugin: string | null;
+    materialSummary: string;
     sharedMaterialCount: number;
     clonedMaterialCount: number;
     transparentMaterialCount: number;
@@ -481,8 +487,12 @@ export function buildDebugSnapshotExport(
           options.snapshot.object3dCount -
             (options.snapshot.visibleObjectCount ?? 0)
         ),
+      topObjectPlugin: options.snapshot.objectTopPluginLabel?.trim() || null,
+      objectSummary: options.snapshot.objectSummary ?? '',
       groupCount: options.snapshot.groupCount,
       meshCount: options.snapshot.meshCount,
+      topMeshPlugin: options.snapshot.meshTopPluginLabel?.trim() || null,
+      meshSummary: options.snapshot.meshSummary ?? '',
       instancedMeshCount: options.snapshot.instancedMeshCount ?? 0,
       renderedInstanceCount: options.snapshot.renderedInstanceCount ?? 0,
       maxHierarchyDepth: options.snapshot.maxHierarchyDepth ?? 0,
@@ -505,6 +515,9 @@ export function buildDebugSnapshotExport(
     resources: {
       totalMaterialReferences: options.snapshot.materialRefCount ?? 0,
       uniqueMaterialCount: options.snapshot.materialCount,
+      topMaterialPlugin:
+        options.snapshot.materialTopPluginLabel?.trim() || null,
+      materialSummary: options.snapshot.materialSummary ?? '',
       sharedMaterialCount: options.snapshot.sharedMaterialCount ?? 0,
       clonedMaterialCount: options.snapshot.clonedMaterialCount ?? 0,
       transparentMaterialCount: options.snapshot.transparentMaterialCount ?? 0,

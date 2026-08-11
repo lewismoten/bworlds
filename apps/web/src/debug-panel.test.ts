@@ -78,6 +78,12 @@ describe('debug panel', () => {
       fallbackBoxSummary: 'tile-forest:1',
       drawCallTopPluginLabel: 'tile-forest',
       drawCallSummary: 'tile-forest:17, tile-town:7',
+      objectTopPluginLabel: 'tile-forest',
+      objectSummary: 'tile-forest:30, tile-town:9',
+      meshTopPluginLabel: 'tile-forest',
+      meshSummary: 'tile-forest:22, tile-town:7',
+      materialTopPluginLabel: 'tile-forest',
+      materialSummary: 'tile-forest:15, tile-town:5',
       staticMatrixUpdateTopPluginLabel: 'tile-forest',
       staticMatrixUpdateSummary: 'tile-forest:9, tile-town:6',
       lastLodFailureReason:
@@ -134,6 +140,9 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Draw Calls');
     expect(buildDebugMarkup(snapshot)).toContain('Draw Call Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Draw Call Summary');
+    expect(buildDebugMarkup(snapshot)).toContain('Object Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Mesh Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Material Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Full Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Low Tile Build');

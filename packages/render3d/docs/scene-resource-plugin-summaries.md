@@ -17,7 +17,13 @@ for totals like:
 But the scene graph itself does not carry stable per-plugin ownership metadata
 on every descendant node. The visible tile map already knows which plugin owns
 each tile build, and each finalized `DynamicTileNode` now carries the
-tile-local `staticMatrixAutoUpdateCount`.
+tile-local counts needed for snapshot triage:
+
+- `object3dCount`
+- `visibleMeshCount`
+- `materialCount`
+- `drawCallCount`
+- `staticMatrixAutoUpdateCount`
 
 That makes the plugin summary path cheap and deterministic:
 
@@ -30,9 +36,18 @@ That makes the plugin summary path cheap and deterministic:
 
 The renderer now exposes top-plugin summaries for:
 
+- visible tile Object3D counts
+- visible tile mesh counts
+- visible tile material counts
 - visible tile draw calls
 - static matrix updates
 
+- `objectTopPluginLabel`
+- `objectSummary`
+- `meshTopPluginLabel`
+- `meshSummary`
+- `materialTopPluginLabel`
+- `materialSummary`
 - `drawCallTopPluginLabel`
 - `drawCallSummary`
 - `staticMatrixUpdateTopPluginLabel`
@@ -40,8 +55,8 @@ The renderer now exposes top-plugin summaries for:
 
 Those values flow into the web debug snapshot export and debug panel so the
 performance follow-up work can identify which visible tile plugins dominate
-draw-call pressure and which ones keep the largest number of static transforms
-on `matrixAutoUpdate = true`.
+scene graph size, mesh density, material churn, draw-call pressure, and which
+ones keep the largest number of static transforms on `matrixAutoUpdate = true`.
 
 ## Tradeoff
 

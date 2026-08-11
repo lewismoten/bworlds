@@ -2329,6 +2329,12 @@ function collectCurrentDebugSnapshot(
     fallbackBoxSummary: rendererStats.fallbackBoxSummary,
     drawCallTopPluginLabel: rendererStats.drawCallTopPluginLabel,
     drawCallSummary: rendererStats.drawCallSummary,
+    objectTopPluginLabel: rendererStats.objectTopPluginLabel,
+    objectSummary: rendererStats.objectSummary,
+    meshTopPluginLabel: rendererStats.meshTopPluginLabel,
+    meshSummary: rendererStats.meshSummary,
+    materialTopPluginLabel: rendererStats.materialTopPluginLabel,
+    materialSummary: rendererStats.materialSummary,
     staticMatrixUpdateTopPluginLabel:
       rendererStats.staticMatrixUpdateTopPluginLabel,
     staticMatrixUpdateSummary: rendererStats.staticMatrixUpdateSummary,

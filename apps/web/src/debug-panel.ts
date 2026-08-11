@@ -49,6 +49,12 @@ export type DebugSnapshot = {
   fallbackBoxSummary?: string;
   drawCallTopPluginLabel?: string;
   drawCallSummary?: string;
+  objectTopPluginLabel?: string;
+  objectSummary?: string;
+  meshTopPluginLabel?: string;
+  meshSummary?: string;
+  materialTopPluginLabel?: string;
+  materialSummary?: string;
   staticMatrixUpdateTopPluginLabel?: string;
   staticMatrixUpdateSummary?: string;
   lastLodFailureReason?: string;
@@ -238,6 +244,12 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.fallbackBoxSummary ?? '',
     snapshot.drawCallTopPluginLabel ?? '',
     snapshot.drawCallSummary ?? '',
+    snapshot.objectTopPluginLabel ?? '',
+    snapshot.objectSummary ?? '',
+    snapshot.meshTopPluginLabel ?? '',
+    snapshot.meshSummary ?? '',
+    snapshot.materialTopPluginLabel ?? '',
+    snapshot.materialSummary ?? '',
     snapshot.staticMatrixUpdateTopPluginLabel ?? '',
     snapshot.staticMatrixUpdateSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
@@ -402,10 +414,14 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Current Tile Fallback</dt><dd>${snapshot.currentTileFallbackReason || 'None'}</dd></div>
     <div><dt>Active Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Three.js Objects</dt><dd>${snapshot.object3dCount}</dd></div>
+    <div><dt>Object Plugin</dt><dd>${snapshot.objectTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Object Summary</dt><dd>${snapshot.objectSummary || 'None'}</dd></div>
     <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>
     <div><dt>Groups</dt><dd>${snapshot.groupCount}</dd></div>
     <div><dt>Visible Meshes</dt><dd>${snapshot.visibleMeshCount}</dd></div>
     <div><dt>Mesh Nodes</dt><dd>${snapshot.meshCount}</dd></div>
+    <div><dt>Mesh Plugin</dt><dd>${snapshot.meshTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Mesh Summary</dt><dd>${snapshot.meshSummary || 'None'}</dd></div>
     <div><dt>Particles</dt><dd>${snapshot.activeParticleCount}</dd></div>
     <div><dt>Particle Systems</dt><dd>${snapshot.activeParticleSystemCount ?? snapshot.pointsCount}</dd></div>
     <div><dt>Points Nodes</dt><dd>${snapshot.pointsCount}</dd></div>
@@ -420,6 +436,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
+    <div><dt>Material Plugin</dt><dd>${snapshot.materialTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Material Summary</dt><dd>${snapshot.materialSummary || 'None'}</dd></div>
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
     <div><dt>Tile Kinds</dt><dd>${snapshot.visibleTileKindSummary || 'None'}</dd></div>
     <div><dt>Geometry Count</dt><dd>${snapshot.geometryCount}</dd></div>

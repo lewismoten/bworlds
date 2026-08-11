@@ -215,6 +215,9 @@ import {
   shouldReplaceVisibleTileModelDetailEntry,
   shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
+  summarizeVisibleTileMaterialsByPlugin,
+  summarizeVisibleTileMeshesByPlugin,
+  summarizeVisibleTileObjectsByPlugin,
   summarizeVisibleTileDrawCallsByPlugin,
   summarizeVisibleTileStaticMatrixUpdatesByPlugin,
   summarizeVisibleTileKinds,
@@ -4412,6 +4415,111 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('summarizes visible tile objects by plugin', () => {
+    expect(
+      summarizeVisibleTileObjectsByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          object3dCount: 24,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          object3dCount: 9,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          object3dCount: 6,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          object3dCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 39,
+      topCount: 30,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:30, tile-town:9',
+    });
+
+    expect(summarizeVisibleTileObjectsByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes visible tile meshes by plugin', () => {
+    expect(
+      summarizeVisibleTileMeshesByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          visibleMeshCount: 18,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          visibleMeshCount: 7,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          visibleMeshCount: 4,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          visibleMeshCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 29,
+      topCount: 22,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:22, tile-town:7',
+    });
+
+    expect(summarizeVisibleTileMeshesByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes visible tile materials by plugin', () => {
+    expect(
+      summarizeVisibleTileMaterialsByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          materialCount: 12,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          materialCount: 5,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          materialCount: 3,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          materialCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 20,
+      topCount: 15,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:15, tile-town:5',
+    });
+
+    expect(summarizeVisibleTileMaterialsByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
   it('skips pending lod sync work while lod selection is frozen', () => {
     expect(shouldProcessPendingLodSyncChecks(0, false)).toBe(false);
     expect(shouldProcessPendingLodSyncChecks(4, false)).toBe(true);
@@ -4849,6 +4957,7 @@ describe('render3d visibility helpers', () => {
           tile: { kind: 'plains' },
           tileX: 0,
           tileY: 0,
+          object3dCount: 1,
           drawCallCount: 1,
           visibleObjectCount: 1,
           lightCount: 0,
@@ -5665,6 +5774,7 @@ describe('render3d visibility helpers', () => {
           tile: { kind: 'town' },
           tileX: 4,
           tileY: 5,
+          object3dCount: 2,
           drawCallCount: 3,
           visibleObjectCount: 2,
           lightCount: 0,
@@ -5739,6 +5849,7 @@ describe('render3d visibility helpers', () => {
           tile: { kind: 'forest' },
           tileX: 20,
           tileY: 2,
+          object3dCount: 1,
           drawCallCount: 2,
           visibleObjectCount: 1,
           lightCount: 0,
