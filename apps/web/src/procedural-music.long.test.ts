@@ -62,7 +62,8 @@ describe('procedural music long', () => {
     const comparableGroups = harmonyGroups
       .map((group) => ({
         ...group,
-        nextLead: leadNotes.find((note) => note.startMs > group.startMs) ?? null,
+        nextLead:
+          leadNotes.find((note) => note.startMs > group.startMs) ?? null,
       }))
       .filter((group) => group.nextLead !== null);
 

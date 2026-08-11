@@ -346,8 +346,13 @@ function* createTownModelProgressive({
   }
 
   const firstBuildingBatchCount = Math.ceil(descriptors.length / 2);
-  const primaryBuildingDescriptors = descriptors.slice(0, firstBuildingBatchCount);
-  const secondaryBuildingDescriptors = descriptors.slice(firstBuildingBatchCount);
+  const primaryBuildingDescriptors = descriptors.slice(
+    0,
+    firstBuildingBatchCount
+  );
+  const secondaryBuildingDescriptors = descriptors.slice(
+    firstBuildingBatchCount
+  );
   const totalSteps = secondaryBuildingDescriptors.length > 0 ? 5 : 4;
   const bodyInstances = new three.InstancedMesh(
     new three.BoxGeometry(1, 1, 1),

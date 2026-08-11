@@ -262,10 +262,16 @@ describe('procedural music harmony lead motion', () => {
       let contraryMotionCount = 0;
       let parallelMotionCount = 0;
 
-      for (let stepIndex = 1; stepIndex < leadSemitones.length; stepIndex += 1) {
+      for (
+        let stepIndex = 1;
+        stepIndex < leadSemitones.length;
+        stepIndex += 1
+      ) {
         const composition = compositions[stepIndex]!;
-        const leadMotion = leadSemitones[stepIndex]! - leadSemitones[stepIndex - 1]!;
-        const bassMotion = bassSemitones[stepIndex]! - bassSemitones[stepIndex - 1]!;
+        const leadMotion =
+          leadSemitones[stepIndex]! - leadSemitones[stepIndex - 1]!;
+        const bassMotion =
+          bassSemitones[stepIndex]! - bassSemitones[stepIndex - 1]!;
 
         if (
           composition.cadence !== 'neutral' ||

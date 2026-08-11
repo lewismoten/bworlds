@@ -1292,7 +1292,8 @@ function resolveLeadCounterMotionSemitones(options: {
     return options.selectedSemitones;
   }
 
-  const bassMotion = options.currentBassSemitones - options.previousBassSemitones;
+  const bassMotion =
+    options.currentBassSemitones - options.previousBassSemitones;
   const leadMotion = options.selectedSemitones - options.previousSemitones;
   if (
     Math.abs(bassMotion) < 2 ||
