@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   buildMusicDebugTimelineSvgMarkup,
+  resolveMusicDebugTimelineChordLabels,
   resolveMusicDebugTimelineHoverDetail,
   resolveMusicDebugTimelineNoteBarColor,
   resolveMusicDebugTimelineLayout,
@@ -122,6 +123,50 @@ describe('music debug timeline', () => {
     expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 3)).toBe('#6fa1ff');
   });
 
+  it('thins dense chord labels and abbreviates narrow cue spans', () => {
+    const layout = resolveMusicDebugTimelineLayout(320, 320);
+    const chordLabels = resolveMusicDebugTimelineChordLabels(layout, 4_000, [
+      {
+        degreeIndex: 0,
+        label: 'Chord 1 major',
+        startMeasure: 1,
+        endMeasure: 1,
+        startOffsetMs: 0,
+        endOffsetMs: 900,
+      },
+      {
+        degreeIndex: 4,
+        label: 'Chord 5 minor',
+        startMeasure: 2,
+        endMeasure: 2,
+        startOffsetMs: 900,
+        endOffsetMs: 1_800,
+      },
+      {
+        degreeIndex: 3,
+        label: 'Chord 4 major',
+        startMeasure: 3,
+        endMeasure: 3,
+        startOffsetMs: 1_800,
+        endOffsetMs: 2_200,
+      },
+      {
+        degreeIndex: 5,
+        label: 'Chord 6 minor',
+        startMeasure: 4,
+        endMeasure: 4,
+        startOffsetMs: 2_200,
+        endOffsetMs: 4_000,
+      },
+    ]);
+
+    expect(chordLabels.map((entry) => entry.label)).toEqual([
+      '1 maj',
+      '5 min',
+      'Chord 6 minor',
+    ]);
+  });
+
   it('resolves pitched note labels and durations when hovering a note bar', () => {
     const snapshot = createMusicDebugSnapshot();
     const layout = resolveMusicDebugTimelineLayout(960, 320);
@@ -208,7 +253,7 @@ describe('music debug timeline', () => {
     expect(markup).toContain('class="music-debug-timeline-section-label-pill"');
     expect(markup).toContain('class="music-debug-timeline-section-label"');
     expect(markup).toContain('class="music-debug-timeline-chord-cue"');
-    expect(markup).toContain('>Chord 1 minor<');
+    expect(markup).toMatch(/>(Chord 1 minor|1 min)</);
     expect(markup).toContain('<title>Melody');
     expect(markup).toContain('class="music-debug-timeline-cadence-marker"');
     expect(markup).toContain('class="music-debug-timeline-measure-guide"');

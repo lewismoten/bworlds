@@ -13,6 +13,8 @@ Current behavior:
   the same measure timing data as the rest of the timeline.
 - The timeline header shows contiguous chord cues such as `Chord 1 major` and
   `Chord 5 minor` above the note lanes.
+- Chord labels now thin themselves automatically and fall back to compact
+  `1 maj` or `5 min` forms on narrow spans so dense progressions stay readable.
 - Hovering a note now shows its pitch or resolved drum voice plus duration, and
   the exported SVG note bars carry the same labels through `<title>` metadata.
 - Planned question and answer cadence markers now appear on the timeline header

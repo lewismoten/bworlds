@@ -83,7 +83,7 @@
 - [x] Show chord labels above the timeline.
 - [x] Show section labels and cadence markers.
 - [x] Section labels should be less overwealming
-- [ ] Chord labels above the timeline overlap eachother and are not readable
+- [x] Chord labels above the timeline overlap eachother and are not readable
 - [x] Show note name and duration on hover.
 - [x] Show drum voice name on percussion hover.
 - [ ] Add per-track eye icons to hide tracks.

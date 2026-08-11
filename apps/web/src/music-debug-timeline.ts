@@ -16,6 +16,7 @@ import {
   resolveMusicDebugDisplayRoleColor,
 } from './music-debug-role-display.ts';
 import {
+  type MusicDebugChordCue,
   resolveMusicDebugChordCueAtOffset,
   resolveMusicDebugChordCues,
 } from './music-debug-chord-cues.ts';
@@ -42,6 +43,7 @@ const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 32;
 const MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y = 48;
 const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 64;
 const MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y = 78;
+const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_GAP = 8;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -65,6 +67,14 @@ export type MusicDebugTimelineHoverDetail = {
   y: number;
   width: number;
   height: number;
+};
+
+export type MusicDebugTimelineChordLabel = {
+  cue: MusicDebugChordCue;
+  label: string;
+  x: number;
+  startX: number;
+  endX: number;
 };
 
 export function resolveMusicDebugTimelineLayout(
@@ -185,6 +195,50 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
   return null;
 }
 
+export function resolveMusicDebugTimelineChordLabels(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  chordCues: readonly MusicDebugChordCue[]
+): MusicDebugTimelineChordLabel[] {
+  const labels: MusicDebugTimelineChordLabel[] = [];
+  let previousRightEdge = Number.NEGATIVE_INFINITY;
+
+  for (const cue of chordCues) {
+    const startX = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      cue.startOffsetMs
+    );
+    const endX = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      cue.endOffsetMs
+    );
+    const spanWidth = Math.max(1, endX - startX);
+    const label = resolveMusicDebugTimelineChordLabelText(cue, spanWidth);
+    if (!label) {
+      continue;
+    }
+    const centerX = (startX + endX) * 0.5;
+    const halfWidth = resolveMusicDebugTimelineChordLabelWidth(label) * 0.5;
+    const leftEdge = centerX - halfWidth;
+    const rightEdge = centerX + halfWidth;
+    if (leftEdge < previousRightEdge + MUSIC_DEBUG_TIMELINE_CHORD_LABEL_GAP) {
+      continue;
+    }
+    labels.push({
+      cue,
+      label,
+      x: centerX,
+      startX,
+      endX,
+    });
+    previousRightEdge = rightEdge;
+  }
+
+  return labels;
+}
+
 export function drawMusicDebugTimeline(
   canvas: HTMLCanvasElement,
   snapshot: MusicDebugSnapshot,
@@ -204,6 +258,11 @@ export function drawMusicDebugTimeline(
   const durationMs = Math.max(snapshot.durationMs, 1);
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
+  const chordLabels = resolveMusicDebugTimelineChordLabels(
+    layout,
+    durationMs,
+    chordCues
+  );
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
   const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
   const beatMarkers = resolveMusicDebugBeatSubdivisionMarkers(snapshot);
@@ -248,20 +307,10 @@ export function drawMusicDebugTimeline(
   context.fillStyle = '#d8e5ef';
   context.font = '11px Trebuchet MS';
   context.textAlign = 'center';
-  for (const cue of chordCues) {
-    const startX = resolveMusicDebugTimelineXForOffset(
-      layout,
-      durationMs,
-      cue.startOffsetMs
-    );
-    const endX = resolveMusicDebugTimelineXForOffset(
-      layout,
-      durationMs,
-      cue.endOffsetMs
-    );
+  for (const chordLabel of chordLabels) {
     context.fillText(
-      cue.label,
-      (startX + endX) * 0.5,
+      chordLabel.label,
+      chordLabel.x,
       MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y
     );
   }
@@ -359,6 +408,11 @@ export function buildMusicDebugTimelineSvgMarkup(
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
+  const chordLabels = resolveMusicDebugTimelineChordLabels(
+    layout,
+    durationMs,
+    chordCues
+  );
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
   const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
   const beatMarkers = resolveMusicDebugBeatSubdivisionMarkers(snapshot);
@@ -410,24 +464,13 @@ export function buildMusicDebugTimelineSvgMarkup(
           ).toUpperCase()}</text>`;
         })
         .join('')}
-      ${chordCues
-        .map((cue) => {
-          const startX = resolveMusicDebugTimelineXForOffset(
-            layout,
-            durationMs,
-            cue.startOffsetMs
-          );
-          const endX = resolveMusicDebugTimelineXForOffset(
-            layout,
-            durationMs,
-            cue.endOffsetMs
-          );
-          return `<text class="music-debug-timeline-chord-cue" x="${(
-            (startX + endX) *
-            0.5
-          ).toFixed(2)}" y="${MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y.toFixed(
+      ${chordLabels
+        .map((chordLabel) => {
+          return `<text class="music-debug-timeline-chord-cue" x="${chordLabel.x.toFixed(
             2
-          )}" fill="#d8e5ef" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${cue.label}</text>`;
+          )}" y="${MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y.toFixed(
+            2
+          )}" fill="#d8e5ef" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${chordLabel.label}</text>`;
         })
         .join('')}
       ${cadenceMarkers
@@ -972,6 +1015,43 @@ function drawMusicDebugTimelinePlayheadChordLabel(
     MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y
   );
   context.textAlign = 'start';
+}
+
+function resolveMusicDebugTimelineChordLabelText(
+  cue: MusicDebugChordCue,
+  spanWidth: number
+): string | null {
+  if (spanWidth >= 72) {
+    return cue.label;
+  }
+  if (spanWidth >= 18) {
+    return `${cue.degreeIndex + 1} ${resolveMusicDebugTimelineChordQualityShortLabel(
+      cue.label
+    )}`;
+  }
+  return null;
+}
+
+function resolveMusicDebugTimelineChordQualityShortLabel(
+  label: string
+): string {
+  const quality = label.split(' ').at(-1) ?? label;
+  switch (quality) {
+    case 'major':
+      return 'maj';
+    case 'minor':
+      return 'min';
+    case 'diminished':
+      return 'dim';
+    case 'augmented':
+      return 'aug';
+    default:
+      return quality;
+  }
+}
+
+function resolveMusicDebugTimelineChordLabelWidth(label: string): number {
+  return Math.max(20, label.length * 6.2);
 }
 
 function resolveMusicDebugTimelineHoverLabel(
