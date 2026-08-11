@@ -931,6 +931,7 @@ type DynamicTileNode = {
   node: THREE.Group;
   model: unknown;
   modelRoot?: THREE.Object3D | null;
+  fallbackReason?: string;
   uniqueMaterials?: readonly THREE.Material[];
   uniqueTextures?: readonly unknown[];
   pluginUniqueTextures?: readonly unknown[];
@@ -2183,6 +2184,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     const finalSceneResourceStats = collectSceneResourceStats(tileNode);
     const finalUniqueTextures = collectUniqueObjectTextures(tileNode);
+    const fallbackReason = pluginModel
+      ? undefined
+      : getFallbackBoxReason(lastRejectedSummary, usedTilePluginModelFactory);
 
     return {
       key,
@@ -2206,6 +2210,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       node: tileNode,
       model: pluginModel ?? tileNode,
       modelRoot: pluginModel ?? null,
+      fallbackReason,
       uniqueMaterials: pluginUniqueMaterials,
       uniqueTextures: finalUniqueTextures,
       pluginUniqueTextures,
@@ -3058,7 +3063,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       const {
         entry: nextEntry,
         resolvedDetailLevel,
-        attemptedDetailLevels,
+        attemptedEntries,
       } = buildRecoverableVisibleTileModelDetailEntry(
         requestedDetailLevel,
         (detailLevel) =>
@@ -3085,7 +3090,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           tileKey: key,
           plugin: entry.tilePluginOwnerLabel,
           summary: `visible lod recovery failed after ${summarizeVisibleTileRecoveryAttempt(
-            attemptedDetailLevels
+            attemptedEntries
           )}`,
         });
       }
@@ -4015,7 +4020,10 @@ export function shouldRebuildVisibleTileModelDetailEntry(
 }
 
 export function buildRecoverableVisibleTileModelDetailEntry<
-  Entry extends { modelRoot?: THREE.Object3D | null }
+  Entry extends {
+    modelRoot?: THREE.Object3D | null;
+    fallbackReason?: string;
+  }
 >(
   requestedDetailLevel: RenderBudgetDetailLevel,
   buildEntry: (detailLevel: RenderBudgetDetailLevel) => Entry,
@@ -4023,12 +4031,24 @@ export function buildRecoverableVisibleTileModelDetailEntry<
 ): {
   entry: Entry;
   resolvedDetailLevel: RenderBudgetDetailLevel;
-  attemptedDetailLevels: RenderBudgetDetailLevel[];
+  attemptedEntries: Array<{
+    detailLevel: RenderBudgetDetailLevel;
+    fallbackReason?: string;
+  }>;
 } {
-  const attemptedDetailLevels: RenderBudgetDetailLevel[] = [];
+  const attemptedEntries: Array<{
+    detailLevel: RenderBudgetDetailLevel;
+    fallbackReason?: string;
+  }> = [];
   const buildTrackedEntry = (detailLevel: RenderBudgetDetailLevel) => {
-    attemptedDetailLevels.push(detailLevel);
-    return buildEntry(detailLevel);
+    const entry = buildEntry(detailLevel);
+    attemptedEntries.push({
+      detailLevel,
+      ...(typeof entry.fallbackReason === 'string'
+        ? { fallbackReason: entry.fallbackReason }
+        : {}),
+    });
+    return entry;
   };
   if (
     requestedDetailLevel === 'full' &&
@@ -4039,7 +4059,7 @@ export function buildRecoverableVisibleTileModelDetailEntry<
       return {
         entry: preferredEntry,
         resolvedDetailLevel: 'low',
-        attemptedDetailLevels,
+        attemptedEntries,
       };
     }
   }
@@ -4049,21 +4069,30 @@ export function buildRecoverableVisibleTileModelDetailEntry<
     return {
       entry: requestedEntry,
       resolvedDetailLevel: requestedDetailLevel,
-      attemptedDetailLevels,
+      attemptedEntries,
     };
   }
 
   return {
     entry: buildTrackedEntry('low'),
     resolvedDetailLevel: 'low',
-    attemptedDetailLevels,
+    attemptedEntries,
   };
 }
 
 export function summarizeVisibleTileRecoveryAttempt(
-  attemptedDetailLevels: readonly RenderBudgetDetailLevel[]
+  attemptedEntries: ReadonlyArray<{
+    detailLevel: RenderBudgetDetailLevel;
+    fallbackReason?: string;
+  }>
 ): string {
-  return attemptedDetailLevels.join(' -> ');
+  return attemptedEntries
+    .map(({ detailLevel, fallbackReason }) =>
+      typeof fallbackReason === 'string'
+        ? `${detailLevel} (${fallbackReason})`
+        : detailLevel
+    )
+    .join(' -> ');
 }
 
 export function getFallbackBoxReason(

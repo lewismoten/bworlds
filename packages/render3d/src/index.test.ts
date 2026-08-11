@@ -4925,7 +4925,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: { detailLevel: 'full', modelRoot: { type: 'Group' } },
       resolvedDetailLevel: 'full',
-      attemptedDetailLevels: ['full'],
+      attemptedEntries: [{ detailLevel: 'full' }],
     });
     expect(buildEntry).toHaveBeenCalledTimes(1);
     expect(buildEntry).toHaveBeenCalledWith('full');
@@ -4941,6 +4941,7 @@ describe('render3d visibility helpers', () => {
         ? {
             detailLevel,
             modelRoot: null,
+            fallbackReason: 'full failed',
           }
         : lowEntry
     );
@@ -4950,7 +4951,10 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: lowEntry,
       resolvedDetailLevel: 'low',
-      attemptedDetailLevels: ['full', 'low'],
+      attemptedEntries: [
+        { detailLevel: 'full', fallbackReason: 'full failed' },
+        { detailLevel: 'low' },
+      ],
     });
     expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
   });
@@ -4974,7 +4978,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: lowEntry,
       resolvedDetailLevel: 'low',
-      attemptedDetailLevels: ['low'],
+      attemptedEntries: [{ detailLevel: 'low' }],
     });
     expect(buildEntry.mock.calls).toEqual([['low']]);
   });
@@ -4985,6 +4989,7 @@ describe('render3d visibility helpers', () => {
         ? {
             detailLevel,
             modelRoot: null,
+            fallbackReason: 'cached low failed',
           }
         : {
             detailLevel,
@@ -4997,7 +5002,10 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: { detailLevel: 'full', modelRoot: { type: 'Group' } },
       resolvedDetailLevel: 'full',
-      attemptedDetailLevels: ['low', 'full'],
+      attemptedEntries: [
+        { detailLevel: 'low', fallbackReason: 'cached low failed' },
+        { detailLevel: 'full' },
+      ],
     });
     expect(buildEntry.mock.calls).toEqual([['low'], ['full']]);
   });
@@ -5006,6 +5014,7 @@ describe('render3d visibility helpers', () => {
     const buildEntry = vi.fn((detailLevel: 'full' | 'low') => ({
       detailLevel,
       modelRoot: null,
+      fallbackReason: `${detailLevel} failed`,
     }));
 
     expect(
@@ -5013,15 +5022,22 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: { detailLevel: 'low', modelRoot: null },
       resolvedDetailLevel: 'low',
-      attemptedDetailLevels: ['full', 'low'],
+      attemptedEntries: [
+        { detailLevel: 'full', fallbackReason: 'full failed' },
+        { detailLevel: 'low', fallbackReason: 'low failed' },
+      ],
     });
     expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
   });
 
-  it('summarizes the visible lod recovery chain in attempt order', () => {
-    expect(summarizeVisibleTileRecoveryAttempt(['low', 'full', 'low'])).toBe(
-      'low -> full -> low'
-    );
+  it('summarizes the visible lod recovery chain with per-detail reasons', () => {
+    expect(
+      summarizeVisibleTileRecoveryAttempt([
+        { detailLevel: 'low', fallbackReason: 'cached low failed' },
+        { detailLevel: 'full' },
+        { detailLevel: 'low', fallbackReason: 'final low failed' },
+      ])
+    ).toBe('low (cached low failed) -> full -> low (final low failed)');
   });
 
   it('prefers the last rejected summary when reporting a fallback box reason', () => {

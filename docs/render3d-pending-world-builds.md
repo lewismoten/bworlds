@@ -45,8 +45,9 @@ Current behavior:
   `low`, it now retries that cached low-detail path before spending work on
   another full-detail rebuild attempt.
 - Visible LOD recovery now also records the attempted detail chain when a retry
-  still ends without a real model, so debug output can show whether recovery
-  failed on `full`, `low`, or a cached `low -> full` sequence.
+  still ends without a real model, and each attempted step can now carry its
+  own fallback reason, so debug output can show whether recovery failed on
+  `full`, `low`, or a cached `low -> full` sequence and why each step failed.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep
