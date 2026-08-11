@@ -1484,6 +1484,7 @@ const PENDING_BUILD_LOW_DETAIL_QUEUE_THRESHOLD = 28;
 const LOD_SYNC_MOVEMENT_DISTANCE = 0.18;
 const LOD_SYNC_MOVEMENT_DISTANCE_SQUARED =
   LOD_SYNC_MOVEMENT_DISTANCE * LOD_SYNC_MOVEMENT_DISTANCE;
+const LOD_SYNC_FULL_DETAIL_MIN_REMAINING_BUDGET_MS = 1;
 const FAR_MODEL_FULL_VISIBILITY_DISTANCE = 8;
 const FAR_MODEL_REVEAL_DISTANCE_VARIANCE = 8;
 const FAR_MODEL_FADE_DISTANCE = 1.75;
@@ -3009,7 +3010,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         distanceSquared,
         entry.tile
       );
-      if ((entry.detailLevel ?? 'full') === desiredDetailLevel) {
+      const requestedDetailLevel = getTileModelDetailLevelForFrameBudget(
+        desiredDetailLevel,
+        entry.tile,
+        frameBudget
+      );
+      if ((entry.detailLevel ?? 'full') === requestedDetailLevel) {
         continue;
       }
 
@@ -3018,10 +3024,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         registry,
         entry.tileX,
         entry.tileY,
-        desiredDetailLevel,
+        requestedDetailLevel,
         createTilePluginRenderBudget(
           renderBudget,
-          desiredDetailLevel,
+          requestedDetailLevel,
           frameBudget ? getRemainingFrameTimeBudgetMs(frameBudget) : undefined
         )
       );
@@ -3035,7 +3041,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         type: 'lod-changed',
         tileKey: key,
         fromDetailLevel: entry.detailLevel ?? 'full',
-        toDetailLevel: desiredDetailLevel,
+        toDetailLevel: requestedDetailLevel,
       });
       recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
     }
@@ -3934,6 +3940,26 @@ export function getPendingWorldBuildDetailLevel(
     return 'full';
   }
   return distanceSquared <= fullDetailDistanceSquared ? 'full' : 'low';
+}
+
+export function getTileModelDetailLevelForFrameBudget(
+  desiredDetailLevel: 'full' | 'low',
+  tile?: Pick<TileLike, 'kind'>,
+  frameBudget?: FrameTimeBudget,
+  minimumRemainingBudgetMs = LOD_SYNC_FULL_DETAIL_MIN_REMAINING_BUDGET_MS,
+  currentMs = performance.now()
+): 'full' | 'low' {
+  if (desiredDetailLevel === 'low') {
+    return 'low';
+  }
+  if (!frameBudget || shouldKeepTileModelFullDetailLonger(tile)) {
+    return 'full';
+  }
+
+  return getRemainingFrameTimeBudgetMs(frameBudget, currentMs) <
+    minimumRemainingBudgetMs
+    ? 'low'
+    : 'full';
 }
 
 export function shouldSyncTileModelDetailLevels(

@@ -20,6 +20,10 @@ Current behavior:
   single tile when the queue is still cold.
 - Near tiles can stay full-detail while farther queued tiles fall back to low
   detail through `getPendingWorldBuildDetailLevel(...)`.
+- Visible-tile LOD reevaluation now also respects the shared frame budget:
+  `syncTileModelDetailLevels()` can keep ordinary tiles on low detail when the
+  remaining frame budget is nearly exhausted, while protected landmark and
+  route-terminal tiles still keep their longer full-detail window.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

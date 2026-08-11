@@ -185,6 +185,7 @@ import {
   getTileModelDetailLevel,
   getTileModelLowDetailDistance,
   getTileModelDetailLevelFromSquaredDistance,
+  getTileModelDetailLevelForFrameBudget,
   getTileModelDetailLevelWithHysteresis,
   getPendingWorldBuildDetailLevel,
   getVisibleWorldTileBuildOrder,
@@ -4848,6 +4849,62 @@ describe('render3d visibility helpers', () => {
     expect(getPendingWorldBuildDetailLevel('full', 16, 0)).toBe('full');
     expect(
       getPendingWorldBuildDetailLevel('full', 64, 40, { kind: 'dungeon' })
+    ).toBe('full');
+  });
+
+  it('lowers visible-tile full-detail requests when the frame budget is nearly exhausted', () => {
+    const tightBudget = createFrameTimeBudget(0.5, 100);
+    const healthyBudget = createFrameTimeBudget(2, 100);
+
+    expect(
+      getTileModelDetailLevelForFrameBudget(
+        'full',
+        { kind: 'plains' },
+        tightBudget,
+        1,
+        100.75
+      )
+    ).toBe('low');
+    expect(
+      getTileModelDetailLevelForFrameBudget(
+        'low',
+        { kind: 'plains' },
+        tightBudget,
+        1,
+        100.75
+      )
+    ).toBe('low');
+    expect(
+      getTileModelDetailLevelForFrameBudget(
+        'full',
+        { kind: 'plains' },
+        healthyBudget,
+        1,
+        100.25
+      )
+    ).toBe('full');
+  });
+
+  it('keeps landmark visible-tile requests at full detail under tight frame budgets', () => {
+    const tightBudget = createFrameTimeBudget(0.5, 100);
+
+    expect(
+      getTileModelDetailLevelForFrameBudget(
+        'full',
+        { kind: 'lighthouse' },
+        tightBudget,
+        1,
+        100.75
+      )
+    ).toBe('full');
+    expect(
+      getTileModelDetailLevelForFrameBudget(
+        'full',
+        { kind: 'sign' },
+        tightBudget,
+        1,
+        100.75
+      )
     ).toBe('full');
   });
 
