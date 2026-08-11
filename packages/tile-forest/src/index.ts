@@ -1417,7 +1417,7 @@ function* createForestModelProgressive({
   const firstTreeBatchCount = Math.ceil(descriptors.length / 2);
   const primaryTreeDescriptors = descriptors.slice(0, firstTreeBatchCount);
   const secondaryTreeDescriptors = descriptors.slice(firstTreeBatchCount);
-  const totalSteps = secondaryTreeDescriptors.length > 0 ? 5 : 4;
+  const totalSteps = secondaryTreeDescriptors.length > 0 ? 6 : 5;
 
   for (const descriptor of primaryTreeDescriptors) {
     addForestFullDetailTree(group, three, geometry, tileX, tileY, descriptor);
@@ -1786,6 +1786,12 @@ function* createForestModelProgressive({
     );
   }
 
+  yield {
+    completedSteps: postTreeBaseStep + 2,
+    totalSteps,
+    label: 'understory-and-wildlife',
+  };
+
   const trail = getForestTrail(tileX, tileY);
   if (trail) {
     addForestBreadcrumbInstances(
@@ -1882,9 +1888,9 @@ function* createForestModelProgressive({
   }
 
   yield {
-    completedSteps: postTreeBaseStep + 2,
+    completedSteps: postTreeBaseStep + 3,
     totalSteps,
-    label: 'ground-detail',
+    label: 'landmarks-and-floor',
   };
 
   if (renderCloseDetails) {
@@ -1894,7 +1900,7 @@ function* createForestModelProgressive({
   }
 
   yield {
-    completedSteps: postTreeBaseStep + 3,
+    completedSteps: postTreeBaseStep + 4,
     totalSteps,
     label: 'close-effects',
   };

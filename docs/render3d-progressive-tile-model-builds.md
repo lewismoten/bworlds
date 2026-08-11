@@ -26,7 +26,10 @@ Current groundwork:
   before returning the final Three.js object.
 - `tile-forest` now splits its full-detail tree construction into two
   resumable batches before close-detail passes, which reduces how much work can
-  hide behind the first progressive yield.
+  hide behind the first progressive yield, and now also splits the remaining
+  close-detail pass into separate `understory-and-wildlife` and
+  `landmarks-and-floor` phases so meadow flowers, birds, spiders, trail props,
+  and floor clutter no longer share one large scheduler step.
 - `tile-town` now splits its full-detail building population into two
   resumable batches before signage, banners, and light passes, so one large
   structure loop does not dominate the first progressive step.

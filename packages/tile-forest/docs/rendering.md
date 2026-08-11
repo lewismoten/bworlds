@@ -9,8 +9,8 @@ Progressive loading:
   renderer can spread the heaviest tree, hollow, ground-detail, and firefly
   work across multiple frames.
 - Current progressive phases split the heaviest tree build into two batches
-  before continuing with `hollows-and-markings`, `ground-detail`, and
-  `close-effects`.
+  before continuing with `hollows-and-markings`,
+  `understory-and-wildlife`, `landmarks-and-floor`, and `close-effects`.
 - The low-detail forest path remains synchronous because it is already a small
   instanced pass.
 

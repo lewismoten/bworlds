@@ -68,7 +68,7 @@ describe('tile forest', () => {
       done: false,
       value: {
         completedSteps: 1,
-        totalSteps: 5,
+        totalSteps: 6,
         label: 'trees-primary',
       },
     });
@@ -76,7 +76,7 @@ describe('tile forest', () => {
       done: false,
       value: {
         completedSteps: 2,
-        totalSteps: 5,
+        totalSteps: 6,
         label: 'trees-secondary',
       },
     });
@@ -84,7 +84,7 @@ describe('tile forest', () => {
       done: false,
       value: {
         completedSteps: 3,
-        totalSteps: 5,
+        totalSteps: 6,
         label: 'hollows-and-markings',
       },
     });
@@ -92,15 +92,23 @@ describe('tile forest', () => {
       done: false,
       value: {
         completedSteps: 4,
-        totalSteps: 5,
-        label: 'ground-detail',
+        totalSteps: 6,
+        label: 'understory-and-wildlife',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 5,
-        totalSteps: 5,
+        totalSteps: 6,
+        label: 'landmarks-and-floor',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 6,
+        totalSteps: 6,
         label: 'close-effects',
       },
     });
