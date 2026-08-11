@@ -20,11 +20,16 @@ import {
   type SoundBankDebugOptions,
   type SoundBankDebugPercussionBrowserState,
   type SoundBankDebugPreviewEnvelopeState,
+  type SoundBankDebugPreviewOscillatorState,
   type SoundBankDebugPreviewTimbreState,
   type SoundBankDebugPreviewMode,
   type SoundBankDebugSnapshot,
 } from './sound-bank-debug.ts';
 import { normalizeSoundBankDebugPreviewEnvelopeState } from './sound-bank-debug-preview-envelope.ts';
+import {
+  normalizeSoundBankDebugPreviewOscillatorState,
+  resolveSoundBankDebugPreviewOscillatorDefaults,
+} from './sound-bank-debug-preview-oscillators.ts';
 import { normalizeSoundBankDebugPreviewTimbreState } from './sound-bank-debug-preview-timbre.ts';
 import type { MusicDebugInstrumentPreviewTarget } from './music-debug-instrument-panel.ts';
 import type {
@@ -52,6 +57,7 @@ let errorMessage: string | null = null;
 let layoutMode: SoundBankDebugLayoutMode = 'expanded';
 let previewMode: SoundBankDebugPreviewMode = 'processed';
 let previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null = null;
+let previewOscillatorState: SoundBankDebugPreviewOscillatorState | null = null;
 let previewTimbreState: SoundBankDebugPreviewTimbreState | null = null;
 const SOUND_BANK_TILE_KINDS: readonly MusicDebugTileKind[] = [
   'plains',
@@ -329,6 +335,7 @@ function renderPage(): void {
     generalMidiBrowserState,
     percussionBrowserState,
     previewEnvelopeState,
+    previewOscillatorState,
     previewTimbreState,
   });
   bindPage(snapshot);
@@ -413,6 +420,25 @@ function readPreviewEnvelopeState(): SoundBankDebugPreviewEnvelopeState | null {
   );
 }
 
+function readPreviewOscillatorState(): SoundBankDebugPreviewOscillatorState | null {
+  const controls = document.querySelector<HTMLElement>(
+    '[data-preview-oscillator-id]'
+  );
+  const instrumentId = controls?.dataset.previewOscillatorId?.trim();
+  if (!instrumentId) {
+    return null;
+  }
+
+  return normalizeSoundBankDebugPreviewOscillatorState(
+    previewOscillatorState ?? {
+      instrumentId,
+    },
+    {
+      instrumentId,
+    }
+  );
+}
+
 function syncPreviewEnvelopeUi(): void {
   const attackInput = document.querySelector<HTMLInputElement>(
     '#sound-bank-debug-envelope-attack'
@@ -489,6 +515,90 @@ function syncPreviewTimbreUi(): void {
     );
 }
 
+function resolveSelectedRuntimeInstrument(snapshot: SoundBankDebugSnapshot) {
+  const selectedProgramNumber = Number.parseInt(
+    readGeneralMidiBrowserState().selectedProgramNumber,
+    10
+  );
+  if (!Number.isInteger(selectedProgramNumber)) {
+    return null;
+  }
+
+  const selectedEntry =
+    snapshot.instrumentRegistry.entries.find(
+      (entry) =>
+        entry.isValid &&
+        entry.generalMidiProgramNumber === selectedProgramNumber &&
+        entry.sourcePlugin === 'core-generated-bank'
+    ) ?? null;
+  if (!selectedEntry) {
+    return null;
+  }
+
+  return (
+    Object.values(snapshot.musicSnapshot.instrumentBank.instruments).find(
+      (instrument) => instrument.id === selectedEntry.id
+    ) ?? null
+  );
+}
+
+function togglePreviewOscillatorCarrier(
+  snapshot: SoundBankDebugSnapshot
+): void {
+  const instrument = resolveSelectedRuntimeInstrument(snapshot);
+  if (!instrument) {
+    return;
+  }
+  const current = normalizeSoundBankDebugPreviewOscillatorState(
+    readPreviewOscillatorState(),
+    resolveSoundBankDebugPreviewOscillatorDefaults(instrument)
+  );
+  previewOscillatorState = {
+    ...current,
+    carrierEnabled: !current.carrierEnabled,
+    soloTarget: current.soloTarget === 'carrier' ? 'all' : current.soloTarget,
+  };
+  renderPage();
+}
+
+function togglePreviewOscillatorHarmonic(
+  snapshot: SoundBankDebugSnapshot
+): void {
+  const instrument = resolveSelectedRuntimeInstrument(snapshot);
+  if (!instrument) {
+    return;
+  }
+  const current = normalizeSoundBankDebugPreviewOscillatorState(
+    readPreviewOscillatorState(),
+    resolveSoundBankDebugPreviewOscillatorDefaults(instrument)
+  );
+  previewOscillatorState = {
+    ...current,
+    harmonicEnabled: !current.harmonicEnabled,
+    soloTarget: current.soloTarget === 'harmonic' ? 'all' : current.soloTarget,
+  };
+  renderPage();
+}
+
+function togglePreviewOscillatorSolo(
+  snapshot: SoundBankDebugSnapshot,
+  soloTarget: 'carrier' | 'harmonic'
+): void {
+  const instrument = resolveSelectedRuntimeInstrument(snapshot);
+  if (!instrument) {
+    return;
+  }
+  const current = normalizeSoundBankDebugPreviewOscillatorState(
+    readPreviewOscillatorState(),
+    resolveSoundBankDebugPreviewOscillatorDefaults(instrument)
+  );
+  previewOscillatorState = {
+    ...current,
+    soloTarget: current.soloTarget === soloTarget ? 'all' : soloTarget,
+  };
+  renderPage();
+}
+
 function bindPage(snapshot: SoundBankDebugSnapshot): void {
   document
     .querySelector<HTMLFormElement>('#sound-bank-debug-form')
@@ -501,6 +611,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         generalMidiBrowserState = readGeneralMidiBrowserState();
         percussionBrowserState = readPercussionBrowserState();
         previewEnvelopeState = null;
+        previewOscillatorState = null;
         previewTimbreState = null;
         audioStatus = 'Audio idle';
         errorMessage = null;
@@ -646,6 +757,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         options = randomizeSoundBankDebugSeed(readFormOptions());
         generalMidiBrowserState = readGeneralMidiBrowserState();
         previewEnvelopeState = null;
+        previewOscillatorState = null;
         previewTimbreState = null;
         audioStatus = 'Audio idle';
         errorMessage = null;
@@ -666,6 +778,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         percussionBrowserState =
           DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
         previewEnvelopeState = null;
+        previewOscillatorState = null;
         previewTimbreState = null;
         previewMode = 'processed';
         audioStatus = 'Audio idle';
@@ -706,6 +819,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
                 {
                   dry: previewMode === 'dry',
                   envelope: readPreviewEnvelopeState(),
+                  oscillators: readPreviewOscillatorState(),
                   timbre: readPreviewTimbreState(),
                 }
               )
@@ -717,6 +831,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
                   {
                     dry: previewMode === 'dry',
                     envelope: readPreviewEnvelopeState(),
+                    oscillators: readPreviewOscillatorState(),
                     timbre: readPreviewTimbreState(),
                   }
                 );
@@ -766,6 +881,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           {
             dry: previewMode === 'dry',
             envelope: readPreviewEnvelopeState(),
+            oscillators: readPreviewOscillatorState(),
             timbre: readPreviewTimbreState(),
           }
         );
@@ -810,6 +926,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           {
             dry: previewMode === 'dry',
             envelope: readPreviewEnvelopeState(),
+            oscillators: readPreviewOscillatorState(),
             timbre: readPreviewTimbreState(),
           }
         );
@@ -854,6 +971,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           {
             dry: previewMode === 'dry',
             envelope: readPreviewEnvelopeState(),
+            oscillators: readPreviewOscillatorState(),
             timbre: readPreviewTimbreState(),
           }
         );
@@ -1035,6 +1153,54 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     });
 
   syncPreviewEnvelopeUi();
+
+  document
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-oscillator-carrier-toggle'
+    )
+    ?.addEventListener(
+      'click',
+      () => {
+        togglePreviewOscillatorCarrier(snapshot);
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-oscillator-harmonic-toggle'
+    )
+    ?.addEventListener(
+      'click',
+      () => {
+        togglePreviewOscillatorHarmonic(snapshot);
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-oscillator-carrier-solo'
+    )
+    ?.addEventListener(
+      'click',
+      () => {
+        togglePreviewOscillatorSolo(snapshot, 'carrier');
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-oscillator-harmonic-solo'
+    )
+    ?.addEventListener(
+      'click',
+      () => {
+        togglePreviewOscillatorSolo(snapshot, 'harmonic');
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
 
   document
     .querySelectorAll<HTMLInputElement>(

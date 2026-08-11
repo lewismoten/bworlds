@@ -97,6 +97,19 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('sound-bank-debug-envelope-decay');
     expect(normalizedMarkup).toContain('sound-bank-debug-envelope-sustain');
     expect(normalizedMarkup).toContain('sound-bank-debug-envelope-release');
+    expect(normalizedMarkup).toContain('Oscillator Toggles');
+    expect(normalizedMarkup).toContain(
+      'sound-bank-debug-oscillator-carrier-toggle'
+    );
+    expect(normalizedMarkup).toContain(
+      'sound-bank-debug-oscillator-carrier-solo'
+    );
+    expect(normalizedMarkup).toContain(
+      'sound-bank-debug-oscillator-harmonic-toggle'
+    );
+    expect(normalizedMarkup).toContain(
+      'sound-bank-debug-oscillator-harmonic-solo'
+    );
     expect(normalizedMarkup).toContain('Filter, Noise, and Detune');
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-detune');
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-filter-cutoff');

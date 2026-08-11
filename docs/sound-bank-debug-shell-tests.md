@@ -22,6 +22,10 @@ now runs as three focused files:
   covers normalization and note-level application of the debug-only detune,
   filter, and noise overrides that feed the live tone controls on the
   sound-bank page.
+- [apps/web/src/sound-bank-debug-preview-oscillators.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-bank-debug-preview-oscillators.test.ts)
+  covers normalization and note-level application of the debug-only carrier,
+  harmonic, and solo override state that feeds the live oscillator controls on
+  the sound-bank page.
 
 This keeps the same assertions while giving the long-suite runner more files to
 parallelize, which reduces the wall-clock impact of the largest remaining

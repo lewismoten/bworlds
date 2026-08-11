@@ -132,4 +132,22 @@ describe('sound bank debug preview mode', () => {
     expect(note?.timbre.filterQ).toBe(1.9);
     expect(note?.timbre.noiseMix).toBe(0.22);
   });
+
+  it('applies live oscillator solo overrides across preview notes', () => {
+    const note = resolveSoundBankDebugPreviewNoteRole(
+      CAVE_SNAPSHOT,
+      'lead',
+      9_000,
+      {
+        oscillators: {
+          carrierEnabled: true,
+          harmonicEnabled: true,
+          soloTarget: 'carrier',
+        },
+      }
+    );
+
+    expect(note?.timbre.fundamentalGainMultiplier ?? 1).toBeGreaterThan(0);
+    expect(note?.harmonicGain).toBe(0);
+  });
 });

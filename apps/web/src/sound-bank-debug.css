@@ -255,6 +255,29 @@ body {
   margin-top: 0.8rem;
 }
 
+.sound-bank-debug-oscillator-controls {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.sound-bank-debug-oscillator-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(172, 208, 255, 0.16);
+  background: rgba(8, 17, 27, 0.52);
+}
+
+.sound-bank-debug-oscillator-row > span {
+  color: #eef5ff;
+  font-size: 0.92rem;
+}
+
 .sound-bank-debug-master-gain span {
   display: block;
   margin-bottom: 0.35rem;

@@ -303,7 +303,7 @@ export function createWebAudioMusicSink(
       const sweepStartFrequency = note.frequency * pitchSweepMultiplier;
       const sweepEndAt = startAt + pitchSweepDurationSeconds;
       const fundamentalGainMultiplier = Math.max(
-        1,
+        0,
         note.timbre.fundamentalGainMultiplier ?? 1
       );
       const bodySustainLevel = clamp(

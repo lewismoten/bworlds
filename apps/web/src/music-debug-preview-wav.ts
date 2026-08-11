@@ -102,7 +102,7 @@ export function renderMusicDebugPreviewNoteToSamples(
     const mixed =
       carrier *
         (1 - harmonicWeight) *
-        Math.max(1, note.timbre.fundamentalGainMultiplier ?? 1) *
+        Math.max(0, note.timbre.fundamentalGainMultiplier ?? 1) *
         carrierEnvelopeGain +
       harmonic * harmonicWeight * pulseModulation * harmonicEnvelopeGain +
       transientNoise * transientMix * transientEnvelopeGain +

@@ -181,6 +181,12 @@ export function buildMusicDebugInstrumentWaveformSvgMarkup(
   const height = 56;
   const midY = height / 2;
   const points: string[] = [];
+  const carrierWeight = Math.max(
+    0,
+    instrument.timbre.fundamentalGainMultiplier ?? 1
+  );
+  const harmonicWeight = Math.max(0, instrument.harmonicGain * 0.45);
+  const totalWeight = carrierWeight + harmonicWeight;
 
   for (let sampleIndex = 0; sampleIndex < 48; sampleIndex += 1) {
     const phase = sampleIndex / 47;
@@ -190,8 +196,9 @@ export function buildMusicDebugInstrumentWaveformSvgMarkup(
       (phase * instrument.timbre.harmonicRatio) % 1
     );
     const mixed =
-      carrier * (1 - instrument.harmonicGain * 0.45) +
-      harmonic * instrument.harmonicGain * 0.45;
+      totalWeight <= 0
+        ? 0
+        : (carrier * carrierWeight + harmonic * harmonicWeight) / totalWeight;
     const x = (sampleIndex / 47) * width;
     const y = midY - mixed * (height * 0.32);
     points.push(`${x.toFixed(2)},${y.toFixed(2)}`);

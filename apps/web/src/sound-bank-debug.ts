@@ -58,6 +58,16 @@ import {
   type SoundBankDebugPreviewTimbreState,
 } from './sound-bank-debug-preview-timbre.ts';
 import {
+  applySoundBankDebugPreviewOscillatorStateToInstrument,
+  applySoundBankDebugPreviewOscillatorStateToNote,
+  normalizeSoundBankDebugPreviewOscillatorState,
+  resolveCarrierEnabled,
+  resolveHarmonicEnabled,
+  resolveSoundBankDebugPreviewOscillatorDefaults,
+  type SoundBankDebugPreviewOscillatorOverride,
+  type SoundBankDebugPreviewOscillatorState,
+} from './sound-bank-debug-preview-oscillators.ts';
+import {
   createSoundBankInstrumentRegistry,
   type SoundBankInstrumentRegistryEntry,
   type SoundBankInstrumentRegistration,
@@ -98,6 +108,7 @@ export type SoundBankDebugPercussionBrowserState = {
 
 export type { SoundBankDebugPreviewEnvelopeState };
 export type { SoundBankDebugPreviewTimbreState };
+export type { SoundBankDebugPreviewOscillatorState };
 
 export type SoundBankDebugGeneralMidiBrowserSection = Readonly<{
   heading: string;
@@ -235,6 +246,7 @@ export function buildSoundBankDebugMarkup(
     percussionBrowserState?: Partial<SoundBankDebugPercussionBrowserState>;
     previewEnvelopeState?: SoundBankDebugPreviewEnvelopeState | null;
     previewTimbreState?: SoundBankDebugPreviewTimbreState | null;
+    previewOscillatorState?: SoundBankDebugPreviewOscillatorState | null;
   } = {
     audioStatus: 'Audio idle',
   }
@@ -287,7 +299,8 @@ export function buildSoundBankDebugMarkup(
     snapshot.instrumentRegistry.entries,
     generalMidiBrowserModel.selectedProgramNumber,
     viewState.previewEnvelopeState ?? null,
-    viewState.previewTimbreState ?? null
+    viewState.previewTimbreState ?? null,
+    viewState.previewOscillatorState ?? null
   );
   const generalMidiBrowserMarkup = generalMidiBrowserModel.sections
     .map(
@@ -891,6 +904,7 @@ export function resolveSoundBankDebugPreviewNoteRole(
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
     timbre?: SoundBankDebugPreviewTimbreOverride | null;
+    oscillators?: SoundBankDebugPreviewOscillatorOverride | null;
   } = {}
 ) {
   const existingPreview = resolveMusicDebugInstrumentPreviewNote(
@@ -923,6 +937,7 @@ export function resolveSoundBankDebugPreviewPhraseRole(
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
     timbre?: SoundBankDebugPreviewTimbreOverride | null;
+    oscillators?: SoundBankDebugPreviewOscillatorOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   return resolveMusicDebugInstrumentPreviewPhraseNotes(
@@ -940,6 +955,7 @@ export function createSoundBankDebugPercussionRangeAuditionNotes(
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
     timbre?: SoundBankDebugPreviewTimbreOverride | null;
+    oscillators?: SoundBankDebugPreviewOscillatorOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
@@ -967,6 +983,7 @@ export function createSoundBankDebugStandardPercussionPatternNotes(
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
     timbre?: SoundBankDebugPreviewTimbreOverride | null;
+    oscillators?: SoundBankDebugPreviewOscillatorOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
@@ -999,6 +1016,7 @@ export function createSoundBankDebugQuietPercussionPatternNotes(
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
     timbre?: SoundBankDebugPreviewTimbreOverride | null;
+    oscillators?: SoundBankDebugPreviewOscillatorOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   return createSoundBankDebugStandardPercussionPatternNotes(
@@ -1184,7 +1202,8 @@ function buildSelectedInstrumentDetailsMarkup(
   registryEntries: readonly SoundBankInstrumentRegistryEntry[],
   selectedProgramNumber: number | null,
   previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null,
-  previewTimbreState: SoundBankDebugPreviewTimbreState | null
+  previewTimbreState: SoundBankDebugPreviewTimbreState | null,
+  previewOscillatorState: SoundBankDebugPreviewOscillatorState | null
 ): string {
   const selectedEntry =
     selectedProgramNumber === null
@@ -1207,15 +1226,33 @@ function buildSelectedInstrumentDetailsMarkup(
     snapshot,
     selectedEntry.id
   );
+  const activePreviewEnvelopeState =
+    runtimeInstrument &&
+    previewEnvelopeState?.instrumentId === runtimeInstrument.id
+      ? previewEnvelopeState
+      : null;
+  const activePreviewTimbreState =
+    runtimeInstrument &&
+    previewTimbreState?.instrumentId === runtimeInstrument.id
+      ? previewTimbreState
+      : null;
+  const activePreviewOscillatorState =
+    runtimeInstrument &&
+    previewOscillatorState?.instrumentId === runtimeInstrument.id
+      ? previewOscillatorState
+      : null;
   const effectiveInstrument =
     runtimeInstrument === null
       ? null
       : applySoundBankDebugPreviewEnvelopeToInstrument(
           applySoundBankDebugPreviewTimbreToInstrument(
-            runtimeInstrument,
-            previewTimbreState
+            applySoundBankDebugPreviewOscillatorStateToInstrument(
+              runtimeInstrument,
+              activePreviewOscillatorState
+            ),
+            activePreviewTimbreState
           ),
-          previewEnvelopeState
+          activePreviewEnvelopeState
         );
   const usesSamples = runtimeInstrument ? 'No' : 'Unknown';
   const usesSynthesis = runtimeInstrument ? 'Yes' : 'Unknown';
@@ -1280,13 +1317,19 @@ function buildSelectedInstrumentDetailsMarkup(
   const previewEnvelopeControlsMarkup = effectiveInstrument
     ? buildSoundBankDebugPreviewEnvelopeControlsMarkup(
         effectiveInstrument,
-        previewEnvelopeState
+        activePreviewEnvelopeState
       )
     : '';
   const previewTimbreControlsMarkup = effectiveInstrument
     ? buildSoundBankDebugPreviewTimbreControlsMarkup(
         effectiveInstrument,
-        previewTimbreState
+        activePreviewTimbreState
+      )
+    : '';
+  const previewOscillatorControlsMarkup = effectiveInstrument
+    ? buildSoundBankDebugPreviewOscillatorControlsMarkup(
+        effectiveInstrument,
+        activePreviewOscillatorState
       )
     : '';
 
@@ -1297,6 +1340,7 @@ function buildSelectedInstrumentDetailsMarkup(
     <div class="music-debug-instrument-waveform">
       ${filterResponseCurveMarkup}
     </div>
+    ${previewOscillatorControlsMarkup}
     ${previewEnvelopeControlsMarkup}
     ${previewTimbreControlsMarkup}
     <dl class="music-debug-instrument-stats">
@@ -1350,7 +1394,10 @@ function resolvePreviewPolyphonyLimit(): number {
 function resolveActiveOscillatorCount(
   instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
 ): number {
-  return instrument.harmonicGain > 0 ? 2 : 1;
+  return (
+    Number((instrument.timbre.fundamentalGainMultiplier ?? 1) > 0) +
+    Number(instrument.harmonicGain > 0)
+  );
 }
 
 function buildSelectedInstrumentFilterResponseCurveMarkup(
@@ -1919,16 +1966,96 @@ function buildSoundBankDebugPreviewTimbreControlsMarkup(
   `;
 }
 
+function buildSoundBankDebugPreviewOscillatorControlsMarkup(
+  instrument: ProceduralInstrument,
+  previewOscillatorState: SoundBankDebugPreviewOscillatorState | null
+): string {
+  const previewOscillators = normalizeSoundBankDebugPreviewOscillatorState(
+    previewOscillatorState,
+    resolveSoundBankDebugPreviewOscillatorDefaults(instrument)
+  );
+  const carrierEnabled = resolveCarrierEnabled(previewOscillators);
+  const harmonicEnabled = resolveHarmonicEnabled(previewOscillators);
+
+  return `
+    <section
+      class="sound-bank-debug-preview-envelope"
+      aria-label="Preview oscillator controls"
+      data-preview-oscillator-id="${instrument.id}"
+    >
+      <div class="sound-bank-debug-panel-head">
+        <div>
+          <p class="sound-bank-debug-panel-kicker">Live Oscillator Controls</p>
+          <h3>Oscillator Toggles</h3>
+          <p>
+            Disable or solo the carrier and harmonic oscillators for debug
+            playback without changing the generated bank.
+          </p>
+        </div>
+      </div>
+      <div class="sound-bank-debug-oscillator-controls">
+        <div class="sound-bank-debug-oscillator-row">
+          <span>Carrier Oscillator</span>
+          <div class="sound-bank-debug-preview-mode-toggle">
+            <button
+              id="sound-bank-debug-oscillator-carrier-toggle"
+              type="button"
+              aria-pressed="${previewOscillators.carrierEnabled ? 'true' : 'false'}"
+            >
+              ${carrierEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+            <button
+              id="sound-bank-debug-oscillator-carrier-solo"
+              type="button"
+              aria-pressed="${
+                previewOscillators.soloTarget === 'carrier' ? 'true' : 'false'
+              }"
+            >
+              Solo
+            </button>
+          </div>
+        </div>
+        <div class="sound-bank-debug-oscillator-row">
+          <span>Harmonic Oscillator</span>
+          <div class="sound-bank-debug-preview-mode-toggle">
+            <button
+              id="sound-bank-debug-oscillator-harmonic-toggle"
+              type="button"
+              aria-pressed="${previewOscillators.harmonicEnabled ? 'true' : 'false'}"
+            >
+              ${harmonicEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+            <button
+              id="sound-bank-debug-oscillator-harmonic-solo"
+              type="button"
+              aria-pressed="${
+                previewOscillators.soloTarget === 'harmonic' ? 'true' : 'false'
+              }"
+            >
+              Solo
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function applySoundBankDebugPreviewOptions(
   note: ProceduralMusicNote,
   options: {
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
     timbre?: SoundBankDebugPreviewTimbreOverride | null;
+    oscillators?: SoundBankDebugPreviewOscillatorOverride | null;
   }
 ): ProceduralMusicNote {
-  const withTimbre = applySoundBankDebugPreviewTimbreToNote(
+  const withOscillators = applySoundBankDebugPreviewOscillatorStateToNote(
     note,
+    options.oscillators
+  );
+  const withTimbre = applySoundBankDebugPreviewTimbreToNote(
+    withOscillators,
     options.timbre
   );
   const withEnvelope = applySoundBankDebugPreviewEnvelopeToNote(
