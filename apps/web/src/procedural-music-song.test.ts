@@ -1145,6 +1145,41 @@ describe('procedural music song', () => {
     expect(lateVariationAverage).toBeGreaterThan(earlyVariationAverage);
   });
 
+  it('uses shorter lead notes while the variation section builds toward its climax', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const variation = song.sections.find(
+      (section) => section.id === 'variation'
+    );
+
+    expect(variation).toBeDefined();
+
+    const variationLeadDurations = averageRoleDurationByMeasure(
+      song,
+      variation!,
+      'lead'
+    );
+    const earlyVariationAverage = averageCounts(
+      variationLeadDurations.slice(0, 4)
+    );
+    const climaxApproachAverage = averageCounts(
+      variationLeadDurations.slice(6, 10)
+    );
+    const postClimaxAverage = averageCounts(
+      variationLeadDurations.slice(12, 16)
+    );
+
+    expect(climaxApproachAverage).toBeLessThan(earlyVariationAverage);
+    expect(postClimaxAverage).toBeGreaterThan(climaxApproachAverage);
+  });
+
   it('keeps transformed notes fully inside their assigned section windows', () => {
     const song = createProceduralMusicSong({
       nowMs: 1_000,
@@ -1409,6 +1444,30 @@ function countRoleNotesByMeasure(
           note.startMs < sectionStartMs + (measureIndex + 1) * measureDurationMs
       ).length
   );
+}
+
+function averageRoleDurationByMeasure(
+  song: ReturnType<typeof createProceduralMusicSong>,
+  section: ReturnType<typeof createProceduralMusicSong>['sections'][number],
+  role: 'lead' | 'harmony' | 'bass' | 'percussion'
+): number[] {
+  const sectionStartMs = song.startMs + section.startOffsetMs;
+  const measureDurationMs =
+    section.durationMs / Math.max(1, section.measureCount);
+
+  return Array.from({ length: section.measureCount }, (_, measureIndex) => {
+    const measureNotes = song.notes.filter(
+      (note) =>
+        note.role === role &&
+        note.startMs >= sectionStartMs + measureIndex * measureDurationMs &&
+        note.startMs < sectionStartMs + (measureIndex + 1) * measureDurationMs
+    );
+
+    return (
+      measureNotes.reduce((sum, note) => sum + note.durationMs, 0) /
+      Math.max(1, measureNotes.length)
+    );
+  });
 }
 
 function collectMeasurePulseInWindow(

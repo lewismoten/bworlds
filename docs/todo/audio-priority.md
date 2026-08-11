@@ -19,7 +19,7 @@
 - [x] Show/Play all instrument/samples in the percussion track
 - [x] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
 - [x] Move instrument wave form cards to appear just under the MIDI track visualizer.
-- [ ] Move instrument wave form cards to appear below the MIDI track visualizer.
+- [ ] Instruments are missing with their wave forms. Move instrument wave form cards to appear below the MIDI track visualizer.
 - [x] Include all graphs as images within the Export ZIP
 
 # Track Role / Color / Listing Order
@@ -32,6 +32,7 @@
 - [x] Rhythm: Order 6, red, named as Percussion (may contain multiple instruments: kick, snare, toms, cymbols, shaker, tambourine, bells, hand percussion)
 - [ ] Effects: Order 7, pink, named Transitions
 - [ ] Ambience: Order 8, teal, named as Ambience
+- [ ] Allow some songs to have Counterline, Atmosphere, Effects, and/or Ambience
 
 ## Instrument Patch Foundation
 
@@ -139,7 +140,7 @@
 - [x] Give the bass a stable recurring pulse.
 - [x] Let lead notes connect into short musical sentences.
 - [x] Use longer notes near phrase endings.
-- [ ] Use shorter notes when building toward a climax.
+- [x] Use shorter notes when building toward a climax.
 - [x] Make section changes audible through rhythm changes.
 - [ ] Quantize first, then apply controlled humanization.
       The lead rhythm system now draws from shared measure and phrase pattern
@@ -153,9 +154,11 @@
       and percussion breathing measures so accompaniment layers do not stay
       continuously active through every section, restores one planned note when
       pruning would otherwise leave an entire measure silent so the full stack
-      never rests all at once, gives the variation section a measurably
-      different lead rhythm than Section A, and keeps the bass pulse repeating
-      measure-for-measure across the repeated Section A phrase cycle.
+      never rests all at once, shortens variation lead-note durations as the
+      section approaches its central climax window before lengthening them
+      again afterward, gives the variation section a measurably different lead
+      rhythm than Section A, and keeps the bass pulse repeating measure-for-
+      measure across the repeated Section A phrase cycle.
 
 ## Humanization
 

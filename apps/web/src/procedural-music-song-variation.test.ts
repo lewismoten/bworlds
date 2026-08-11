@@ -71,6 +71,37 @@ describe('procedural music song variation', () => {
     expect(transformed?.durationMs).toBeGreaterThan(BASE_NOTE.durationMs);
   });
 
+  it('shortens variation lead notes as the section builds toward its climax', () => {
+    const earlyVariation = transformSongSectionNote(
+      { ...BASE_NOTE, startMs: 750 },
+      createSection('variation'),
+      0,
+      0
+    );
+    const nearClimaxVariation = transformSongSectionNote(
+      { ...BASE_NOTE, startMs: 9_000 },
+      createSection('variation'),
+      0,
+      0
+    );
+    const postClimaxVariation = transformSongSectionNote(
+      { ...BASE_NOTE, startMs: 18_000 },
+      createSection('variation'),
+      0,
+      0
+    );
+
+    expect(earlyVariation).not.toBeNull();
+    expect(nearClimaxVariation).not.toBeNull();
+    expect(postClimaxVariation).not.toBeNull();
+    expect(nearClimaxVariation?.durationMs).toBeLessThan(
+      earlyVariation?.durationMs ?? 0
+    );
+    expect(postClimaxVariation?.durationMs).toBeGreaterThan(
+      nearClimaxVariation?.durationMs ?? 0
+    );
+  });
+
   it('assigns deterministic lead rhythm identities to each named song section', () => {
     const noteIndexInSection = 2;
     const intro = transformSongSectionNote(

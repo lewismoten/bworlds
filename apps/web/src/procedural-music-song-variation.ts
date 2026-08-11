@@ -81,6 +81,8 @@ export function transformSongSectionNote(
     case 'variation':
       return transformVariationSectionNote(
         note,
+        sectionContext.measureIndex,
+        sectionContext.measureCount,
         sectionContext.phrasePosition,
         sectionContext.isGeneratedRepairNote,
         layerTreatment,
@@ -163,6 +165,8 @@ function transformAprimeSectionNote(
 
 function transformVariationSectionNote(
   note: ProceduralMusicNote,
+  measureIndex: number,
+  measureCount: number,
   phrasePosition: number,
   preserveRepairPitch: boolean,
   layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>,
@@ -185,6 +189,10 @@ function transformVariationSectionNote(
       : note.role === 'harmony'
         ? ([0, 0, 22, 22, 0, 0, 44, 44][phrasePosition] ?? 0)
         : 0;
+  const variationClimaxDurationMultiplier =
+    note.role === 'lead'
+      ? resolveVariationLeadClimaxDurationMultiplier(measureIndex, measureCount)
+      : 1;
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
@@ -192,13 +200,37 @@ function transformVariationSectionNote(
     durationMultiplier:
       layerTreatment.durationMultiplier *
       harmonySustainMultiplier *
-      (leadRhythmOptions?.durationMultiplier ?? 1),
+      (leadRhythmOptions?.durationMultiplier ?? 1) *
+      variationClimaxDurationMultiplier,
     releaseMultiplier:
       layerTreatment.releaseMultiplier *
       (leadRhythmOptions?.releaseMultiplier ?? 1),
     startOffsetMs: rhythmShiftMs + (leadRhythmOptions?.startOffsetMs ?? 0),
     transposeSemitones,
   });
+}
+
+function resolveVariationLeadClimaxDurationMultiplier(
+  measureIndex: number,
+  measureCount: number
+): number {
+  const normalizedMeasureCount = Math.max(1, measureCount);
+  const clampedMeasureIndex = Math.max(
+    0,
+    Math.min(normalizedMeasureCount - 1, measureIndex)
+  );
+  const climaxMeasureIndex = Math.floor((normalizedMeasureCount - 1) * 0.5);
+  const maxDistance = Math.max(
+    1,
+    Math.max(
+      climaxMeasureIndex,
+      normalizedMeasureCount - 1 - climaxMeasureIndex
+    )
+  );
+  const distanceFromClimax = Math.abs(clampedMeasureIndex - climaxMeasureIndex);
+  const proximityToClimax = 1 - distanceFromClimax / maxDistance;
+
+  return 1.14 - proximityToClimax * 0.34;
 }
 
 function resolveSectionLeadRhythmIdentity(
