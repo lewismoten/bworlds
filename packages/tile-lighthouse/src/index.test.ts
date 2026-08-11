@@ -166,6 +166,106 @@ const fakeThree = {
 } as const;
 
 describe('tile lighthouse', () => {
+  it('builds the full-detail lighthouse progressively before returning the final model', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 4,
+        label: 'tower-shell',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 4,
+        label: 'lantern-frame',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 4,
+        label: 'balcony-and-panes',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 4,
+        totalSteps: 4,
+        label: 'beam-and-beacon',
+      },
+    });
+
+    const completed = build?.next();
+    const model = completed?.value as FakeNode | undefined;
+    expect(completed?.done).toBe(true);
+    expect(collectBeamMeshes(model)).toHaveLength(3);
+    expect(findBeamPivot(model)).toBeDefined();
+  });
+
+  it('keeps the synchronous lighthouse build aligned with the progressive final model', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+    });
+    let progressiveModel: FakeNode | undefined;
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeNode | undefined;
+        break;
+      }
+    }
+
+    expect(collectBeamMeshes(progressiveModel)).toHaveLength(
+      collectBeamMeshes(syncModel).length
+    );
+    expect(
+      collectTaggedInstancedMeshes(
+        progressiveModel,
+        'lighthouseFrameRingInstanced'
+      )
+    ).toHaveLength(
+      collectTaggedInstancedMeshes(syncModel, 'lighthouseFrameRingInstanced')
+        .length
+    );
+    expect(
+      collectTaggedInstancedMeshes(
+        progressiveModel,
+        'lighthousePaneInstanced'
+      )
+    ).toHaveLength(
+      collectTaggedInstancedMeshes(syncModel, 'lighthousePaneInstanced').length
+    );
+  });
+
   it('reuses shared tower materials across repeated model builds', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');

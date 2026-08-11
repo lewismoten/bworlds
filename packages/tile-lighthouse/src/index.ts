@@ -21,6 +21,7 @@ import { createLowDetailLighthouseModel } from './low-detail.ts';
 import { getLighthouseBeamWeatherProfile } from './weather-response.ts';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   Model3DResourceCostEstimate,
   RuntimePlugin,
   ThreeMaterialLike,
@@ -287,12 +288,38 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         ? LIGHTHOUSE_LOW_DETAIL_COST_ESTIMATE
         : LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE;
     },
-    create3DModel({
+    create3DModel(context: Create3DModelContext) {
+      return runLighthouseModelBuildToCompletion(
+        createLighthouseModelProgressive(context)
+      );
+    },
+    create3DModelProgressive(context: Create3DModelContext) {
+      return createLighthouseModelProgressive(context);
+    },
+    sync3DModel({ model, cycle, timeMs, environment }) {
+      if (!model || typeof model !== 'object') {
+        return;
+      }
+      syncPoiLightEmitters(
+        model as Parameters<typeof syncPoiLightEmitters>[0],
+        cycle
+      );
+      syncLighthouseBeam(
+        model as ThreeObject3DLike,
+        cycle,
+        timeMs ?? 0,
+        environment
+      );
+    },
+  });
+}
+
+function* createLighthouseModelProgressive({
       three,
       tileX,
       tileY,
       detailLevel = 'full',
-    }: Create3DModelContext) {
+    }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
       const group = new three.Group();
       const {
         wallMaterial,
@@ -324,6 +351,7 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
           beamSegments: LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS,
         });
       }
+      const totalSteps = 4;
 
       const base = markStructuralRenderBudgetPart(
         new three.Mesh(
@@ -380,6 +408,11 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       );
       lanternRoom.position.set(tileX, 1.86, tileY);
       group.add(lanternRoom);
+      yield {
+        completedSteps: 1,
+        totalSteps,
+        label: 'tower-shell',
+      };
 
       const lanternGlass = markOptionalDecorativeRenderBudgetPart(
         new three.Mesh(
@@ -560,6 +593,11 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         )
       );
       group.add(horizontalWallGlowInstances);
+      yield {
+        completedSteps: 2,
+        totalSteps,
+        label: 'lantern-frame',
+      };
 
       const lens = markOptionalDecorativeRenderBudgetPart(
         markPoiLightEmitter(
@@ -739,6 +777,11 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       );
       horizontalPaneInstances.setMatrixAt(1, horizontalPaneMatrixScratch);
       group.add(horizontalPaneInstances);
+      yield {
+        completedSteps: 3,
+        totalSteps,
+        label: 'balcony-and-panes',
+      };
 
       const beamPivot = new three.Group();
       beamPivot.userData = {
@@ -783,25 +826,24 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       beacon.position.set(tileX, 1.88, tileY);
       beacon.visible = false;
       group.add(beacon);
+      yield {
+        completedSteps: 4,
+        totalSteps,
+        label: 'beam-and-beacon',
+      };
 
       return group;
-    },
-    sync3DModel({ model, cycle, timeMs, environment }) {
-      if (!model || typeof model !== 'object') {
-        return;
-      }
-      syncPoiLightEmitters(
-        model as Parameters<typeof syncPoiLightEmitters>[0],
-        cycle
-      );
-      syncLighthouseBeam(
-        model as ThreeObject3DLike,
-        cycle,
-        timeMs ?? 0,
-        environment
-      );
-    },
-  });
+}
+
+function runLighthouseModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function pickLighthouseBeamColor(signal: number): string {

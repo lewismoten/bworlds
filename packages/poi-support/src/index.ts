@@ -83,6 +83,7 @@ interface EnterablePoiTilePluginOptions {
   estimate3DModelCost?: TilePlugin['estimate3DModelCost'];
   report3DModelCost?: TilePlugin['report3DModelCost'];
   create3DModel?: TilePlugin['create3DModel'];
+  create3DModelProgressive?: TilePlugin['create3DModelProgressive'];
   sync3DModel?: TilePlugin['sync3DModel'];
   canOccupy3D?: TilePlugin['canOccupy3D'];
   getSurfaceProfile3D?: TilePlugin['getSurfaceProfile3D'];
@@ -496,6 +497,7 @@ export function createEnterablePoiTilePlugin(
         estimate3DModelCost: options.estimate3DModelCost,
         report3DModelCost: options.report3DModelCost,
         create3DModel: options.create3DModel,
+        create3DModelProgressive: options.create3DModelProgressive,
         sync3DModel: options.sync3DModel,
         canOccupy3D: options.canOccupy3D,
         getSurfaceProfile3D: options.getSurfaceProfile3D,
