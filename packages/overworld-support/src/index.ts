@@ -117,6 +117,33 @@ type OverworldCellAnchorEvaluation<
   terrainSuitable: boolean;
 };
 
+type StructuredOverworldCellAnchorEvaluationCache = CacheLike<
+  string,
+  OverworldCellAnchorEvaluation
+> & {
+  getAt<TAnchor extends OverworldAnchorLike = OverworldAnchorLike>(params: {
+    seed: Seed;
+    spec: OverworldCellAnchorSpec<TAnchor>;
+    cellX: number;
+    cellY: number;
+  }): OverworldCellAnchorEvaluation<TAnchor> | undefined;
+  hasAt<TAnchor extends OverworldAnchorLike = OverworldAnchorLike>(params: {
+    seed: Seed;
+    spec: OverworldCellAnchorSpec<TAnchor>;
+    cellX: number;
+    cellY: number;
+  }): boolean;
+  setAt<TAnchor extends OverworldAnchorLike = OverworldAnchorLike>(
+    params: {
+      seed: Seed;
+      spec: OverworldCellAnchorSpec<TAnchor>;
+      cellX: number;
+      cellY: number;
+    },
+    value: OverworldCellAnchorEvaluation<TAnchor>
+  ): void;
+};
+
 type CachedOverworldGenerationSnapshot = Omit<
   ClassifyOverworldTileContext,
   'tile'
@@ -176,6 +203,137 @@ const overworldTileCompositionCaches = new WeakMap<
 
 function normalizeSeedHash(seed: Seed): number {
   return resolveHashSeedInput(seed);
+}
+
+export function createOverworldCellAnchorEvaluationCache(
+  maxEntries = OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT
+): StructuredOverworldCellAnchorEvaluationCache {
+  const cache = createBoundedCache<bigint, OverworldCellAnchorEvaluation>(
+    maxEntries
+  );
+  const legacyCache = new Map<string, OverworldCellAnchorEvaluation>();
+  const specIds = new WeakMap<object, number>();
+  let nextSpecId = 1;
+
+  const getSpecId = (spec: OverworldCellAnchorSpec) => {
+    const objectKey = spec as object;
+    const cached = specIds.get(objectKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const nextId = nextSpecId;
+    nextSpecId += 1;
+    specIds.set(objectKey, nextId);
+    return nextId;
+  };
+
+  const getPackedKey = ({
+    seed,
+    spec,
+    cellX,
+    cellY,
+  }: {
+    seed: Seed;
+    spec: OverworldCellAnchorSpec;
+    cellX: number;
+    cellY: number;
+  }) =>
+    (BigInt(getSpecId(spec)) << 96n) |
+    (BigInt(normalizeSeedHash(seed) >>> 0) << 64n) |
+    (BigInt(cellX >>> 0) << 32n) |
+    BigInt(cellY >>> 0);
+
+  const getAt: StructuredOverworldCellAnchorEvaluationCache['getAt'] = <
+    TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+  >(params: {
+    seed: Seed;
+    spec: OverworldCellAnchorSpec<TAnchor>;
+    cellX: number;
+    cellY: number;
+  }) =>
+    cache.get(getPackedKey(params)) as
+      OverworldCellAnchorEvaluation<TAnchor> | undefined;
+
+  const hasAt: StructuredOverworldCellAnchorEvaluationCache['hasAt'] = (
+    params
+  ) => cache.has(getPackedKey(params));
+
+  const setAt: StructuredOverworldCellAnchorEvaluationCache['setAt'] = (
+    params,
+    value
+  ) => {
+    cache.set(getPackedKey(params), value);
+  };
+
+  return {
+    clear() {
+      cache.clear();
+      legacyCache.clear();
+    },
+    get(key) {
+      return legacyCache.get(key);
+    },
+    has(key) {
+      return legacyCache.has(key);
+    },
+    set(key, value) {
+      legacyCache.set(key, value);
+    },
+    getAt,
+    hasAt,
+    setAt,
+  };
+}
+
+function isStructuredOverworldCellAnchorEvaluationCache(
+  cache: CacheLike<string, OverworldCellAnchorEvaluation>
+): cache is StructuredOverworldCellAnchorEvaluationCache {
+  return (
+    typeof (cache as Partial<StructuredOverworldCellAnchorEvaluationCache>)
+      .getAt === 'function' &&
+    typeof (cache as Partial<StructuredOverworldCellAnchorEvaluationCache>)
+      .setAt === 'function'
+  );
+}
+
+function getCachedOverworldCellAnchorEvaluation<
+  TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+>(
+  cache: CacheLike<string, OverworldCellAnchorEvaluation>,
+  params: {
+    seed: Seed;
+    spec: OverworldCellAnchorSpec<TAnchor>;
+    cellX: number;
+    cellY: number;
+    key: string;
+  }
+) {
+  if (isStructuredOverworldCellAnchorEvaluationCache(cache)) {
+    return cache.getAt(params) as
+      OverworldCellAnchorEvaluation<TAnchor> | undefined;
+  }
+  return cache.get(params.key) as
+    OverworldCellAnchorEvaluation<TAnchor> | undefined;
+}
+
+function setCachedOverworldCellAnchorEvaluation<
+  TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
+>(
+  cache: CacheLike<string, OverworldCellAnchorEvaluation>,
+  params: {
+    seed: Seed;
+    spec: OverworldCellAnchorSpec<TAnchor>;
+    cellX: number;
+    cellY: number;
+    key: string;
+  },
+  value: OverworldCellAnchorEvaluation<TAnchor>
+) {
+  if (isStructuredOverworldCellAnchorEvaluationCache(cache)) {
+    cache.setAt(params, value);
+    return;
+  }
+  cache.set(params.key, value);
 }
 
 function getOverworldGenerationSnapshotCacheStore(
@@ -1357,7 +1515,7 @@ export function collectNearbyOverworldCellAnchors<
   minSpacing = 0,
   blockingAnchors = [],
   conflictSpecs = [spec],
-  evaluationCache = new Map<string, OverworldCellAnchorEvaluation>(),
+  evaluationCache = createOverworldCellAnchorEvaluationCache(),
 }: {
   seed: Seed;
   x: number;
@@ -1411,7 +1569,7 @@ export function collectNearbyOverworldPoiAnchors<
   minSpacing = 0,
   blockingAnchors = [],
   baseAnchors = [],
-  evaluationCache = new Map<string, OverworldCellAnchorEvaluation>(),
+  evaluationCache = createOverworldCellAnchorEvaluationCache(),
 }: {
   seed: Seed;
   x: number;
@@ -1496,10 +1654,9 @@ export function createOverworldAnchorResolver<
   const bridgeCache = createBoundedCache<string, TBridgeAnchor | null>(
     OVERWORLD_ANCHOR_CACHE_LIMIT
   );
-  const anchorEvaluationCache = createBoundedCache<
-    string,
-    OverworldCellAnchorEvaluation
-  >(OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT);
+  const anchorEvaluationCache = createOverworldCellAnchorEvaluationCache(
+    OVERWORLD_ANCHOR_EVALUATION_CACHE_LIMIT
+  );
   const nearbyAnchorCollectionCache = createBoundedCache<
     string,
     OverworldAnchorLike[]
@@ -1686,7 +1843,7 @@ export function resolveOverworldCellAnchor<
   minSpacing = 0,
   blockingAnchors = [],
   conflictSpecs = [spec],
-  evaluationCache = new Map<string, OverworldCellAnchorEvaluation>(),
+  evaluationCache = createOverworldCellAnchorEvaluationCache(),
 }: {
   seed: Seed;
   cellX: number;
@@ -1829,9 +1986,15 @@ function getOverworldCellAnchorEvaluation<
   evaluationCache: CacheLike<string, OverworldCellAnchorEvaluation>;
 }): OverworldCellAnchorEvaluation<TAnchor> {
   const key = `${seed}:${spec.id}:${cellX}:${cellY}`;
-  const cached = evaluationCache.get(key);
+  const cached = getCachedOverworldCellAnchorEvaluation(evaluationCache, {
+    seed,
+    spec,
+    cellX,
+    cellY,
+    key,
+  });
   if (cached !== undefined) {
-    return cached as OverworldCellAnchorEvaluation<TAnchor>;
+    return cached;
   }
   const candidate = createOverworldCellAnchorCandidate(
     seed,
@@ -1852,7 +2015,17 @@ function getOverworldCellAnchorEvaluation<
         sampleTerrainSignals,
       }),
   };
-  evaluationCache.set(key, evaluation);
+  setCachedOverworldCellAnchorEvaluation(
+    evaluationCache,
+    {
+      seed,
+      spec,
+      cellX,
+      cellY,
+      key,
+    },
+    evaluation
+  );
   return evaluation as OverworldCellAnchorEvaluation<TAnchor>;
 }
 

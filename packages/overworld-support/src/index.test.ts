@@ -6,6 +6,7 @@ import {
   composeOverworldTileFromPlugins,
   createCachedOverworldTileResolver,
   createOverworldAnchorResolver,
+  createOverworldCellAnchorEvaluationCache,
   createRiverCurvePoints,
   createRiverControlPoints,
   createRiverForkPath,
@@ -1033,6 +1034,148 @@ describe('overworld support', () => {
 
     expect(sampleCounts.size).toBeGreaterThan(1);
     expect(Math.max(...sampleCounts.values())).toBe(1);
+  });
+
+  it('stores anchor evaluations in a packed bounded cache without string keys', () => {
+    const cache = createOverworldCellAnchorEvaluationCache(2);
+    const townSpec = createGeneratedNamedOverworldCellAnchorSpec({
+      id: 'town',
+      nameType: 'town',
+      cellSize: 20,
+      chanceKey: 'town-anchor',
+      offsetXKey: 'town-anchor-x',
+      offsetYKey: 'town-anchor-y',
+      threshold: 0.5,
+      isSuitableTerrain() {
+        return true;
+      },
+    });
+    const bridgeSpec = createGeneratedNamedOverworldCellAnchorSpec({
+      id: 'bridge',
+      nameType: 'station',
+      cellSize: 20,
+      chanceKey: 'bridge-anchor',
+      offsetXKey: 'bridge-anchor-x',
+      offsetYKey: 'bridge-anchor-y',
+      threshold: 0.5,
+      isSuitableTerrain() {
+        return true;
+      },
+    });
+
+    cache.setAt(
+      {
+        seed: 'spec-seed',
+        spec: townSpec,
+        cellX: 1,
+        cellY: -2,
+      },
+      {
+        candidate: createOverworldCellAnchorCandidate(
+          'spec-seed',
+          1,
+          -2,
+          townSpec
+        ),
+        terrain: createOverworldTerrainSignalSampler('spec-seed')(0, 0),
+        terrainSuitable: true,
+      }
+    );
+    cache.setAt(
+      {
+        seed: 'spec-seed',
+        spec: bridgeSpec,
+        cellX: 3,
+        cellY: 4,
+      },
+      {
+        candidate: createOverworldCellAnchorCandidate(
+          'spec-seed',
+          3,
+          4,
+          bridgeSpec
+        ),
+        terrain: createOverworldTerrainSignalSampler('spec-seed')(1, 1),
+        terrainSuitable: false,
+      }
+    );
+
+    expect(
+      cache.getAt({
+        seed: 'spec-seed',
+        spec: townSpec,
+        cellX: 1,
+        cellY: -2,
+      })
+    ).toEqual(
+      expect.objectContaining({
+        terrainSuitable: true,
+      })
+    );
+    expect(
+      cache.getAt({
+        seed: 'spec-seed',
+        spec: bridgeSpec,
+        cellX: 3,
+        cellY: 4,
+      })
+    ).toEqual(
+      expect.objectContaining({
+        terrainSuitable: false,
+      })
+    );
+
+    cache.setAt(
+      {
+        seed: 'other-seed',
+        spec: townSpec,
+        cellX: 9,
+        cellY: 9,
+      },
+      {
+        candidate: createOverworldCellAnchorCandidate(
+          'other-seed',
+          9,
+          9,
+          townSpec
+        ),
+        terrain: createOverworldTerrainSignalSampler('other-seed')(2, 2),
+        terrainSuitable: true,
+      }
+    );
+
+    expect(
+      cache.getAt({
+        seed: 'other-seed',
+        spec: townSpec,
+        cellX: 9,
+        cellY: 9,
+      })
+    ).toEqual(
+      expect.objectContaining({
+        terrainSuitable: true,
+      })
+    );
+    expect(
+      cache.getAt({
+        seed: 'spec-seed',
+        spec: townSpec,
+        cellX: 1,
+        cellY: -2,
+      })
+    ).toBeUndefined();
+    expect(
+      cache.getAt({
+        seed: 'spec-seed',
+        spec: bridgeSpec,
+        cellX: 3,
+        cellY: 4,
+      })
+    ).toEqual(
+      expect.objectContaining({
+        terrainSuitable: false,
+      })
+    );
   });
 
   it('reuses cached placement label hashes when building anchor candidates', () => {
