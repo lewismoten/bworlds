@@ -648,7 +648,17 @@ describe('tile route', () => {
       }
     });
 
-    expect(markers.has('ns')).toBe(true);
+    const supportInstances = collectTaggedInstancedMeshes(
+      model,
+      'routeInstancedPart'
+    ).filter(
+      (mesh) => mesh.userData?.routeInstancedPart === 'forest-log-support'
+    );
+
+    expect(markers).toContain('ns');
+    expect(supportInstances).toHaveLength(1);
+    expect(supportInstances[0]?.count).toBe(2);
+    expect(supportInstances[0]?.matrices).toHaveLength(2);
   });
 
   it('renders multiple boats across long dock clusters', () => {

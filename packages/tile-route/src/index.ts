@@ -1302,18 +1302,33 @@ function createForestLogBridgeGroup(
     axis === 'ew'
       ? [-0.42, 0.42].map((x) => ({ x, z: 0 }))
       : [-0.42, 0.42].map((z) => ({ x: 0, z }));
-  supportOffsets.forEach((offset) => {
-    const support = new three.Mesh(
-      new three.CylinderGeometry(0.04, 0.05, 0.18, 6),
-      supportMaterial
+  const supportInstances = new three.InstancedMesh(
+    new three.CylinderGeometry(0.04, 0.05, 0.18, 6),
+    supportMaterial,
+    supportOffsets.length
+  );
+  supportInstances.userData = {
+    ...(supportInstances.userData ?? {}),
+    [FOREST_LOG_BRIDGE_KEY]: axis,
+    routeInstancedPart: 'forest-log-support',
+  };
+  const supportMatrixScratch = new three.Matrix4();
+  for (let index = 0; index < supportOffsets.length; index += 1) {
+    const offset = supportOffsets[index]!;
+    supportInstances.setMatrixAt(
+      index,
+      writeRouteInstancedScalePositionMatrix(
+        supportMatrixScratch,
+        offset.x,
+        -0.12,
+        offset.z,
+        1,
+        1,
+        1
+      )
     );
-    support.position.set(offset.x, -0.12, offset.z);
-    support.userData = {
-      ...(support.userData ?? {}),
-      [FOREST_LOG_BRIDGE_KEY]: axis,
-    };
-    group.add(support);
-  });
+  }
+  group.add(supportInstances);
 
   return group;
 }
