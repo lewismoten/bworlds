@@ -2579,11 +2579,16 @@ describe('tile forest', () => {
       },
     };
 
-    let targetTile: { x: number; y: number } | null = null;
+    let targetTile: {
+      x: number;
+      y: number;
+      details: ReturnType<typeof getForestFloorDetails>;
+    } | null = null;
     for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 18; tileX += 1) {
-        if (getForestFloorDetails(tileX, tileY).length > 0) {
-          targetTile = { x: tileX, y: tileY };
+        const details = getForestFloorDetails(tileX, tileY);
+        if (details.some((detail) => detail.kind === 'stump')) {
+          targetTile = { x: tileX, y: tileY, details };
           break;
         }
       }
@@ -2615,6 +2620,14 @@ describe('tile forest', () => {
         fullDetailKinds.add(kind);
       }
     });
+    const stumpDetailCount = targetTile!.details.filter(
+      (detail) => detail.kind === 'stump'
+    ).length;
+    const stumpInstances = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestFloorDetail === 'stump'
+    ) as FakeInstancedMesh[];
 
     const lowDetailKinds = new Set<string>();
     lowModel.traverse((node) => {
@@ -2625,6 +2638,10 @@ describe('tile forest', () => {
     });
 
     expect(fullDetailKinds.size).toBeGreaterThan(0);
+    expect(stumpDetailCount).toBeGreaterThan(0);
+    expect(stumpInstances).toHaveLength(1);
+    expect(stumpInstances[0]?.count).toBe(stumpDetailCount);
+    expect(stumpInstances[0]?.matrices).toHaveLength(stumpDetailCount);
     expect(lowDetailKinds.size).toBe(0);
   });
 

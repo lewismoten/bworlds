@@ -1802,24 +1802,41 @@ export function createForestTilePlugin(): RuntimePlugin {
             tileY,
             getForestBushes(tileX, tileY)
           );
-          for (const detail of getForestFloorDetails(tileX, tileY)) {
+          const floorDetails = getForestFloorDetails(tileX, tileY);
+          const stumpDetails = floorDetails.filter(
+            (detail) => detail.kind === 'stump'
+          );
+          if (stumpDetails.length > 0) {
+            const stumpInstances = new three.InstancedMesh(
+              geometry.trunk,
+              floorDetailStyle.trunkMaterial,
+              stumpDetails.length
+            );
+            stumpInstances.userData = {
+              ...(stumpInstances.userData ?? {}),
+              [FLOOR_DETAIL_KEY]: 'stump',
+            };
+            const stumpMatrixScratch = new three.Matrix4();
+
+            stumpDetails.forEach((detail, index) => {
+              stumpInstances.setMatrixAt(
+                index,
+                writeLowDetailInstancedMatrix(
+                  stumpMatrixScratch,
+                  tileX + detail.x,
+                  detail.height * 0.5,
+                  tileY + detail.y,
+                  detail.radius,
+                  detail.height,
+                  detail.radius
+                )
+              );
+            });
+            group.add(stumpInstances);
+          }
+
+          for (const detail of floorDetails) {
             if (detail.kind === 'stump') {
-              const stump = new three.Mesh(
-                geometry.trunk,
-                floorDetailStyle.trunkMaterial
-              );
-              stump.position.set(
-                tileX + detail.x,
-                detail.height * 0.5,
-                tileY + detail.y
-              );
-              stump.rotation.y = detail.rotation;
-              stump.scale.set(detail.radius, detail.height, detail.radius);
-              stump.userData = {
-                ...(stump.userData ?? {}),
-                [FLOOR_DETAIL_KEY]: detail.kind,
-              };
-              group.add(stump);
               continue;
             }
 
