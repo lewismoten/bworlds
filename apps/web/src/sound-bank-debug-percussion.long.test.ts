@@ -9,6 +9,12 @@ import {
   resolveSoundBankDebugPreviewNoteRole,
 } from './sound-bank-debug.ts';
 
+const defaultSnapshot = createSoundBankDebugSnapshot();
+const overworldForestSnapshot = createSoundBankDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+});
+
 describe('sound bank debug percussion browser', () => {
   it('normalizes percussion browser family filters into supported values', () => {
     expect(
@@ -28,13 +34,8 @@ describe('sound bank debug percussion browser', () => {
   });
 
   it('builds fallback preview notes for percussion voices outside the current song seed', () => {
-    const snapshot = createSoundBankDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-    });
-
     const note = resolveSoundBankDebugPreviewNoteRole(
-      snapshot,
+      overworldForestSnapshot,
       'percussion:cymbals-51',
       9_000
     );
@@ -53,8 +54,7 @@ describe('sound bank debug percussion browser', () => {
   });
 
   it('filters the percussion browser to a selected drum family', () => {
-    const snapshot = createSoundBankDebugSnapshot();
-    const markup = buildSoundBankDebugMarkup(snapshot, {
+    const markup = buildSoundBankDebugMarkup(defaultSnapshot, {
       audioStatus: 'Audio idle',
       percussionBrowserState: {
         familyFilter: 'snare',
@@ -79,8 +79,7 @@ describe('sound bank debug percussion browser', () => {
   });
 
   it('renders a compact drum pad grid for percussion previews', () => {
-    const snapshot = createSoundBankDebugSnapshot();
-    const markup = buildSoundBankDebugMarkup(snapshot, {
+    const markup = buildSoundBankDebugMarkup(defaultSnapshot, {
       audioStatus: 'Audio idle',
       percussionBrowserState: {
         familyFilter: 'kick',
@@ -101,8 +100,7 @@ describe('sound bank debug percussion browser', () => {
   });
 
   it('shows missing General MIDI percussion patches as unavailable browser rows', () => {
-    const snapshot = createSoundBankDebugSnapshot();
-    const markup = buildSoundBankDebugMarkup(snapshot, {
+    const markup = buildSoundBankDebugMarkup(defaultSnapshot, {
       audioStatus: 'Audio idle',
       percussionBrowserState: {
         familyFilter: 'kick',
@@ -115,9 +113,8 @@ describe('sound bank debug percussion browser', () => {
   });
 
   it('builds a percussion range audition from the visible drum-family filter', () => {
-    const snapshot = createSoundBankDebugSnapshot();
     const notes = createSoundBankDebugPercussionRangeAuditionNotes(
-      snapshot,
+      defaultSnapshot,
       {
         familyFilter: 'kick',
       },
@@ -134,9 +131,8 @@ describe('sound bank debug percussion browser', () => {
   });
 
   it('builds a standard percussion pattern audition from visible drum voices', () => {
-    const snapshot = createSoundBankDebugSnapshot();
     const notes = createSoundBankDebugStandardPercussionPatternNotes(
-      snapshot,
+      defaultSnapshot,
       {
         familyFilter: 'all',
       },
@@ -160,16 +156,15 @@ describe('sound bank debug percussion browser', () => {
   });
 
   it('builds a quieter percussion pattern audition from visible drum voices', () => {
-    const snapshot = createSoundBankDebugSnapshot();
     const standardNotes = createSoundBankDebugStandardPercussionPatternNotes(
-      snapshot,
+      defaultSnapshot,
       {
         familyFilter: 'all',
       },
       16_000
     );
     const quietNotes = createSoundBankDebugQuietPercussionPatternNotes(
-      snapshot,
+      defaultSnapshot,
       {
         familyFilter: 'all',
       },

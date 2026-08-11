@@ -8,20 +8,32 @@ import {
   withValidProgressionDetections,
 } from './testing/music-debug-midi-test-support.ts';
 
+const exportableTownSnapshot = toExportableSnapshot(
+  createMusicDebugSnapshot({
+    tileKind: 'town',
+    contextType: 'town',
+    clusterX: 3,
+    clusterY: -2,
+  })
+);
+const validForestExportSnapshot = withValidPhraseIntentValidation(
+  withValidProgressionDetections(
+    withValidLeadContourAnalysis(
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      })
+    )
+  )
+);
+
 describe('music debug midi validation content', () => {
   it('blocks MIDI export when SongDNA validation fails', () => {
-    const snapshot = toExportableSnapshot(
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      })
-    );
-
     expect(() =>
       createMusicDebugMidiFile({
-        ...snapshot,
+        ...exportableTownSnapshot,
         songDnaValidation: {
           isValidForMidiExport: false,
           messages: [
@@ -35,24 +47,11 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when chromatic-note validation fails', () => {
-    const snapshot = withValidPhraseIntentValidation(
-      withValidProgressionDetections(
-        withValidLeadContourAnalysis(
-          createMusicDebugSnapshot({
-            tileKind: 'forest',
-            contextType: 'overworld',
-            clusterX: 0,
-            clusterY: 0,
-          })
-        )
-      )
-    );
-
     expect(() =>
       createMusicDebugMidiFile({
-        ...snapshot,
+        ...validForestExportSnapshot,
         midiExportValidation: {
-          ...snapshot.midiExportValidation,
+          ...validForestExportSnapshot.midiExportValidation,
           isValidForMidiExport: false,
           messages: ['Found 1 unexplained chromatic note.'],
         },
@@ -61,29 +60,16 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when timing validation fails', () => {
-    const snapshot = withValidPhraseIntentValidation(
-      withValidProgressionDetections(
-        withValidLeadContourAnalysis(
-          createMusicDebugSnapshot({
-            tileKind: 'forest',
-            contextType: 'overworld',
-            clusterX: 0,
-            clusterY: 0,
-          })
-        )
-      )
-    );
-
     expect(() =>
       createMusicDebugMidiFile({
-        ...snapshot,
+        ...validForestExportSnapshot,
         midiExportValidation: {
-          ...snapshot.midiExportValidation,
+          ...validForestExportSnapshot.midiExportValidation,
           isValidForMidiExport: true,
           messages: [],
         },
         timingValidation: {
-          ...snapshot.timingValidation,
+          ...validForestExportSnapshot.timingValidation,
           isValidForMidiExport: false,
           messages: ['Loop range must stay inside the exported song duration.'],
         },
@@ -94,24 +80,11 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when the configured motif never appears', () => {
-    const snapshot = withValidPhraseIntentValidation(
-      withValidProgressionDetections(
-        withValidLeadContourAnalysis(
-          createMusicDebugSnapshot({
-            tileKind: 'forest',
-            contextType: 'overworld',
-            clusterX: 0,
-            clusterY: 0,
-          })
-        )
-      )
-    );
-
     expect(() =>
       createMusicDebugMidiFile({
-        ...snapshot,
+        ...validForestExportSnapshot,
         motifValidation: {
-          ...snapshot.motifValidation,
+          ...validForestExportSnapshot.motifValidation,
           isValidForMidiExport: false,
           messages: [
             'Configured lead motif 1-3-5-3 never appears in the generated song.',
@@ -124,22 +97,9 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when harmony chord-tone fit falls below the minimum', () => {
-    const snapshot = withValidPhraseIntentValidation(
-      withValidProgressionDetections(
-        withValidLeadContourAnalysis(
-          createMusicDebugSnapshot({
-            tileKind: 'forest',
-            contextType: 'overworld',
-            clusterX: 0,
-            clusterY: 0,
-          })
-        )
-      )
-    );
-
     expect(() =>
       createMusicDebugMidiFile({
-        ...snapshot,
+        ...validForestExportSnapshot,
         harmonicAlignmentValidation: {
           isValidForMidiExport: false,
           messages: [
@@ -153,22 +113,9 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when bass roots drift from the planned progression', () => {
-    const snapshot = withValidPhraseIntentValidation(
-      withValidProgressionDetections(
-        withValidLeadContourAnalysis(
-          createMusicDebugSnapshot({
-            tileKind: 'forest',
-            contextType: 'overworld',
-            clusterX: 0,
-            clusterY: 0,
-          })
-        )
-      )
-    );
-
     expect(() =>
       createMusicDebugMidiFile({
-        ...snapshot,
+        ...validForestExportSnapshot,
         harmonicAlignmentValidation: {
           isValidForMidiExport: false,
           messages: ['Bass root drifted at measure 12 (A vs G).'],
@@ -178,22 +125,9 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when phrase-intent coherence falls below the minimum', () => {
-    const snapshot = withValidPhraseIntentValidation(
-      withValidProgressionDetections(
-        withValidLeadContourAnalysis(
-          createMusicDebugSnapshot({
-            tileKind: 'forest',
-            contextType: 'overworld',
-            clusterX: 0,
-            clusterY: 0,
-          })
-        )
-      )
-    );
-
     expect(() =>
       createMusicDebugMidiFile({
-        ...snapshot,
+        ...validForestExportSnapshot,
         phraseIntentValidation: {
           isValidForMidiExport: false,
           messages: [

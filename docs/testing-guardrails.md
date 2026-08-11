@@ -95,7 +95,12 @@ When a long-running music or world-generation test needs representative
 snapshots, prefer module-level shared fixtures or named known-good seeds over
 rebuilding the same deterministic snapshots inside multiple assertions. That
 keeps regression coverage intact while avoiding repeated generator work inside a
-single file.
+single file. The long-path debug snapshot suites now follow that pattern in
+[apps/web/src/music-debug-midi-validation-content.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-midi-validation-content.long.test.ts:1),
+[apps/web/src/music-debug-snapshot-generation-variants.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-variants.long.test.ts:1),
+and
+[apps/web/src/sound-bank-debug-percussion.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-bank-debug-percussion.long.test.ts:1)
+so repeated assertion blocks reuse one deterministic snapshot per scenario.
 
 The same rule applies to expensive derived artifacts such as export bundles,
 WAV previews, or other debug-package outputs: if multiple tests assert on the
