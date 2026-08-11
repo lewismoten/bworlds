@@ -260,8 +260,12 @@ export type DebugSnapshotExport = {
   lod: {
     checksPerSecond: number;
     swapsPerSecond: number;
+    topSwappedPlugin: string | null;
+    swapSummary: string;
     lowerDetailRecoveriesPerSecond: number;
     fallbackBoxesPerSecond: number;
+    topFallbackPlugin: string | null;
+    fallbackSummary: string;
     lastFailureReason: string | null;
     lastFallbackReason: string | null;
     thresholds: LodThresholdSummary;
@@ -550,9 +554,15 @@ export function buildDebugSnapshotExport(
     lod: {
       checksPerSecond: options.snapshot.lodChecksPerSecond,
       swapsPerSecond: options.snapshot.lodReplacementsPerSecond,
+      topSwappedPlugin:
+        options.snapshot.lodReplacementTopPluginLabel?.trim() || null,
+      swapSummary: options.snapshot.lodReplacementSummary ?? '',
       lowerDetailRecoveriesPerSecond:
         options.snapshot.lowerLodRecoveriesPerSecond ?? 0,
       fallbackBoxesPerSecond: options.snapshot.fallbackBoxesPerSecond ?? 0,
+      topFallbackPlugin:
+        options.snapshot.fallbackBoxTopPluginLabel?.trim() || null,
+      fallbackSummary: options.snapshot.fallbackBoxSummary ?? '',
       lastFailureReason: options.snapshot.lastLodFailureReason?.trim() || null,
       lastFallbackReason: options.snapshot.lastFallbackReason?.trim() || null,
       thresholds: options.lod.thresholds,

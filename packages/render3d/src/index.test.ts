@@ -1225,8 +1225,10 @@ describe('render3d visibility helpers', () => {
           pendingCancelledEntries: [450, 800],
           lodChecks: [900],
           lodReplacements: [100, 450],
+          lodReplacementLabels: [],
           lowerLodRecoveries: [450],
           fallbackBoxes: [100, 900],
+          fallbackBoxLabels: [],
           pendingFlushCounts: [],
           tileBuildDurations: [],
           tilePluginBuildDurations: [],
@@ -1252,8 +1254,10 @@ describe('render3d visibility helpers', () => {
           pendingCancelledEntries: [450, 800],
           lodChecks: [900],
           lodReplacements: [100, 450],
+          lodReplacementLabels: [],
           lowerLodRecoveries: [450],
           fallbackBoxes: [100, 900],
+          fallbackBoxLabels: [],
           pendingFlushCounts: [],
           tileBuildDurations: [],
           tilePluginBuildDurations: [],
@@ -4246,6 +4250,37 @@ describe('render3d visibility helpers', () => {
       topCount: 0,
       topLabel: '',
       summary: '',
+    });
+  });
+
+  it('summarizes recent lod churn labels by plugin label', () => {
+    const samples: Array<{
+      nowMs: number;
+      count: number;
+      label: string;
+    }> = [];
+
+    recordRecentLabeledCountMetric(samples, {
+      nowMs: 100,
+      count: 1,
+      label: 'tile-town',
+    });
+    recordRecentLabeledCountMetric(samples, {
+      nowMs: 250,
+      count: 2,
+      label: 'tile-forest',
+    });
+    recordRecentLabeledCountMetric(samples, {
+      nowMs: 400,
+      count: 1,
+      label: 'tile-town',
+    });
+
+    expect(getRecentLabeledCountStats(samples, 900)).toEqual({
+      totalCount: 4,
+      topCount: 2,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:2, tile-town:2',
     });
   });
 

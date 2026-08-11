@@ -37,8 +37,12 @@ export type DebugSnapshot = {
   tileBuildsPerSecond: number;
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
+  lodReplacementTopPluginLabel?: string;
+  lodReplacementSummary?: string;
   lowerLodRecoveriesPerSecond?: number;
   fallbackBoxesPerSecond?: number;
+  fallbackBoxTopPluginLabel?: string;
+  fallbackBoxSummary?: string;
   lastLodFailureReason?: string;
   lastFallbackReason?: string;
   object3dCount: number;
@@ -208,8 +212,12 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.tileBuildsPerSecond,
     snapshot.lodChecksPerSecond,
     snapshot.lodReplacementsPerSecond,
+    snapshot.lodReplacementTopPluginLabel ?? '',
+    snapshot.lodReplacementSummary ?? '',
     snapshot.lowerLodRecoveriesPerSecond ?? 0,
     snapshot.fallbackBoxesPerSecond ?? 0,
+    snapshot.fallbackBoxTopPluginLabel ?? '',
+    snapshot.fallbackBoxSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
     snapshot.lastFallbackReason ?? '',
     snapshot.object3dCount,
@@ -342,8 +350,12 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Tile Builds/s</dt><dd>${snapshot.tileBuildsPerSecond}</dd></div>
     <div><dt>LOD Checks/s</dt><dd>${snapshot.lodChecksPerSecond}</dd></div>
     <div><dt>LOD Swaps/s</dt><dd>${snapshot.lodReplacementsPerSecond}</dd></div>
+    <div><dt>LOD Swap Plugin</dt><dd>${snapshot.lodReplacementTopPluginLabel || 'None'}</dd></div>
+    <div><dt>LOD Swap Summary</dt><dd>${snapshot.lodReplacementSummary || 'None'}</dd></div>
     <div><dt>LOD Recoveries/s</dt><dd>${snapshot.lowerLodRecoveriesPerSecond ?? 0}</dd></div>
     <div><dt>Fallback Boxes/s</dt><dd>${snapshot.fallbackBoxesPerSecond ?? 0}</dd></div>
+    <div><dt>Fallback Plugin</dt><dd>${snapshot.fallbackBoxTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Fallback Summary</dt><dd>${snapshot.fallbackBoxSummary || 'None'}</dd></div>
     <div><dt>Last LOD Failure</dt><dd>${snapshot.lastLodFailureReason || 'None'}</dd></div>
     <div><dt>Fallback Reason</dt><dd>${snapshot.lastFallbackReason || 'None'}</dd></div>
     <div><dt>Active Objects</dt><dd>${snapshot.object3dCount}</dd></div>

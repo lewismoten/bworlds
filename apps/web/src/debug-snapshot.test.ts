@@ -228,8 +228,12 @@ describe('debug snapshot', () => {
         tileBuildsPerSecond: 11,
         lodChecksPerSecond: 5,
         lodReplacementsPerSecond: 3,
+        lodReplacementTopPluginLabel: 'tile-forest',
+        lodReplacementSummary: 'tile-forest:2, tile-town:1',
         lowerLodRecoveriesPerSecond: 2,
         fallbackBoxesPerSecond: 1,
+        fallbackBoxTopPluginLabel: 'tile-forest',
+        fallbackBoxSummary: 'tile-forest:1',
         lastLodFailureReason:
           '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
         lastFallbackReason: '15:-9 / tile-forest: low failed',
@@ -580,8 +584,12 @@ describe('debug snapshot', () => {
     expect(result.lod).toMatchObject({
       checksPerSecond: 5,
       swapsPerSecond: 3,
+      topSwappedPlugin: 'tile-forest',
+      swapSummary: 'tile-forest:2, tile-town:1',
       lowerDetailRecoveriesPerSecond: 2,
       fallbackBoxesPerSecond: 1,
+      topFallbackPlugin: 'tile-forest',
+      fallbackSummary: 'tile-forest:1',
       lastFailureReason:
         '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
       lastFallbackReason: '15:-9 / tile-forest: low failed',

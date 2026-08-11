@@ -66,8 +66,12 @@ describe('debug panel', () => {
       tileBuildsPerSecond: 14,
       lodChecksPerSecond: 5,
       lodReplacementsPerSecond: 3,
+      lodReplacementTopPluginLabel: 'tile-forest',
+      lodReplacementSummary: 'tile-forest:2, tile-town:1',
       lowerLodRecoveriesPerSecond: 2,
       fallbackBoxesPerSecond: 1,
+      fallbackBoxTopPluginLabel: 'tile-forest',
+      fallbackBoxSummary: 'tile-forest:1',
       lastLodFailureReason:
         '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
       lastFallbackReason: '15:-9 / tile-forest: low failed',
@@ -146,8 +150,12 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Tile Builds/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Checks/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Swaps/s');
+    expect(buildDebugMarkup(snapshot)).toContain('LOD Swap Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('LOD Swap Summary');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Recoveries/s');
     expect(buildDebugMarkup(snapshot)).toContain('Fallback Boxes/s');
+    expect(buildDebugMarkup(snapshot)).toContain('Fallback Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Fallback Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Last LOD Failure');
     expect(buildDebugMarkup(snapshot)).toContain('Fallback Reason');
     expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');

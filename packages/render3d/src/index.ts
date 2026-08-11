@@ -323,8 +323,12 @@ type Render3DController = {
     pendingCancelledEntriesPerSecond: number;
     lodChecksPerSecond: number;
     lodReplacementsPerSecond: number;
+    lodReplacementTopPluginLabel: string;
+    lodReplacementSummary: string;
     lowerLodRecoveriesPerSecond: number;
     fallbackBoxesPerSecond: number;
+    fallbackBoxTopPluginLabel: string;
+    fallbackBoxSummary: string;
     object3dCount: number;
     visibleObjectCount: number;
     invisibleObjectCount: number;
@@ -1463,8 +1467,10 @@ type RenderChurnMetrics = {
   pendingCancelledEntries: number[];
   lodChecks: number[];
   lodReplacements: number[];
+  lodReplacementLabels: RecentLabeledCountSample[];
   lowerLodRecoveries: number[];
   fallbackBoxes: number[];
+  fallbackBoxLabels: RecentLabeledCountSample[];
   pendingFlushCounts: RecentCountSample[];
   tileBuildDurations: RecentDurationSample[];
   tilePluginBuildDurations: RecentLabeledDurationSample[];
@@ -1685,8 +1691,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     pendingCancelledEntries: [] as number[],
     lodChecks: [] as number[],
     lodReplacements: [] as number[],
+    lodReplacementLabels: [] as RecentLabeledCountSample[],
     lowerLodRecoveries: [] as number[],
     fallbackBoxes: [] as number[],
+    fallbackBoxLabels: [] as RecentLabeledCountSample[],
     pendingFlushCounts: [] as RecentCountSample[],
     tileBuildDurations: [] as RecentDurationSample[],
     tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
@@ -2173,6 +2181,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         ),
       });
       recordRecentMetric(renderChurnMetrics.fallbackBoxes, pluginBuildStartMs);
+      recordRecentLabeledCountMetric(renderChurnMetrics.fallbackBoxLabels, {
+        nowMs: pluginBuildStartMs,
+        count: 1,
+        label: tilePluginOwnerLabel,
+      });
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
       const wallMesh = new THREE.Mesh(
         getSharedBoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
@@ -2837,6 +2850,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.tileModelBudgetViolations,
       nowMs
     );
+    const recentLodReplacementStats = getRecentLabeledCountStats(
+      renderChurnMetrics.lodReplacementLabels,
+      nowMs
+    );
+    const recentFallbackBoxStats = getRecentLabeledCountStats(
+      renderChurnMetrics.fallbackBoxLabels,
+      nowMs
+    );
     const ownedMaterialLifecycleCounts =
       getRecentOwnedMaterialLifecycleCounts(nowMs);
     const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
@@ -2875,8 +2896,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         renderChurnStats.pendingCancelledEntriesPerSecond,
       lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
       lodReplacementsPerSecond: renderChurnStats.lodReplacementsPerSecond,
+      lodReplacementTopPluginLabel: recentLodReplacementStats.topLabel,
+      lodReplacementSummary: recentLodReplacementStats.summary,
       lowerLodRecoveriesPerSecond: renderChurnStats.lowerLodRecoveriesPerSecond,
       fallbackBoxesPerSecond: renderChurnStats.fallbackBoxesPerSecond,
+      fallbackBoxTopPluginLabel: recentFallbackBoxStats.topLabel,
+      fallbackBoxSummary: recentFallbackBoxStats.summary,
       object3dCount: sceneResourceStats.object3dCount,
       visibleObjectCount: sceneResourceStats.visibleObjectCount,
       invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
@@ -3135,6 +3160,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         toDetailLevel: resolvedDetailLevel,
       });
       recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
+      recordRecentLabeledCountMetric(renderChurnMetrics.lodReplacementLabels, {
+        nowMs,
+        count: 1,
+        label: nextEntry.tilePluginOwnerLabel || entry.tilePluginOwnerLabel,
+      });
     }
     return processedEntryCount;
   }
