@@ -1,30 +1,17 @@
-import { createBoundedCache } from '@bworlds/cache-support';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import { getRailTrainPlacements, resolveRailTile } from '@bworlds/rail-support';
 import type { RuntimePlugin } from '@bworlds/plugin-api';
 
-export const RAIL_TILE_CACHE_MAX_ENTRIES = 2048;
-
-export function createRailNetworkRuntimePlugin({
-  cacheMaxEntries = RAIL_TILE_CACHE_MAX_ENTRIES,
-}: {
-  cacheMaxEntries?: number;
-} = {}): RuntimePlugin {
-  const cache = createBoundedCache<string, ReturnType<typeof resolveRailTile>>(
-    cacheMaxEntries
-  );
+export function createRailNetworkRuntimePlugin(): RuntimePlugin {
   return createRuntimePlugin('runtime-rail-network', {
     resolveOverworldTile({ seed, x, y, sampleTerrainSignals }) {
-      const key = `${seed}:${x}:${y}`;
       return (
-        cache.getOrCreate(key, () =>
-          resolveRailTile({
-            seed,
-            x,
-            y,
-            sampleTerrainSignals,
-          })
-        ) ?? null
+        resolveRailTile({
+          seed,
+          x,
+          y,
+          sampleTerrainSignals,
+        }) ?? null
       );
     },
     decorateOverworldTile({ seed, x, y, tile, state, sampleTerrainSignals }) {

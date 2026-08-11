@@ -78,7 +78,7 @@ describe('runtime rail network', () => {
   });
 
   it('recreates deterministic rail overlays after bounded cache eviction churn', () => {
-    const plugin = createRailNetworkRuntimePlugin({ cacheMaxEntries: 4 });
+    const plugin = createRailNetworkRuntimePlugin();
     const baseline = plugin.resolveOverworldTile?.({
       seed: 'cache-spec',
       x: 24,
