@@ -30,6 +30,7 @@ describe('vitest supervisor', () => {
       passthroughArgs: [],
       positionalArgs: [],
       suiteTimeoutMs: 60_000,
+      suiteMode: 'all',
       isFullSuiteRun: true,
     });
   });
@@ -41,7 +42,25 @@ describe('vitest supervisor', () => {
       passthroughArgs: ['apps/web/src/music-debug-timeline.test.ts'],
       positionalArgs: ['apps/web/src/music-debug-timeline.test.ts'],
       suiteTimeoutMs: 60_000,
+      suiteMode: 'all',
       isFullSuiteRun: false,
+    });
+  });
+
+  it('parses explicit suite-mode arguments for fast and long suites', () => {
+    expect(parseSupervisorArgs(['--suite-mode', 'fast'])).toEqual({
+      passthroughArgs: [],
+      positionalArgs: [],
+      suiteTimeoutMs: 60_000,
+      suiteMode: 'fast',
+      isFullSuiteRun: true,
+    });
+    expect(parseSupervisorArgs(['--suite-mode', 'long'])).toEqual({
+      passthroughArgs: [],
+      positionalArgs: [],
+      suiteTimeoutMs: 60_000,
+      suiteMode: 'long',
+      isFullSuiteRun: true,
     });
   });
 
@@ -201,6 +220,34 @@ describe('vitest supervisor', () => {
     );
     expect(consoleRef.error).toHaveBeenCalledWith(
       'Vitest supervisor: rerun likely hanging files with npm run test:hang-debug -- apps/web/src/hanging-a.test.ts packages/core/src/hanging-b.test.ts'
+    );
+  });
+
+  it('passes the selected full-suite mode to Vitest through the environment', async () => {
+    const child = createMockVitestChild(321);
+    const spawn = vi.fn(() => {
+      queueMicrotask(() => child.emit('exit', 0, null));
+      return child;
+    });
+
+    await expect(
+      runVitest(['--suite-mode', 'fast'], {
+        cwd: '/repo',
+        env: { TEST_ENV: '1' },
+        spawn,
+        waitForFullSuiteLock: async () => async () => {},
+      })
+    ).resolves.toBe(0);
+
+    expect(spawn).toHaveBeenCalledWith(
+      'npm',
+      expect.any(Array),
+      expect.objectContaining({
+        env: expect.objectContaining({
+          TEST_ENV: '1',
+          BWORLDS_VITEST_SUITE_MODE: 'fast',
+        }),
+      })
     );
   });
 });

@@ -4,19 +4,24 @@ The root `npm test` script now runs through [scripts/vitest-supervisor.mjs](/Use
 
 What it does:
 
-- Keeps the normal Vitest worker pool enabled for ordinary full-suite runs.
+- Keeps the normal Vitest worker pool enabled for ordinary suite runs.
 - Fails the full suite after 60 seconds.
 - Prevents overlapping full-suite runs in the same checkout with `.vitest-full-suite.lock`.
 - Records observed worker PIDs shortly after the suite starts.
 - Prints recently active test files plus the last observed verbose test label before forced termination.
 - Kills the whole Vitest process group on timeout, then escalates to `SIGKILL` if needed.
+- Passes a suite mode through `BWORLDS_VITEST_SUITE_MODE` so the Vitest config can run the fast suite, the long suite, or the whole test set.
 
 Related commands:
 
 - `npm test`
-  Runs the supervised suite.
+  Runs the supervised fast suite and excludes the known long-running files.
+- `npm run test:all`
+  Runs the supervised full suite without fast-suite exclusions.
+- `npm run test:long`
+  Runs only the known long-running suites behind the same supervisor path.
 - `npm run test -- apps/web/src/example.test.ts`
-  Still forwards file arguments through to Vitest.
+  Still forwards file arguments through to Vitest and bypasses fast/long suite filtering.
 - `npm run test:hang-debug -- <files...>`
   Re-runs suspected hanging files with one worker and the verbose reporter.
 

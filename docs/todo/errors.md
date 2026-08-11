@@ -8,7 +8,7 @@ Always run tests to make sure all tests pass
 # Next Highest
 
 - [ ] Shorten long running tests above 200ms where possible
-- [ ] Move long running tests to only execute for a separate test script so development isn't slowed down
+- [x] Move long running tests to only execute for a separate test script so development isn't slowed down
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.
   - [ ] Convert long plugin loops to generators that yield work to the scheduler.
   - [ ] Resume unfinished generators on later frames.

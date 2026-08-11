@@ -13,6 +13,7 @@ const TEST_FILE_PATTERN = /[A-Za-z0-9_./-]+\.test\.[cm]?[jt]sx?/g;
 export function parseSupervisorArgs(argv) {
   const passthroughArgs = [];
   let suiteTimeoutMs = DEFAULT_SUITE_TIMEOUT_MS;
+  let suiteMode = 'all';
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -20,6 +21,14 @@ export function parseSupervisorArgs(argv) {
       const value = Number(argv[index + 1] ?? '');
       if (Number.isFinite(value) && value > 0) {
         suiteTimeoutMs = value;
+        index += 1;
+        continue;
+      }
+    }
+    if (arg === '--suite-mode') {
+      const value = argv[index + 1];
+      if (value === 'all' || value === 'fast' || value === 'long') {
+        suiteMode = value;
         index += 1;
         continue;
       }
@@ -32,6 +41,7 @@ export function parseSupervisorArgs(argv) {
     passthroughArgs,
     positionalArgs,
     suiteTimeoutMs,
+    suiteMode,
     isFullSuiteRun: positionalArgs.length === 0,
   };
 }
@@ -298,7 +308,10 @@ async function runVitest(argv = process.argv.slice(2), options = {}) {
     ],
     {
       cwd: rootDir,
-      env,
+      env: {
+        ...env,
+        BWORLDS_VITEST_SUITE_MODE: args.isFullSuiteRun ? args.suiteMode : 'all',
+      },
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     }

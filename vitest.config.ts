@@ -1,5 +1,12 @@
 import { defineConfig } from 'vitest/config';
 import { buildWorkspaceAliases } from './apps/web/vite.workspace.ts';
+import {
+  resolveVitestSuiteMode,
+  resolveVitestSuiteSelection,
+} from './vitest.suite-mode.ts';
+
+const suiteMode = resolveVitestSuiteMode(process.env.BWORLDS_VITEST_SUITE_MODE);
+const suiteSelection = resolveVitestSuiteSelection(suiteMode);
 
 export default defineConfig({
   resolve: {
@@ -7,7 +14,13 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['packages/**/src/**/*.test.ts', 'apps/web/src/**/*.test.ts'],
+    include: [
+      ...(suiteSelection.include ?? [
+        'packages/**/src/**/*.test.ts',
+        'apps/web/src/**/*.test.ts',
+      ]),
+    ],
+    exclude: [...(suiteSelection.exclude ?? [])],
     setupFiles: ['./apps/web/src/test-setup.ts'],
     coverage: {
       provider: 'v8',
