@@ -66,6 +66,7 @@ import {
   createTilePluginModelFromCostEstimate,
   getTileModelCostEstimateLimitsForDetailLevel,
   resumeProgressiveTileModelBuild,
+  type ProgressiveTileModelBuildState,
   validateTileModelCostEstimateAgainstLimits,
 } from './tile-model-cost-estimate-budget.ts';
 import { getTileModelPerformanceWarnings } from './tile-model-performance-warnings.ts';
@@ -936,6 +937,40 @@ type DynamicTileNode = {
   detailLevel?: RenderBudgetDetailLevel;
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
+type TileNodeBuildShell = {
+  key: string;
+  tile: TileLike;
+  definition: TileDefinitionLike;
+  variant: number;
+  tileX: number;
+  tileY: number;
+  surfaceHeight: number;
+  tileNode: THREE.Group;
+  tilePlugin?: TilePlugin;
+  tilePluginOwnerLabel: string;
+  detailLevel: RenderBudgetDetailLevel;
+  tilePluginRenderContext: {
+    three: typeof THREE;
+    state: Render3DState;
+    tile: TileLike;
+    tileX: number;
+    tileY: number;
+    detailLevel: RenderBudgetDetailLevel;
+    renderBudget: RenderBudget | undefined;
+  };
+};
+type TilePluginBuildMetadata = {
+  estimateValidation: ReturnType<
+    typeof createTilePluginModelFromCostEstimate
+  >['estimateValidation'];
+  pluginBuildStartMs: number;
+  pluginBuildDurationMs: number;
+};
+type ActivePendingTileBuild = TilePluginBuildMetadata & {
+  key: string;
+  shell: TileNodeBuildShell;
+  progressiveBuild: ProgressiveTileModelBuildState;
+};
 type ShadowSettingsOptions = {
   castShadow: boolean;
   receiveShadow: boolean;
@@ -1631,6 +1666,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   let lastSkyPositionSignature = '';
   let cachedSkyPose: CachedSkyPose | null = null;
   const pendingWorldBuild = createPendingWorldBuildState();
+  let activePendingTileBuild: ActivePendingTileBuild | null = null;
   const renderChurnMetrics = {
     tileNodeBuilds: [] as number[],
     tileBuilds: [] as number[],
@@ -1669,6 +1705,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     pendingWorldBuild.centerY = Number.NaN;
     pendingWorldBuild.facingBucket = -1;
     pendingWorldBuild.queue = [];
+    activePendingTileBuild = null;
     lastVisibleWorldSyncState.contextId = '';
     lastVisibleWorldSyncState.centerX = Number.NaN;
     lastVisibleWorldSyncState.centerY = Number.NaN;
@@ -1676,14 +1713,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     lastVisibleWorldSyncState.chunkRadius = -1;
   }
 
-  function buildTileNode(
-    state,
-    registry,
-    x,
-    y,
+  function createTileNodeBuildShell(
+    state: Render3DState,
+    registry: ReturnType<typeof getActivePluginRegistry>,
+    x: number,
+    y: number,
     detailLevel: RenderBudgetDetailLevel = 'full',
     renderBudget?: RenderBudget
-  ): DynamicTileNode {
+  ): TileNodeBuildShell {
     recordRecentMetric(renderChurnMetrics.tileNodeBuilds, performance.now());
     const tileNode = new THREE.Group();
     const buildCache = createTileBuildCache(state);
@@ -1702,33 +1739,64 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     const tilePlugin = registry.getTilePlugin(tile.kind);
     const tilePluginOwnerLabel = getTilePluginOwnerLabel(registry, tile.kind);
-    const tilePluginRenderContext = {
-      three: THREE,
-      state,
+
+    return {
+      key: `${x}:${y}`,
       tile,
+      definition,
+      variant,
       tileX: x,
       tileY: y,
+      surfaceHeight,
+      tileNode,
+      tilePlugin,
+      tilePluginOwnerLabel,
       detailLevel,
-      renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
-    } as const;
+      tilePluginRenderContext: {
+        three: THREE,
+        state,
+        tile,
+        tileX: x,
+        tileY: y,
+        detailLevel,
+        renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
+      },
+    };
+  }
+
+  function finalizeBuiltTileNode(
+    shell: TileNodeBuildShell,
+    buildMetadata: TilePluginBuildMetadata,
+    initialPluginModel:
+      | (Pick<THREE.Object3D, 'traverse' | 'children' | 'type' | 'position'> &
+          THREE.Object3D)
+      | null
+  ): DynamicTileNode {
+    const {
+      key,
+      tile,
+      definition,
+      variant,
+      tileX: x,
+      tileY: y,
+      surfaceHeight,
+      tileNode,
+      tilePlugin,
+      tilePluginOwnerLabel,
+      detailLevel,
+      tilePluginRenderContext,
+    } = shell;
     const {
       estimateValidation,
       pluginBuildStartMs,
       pluginBuildDurationMs,
-      pluginModel: initialPluginModel,
-    } = createTilePluginModelFromCostEstimate(
-      tilePlugin,
-      tilePluginRenderContext,
-      getTileModelCostEstimateLimits(detailLevel)
-    );
-    let pluginModel = initialPluginModel as
-      | (Pick<THREE.Object3D, 'traverse' | 'children' | 'type' | 'position'> &
-          THREE.Object3D)
-      | null;
+    } = buildMetadata;
+    let pluginModel = initialPluginModel;
+
     if (pluginModel) {
       trackOwnedObject3DMaterials(pluginModel);
     }
-    if (tilePlugin?.create3DModel) {
+    if (tilePlugin?.create3DModel || tilePlugin?.create3DModelProgressive) {
       recordRecentLabeledDurationMetric(
         renderChurnMetrics.tilePluginBuildDurations,
         {
@@ -2094,7 +2162,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const finalUniqueTextures = collectUniqueObjectTextures(tileNode);
 
     return {
-      key: `${x}:${y}`,
+      key,
       tile,
       tilePluginOwnerLabel,
       tileX: x,
@@ -2123,6 +2191,120 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         Boolean(pluginModel) && definition.walkable && !isWaterKind(tile.kind),
       detailLevel,
       sync3DModel: tilePlugin?.sync3DModel,
+    };
+  }
+
+  function buildTileNode(
+    state,
+    registry,
+    x,
+    y,
+    detailLevel: RenderBudgetDetailLevel = 'full',
+    renderBudget?: RenderBudget
+  ): DynamicTileNode {
+    const shell = createTileNodeBuildShell(
+      state,
+      registry,
+      x,
+      y,
+      detailLevel,
+      renderBudget
+    );
+    const buildResult = createTilePluginModelFromCostEstimate(
+      shell.tilePlugin,
+      shell.tilePluginRenderContext,
+      getTileModelCostEstimateLimits(detailLevel)
+    );
+    let pluginBuildDurationMs = buildResult.pluginBuildDurationMs;
+    let pluginModel = buildResult.pluginModel as
+      | (Pick<THREE.Object3D, 'traverse' | 'children' | 'type' | 'position'> &
+          THREE.Object3D)
+      | null;
+
+    if (buildResult.progressiveBuild) {
+      while (true) {
+        const stepStartMs = performance.now();
+        const resumed = resumeProgressiveTileModelBuild(
+          buildResult.progressiveBuild
+        );
+        pluginBuildDurationMs += performance.now() - stepStartMs;
+        if (resumed.done) {
+          pluginModel = resumed.model as
+            | (Pick<
+                THREE.Object3D,
+                'traverse' | 'children' | 'type' | 'position'
+              > &
+                THREE.Object3D)
+            | null;
+          break;
+        }
+      }
+    }
+
+    return finalizeBuiltTileNode(
+      shell,
+      {
+        estimateValidation: buildResult.estimateValidation,
+        pluginBuildStartMs: buildResult.pluginBuildStartMs,
+        pluginBuildDurationMs,
+      },
+      pluginModel
+    );
+  }
+
+  function startPendingTileBuild(
+    state: Render3DState,
+    registry: ReturnType<typeof getActivePluginRegistry>,
+    x: number,
+    y: number,
+    detailLevel: RenderBudgetDetailLevel = 'full',
+    renderBudget?: RenderBudget
+  ): {
+    tileNode: DynamicTileNode | null;
+    activeBuild: ActivePendingTileBuild | null;
+  } {
+    const shell = createTileNodeBuildShell(
+      state,
+      registry,
+      x,
+      y,
+      detailLevel,
+      renderBudget
+    );
+    const buildResult = createTilePluginModelFromCostEstimate(
+      shell.tilePlugin,
+      shell.tilePluginRenderContext,
+      getTileModelCostEstimateLimits(detailLevel)
+    );
+
+    if (buildResult.progressiveBuild) {
+      return {
+        tileNode: null,
+        activeBuild: {
+          key: shell.key,
+          shell,
+          progressiveBuild: buildResult.progressiveBuild,
+          estimateValidation: buildResult.estimateValidation,
+          pluginBuildStartMs: buildResult.pluginBuildStartMs,
+          pluginBuildDurationMs: buildResult.pluginBuildDurationMs,
+        },
+      };
+    }
+
+    return {
+      tileNode: finalizeBuiltTileNode(
+        shell,
+        {
+          estimateValidation: buildResult.estimateValidation,
+          pluginBuildStartMs: buildResult.pluginBuildStartMs,
+          pluginBuildDurationMs: buildResult.pluginBuildDurationMs,
+        },
+        buildResult.pluginModel as
+          | (Pick<THREE.Object3D, 'traverse' | 'children' | 'type' | 'position'> &
+              THREE.Object3D)
+          | null
+      ),
+      activeBuild: null,
     };
   }
 
@@ -2196,6 +2378,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     for (const key of visibleTileNodes.keys()) {
       visibleWorldVisibleTileKeysBuffer.add(key);
     }
+    if (
+      activePendingTileBuild &&
+      !visibleWorldNextVisibleKeysBuffer.has(activePendingTileBuild.key)
+    ) {
+      activePendingTileBuild = null;
+      recordRecentMetric(renderChurnMetrics.pendingCancelledEntries, performance.now());
+    }
+    if (activePendingTileBuild) {
+      visibleWorldVisibleTileKeysBuffer.add(activePendingTileBuild.key);
+    }
 
     const nextPendingWorldBuild = reconcilePendingWorldBuildQueueWithScratch(
       nextQueue,
@@ -2236,7 +2428,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     > = {},
     frameBudget?: FrameTimeBudget
   ) {
-    if (pendingWorldBuild.queue.length === 0) {
+    if (pendingWorldBuild.queue.length === 0 && activePendingTileBuild === null) {
       return;
     }
     const context = state.getCurrentContext();
@@ -2286,6 +2478,46 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       });
     let processedEntryCount = 0;
 
+    if (activePendingTileBuild) {
+      const resumeStartMs = performance.now();
+      const resumed = resumeProgressiveTileModelBuild(
+        activePendingTileBuild.progressiveBuild
+      );
+      activePendingTileBuild.pluginBuildDurationMs +=
+        performance.now() - resumeStartMs;
+
+      if (resumed.done) {
+        const tileNode = finalizeBuiltTileNode(
+          activePendingTileBuild.shell,
+          {
+            estimateValidation: activePendingTileBuild.estimateValidation,
+            pluginBuildStartMs: activePendingTileBuild.pluginBuildStartMs,
+            pluginBuildDurationMs:
+              activePendingTileBuild.pluginBuildDurationMs,
+          },
+          resumed.model as
+            | (Pick<
+                THREE.Object3D,
+                'traverse' | 'children' | 'type' | 'position'
+              > &
+                THREE.Object3D)
+            | null
+        );
+        const buildDurationMs = activePendingTileBuild.pluginBuildDurationMs;
+        visibleTileNodes.set(tileNode.key, tileNode);
+        worldRoot.add(tileNode.node);
+        visibleWorldMutationVersion += 1;
+        recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
+        recordRecentDurationMetric(renderChurnMetrics.tileBuildDurations, {
+          nowMs,
+          durationMs: buildDurationMs,
+        });
+        activePendingTileBuild = null;
+      } else {
+        return;
+      }
+    }
+
     while (
       processedEntryCount < pendingWorldBuild.queue.length &&
       shouldProcessPendingWorldBuildEntryWithinBudget(
@@ -2319,7 +2551,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         pendingWorldBuild.queue.length - processedEntryCount,
         tile
       );
-      const tileNode = buildTileNode(
+      const pendingBuild = startPendingTileBuild(
         state,
         registry,
         entry.x,
@@ -2333,15 +2565,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
             : undefined
         )
       );
-      const buildDurationMs = performance.now() - buildStartMs;
-      visibleTileNodes.set(entry.key, tileNode);
-      worldRoot.add(tileNode.node);
-      visibleWorldMutationVersion += 1;
-      recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
-      recordRecentDurationMetric(renderChurnMetrics.tileBuildDurations, {
-        nowMs,
-        durationMs: buildDurationMs,
-      });
+      if (pendingBuild.activeBuild) {
+        activePendingTileBuild = pendingBuild.activeBuild;
+        break;
+      }
+      if (pendingBuild.tileNode) {
+        const buildDurationMs = performance.now() - buildStartMs;
+        visibleTileNodes.set(entry.key, pendingBuild.tileNode);
+        worldRoot.add(pendingBuild.tileNode.node);
+        visibleWorldMutationVersion += 1;
+        recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
+        recordRecentDurationMetric(renderChurnMetrics.tileBuildDurations, {
+          nowMs,
+          durationMs: buildDurationMs,
+        });
+      }
     }
 
     if (processedEntryCount > 0) {

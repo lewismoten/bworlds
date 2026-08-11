@@ -11,6 +11,10 @@ Current behavior:
 - `flushPendingWorldBuild()` computes the remaining shared frame budget before
   it starts work, then keeps building queued tiles while both time and tile
   count budgets remain.
+- When a tile plugin uses `create3DModelProgressive(...)`, the renderer keeps
+  one unfinished build active, resumes it on later frames, and keeps that tile
+  key out of the pending queue until the build completes or falls out of
+  visibility.
 - The first visible frame is forced into a minimal progressive mode through
   `getEffectivePendingWorldBuildBudget()`, which drops the initial flush to a
   single tile when the queue is still cold.
