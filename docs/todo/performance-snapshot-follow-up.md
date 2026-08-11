@@ -46,7 +46,7 @@
 - [ ] Flatten groups that provide no transform or semantic value.
 - [ ] Investigate the 656 static objects using matrix auto-update.
 - [ ] Disable matrix auto-update for truly static objects.
-- [ ] Report static matrix updates by plugin.
+- [x] Report static matrix updates by plugin.
 - [ ] Reduce total Object3D count without changing visuals.
 
 ## LOD Stability
@@ -100,5 +100,5 @@
 - [ ] Add top draw-call-producing plugins to the snapshot.
 - [x] Add top LOD-swapping plugins to the snapshot.
 - [x] Add top fallback-model plugins to the snapshot.
-- [ ] Add top matrix-update plugins to the snapshot.
+- [x] Add top matrix-update plugins to the snapshot.
 - [ ] Include cache hit rates for geometry and materials.

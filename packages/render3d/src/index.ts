@@ -342,6 +342,8 @@ type Render3DController = {
     fallbackBoxesPerSecond: number;
     fallbackBoxTopPluginLabel: string;
     fallbackBoxSummary: string;
+    staticMatrixUpdateTopPluginLabel: string;
+    staticMatrixUpdateSummary: string;
     object3dCount: number;
     visibleObjectCount: number;
     invisibleObjectCount: number;
@@ -941,6 +943,7 @@ type DynamicTileNode = {
   lightCount: number;
   shadowLightCount: number;
   visibleMeshCount: number;
+  staticMatrixAutoUpdateCount?: number;
   materialCount: number;
   vertexCount: number;
   triangleCount: number;
@@ -2233,6 +2236,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       lightCount: finalSceneResourceStats.lightCount,
       shadowLightCount: finalSceneResourceStats.shadowLightCount,
       visibleMeshCount: finalSceneResourceStats.visibleMeshCount,
+      staticMatrixAutoUpdateCount:
+        finalSceneResourceStats.staticMatrixAutoUpdateCount,
       materialCount: finalSceneResourceStats.materialCount,
       vertexCount: finalSceneResourceStats.vertexCount,
       triangleCount: finalSceneResourceStats.triangleCount,
@@ -2883,6 +2888,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       getRecentOwnedMaterialLifecycleCounts(nowMs);
     const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
     const renderChurnStats = getRenderChurnStats(renderChurnMetrics, nowMs);
+    const visibleTileStaticMatrixUpdateStats =
+      summarizeVisibleTileStaticMatrixUpdatesByPlugin(
+        visibleTileNodes.values()
+      );
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -2923,6 +2932,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       fallbackBoxesPerSecond: renderChurnStats.fallbackBoxesPerSecond,
       fallbackBoxTopPluginLabel: recentFallbackBoxStats.topLabel,
       fallbackBoxSummary: recentFallbackBoxStats.summary,
+      staticMatrixUpdateTopPluginLabel:
+        visibleTileStaticMatrixUpdateStats.topLabel,
+      staticMatrixUpdateSummary: visibleTileStaticMatrixUpdateStats.summary,
       object3dCount: sceneResourceStats.object3dCount,
       visibleObjectCount: sceneResourceStats.visibleObjectCount,
       invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
@@ -5411,6 +5423,47 @@ export function getRecentLabeledCountStats(
 
   const labeledSummary = summarizeSortedCountMapWithTopLabel(counts);
 
+  return {
+    totalCount,
+    topCount: labeledSummary.topCount,
+    topLabel: labeledSummary.topLabel,
+    summary: labeledSummary.summary,
+  };
+}
+
+export function summarizeVisibleTileStaticMatrixUpdatesByPlugin(
+  entries: Iterable<
+    Pick<
+      DynamicTileNode,
+      'tilePluginOwnerLabel' | 'staticMatrixAutoUpdateCount'
+    >
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  let totalCount = 0;
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    const count = Math.max(0, entry.staticMatrixAutoUpdateCount ?? 0);
+    if (count === 0) {
+      continue;
+    }
+    totalCount += count;
+    const label = entry.tilePluginOwnerLabel?.trim() || 'unknown';
+    counts.set(label, (counts.get(label) ?? 0) + count);
+  }
+  if (totalCount === 0) {
+    return {
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    };
+  }
+  const labeledSummary = summarizeSortedCountMapWithTopLabel(counts);
   return {
     totalCount,
     topCount: labeledSummary.topCount,

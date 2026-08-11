@@ -214,6 +214,7 @@ import {
   shouldReplaceVisibleTileModelDetailEntry,
   shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
+  summarizeVisibleTileStaticMatrixUpdatesByPlugin,
   summarizeVisibleTileKinds,
   summarizeRemovedTileModelBudgetParts,
   syncDynamicTileNodes,
@@ -4335,6 +4336,41 @@ describe('render3d visibility helpers', () => {
     expect(
       getVisibleTileDebugInfoFromState(new Map(), new Map(), 15, -9)
     ).toBeNull();
+  });
+
+  it('summarizes static matrix updates by visible tile plugin', () => {
+    expect(
+      summarizeVisibleTileStaticMatrixUpdatesByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          staticMatrixAutoUpdateCount: 9,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          staticMatrixAutoUpdateCount: 6,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          staticMatrixAutoUpdateCount: 2,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          staticMatrixAutoUpdateCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 17,
+      topCount: 11,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:11, tile-town:6',
+    });
+
+    expect(summarizeVisibleTileStaticMatrixUpdatesByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
   });
 
   it('skips pending lod sync work while lod selection is frozen', () => {

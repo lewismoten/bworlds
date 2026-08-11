@@ -43,6 +43,8 @@ export type DebugSnapshot = {
   fallbackBoxesPerSecond?: number;
   fallbackBoxTopPluginLabel?: string;
   fallbackBoxSummary?: string;
+  staticMatrixUpdateTopPluginLabel?: string;
+  staticMatrixUpdateSummary?: string;
   lastLodFailureReason?: string;
   lastFallbackReason?: string;
   currentTilePlugin?: string;
@@ -224,6 +226,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.fallbackBoxesPerSecond ?? 0,
     snapshot.fallbackBoxTopPluginLabel ?? '',
     snapshot.fallbackBoxSummary ?? '',
+    snapshot.staticMatrixUpdateTopPluginLabel ?? '',
+    snapshot.staticMatrixUpdateSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
     snapshot.lastFallbackReason ?? '',
     snapshot.currentTilePlugin ?? '',
@@ -368,6 +372,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Fallback Boxes/s</dt><dd>${snapshot.fallbackBoxesPerSecond ?? 0}</dd></div>
     <div><dt>Fallback Plugin</dt><dd>${snapshot.fallbackBoxTopPluginLabel || 'None'}</dd></div>
     <div><dt>Fallback Summary</dt><dd>${snapshot.fallbackBoxSummary || 'None'}</dd></div>
+    <div><dt>Static Matrix Plugin</dt><dd>${snapshot.staticMatrixUpdateTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Static Matrix Summary</dt><dd>${snapshot.staticMatrixUpdateSummary || 'None'}</dd></div>
     <div><dt>Last LOD Failure</dt><dd>${snapshot.lastLodFailureReason || 'None'}</dd></div>
     <div><dt>Fallback Reason</dt><dd>${snapshot.lastFallbackReason || 'None'}</dd></div>
     <div><dt>Current Tile Plugin</dt><dd>${snapshot.currentTilePlugin || 'None'}</dd></div>

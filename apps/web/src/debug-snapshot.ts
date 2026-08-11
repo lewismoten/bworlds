@@ -222,6 +222,8 @@ export type DebugSnapshotExport = {
     oneChildGroupCount: number;
     matrixAutoUpdateCount: number;
     staticMatrixAutoUpdateCount: number;
+    topStaticMatrixUpdatePlugin: string | null;
+    staticMatrixUpdateSummary: string;
     spriteCount: number;
     pointsCount: number;
     lineObjectCount: number;
@@ -481,6 +483,10 @@ export function buildDebugSnapshotExport(
       matrixAutoUpdateCount: options.snapshot.matrixAutoUpdateCount ?? 0,
       staticMatrixAutoUpdateCount:
         options.snapshot.staticMatrixAutoUpdateCount ?? 0,
+      topStaticMatrixUpdatePlugin:
+        options.snapshot.staticMatrixUpdateTopPluginLabel?.trim() || null,
+      staticMatrixUpdateSummary:
+        options.snapshot.staticMatrixUpdateSummary ?? '',
       spriteCount: options.snapshot.spriteCount,
       pointsCount: options.snapshot.pointsCount,
       lineObjectCount: options.snapshot.lineObjectCount ?? 0,

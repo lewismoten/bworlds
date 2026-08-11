@@ -2314,6 +2314,9 @@ function collectCurrentDebugSnapshot(
     fallbackBoxesPerSecond: rendererStats.fallbackBoxesPerSecond,
     fallbackBoxTopPluginLabel: rendererStats.fallbackBoxTopPluginLabel,
     fallbackBoxSummary: rendererStats.fallbackBoxSummary,
+    staticMatrixUpdateTopPluginLabel:
+      rendererStats.staticMatrixUpdateTopPluginLabel,
+    staticMatrixUpdateSummary: rendererStats.staticMatrixUpdateSummary,
     object3dCount: rendererStats.object3dCount,
     visibleObjectCount: rendererStats.visibleObjectCount,
     invisibleObjectCount: rendererStats.invisibleObjectCount,
