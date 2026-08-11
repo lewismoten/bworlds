@@ -168,7 +168,10 @@ Always run tests to make sure all tests pass
       route checks reuse repeated terrain reads within one route-classifier
       pass, and `runtime-rail-network` now delegates directly to the shared
       `rail-support` region and train caches instead of adding a duplicate
-      per-tile runtime cache layer, and `tile-support` now caches both
+      per-tile runtime cache layer, and `rail-support` now caches terrain
+      reads for one `buildRailConnections()` pass so overlapping candidate
+      rail paths stop re-sampling the same coordinates, and `tile-support`
+      now caches both
       terrain signals and predicted route-presence lookups inside
       `createRoadsideRouteProfile()` so repeated local junction/span scans
       stop rediscovering the same nearby coordinates, and

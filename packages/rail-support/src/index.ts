@@ -140,6 +140,8 @@ export function buildRailConnections({
   const degrees = new Map<string, number>();
   const claimed = new Set<string>();
   const sortedStations = [...stationAnchors].sort(compareStationAnchors);
+  const cachedSampleTerrainSignals =
+    createCachedRailTerrainSignalSampler(sampleTerrainSignals);
 
   for (const station of sortedStations) {
     const stationKey = `${station.x},${station.y}`;
@@ -183,7 +185,9 @@ export function buildRailConnections({
       }
 
       const points = buildRailCurvePoints(seed, station, other);
-      if (!isRailPathSuitable(points, sampleTerrainSignals, station, other)) {
+      if (
+        !isRailPathSuitable(points, cachedSampleTerrainSignals, station, other)
+      ) {
         continue;
       }
 
@@ -516,4 +520,20 @@ function compareStationAnchors(
   return (
     left.x - right.x || left.y - right.y || left.name.localeCompare(right.name)
   );
+}
+
+function createCachedRailTerrainSignalSampler(
+  sampleTerrainSignals: SampleTerrainSignalsLike
+): SampleTerrainSignalsLike {
+  const cache = new Map<string, ReturnType<SampleTerrainSignalsLike>>();
+  return (x: number, y: number) => {
+    const key = `${x},${y}`;
+    const cached = cache.get(key);
+    if (cached) {
+      return cached;
+    }
+    const resolved = sampleTerrainSignals(x, y);
+    cache.set(key, resolved);
+    return resolved;
+  };
 }

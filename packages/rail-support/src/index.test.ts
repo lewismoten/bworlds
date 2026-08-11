@@ -140,6 +140,36 @@ describe('rail support', () => {
     expect(signalCalls).toBe(callsAfterTile);
     expect(Array.isArray(placements)).toBe(true);
   });
+
+  it('reuses terrain signal reads across overlapping candidate rail paths', () => {
+    let signalCalls = 0;
+    const seenCoordinates = new Set<string>();
+    const stations = [
+      createStation('Aster', 0, 0),
+      createStation('Birch', 24, 0),
+      createStation('Cinder', 48, 0),
+      createStation('Dawn', 24, 24),
+    ];
+
+    buildRailConnections({
+      seed: 'spec-seed',
+      stationAnchors: stations,
+      sampleTerrainSignals(x, y) {
+        signalCalls += 1;
+        seenCoordinates.add(`${x},${y}`);
+        return {
+          continent: 0.62,
+          elevation: 0.28,
+          moisture: 0.44,
+          riverSignal: 0.16,
+          roadSignal: 0.58,
+        };
+      },
+    });
+
+    expect(signalCalls).toBe(seenCoordinates.size);
+    expect(signalCalls).toBeGreaterThan(0);
+  });
 });
 
 function createStation(name: string, x: number, y: number) {
