@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { shapeProceduralPhraseLeadNotes } from './procedural-music-lead-phrase.ts';
 
 describe('procedural music lead phrase shaping', () => {
-  it('quantizes lead starts to reusable measure subdivisions and connects durations', () => {
+  it('quantizes lead starts before applying bounded timing humanization and connected durations', () => {
     const notes = shapeProceduralPhraseLeadNotes(
       [
         createLeadNote({ startMs: 210, durationMs: 90, releaseMs: 70 }),
@@ -23,17 +23,21 @@ describe('procedural music lead phrase shaping', () => {
     const secondMeasure = notes.filter(
       (note) => note.startMs >= 1_000 && note.startMs < 2_000
     );
+    const quantizedNotes = [...firstMeasure, ...secondMeasure];
 
+    expect(firstMeasure).toHaveLength(2);
+    expect(secondMeasure).toHaveLength(2);
     expect(
-      firstMeasure.every(
+      quantizedNotes.every(
         (note) =>
-          Math.abs(note.startMs / 62.5 - Math.round(note.startMs / 62.5)) < 0.02
+          Math.abs(note.startMs / 62.5 - Math.round(note.startMs / 62.5)) <=
+          14 / 62.5
       )
     ).toBe(true);
     expect(
-      secondMeasure.every(
+      quantizedNotes.some(
         (note) =>
-          Math.abs(note.startMs / 62.5 - Math.round(note.startMs / 62.5)) < 0.02
+          Math.abs(note.startMs / 62.5 - Math.round(note.startMs / 62.5)) > 0.01
       )
     ).toBe(true);
     expect(firstMeasure[0]?.durationMs).toBeGreaterThanOrEqual(120);
@@ -114,6 +118,30 @@ describe('procedural music lead phrase shaping', () => {
       secondMeasure[1]!.releaseMs
     );
     expect(thirdMeasureNote?.releaseMs).toBe(70);
+  });
+
+  it('keeps timing humanization deterministic for the same phrase inputs', () => {
+    const inputNotes = [
+      createLeadNote({ startMs: 210, durationMs: 90, releaseMs: 70 }),
+      createLeadNote({ startMs: 640, durationMs: 85, releaseMs: 70 }),
+      createLeadNote({ startMs: 1_360, durationMs: 90, releaseMs: 70 }),
+      createLeadNote({ startMs: 1_780, durationMs: 85, releaseMs: 70 }),
+    ];
+
+    const first = shapeProceduralPhraseLeadNotes(inputNotes, {
+      phraseStartMs: 0,
+      phraseDurationMs: 8_000,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const second = shapeProceduralPhraseLeadNotes(inputNotes, {
+      phraseStartMs: 0,
+      phraseDurationMs: 8_000,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    expect(second).toEqual(first);
   });
 });
 

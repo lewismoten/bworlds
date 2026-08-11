@@ -1,9 +1,14 @@
+import { hash2DWithSeed, registerHashLabel } from '@bworlds/core/hash';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import {
   PROCEDURAL_LEAD_RHYTHM_SUBDIVISION_COUNT,
   resolveProceduralLeadRhythmPhraseTemplate,
 } from './procedural-music-lead-rhythm-template.ts';
 import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
+
+const LEAD_TIMING_HUMANIZATION_SEED = registerHashLabel(
+  'music-lead-timing-humanization'
+);
 
 export function shapeProceduralPhraseLeadNotes(
   notes: readonly ProceduralMusicNote[],
@@ -61,6 +66,16 @@ export function shapeProceduralPhraseLeadNotes(
       leadNoteIndexes,
       measureStartMs,
       measureEndMs,
+      subdivisionDurationMs,
+      measureTemplate?.attacks ?? []
+    );
+    humanizeLeadMeasureStarts(
+      shapedNotes,
+      leadNoteIndexes,
+      measureStartMs,
+      measureEndMs,
+      options.clusterX,
+      options.clusterY,
       subdivisionDurationMs,
       measureTemplate?.attacks ?? []
     );
@@ -140,6 +155,73 @@ function quantizeLeadMeasureStarts(
     );
 
     note.startMs = targetStartMs;
+  }
+}
+
+function humanizeLeadMeasureStarts(
+  notes: ProceduralMusicNote[],
+  leadNoteIndexes: readonly number[],
+  measureStartMs: number,
+  measureEndMs: number,
+  clusterX: number,
+  clusterY: number,
+  subdivisionDurationMs: number,
+  attackTemplates: readonly {
+    subdivisionStep: number;
+  }[]
+): void {
+  if (leadNoteIndexes.length === 0) {
+    return;
+  }
+
+  const maximumHumanizationMs = Math.max(
+    4,
+    Math.min(14, Math.round(subdivisionDurationMs * 0.12))
+  );
+  const minimumAttackGapMs = Math.max(
+    12,
+    Math.round(subdivisionDurationMs * 0.16)
+  );
+
+  for (
+    let attackIndex = 0;
+    attackIndex < leadNoteIndexes.length;
+    attackIndex += 1
+  ) {
+    const noteIndex = leadNoteIndexes[attackIndex]!;
+    const note = notes[noteIndex]!;
+    const priorNote =
+      attackIndex > 0 ? notes[leadNoteIndexes[attackIndex - 1]!]! : null;
+    const nextNote =
+      attackIndex + 1 < leadNoteIndexes.length
+        ? notes[leadNoteIndexes[attackIndex + 1]!]!
+        : null;
+    const attackTemplate = attackTemplates[attackIndex];
+    const quantizedStartMs = note.startMs;
+    const humanizationSignal =
+      hash2DWithSeed(
+        LEAD_TIMING_HUMANIZATION_SEED,
+        clusterX * 97 + measureStartMs + attackIndex * 17,
+        clusterY * 89 +
+          (attackTemplate?.subdivisionStep ?? attackIndex) * 31 +
+          leadNoteIndexes.length
+      ) *
+        2 -
+      1;
+    const offsetMs = Math.round(humanizationSignal * maximumHumanizationMs);
+    const earliestStartMs =
+      priorNote === null
+        ? measureStartMs
+        : priorNote.startMs + minimumAttackGapMs;
+    const latestStartMs =
+      nextNote === null
+        ? measureEndMs - 1
+        : nextNote.startMs - minimumAttackGapMs;
+
+    note.startMs = Math.max(
+      earliestStartMs,
+      Math.min(latestStartMs, quantizedStartMs + offsetMs)
+    );
   }
 }
 

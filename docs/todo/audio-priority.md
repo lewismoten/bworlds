@@ -32,7 +32,12 @@
 - [x] Rhythm: Order 6, red, named as Percussion (may contain multiple instruments: kick, snare, toms, cymbols, shaker, tambourine, bells, hand percussion)
 - [ ] Effects: Order 7, pink, named Transitions
 - [ ] Ambience: Order 8, teal, named as Ambience
-- [ ] Allow some songs to have Counterline, Atmosphere, Effects, and/or Ambience
+- [ ] Allow some songs to have Counterline track
+- [ ] Allow some songs to have Atmosphere track
+- [ ] Allow some songs to have Effects track
+- [ ] Allow some songs to have Ambience track
+- [ ] Show "Missing" legend in Lead Contour Graph
+- [ ] Show "Drift" legend in Lead Contour Graph
 
 ## Instrument Patch Foundation
 
@@ -142,7 +147,7 @@
 - [x] Use longer notes near phrase endings.
 - [x] Use shorter notes when building toward a climax.
 - [x] Make section changes audible through rhythm changes.
-- [ ] Quantize first, then apply controlled humanization.
+- [x] Quantize first, then apply controlled humanization.
       The lead rhythm system now draws from shared measure and phrase pattern
       libraries, repeats the same opening rhythm before A' varies it, keeps
       phrase-end rests in the fourth and eighth measures, explicitly stretches
@@ -156,9 +161,11 @@
       pruning would otherwise leave an entire measure silent so the full stack
       never rests all at once, shortens variation lead-note durations as the
       section approaches its central climax window before lengthening them
-      again afterward, gives the variation section a measurably different lead
-      rhythm than Section A, and keeps the bass pulse repeating measure-for-
-      measure across the repeated Section A phrase cycle.
+      again afterward, quantizes lead attacks onto the shared subdivision grid
+      before applying small deterministic timing offsets inside a strict
+      post-quantization window, gives the variation section a measurably
+      different lead rhythm than Section A, and keeps the bass pulse repeating
+      measure-for-measure across the repeated Section A phrase cycle.
 
 ## Humanization
 
