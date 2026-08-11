@@ -11,20 +11,30 @@ import {
 } from './music-debug-report.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
 
+const PASSING_FOREST_SNAPSHOT = createPassingSnapshot(
+  createMusicDebugSnapshot({
+    tileKind: 'forest',
+    contextType: 'overworld',
+    clusterX: 4,
+    clusterY: -1,
+  })
+);
+
+const PASSING_TOWN_SNAPSHOT = createPassingSnapshot(
+  createMusicDebugSnapshot({
+    tileKind: 'town',
+    contextType: 'town',
+    clusterX: 3,
+    clusterY: -2,
+  })
+);
+
 describe('music debug quality status', () => {
   it('blocks good status when critical musical checks fail', () => {
-    const snapshot = createPassingSnapshot(
-      createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        clusterX: 4,
-        clusterY: -1,
-      })
-    );
     const blockedSnapshot = {
-      ...snapshot,
+      ...PASSING_FOREST_SNAPSHOT,
       midiAudit: {
-        ...snapshot.midiAudit,
+        ...PASSING_FOREST_SNAPSHOT.midiAudit,
         isConsistent: false,
         criticalWarningMessages: [
           'Intro harmony drifted at measures 1-2 (A-C-E vs G-B-D; notes A3, C4, E4).',
@@ -58,22 +68,14 @@ describe('music debug quality status', () => {
   });
 
   it('keeps non-critical warnings out of blocked quality status', () => {
-    const snapshot = createPassingSnapshot(
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      })
-    );
     const warnedSnapshot = {
-      ...snapshot,
+      ...PASSING_TOWN_SNAPSHOT,
       percussionValidation: {
         isValidForMidiExport: false,
         messages: ['Intro should not contain percussion notes.'],
       },
       midiAudit: {
-        ...snapshot.midiAudit,
+        ...PASSING_TOWN_SNAPSHOT.midiAudit,
         warningMessages: ['Intro should not contain percussion notes.'],
       },
     };

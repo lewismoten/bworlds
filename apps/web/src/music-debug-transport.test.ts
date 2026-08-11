@@ -8,26 +8,30 @@ import {
   resolveMusicDebugSectionJumpTargets,
 } from './music-debug-transport.ts';
 
+const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
+const FOREST_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+});
+const DEFAULT_SECTION_JUMP_TARGETS =
+  resolveMusicDebugSectionJumpTargets(DEFAULT_SNAPSHOT);
+
 describe('music debug transport', () => {
   it('clamps preview offsets inside the song duration', () => {
-    const snapshot = createMusicDebugSnapshot();
-
-    expect(clampMusicDebugPreviewOffset(snapshot, -80)).toBe(0);
+    expect(clampMusicDebugPreviewOffset(DEFAULT_SNAPSHOT, -80)).toBe(0);
     expect(
-      clampMusicDebugPreviewOffset(snapshot, snapshot.durationMs + 500)
-    ).toBe(snapshot.durationMs);
+      clampMusicDebugPreviewOffset(
+        DEFAULT_SNAPSHOT,
+        DEFAULT_SNAPSHOT.durationMs + 500
+      )
+    ).toBe(DEFAULT_SNAPSHOT.durationMs);
   });
 
   it('resolves playback offsets from the active playback cycle timing', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-    });
-
     expect(
       resolveMusicDebugPlaybackOffsetMs(
         {
-          snapshot,
+          snapshot: FOREST_SNAPSHOT,
           region: {
             startOffsetMs: 12_000,
             endOffsetMs: 16_000,
@@ -40,12 +44,10 @@ describe('music debug transport', () => {
   });
 
   it('falls back to the preview offset when playback is inactive', () => {
-    const snapshot = createMusicDebugSnapshot();
-
     expect(
       resolveMusicDebugDisplayedOffsetMs({
         playback: null,
-        snapshot,
+        snapshot: DEFAULT_SNAPSHOT,
         previewOffsetMs: 4_321,
         nowMs: 10_000,
       })
@@ -53,15 +55,16 @@ describe('music debug transport', () => {
   });
 
   it('builds jump targets for the beginning and each section', () => {
-    const snapshot = createMusicDebugSnapshot();
-    const targets = resolveMusicDebugSectionJumpTargets(snapshot);
-
-    expect(targets[0]).toEqual({
+    expect(DEFAULT_SECTION_JUMP_TARGETS[0]).toEqual({
       id: 'start',
       label: 'Start',
       startOffsetMs: 0,
     });
-    expect(targets).toHaveLength(snapshot.song.sections.length + 1);
-    expect(targets[1]?.label).toBe(snapshot.song.sections[0]?.label);
+    expect(DEFAULT_SECTION_JUMP_TARGETS).toHaveLength(
+      DEFAULT_SNAPSHOT.song.sections.length + 1
+    );
+    expect(DEFAULT_SECTION_JUMP_TARGETS[1]?.label).toBe(
+      DEFAULT_SNAPSHOT.song.sections[0]?.label
+    );
   });
 });
