@@ -79,6 +79,14 @@ export function shapeProceduralPhraseLeadNotes(
       subdivisionDurationMs,
       measureTemplate?.attacks ?? []
     );
+    rebalancePhraseEndingLeadStart(
+      shapedNotes,
+      leadNoteIndexes,
+      measureStartMs,
+      phraseRestEndMs,
+      phraseRestEndMs < measureEndMs,
+      subdivisionDurationMs
+    );
     connectLeadMeasureDurations(
       shapedNotes,
       leadNoteIndexes,
@@ -223,6 +231,43 @@ function humanizeLeadMeasureStarts(
       Math.min(latestStartMs, quantizedStartMs + offsetMs)
     );
   }
+}
+
+function rebalancePhraseEndingLeadStart(
+  notes: ProceduralMusicNote[],
+  leadNoteIndexes: readonly number[],
+  measureStartMs: number,
+  phraseRestEndMs: number,
+  phraseEndingMeasure: boolean,
+  subdivisionDurationMs: number
+): void {
+  if (!phraseEndingMeasure || leadNoteIndexes.length === 0) {
+    return;
+  }
+
+  const finalNoteIndex = leadNoteIndexes[leadNoteIndexes.length - 1]!;
+  const finalNote = notes[finalNoteIndex]!;
+  const priorNote =
+    leadNoteIndexes.length > 1
+      ? notes[leadNoteIndexes[leadNoteIndexes.length - 2]!]!
+      : null;
+  const minimumGapMs = Math.max(24, Math.round(subdivisionDurationMs * 0.24));
+  const minimumPhraseEndingDurationMs = Math.max(
+    160,
+    Math.round(subdivisionDurationMs * 2.6)
+  );
+  const latestAllowedStartMs = phraseRestEndMs - minimumPhraseEndingDurationMs;
+
+  if (finalNote.startMs <= latestAllowedStartMs) {
+    return;
+  }
+
+  finalNote.startMs = Math.max(
+    measureStartMs,
+    priorNote === null
+      ? latestAllowedStartMs
+      : Math.max(latestAllowedStartMs, priorNote.startMs + minimumGapMs)
+  );
 }
 
 function connectLeadMeasureDurations(
