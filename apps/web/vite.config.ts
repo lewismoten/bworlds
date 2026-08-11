@@ -3,9 +3,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import {
+  readRecentClientErrorSnapshots,
+  saveClientErrorSnapshot,
+} from './client-error-snapshot-store.mjs';
+import {
   readRecentRuntimePerformanceSnapshots,
   saveRuntimePerformanceSnapshot,
 } from './runtime-performance-snapshot-store.mjs';
+import { CLIENT_ERROR_SNAPSHOT_API_PATH } from './src/client-error-snapshot.ts';
 import { resolveDebugRouteRedirect } from './src/debug-route-aliases.ts';
 import { resolveRootEntryHtmlPath } from './src/root-entry-route.ts';
 import { buildWorkspaceAliases } from './vite.workspace.ts';
@@ -130,6 +135,95 @@ function readJsonBody(req: RuntimeSnapshotRequest): Promise<unknown> {
   });
 }
 
+function createClientErrorSnapshotApiPlugin(): Plugin {
+  const middleware = async (
+    req: RuntimeSnapshotRequest,
+    res: RuntimeSnapshotResponse,
+    next: () => void
+  ) => {
+    const requestUrl = req.url ? new URL(req.url, 'http://localhost') : null;
+    if (!requestUrl) {
+      next();
+      return;
+    }
+
+    if (requestUrl.pathname !== CLIENT_ERROR_SNAPSHOT_API_PATH) {
+      next();
+      return;
+    }
+
+    if (req.method === 'GET') {
+      const limitParam = Number(requestUrl.searchParams.get('limit') ?? '50');
+      const limit = Number.isFinite(limitParam)
+        ? Math.max(1, Math.min(50, Math.floor(limitParam)))
+        : 50;
+      sendJson(res, 200, {
+        snapshots: readRecentClientErrorSnapshots({ limit }),
+      });
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.statusCode = 405;
+      res.setHeader('Allow', 'GET, POST');
+      res.end();
+      return;
+    }
+
+    try {
+      const snapshot = await readJsonBody(req);
+      if (
+        !snapshot ||
+        typeof snapshot !== 'object' ||
+        !('schemaVersion' in snapshot) ||
+        !('createdAt' in snapshot) ||
+        !('messageHash' in snapshot)
+      ) {
+        sendJson(res, 400, {
+          error: 'Expected a client error snapshot JSON payload.',
+        });
+        return;
+      }
+
+      const fileName = saveClientErrorSnapshot(snapshot);
+      sendJson(res, 201, {
+        fileName,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown snapshot error.';
+      const snapshotDirError =
+        error instanceof Error &&
+        (error.message.includes('ENOENT') || error.message.includes('EACCES'));
+      sendJson(res, snapshotDirError ? 500 : 400, {
+        error: message,
+      });
+    }
+  };
+
+  return {
+    name: 'client-error-snapshot-api',
+    configureServer(server: DebugRouteMiddlewareContainer) {
+      server.middlewares.use((req, res, next) => {
+        void middleware(
+          req as RuntimeSnapshotRequest,
+          res as RuntimeSnapshotResponse,
+          next
+        );
+      });
+    },
+    configurePreviewServer(server: DebugRouteMiddlewareContainer) {
+      server.middlewares.use((req, res, next) => {
+        void middleware(
+          req as RuntimeSnapshotRequest,
+          res as RuntimeSnapshotResponse,
+          next
+        );
+      });
+    },
+  };
+}
+
 function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
   const middleware = async (
     req: RuntimeSnapshotRequest,
@@ -221,6 +315,7 @@ function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
 export default defineConfig({
   appType: 'mpa',
   plugins: [
+    createClientErrorSnapshotApiPlugin(),
     createRuntimePerformanceSnapshotApiPlugin(),
     createDebugRouteRedirectPlugin(),
   ],

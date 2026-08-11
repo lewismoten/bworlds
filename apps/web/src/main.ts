@@ -85,6 +85,7 @@ import {
   type RuntimePerformanceSnapshot,
   type RuntimePerformanceSnapshotTrigger,
 } from './runtime-performance-tracking.ts';
+import { installClientErrorSnapshotReporter } from './client-error-snapshot.ts';
 import { createTeleportPin, normalizeTeleportPins } from './teleport-pins.ts';
 import {
   AUDIO_CATEGORIES,
@@ -1380,6 +1381,11 @@ const runtimePerformanceTrackingState = {
   startupReported: false,
   lastReportedContextId: null as string | null,
 };
+installClientErrorSnapshotReporter({
+  tracking: () => runtimePerformanceTrackingState,
+  eventTarget: window,
+  abortSignal: pageLifecycleSignal,
+});
 function getAudioCategoryVolume(category: AudioCategory): number {
   return audioPreferenceState.categoryVolumes[category];
 }

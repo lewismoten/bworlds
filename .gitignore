@@ -6,5 +6,6 @@ coverage/
 /*.md
 !/README.md
 .runtime-performance-snapshots/
+.client-error-snapshots/
 dist-analyze*/
 .vitest-full-suite.lock

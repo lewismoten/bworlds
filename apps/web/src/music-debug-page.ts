@@ -1,4 +1,5 @@
 import './music-debug.css';
+import { installClientErrorSnapshotReporter } from './client-error-snapshot.ts';
 import { SESSION_STORAGE_KEY, parseSavedSession } from './session-state.ts';
 import {
   buildRuntimePerformanceSnapshot,
@@ -159,6 +160,11 @@ const runtimePerformanceTrackingPreferences =
       globalThis.localStorage?.getItem(SESSION_STORAGE_KEY) ?? null
     )
   );
+installClientErrorSnapshotReporter({
+  tracking: () => runtimePerformanceTrackingPreferences,
+  eventTarget: window,
+  abortSignal: pageLifecycleSignal,
+});
 let previewOffsetMs = 0;
 let playbackVisualState: MusicDebugPlaybackVisualState | null = null;
 let playbackFrameHandle: number | null = null;
