@@ -75,6 +75,7 @@ import {
   type MusicDebugTimelinePointerDragState,
 } from './music-debug-timeline-drag.ts';
 import {
+  buildMusicDebugPercussionLaneTogglesMarkup,
   createMusicDebugDrumKitAuditionNotes,
   normalizeMusicDebugPercussionPlaybackState,
   resolveMusicDebugPercussionVoiceIdsForPlayback,
@@ -264,6 +265,13 @@ function buildTrackVisibilityButtonMarkup(role: MusicDebugDisplayRole): string {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c-2.8 0-5.3 1.8-6.2 4.4L4 12l1.8 3.6A6.7 6.7 0 0 0 12 20a6.7 6.7 0 0 0 6.2-4.4L20 12l-1.8-3.6A6.7 6.7 0 0 0 12 4Z" /><path d="M10 10.8V8.5a2 2 0 1 1 4 0v2.3a2.5 2.5 0 1 1-4 0Z" /></svg>';
   const muteIcon =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c-2.8 0-5.3 1.8-6.2 4.4L4 12l1.8 3.6A6.7 6.7 0 0 0 12 20a6.7 6.7 0 0 0 6.2-4.4L20 12l-1.8-3.6A6.7 6.7 0 0 0 12 4Z" /><path d="m8 8 8 8" /><path d="m16 8-8 8" /></svg>';
+  const percussionLaneToggles =
+    role === 'percussion'
+      ? buildMusicDebugPercussionLaneTogglesMarkup(
+          resolveCurrentSnapshot(),
+          percussionPlaybackState
+        )
+      : '';
   return `
     <div class="music-debug-track-control-row">
       <span class="music-debug-track-control-label">${label}</span>
@@ -272,6 +280,7 @@ function buildTrackVisibilityButtonMarkup(role: MusicDebugDisplayRole): string {
         <button type="button" class="music-debug-track-audio-button" data-role="${role}" data-track-playback-action="solo" aria-pressed="${soloPressed}" aria-label="${soloPressed ? `Clear solo for ${label}` : `Solo ${label}`}">${soloIcon}<span>Solo</span></button>
         <button type="button" class="music-debug-track-audio-button" data-role="${role}" data-track-playback-action="mute" aria-pressed="${mutePressed}" aria-label="${mutePressed ? `Unmute ${label}` : `Mute ${label}`}">${muteIcon}<span>Mute</span></button>
       </div>
+      ${percussionLaneToggles}
     </div>
   `;
 }
@@ -769,41 +778,7 @@ summary?.addEventListener('click', (event) => {
   }
   const percussionAction = target.dataset.percussionPlaybackAction;
   const percussionVoiceId = target.dataset.percussionVoiceId;
-  if (
-    percussionAction &&
-    percussionVoiceId &&
-    (percussionAction === 'solo' || percussionAction === 'mute')
-  ) {
-    percussionPlaybackState =
-      percussionAction === 'solo'
-        ? toggleMusicDebugPercussionSoloVoice(
-            percussionPlaybackState,
-            percussionVoiceId
-          )
-        : toggleMusicDebugPercussionMutedVoice(
-            percussionPlaybackState,
-            percussionVoiceId
-          );
-    const snapshot = pageState.refreshNow();
-    renderSummary(snapshot);
-    if (playbackController.isPlaying()) {
-      playbackController.start(snapshot, {
-        ...resolveMusicDebugLivePlaybackIntent({
-          snapshot,
-          playback: playbackVisualState,
-          previewOffsetMs,
-          loopEnabled: loopInput?.checked === true,
-          nowMs: performance.now(),
-        }),
-        roles: resolveSelectedPlaybackRoles(),
-        percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
-        dry: resolveSelectedDryPlaybackEnabled(),
-      });
-    }
-    persistPageState(
-      playbackController.isPlaying(),
-      resolveDisplayedOffsetMs()
-    );
+  if (handlePercussionPlaybackAction(percussionAction, percussionVoiceId)) {
     return;
   }
   if (percussionAction === 'audition-pattern') {
@@ -823,6 +798,38 @@ summary?.addEventListener('click', (event) => {
     return;
   }
 });
+
+function handlePercussionPlaybackAction(
+  action: string | undefined,
+  voiceId: string | undefined
+): boolean {
+  if (!voiceId || (action !== 'solo' && action !== 'mute')) {
+    return false;
+  }
+  percussionPlaybackState =
+    action === 'solo'
+      ? toggleMusicDebugPercussionSoloVoice(percussionPlaybackState, voiceId)
+      : toggleMusicDebugPercussionMutedVoice(percussionPlaybackState, voiceId);
+  const snapshot = pageState.refreshNow();
+  renderTrackVisibilityControls();
+  renderSummary(snapshot);
+  if (playbackController.isPlaying()) {
+    playbackController.start(snapshot, {
+      ...resolveMusicDebugLivePlaybackIntent({
+        snapshot,
+        playback: playbackVisualState,
+        previewOffsetMs,
+        loopEnabled: loopInput?.checked === true,
+        nowMs: performance.now(),
+      }),
+      roles: resolveSelectedPlaybackRoles(),
+      percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
+      dry: resolveSelectedDryPlaybackEnabled(),
+    });
+  }
+  persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
+  return true;
+}
 
 instrumentPanelRoot?.addEventListener('click', (event) => {
   handleInstrumentPreviewClick(event);
@@ -1047,6 +1054,14 @@ trackVisibilityRoot?.addEventListener('click', (event) => {
       ? hiddenRoles.filter((entry) => entry !== role)
       : [...hiddenRoles, role];
   } else {
+    if (
+      handlePercussionPlaybackAction(
+        audioButton?.dataset.percussionPlaybackAction,
+        audioButton?.dataset.percussionVoiceId
+      )
+    ) {
+      return;
+    }
     const action = audioButton?.dataset.trackPlaybackAction;
     if (action !== 'solo' && action !== 'mute') {
       return;

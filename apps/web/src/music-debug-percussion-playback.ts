@@ -234,6 +234,54 @@ export function buildMusicDebugPercussionPlaybackControlsMarkup(
   `;
 }
 
+export function buildMusicDebugPercussionLaneTogglesMarkup(
+  snapshot: MusicDebugSnapshot,
+  state: MusicDebugPercussionPlaybackState
+): string {
+  const voices = createMusicDebugPercussionPlaybackVoices(snapshot);
+  if (voices.length === 0) {
+    return '';
+  }
+
+  return `
+    <div class="music-debug-percussion-lane-toggles" aria-label="Percussion lane voice controls">
+      ${voices
+        .map((voice) => {
+          const soloPressed = state.soloVoiceIds.includes(voice.voiceId);
+          const mutePressed = state.mutedVoiceIds.includes(voice.voiceId);
+          return `
+            <div class="music-debug-percussion-lane-chip">
+              <span class="music-debug-percussion-lane-chip-label">${voice.voiceName}</span>
+              <div class="music-debug-percussion-lane-chip-actions">
+                <button
+                  type="button"
+                  class="music-debug-percussion-lane-toggle"
+                  data-percussion-playback-action="solo"
+                  data-percussion-voice-id="${voice.voiceId}"
+                  aria-pressed="${soloPressed ? 'true' : 'false'}"
+                  aria-label="${soloPressed ? `Clear solo for ${voice.voiceName}` : `Solo ${voice.voiceName}`}"
+                >
+                  Solo
+                </button>
+                <button
+                  type="button"
+                  class="music-debug-percussion-lane-toggle"
+                  data-percussion-playback-action="mute"
+                  data-percussion-voice-id="${voice.voiceId}"
+                  aria-pressed="${mutePressed ? 'true' : 'false'}"
+                  aria-label="${mutePressed ? `Unmute ${voice.voiceName}` : `Mute ${voice.voiceName}`}"
+                >
+                  Mute
+                </button>
+              </div>
+            </div>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+}
+
 function normalizeMusicDebugPercussionVoiceIdList(
   values: readonly string[] | null | undefined
 ): readonly string[] {

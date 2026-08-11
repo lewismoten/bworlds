@@ -745,6 +745,52 @@ body {
   gap: 0.55rem;
 }
 
+.music-debug-percussion-lane-toggles {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.music-debug-percussion-lane-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(8, 19, 27, 0.56);
+}
+
+.music-debug-percussion-lane-chip-label {
+  color: var(--music-muted);
+  font-size: 0.76rem;
+}
+
+.music-debug-percussion-lane-chip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.music-debug-percussion-lane-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--music-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74rem;
+  padding: 0.28rem 0.68rem;
+}
+
+.music-debug-percussion-lane-toggle[aria-pressed='true'] {
+  border-color: rgba(85, 214, 190, 0.6);
+  background: rgba(85, 214, 190, 0.18);
+  color: #ebfffb;
+}
+
 .music-debug-track-visibility-button,
 .music-debug-track-audio-button {
   display: inline-flex;

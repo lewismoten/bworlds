@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
+  buildMusicDebugPercussionLaneTogglesMarkup,
   buildMusicDebugPercussionPlaybackControlsMarkup,
   createMusicDebugDrumKitAuditionNotes,
   createMusicDebugPercussionPlaybackVoices,
@@ -101,6 +102,29 @@ describe('music debug percussion playback', () => {
     );
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('hits');
+  });
+
+  it('renders compact solo and mute toggles for the percussion lane', () => {
+    const markup = buildMusicDebugPercussionLaneTogglesMarkup(
+      FOREST_SNAPSHOT,
+      normalizeMusicDebugPercussionPlaybackState({
+        soloVoiceIds: [FOREST_VOICES[0]?.voiceId ?? ''],
+        mutedVoiceIds: [FOREST_VOICES[1]?.voiceId ?? ''],
+      })
+    );
+
+    expect(FOREST_VOICES.length).toBeGreaterThan(1);
+    expect(markup).toContain('music-debug-percussion-lane-toggles');
+    expect(markup).toContain('music-debug-percussion-lane-chip');
+    expect(markup).toContain('music-debug-percussion-lane-toggle');
+    expect(markup).toContain(
+      `data-percussion-voice-id="${FOREST_VOICES[0]?.voiceId}"`
+    );
+    expect(markup).toContain(
+      `data-percussion-voice-id="${FOREST_VOICES[1]?.voiceId}"`
+    );
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain(FOREST_VOICES[0]?.voiceName ?? '');
   });
 
   it('builds a stable drum-kit audition pattern from the currently allowed voices', () => {

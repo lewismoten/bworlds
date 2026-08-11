@@ -88,7 +88,7 @@
 - [x] Show drum voice name on percussion hover.
 - [x] Add per-track eye icons to hide tracks.
 - [x] Add per-track ear icons to solo or mute tracks.
-- [ ] Add per-drum toggles within the percussion lane.
+- [x] Add per-drum toggles within the percussion lane.
 - [ ] Add a mini overview strip for fast scrubbing.
 - [ ] Add loop-range drag handles on the timeline.
 - [ ] Add snap-to-measure and snap-to-section navigation.
