@@ -91,6 +91,9 @@ The same rule applies to expensive derived artifacts such as export bundles,
 WAV previews, or other debug-package outputs: if multiple tests assert on the
 same deterministic artifact, build it once in a shared test fixture module and
 reuse it across files.
+That allowlist now also keeps the broad `sound-effects`, `music-debug-preview-wav`,
+and `procedural-music-song-base` sweeps on the long path until they are split
+into smaller fast smoke coverage plus broader representative long coverage.
 
 For deterministic grid or tile sweeps, precompute the sampled profile set once
 when multiple assertions need to walk the same coordinates. The tree quality

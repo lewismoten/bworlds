@@ -27,6 +27,9 @@ Related commands:
   The same allowlist now keeps the broadest overworld and audio generation
   sweeps off the default path, including
   [ambience-debug.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/ambience-debug.test.ts:1),
+  [music-debug-preview-wav.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-preview-wav.test.ts:1),
+  [procedural-music-song-base.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-base.test.ts:1),
+  [sound-effects.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-effects.test.ts:1),
   [packages/map-overworld/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/map-overworld/src/index.test.ts:1),
   and [packages/overworld-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/overworld-support/src/index.test.ts:1).
   Recent companion `*.long.test.ts` splits also keep brute-force cache churn and

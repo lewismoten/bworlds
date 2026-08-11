@@ -5,6 +5,7 @@ export const LONG_TEST_GLOBS = [
 
 export const LONG_TEST_FILES = [
   'apps/web/src/ambience-debug.test.ts',
+  'apps/web/src/music-debug-preview-wav.test.ts',
   'apps/web/src/music-debug-midi-audit-baseline.test.ts',
   'apps/web/src/music-debug-midi-audit-mismatch.test.ts',
   'apps/web/src/music-debug-midi-audit-warnings.test.ts',
@@ -20,12 +21,14 @@ export const LONG_TEST_FILES = [
   'apps/web/src/procedural-music-harmony-chords.test.ts',
   'apps/web/src/procedural-music-harmony-lead.test.ts',
   'apps/web/src/procedural-music-harmony-voicing.test.ts',
+  'apps/web/src/procedural-music-song-base.test.ts',
   'apps/web/src/procedural-music-song-arrangement-boundaries.test.ts',
   'apps/web/src/procedural-music-song-arrangement-dynamics.test.ts',
   'apps/web/src/procedural-music-song-arrangement-identity.test.ts',
   'apps/web/src/procedural-music-song-phrasing.test.ts',
   'apps/web/src/procedural-music-song-structure-layout.test.ts',
   'apps/web/src/procedural-music-song-structure-motif.test.ts',
+  'apps/web/src/sound-effects.test.ts',
   'apps/web/src/sound-bank-debug-midi-browser.test.ts',
   'apps/web/src/sound-bank-debug-percussion.test.ts',
   'apps/web/src/tree-debug-quality.test.ts',

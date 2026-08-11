@@ -29,6 +29,9 @@ describe('vitest suite mode', () => {
     expect(LONG_TEST_FILES).toEqual(
       expect.arrayContaining([
         'apps/web/src/ambience-debug.test.ts',
+        'apps/web/src/music-debug-preview-wav.test.ts',
+        'apps/web/src/procedural-music-song-base.test.ts',
+        'apps/web/src/sound-effects.test.ts',
         'packages/map-overworld/src/index.test.ts',
         'packages/overworld-support/src/index.test.ts',
         'packages/runtime-dock-traffic/src/index.test.ts',
