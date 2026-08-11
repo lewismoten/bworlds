@@ -1,4 +1,4 @@
-import { createBoundedCache } from '@bworlds/cache-support';
+import { createBoundedCache, createCoordinateCache } from '@bworlds/cache-support';
 import { clamp } from '@bworlds/core';
 import {
   appendHashSeedLabel,
@@ -525,15 +525,7 @@ function compareStationAnchors(
 function createCachedRailTerrainSignalSampler(
   sampleTerrainSignals: SampleTerrainSignalsLike
 ): SampleTerrainSignalsLike {
-  const cache = new Map<string, ReturnType<SampleTerrainSignalsLike>>();
-  return (x: number, y: number) => {
-    const key = `${x},${y}`;
-    const cached = cache.get(key);
-    if (cached) {
-      return cached;
-    }
-    const resolved = sampleTerrainSignals(x, y);
-    cache.set(key, resolved);
-    return resolved;
-  };
+  const cache = createCoordinateCache<ReturnType<SampleTerrainSignalsLike>>();
+  return (x: number, y: number) =>
+    cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
 }

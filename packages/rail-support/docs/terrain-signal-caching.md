@@ -9,6 +9,9 @@ Current behavior:
   with a small coordinate cache before it validates candidate rail curves.
 - Overlapping sampled rail paths now reuse the same terrain result for the same
   coordinate instead of asking the terrain sampler again.
+- The memoized terrain reads now live in a numeric coordinate cache rather than
+  a temporary composite-string map, which avoids allocating `${x},${y}` keys in
+  the hot path.
 - The cache stays local to one connection-build pass, so it preserves the
   existing API and determinism while trimming repeated terrain lookups in the
   rail overlay generation path.
