@@ -13,6 +13,8 @@ The recovery chain is:
 3. If the requested `full` build still fails and no cached `low` recovery has already been tried, try `low`.
 4. Only keep a fallback-only entry when every recovery attempt has failed.
 
+That same chain applies when the requested `full` build is rejected for render-budget reasons, because the rejected build resolves as a fallback-only entry and the visible recovery path immediately retries `low`.
+
 `shouldReplaceVisibleTileModelDetailEntry` then prevents a fallback-only rebuild from replacing an existing visible model that still has a real `modelRoot`.
 
 ## Cached Successful Detail
@@ -25,6 +27,12 @@ That cache is used in two places:
 - Pending visible builds can prefer a known-good `low` detail while the queue is still catching up.
 
 The cache is only updated when a replacement entry has a real `modelRoot`, so fallback shells do not overwrite the last known-good detail.
+
+## Frame-Budget Downgrades
+
+Visible-tile LOD selection also runs through `getTileModelDetailLevelForFrameBudget` before rebuilding. When the shared frame budget is nearly exhausted, ordinary `full` requests are downgraded to `low` so the renderer can keep making progress without stalling the frame.
+
+Landmark-style tiles that intentionally hold full detail longer, such as lighthouses, keep their `full` requests even under that tighter budget gate.
 
 ## Failure Reasons and Metrics
 
@@ -52,6 +60,7 @@ The text viewport also shows the current rendered visible-tile LOD directly abov
 The current implementation already covers these `docs/todo/tile-lod.md` items:
 
 - Prefer the last valid cached LOD before using a fallback box.
+- Try a lower LOD when the requested LOD exceeds its budget.
 - Walk down the LOD chain until a valid model is found.
 - Use a box only when no cached or lower LOD can render.
 - Keep the old model visible while a new LOD is being built.
@@ -61,5 +70,6 @@ The current implementation already covers these `docs/todo/tile-lod.md` items:
 - Prefer cached LODs over new high-detail generation.
 - Reserve fallback boxes for hard generation failures.
 - Log every fallback box with its tile and failure reason.
+- Lower requested LOD when frame time exceeds budget.
 
 The existing renderer tests in `packages/render3d/src/index.test.ts` also cover the currently checked fallback-path test items from that checklist.

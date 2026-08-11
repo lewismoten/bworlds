@@ -5,7 +5,7 @@ This is also partially due to performance issues which can be seen here, and add
 ## LOD Recovery
 
 - [x] Prefer the last valid cached LOD before using a fallback box.
-- [ ] Try a lower LOD when the requested LOD exceeds its budget.
+- [x] Try a lower LOD when the requested LOD exceeds its budget.
 - [x] Walk down the LOD chain until a valid model is found.
 - [x] Use a box only when no cached or lower LOD can render.
 - [x] Keep the old model visible while a new LOD is being built.
@@ -163,7 +163,7 @@ This is also partially due to performance issues which can be seen here, and add
 - [ ] Avoid generating two LODs for one group at once.
 - [ ] Deduplicate identical pending LOD requests.
 - [ ] Track pending work by tile or group cache key.
-- [ ] Lower requested LOD when frame time exceeds budget.
+- [x] Lower requested LOD when frame time exceeds budget.
 
 ## Cache Management
 
