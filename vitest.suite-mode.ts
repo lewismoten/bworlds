@@ -7,11 +7,8 @@ export const LONG_TEST_FILES = [
   'apps/web/src/music-debug-known-good-seeds.long.test.ts',
   'apps/web/src/music-debug-snapshot-signature.long.test.ts',
   'packages/map-overworld/src/index.test.ts',
-  'packages/map-station/src/index.test.ts',
   'packages/map-town/src/index.test.ts',
   'packages/overworld-support/src/index.test.ts',
-  'packages/runtime-dock-traffic/src/index.test.ts',
-  'packages/runtime-rail-network/src/index.test.ts',
   'packages/worldgen/src/index.test.ts',
 ] as const;
 

@@ -116,6 +116,12 @@ reuse it across files.
 That rename now also keeps the broad `sound-effects`,
 `music-debug-preview-wav`, and `procedural-music-song-base` sweeps on the long
 path without needing manual allowlist entries.
+The same split now applies to station and transport-runtime cache churn:
+`packages/map-station/src/index.test.ts`,
+`packages/runtime-dock-traffic/src/index.test.ts`, and
+`packages/runtime-rail-network/src/index.test.ts` keep the fast-path behavior
+assertions, while their `*.long.test.ts` companions hold the bounded eviction
+regressions that would otherwise force the whole file off the normal suite.
 
 For deterministic grid or tile sweeps, precompute the sampled profile set once
 when multiple assertions need to walk the same coordinates. The tree quality

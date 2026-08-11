@@ -28,6 +28,12 @@ Related commands:
   and world-network sweeps, including
   [packages/map-overworld/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/map-overworld/src/index.test.ts:1)
   and [packages/overworld-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/overworld-support/src/index.test.ts:1).
+  Station and transport-runtime smoke coverage now stays on the fast path
+  because the bounded cache-eviction regressions moved into
+  [packages/map-station/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/map-station/src/index.long.test.ts:1),
+  [packages/runtime-dock-traffic/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/runtime-dock-traffic/src/index.long.test.ts:1),
+  and
+  [packages/runtime-rail-network/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/runtime-rail-network/src/index.long.test.ts:1).
   Recent `*.long.test.ts` renames and companion splits also keep brute-force
   cache churn, seed-sweep checks, and broader audio/browser coverage off the
   default path, including
