@@ -1268,6 +1268,12 @@ function buildSelectedInstrumentDetailsMarkup(
   const waveformPreviewMarkup = effectiveInstrument
     ? buildMusicDebugInstrumentWaveformMarkup(effectiveInstrument)
     : '<p class="sound-bank-debug-warning" role="status">Waveform preview unavailable for this patch source.</p>';
+  const spectrumPreviewMarkup = effectiveInstrument
+    ? buildSelectedInstrumentSpectrumMarkup(effectiveInstrument)
+    : '<p class="sound-bank-debug-warning" role="status">Spectrum preview unavailable for this patch source.</p>';
+  const envelopePreviewMarkup = effectiveInstrument
+    ? buildSelectedInstrumentEnvelopeMarkup(effectiveInstrument)
+    : '<p class="sound-bank-debug-warning" role="status">Envelope preview unavailable for this patch source.</p>';
   const attackMs = effectiveInstrument
     ? `${Math.round(effectiveInstrument.attackMs)} ms`
     : 'Unknown';
@@ -1334,11 +1340,23 @@ function buildSelectedInstrumentDetailsMarkup(
     : '';
 
   return `
-    <div class="music-debug-instrument-waveform">
-      ${waveformPreviewMarkup}
-    </div>
-    <div class="music-debug-instrument-waveform">
-      ${filterResponseCurveMarkup}
+    <div class="sound-bank-debug-analysis-grid">
+      <figure class="music-debug-instrument-waveform sound-bank-debug-analysis-card">
+        ${waveformPreviewMarkup}
+        <figcaption>Waveform Preview</figcaption>
+      </figure>
+      <figure class="music-debug-instrument-waveform sound-bank-debug-analysis-card">
+        ${spectrumPreviewMarkup}
+        <figcaption>Spectrum Preview</figcaption>
+      </figure>
+      <figure class="music-debug-instrument-waveform sound-bank-debug-analysis-card">
+        ${envelopePreviewMarkup}
+        <figcaption>Envelope Preview</figcaption>
+      </figure>
+      <figure class="music-debug-instrument-waveform sound-bank-debug-analysis-card">
+        ${filterResponseCurveMarkup}
+        <figcaption>Filter Response</figcaption>
+      </figure>
     </div>
     ${previewOscillatorControlsMarkup}
     ${previewEnvelopeControlsMarkup}
@@ -1444,6 +1462,157 @@ function buildSelectedInstrumentFilterResponseCurveMarkup(
       <rect width="${width}" height="${height}" rx="12" ry="12"></rect>
       <path class="music-debug-instrument-waveform-line" d="M0 ${baselineY.toFixed(2)} H${width}"></path>
       <path class="music-debug-instrument-waveform-line" d="M${cutoffX} 6 V${height - 6}"></path>
+      <polyline
+        class="music-debug-instrument-waveform-shape"
+        points="${points.join(' ')}"
+      ></polyline>
+    </svg>
+  `;
+}
+
+function buildSelectedInstrumentSpectrumMarkup(
+  instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
+): string {
+  const width = 180;
+  const height = 56;
+  const harmonicBars = resolveInstrumentSpectrumBars(instrument);
+  const barWidth = width / harmonicBars.length;
+
+  return `
+    <svg
+      class="music-debug-instrument-spectrum"
+      viewBox="0 0 ${width} ${height}"
+      role="img"
+      aria-label="Spectrum preview for ${instrument.id}"
+    >
+      <rect width="${width}" height="${height}" rx="12" ry="12"></rect>
+      ${harmonicBars
+        .map((magnitude, index) => {
+          const x = index * barWidth + 4;
+          const innerWidth = Math.max(4, barWidth - 8);
+          const barHeight = Math.max(4, magnitude * (height - 14));
+          const y = height - 7 - barHeight;
+          return `
+            <rect
+              class="music-debug-instrument-spectrum-bar"
+              x="${x.toFixed(2)}"
+              y="${y.toFixed(2)}"
+              width="${innerWidth.toFixed(2)}"
+              height="${barHeight.toFixed(2)}"
+              rx="3"
+              ry="3"
+            ></rect>
+          `;
+        })
+        .join('')}
+    </svg>
+  `;
+}
+
+function resolveInstrumentSpectrumBars(
+  instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
+): readonly number[] {
+  const harmonicWeight = Math.max(0, instrument.harmonicGain);
+  const bars = [1, 0.72, 0.52, 0.38, 0.28, 0.2, 0.14, 0.1];
+
+  return bars.map((baseMagnitude, index) => {
+    const overtoneIndex = index + 1;
+    if (overtoneIndex === 1) {
+      return Math.max(0.08, instrument.timbre.fundamentalGainMultiplier ?? 1);
+    }
+
+    const waveformWeight = resolveWaveformSpectrumWeight(
+      instrument.waveform,
+      overtoneIndex
+    );
+    const harmonicWaveformWeight = resolveWaveformSpectrumWeight(
+      instrument.timbre.harmonicWaveform,
+      overtoneIndex
+    );
+    return Number(
+      Math.min(
+        1,
+        baseMagnitude *
+          ((waveformWeight * 0.72 +
+            harmonicWaveformWeight * harmonicWeight * 0.88) /
+            (1 + harmonicWeight * 0.88))
+      ).toFixed(4)
+    );
+  });
+}
+
+function resolveWaveformSpectrumWeight(
+  waveform: MusicWaveform,
+  overtoneIndex: number
+): number {
+  if (overtoneIndex <= 1) {
+    return 1;
+  }
+
+  switch (waveform) {
+    case 'sine':
+      return 0;
+    case 'triangle':
+      return overtoneIndex % 2 === 0 ? 0 : 1 / (overtoneIndex * overtoneIndex);
+    case 'square':
+      return overtoneIndex % 2 === 0 ? 0 : 1 / overtoneIndex;
+    case 'sawtooth':
+      return 1 / overtoneIndex;
+    default:
+      return 1 / (overtoneIndex * 1.4);
+  }
+}
+
+function buildSelectedInstrumentEnvelopeMarkup(
+  instrument: SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments'][keyof SoundBankDebugSnapshot['musicSnapshot']['instrumentBank']['instruments']]
+): string {
+  const width = 180;
+  const height = 56;
+  const sustainLevel = Math.max(
+    0.1,
+    instrument.timbre.bodySustainLevel ?? 0.74
+  );
+  const attackRatio = Math.min(0.22, Math.max(0.04, instrument.attackMs / 260));
+  const decayRatio = Math.min(
+    0.22,
+    Math.max(0.06, (instrument.timbre.bodySettleMs ?? 40) / 320)
+  );
+  const releaseRatio = Math.min(
+    0.22,
+    Math.max(0.08, instrument.releaseMs / 520)
+  );
+  const sustainEndRatio = Math.max(
+    attackRatio + decayRatio + 0.18,
+    1 - releaseRatio
+  );
+  const points = [
+    `6,${(height - 8).toFixed(2)}`,
+    `${(width * attackRatio).toFixed(2)},8`,
+    `${(width * (attackRatio + decayRatio)).toFixed(2)},${(
+      height -
+      8 -
+      sustainLevel * (height - 18)
+    ).toFixed(2)}`,
+    `${(width * sustainEndRatio).toFixed(2)},${(
+      height -
+      8 -
+      sustainLevel * (height - 18)
+    ).toFixed(2)}`,
+    `${(width - 6).toFixed(2)},${(height - 8).toFixed(2)}`,
+  ];
+
+  return `
+    <svg
+      class="music-debug-instrument-envelope"
+      viewBox="0 0 ${width} ${height}"
+      role="img"
+      aria-label="Envelope preview for ${instrument.id}"
+    >
+      <rect width="${width}" height="${height}" rx="12" ry="12"></rect>
+      <path
+        class="music-debug-instrument-waveform-line"
+        d="M0 ${(height - 8).toFixed(2)} H${width}"
+      ></path>
       <polyline
         class="music-debug-instrument-waveform-shape"
         points="${points.join(' ')}"

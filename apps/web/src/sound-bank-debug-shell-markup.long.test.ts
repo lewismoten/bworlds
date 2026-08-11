@@ -76,6 +76,10 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('Playable Range');
     expect(normalizedMarkup).toContain('Patch Variant');
     expect(normalizedMarkup).toContain('music-debug-instrument-waveform');
+    expect(normalizedMarkup).toContain('Waveform Preview');
+    expect(normalizedMarkup).toContain('Spectrum Preview');
+    expect(normalizedMarkup).toContain('Envelope Preview');
+    expect(normalizedMarkup).toContain('Filter Response');
     expect(normalizedMarkup).toContain('Patch Source');
     expect(normalizedMarkup).toContain('Generated');
     expect(normalizedMarkup).toContain('Attack');
