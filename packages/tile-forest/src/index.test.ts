@@ -3146,8 +3146,6 @@ describe('tile forest', () => {
     expect(targetTile).not.toBeNull();
     state.player.x = targetTile!.x;
     state.player.y = targetTile!.y;
-    const owlCount = getForestOwls(targetTile!.x, targetTile!.y).length;
-
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -3305,7 +3303,10 @@ describe('tile forest', () => {
       ) {
         fullScales.push(node.scale.x);
       }
-      if (node instanceof FakeInstancedMesh && node.userData?.forestCarvingInstanced) {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestCarvingInstanced
+      ) {
         carvingInstances.push(node);
       }
     });
