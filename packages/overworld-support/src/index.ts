@@ -106,6 +106,8 @@ export type RiverPathBounds = {
   maxY: number;
 };
 
+type RiverPathNeighborhood = readonly RiverControlPoint[][];
+
 type OverworldCellAnchorEvaluation<
   TAnchor extends OverworldAnchorLike = OverworldAnchorLike,
 > = {
@@ -352,6 +354,7 @@ export function createOverworldTerrainSignalSampler(
   const riverControlPointCache = createCoordinateCache<RiverControlPoint[]>();
   const riverCurvePointCache = createCoordinateCache<RiverControlPoint[]>();
   const riverForkPathCache = createCoordinateCache<RiverForkPath | null>();
+  const riverPathNeighborhoodCache = createCoordinateCache<RiverPathNeighborhood>();
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
     return signalCache.getOrCreate(x, y, () => {
@@ -379,7 +382,8 @@ export function createOverworldTerrainSignalSampler(
         y,
         riverControlPointCache,
         riverCurvePointCache,
-        riverForkPathCache
+        riverForkPathCache,
+        riverPathNeighborhoodCache
       );
       const riverPathWeight =
         continent > 0.42 && continent < 0.9 && elevation < 0.68 ? 1 : 0.45;
@@ -511,39 +515,27 @@ function sampleRiverControlPathSignal(
   y: number,
   controlPointCache: CoordinateCache<RiverControlPoint[]>,
   curvePointCache: CoordinateCache<RiverControlPoint[]>,
-  forkPathCache: CoordinateCache<RiverForkPath | null>
+  forkPathCache: CoordinateCache<RiverForkPath | null>,
+  neighborhoodCache: CoordinateCache<RiverPathNeighborhood>
 ): number {
   const cellX = Math.floor(x / RIVER_CONTROL_CELL_SIZE);
   const cellY = Math.floor(y / RIVER_CONTROL_CELL_SIZE);
   let strongestSignal = 0;
+  const nearbyPaths = getCachedRiverPathNeighborhood(
+    seed,
+    cellX,
+    cellY,
+    controlPointCache,
+    curvePointCache,
+    forkPathCache,
+    neighborhoodCache
+  );
 
-  for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
-    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
-      const curvePoints = getCachedRiverCurvePoints(
-        seed,
-        cellX + offsetX,
-        cellY + offsetY,
-        controlPointCache,
-        curvePointCache
-      );
-      strongestSignal = Math.max(
-        strongestSignal,
-        getRiverPathSignalAtPoint(curvePoints, x, y)
-      );
-      const forkPath = getCachedRiverForkPath(
-        seed,
-        cellX + offsetX,
-        cellY + offsetY,
-        controlPointCache,
-        forkPathCache
-      );
-      if (forkPath) {
-        strongestSignal = Math.max(
-          strongestSignal,
-          getRiverPathSignalAtPoint(forkPath.points, x, y)
-        );
-      }
-    }
+  for (let index = 0; index < nearbyPaths.length; index += 1) {
+    strongestSignal = Math.max(
+      strongestSignal,
+      getRiverPathSignalAtPoint(nearbyPaths[index]!, x, y)
+    );
   }
 
   return strongestSignal;
@@ -791,6 +783,48 @@ function getCachedRiverForkPath(
       getCachedRiverControlPoints(seed, cellX, cellY, controlPointCache)
     )
   );
+}
+
+export function getCachedRiverPathNeighborhood(
+  seed: Seed,
+  cellX: number,
+  cellY: number,
+  controlPointCache: CoordinateCache<RiverControlPoint[]>,
+  curvePointCache: CoordinateCache<RiverControlPoint[]>,
+  forkPathCache: CoordinateCache<RiverForkPath | null>,
+  neighborhoodCache: CoordinateCache<RiverPathNeighborhood>
+): RiverPathNeighborhood {
+  return neighborhoodCache.getOrCreate(cellX, cellY, () => {
+    const paths: RiverControlPoint[][] = [];
+
+    for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+      for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+        const targetCellX = cellX + offsetX;
+        const targetCellY = cellY + offsetY;
+        paths.push(
+          getCachedRiverCurvePoints(
+            seed,
+            targetCellX,
+            targetCellY,
+            controlPointCache,
+            curvePointCache
+          )
+        );
+        const forkPath = getCachedRiverForkPath(
+          seed,
+          targetCellX,
+          targetCellY,
+          controlPointCache,
+          forkPathCache
+        );
+        if (forkPath) {
+          paths.push(forkPath.points);
+        }
+      }
+    }
+
+    return paths;
+  });
 }
 
 function getRiverPathSignalAtPoint(

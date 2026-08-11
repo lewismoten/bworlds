@@ -15,6 +15,7 @@ import {
   createGeneratedPoiOverworldCellAnchorSpec,
   createOverworldCellAnchorCandidate,
   getCachedRiverCurvePoints,
+  getCachedRiverPathNeighborhood,
   getOverworldPlacementChance,
   getOverworldPlacementLabelHash,
   getRiverControlPathSignalAtPoint,
@@ -329,6 +330,55 @@ describe('overworld support', () => {
     expect(second).toBe(first);
     expect(third).not.toBe(first);
     expect(first[0]).toEqual(createRiverControlPoints('spec-seed', 1, -2)[0]);
+  });
+
+  it('reuses cached river path neighborhoods for repeated samples in the same control cell', () => {
+    const controlPointCache =
+      createCoordinateCache<{ x: number; y: number }[]>();
+    const curvePointCache = createCoordinateCache<{ x: number; y: number }[]>();
+    const forkPathCache = createCoordinateCache<
+      | {
+          trunkStartIndex: number;
+          trunkEndIndex: number;
+          trunkAngle: number;
+          points: { x: number; y: number }[];
+        }
+      | null
+    >();
+    const neighborhoodCache =
+      createCoordinateCache<readonly { x: number; y: number }[][]>();
+
+    const first = getCachedRiverPathNeighborhood(
+      'spec-seed',
+      1,
+      -2,
+      controlPointCache,
+      curvePointCache,
+      forkPathCache,
+      neighborhoodCache
+    );
+    const second = getCachedRiverPathNeighborhood(
+      'spec-seed',
+      1,
+      -2,
+      controlPointCache,
+      curvePointCache,
+      forkPathCache,
+      neighborhoodCache
+    );
+    const third = getCachedRiverPathNeighborhood(
+      'spec-seed',
+      2,
+      -2,
+      controlPointCache,
+      curvePointCache,
+      forkPathCache,
+      neighborhoodCache
+    );
+
+    expect(second).toBe(first);
+    expect(third).not.toBe(first);
+    expect(first.length).toBeGreaterThanOrEqual(9);
   });
 
   it('matches river path signals without materializing sampled curve points', () => {

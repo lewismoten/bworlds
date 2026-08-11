@@ -14,6 +14,9 @@ Current cache layers for river path sampling:
 - control points are cached per river control cell
 - sampled main-channel curve points are cached per river control cell
 - sampled fork paths are cached per river control cell
+- nearby curve/fork neighborhood lists are cached per sampled control cell
 
 That keeps river signal sampling deterministic while avoiding repeated bezier
-materialization during hot generation paths.
+materialization during hot generation paths. Repeated terrain samples inside the
+same control cell now also skip rebuilding the same 3x3 neighborhood of nearby
+river paths before evaluating point-to-segment falloff.
