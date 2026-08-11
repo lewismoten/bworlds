@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canRouteConnectionSegmentAffectPoint,
   createBoundarySurfaceProfile,
+  createConnectedRoutePathResolver,
   hasConnectedRoutePath,
   createRoadsideRouteProfile,
   createRouteTraversalProfile,
@@ -153,6 +154,33 @@ describe('tile support', () => {
     expect(
       canRouteConnectionSegmentAffectPoint(first.townPairSegments[0]!, 10, 5)
     ).toBe(false);
+  });
+
+  it('reuses nearest-anchor scans across repeated route-path queries on the same resolver', () => {
+    let coordinateReads = 0;
+    const resolver = createConnectedRoutePathResolver({
+      townAnchors: [
+        {
+          get x() {
+            coordinateReads += 1;
+            return 0;
+          },
+          get y() {
+            coordinateReads += 1;
+            return 0;
+          },
+        } as { x: number; y: number },
+      ],
+      bridgeAnchors: [],
+    });
+
+    expect(resolver(0, 0)).toBe(true);
+    const readsAfterFirstQuery = coordinateReads;
+    expect(readsAfterFirstQuery).toBeGreaterThan(0);
+    expect(resolver(0, 0)).toBe(true);
+    const repeatedQueryReads = coordinateReads - readsAfterFirstQuery;
+    expect(repeatedQueryReads).toBeGreaterThan(0);
+    expect(repeatedQueryReads).toBeLessThan(readsAfterFirstQuery);
   });
 
   it('creates reusable boundary surface profiles for 3D terrain transitions', () => {

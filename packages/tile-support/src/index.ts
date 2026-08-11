@@ -148,6 +148,41 @@ export function hasConnectedRoutePath({
   townPairPathTolerance?: number;
   bridgeAnchorSnapDistance?: number;
 }) {
+  const resolvePath = createConnectedRoutePathResolver({
+    townAnchors,
+    bridgeAnchors,
+    maxTownPairDistance,
+    townAnchorSnapDistance,
+    townAnchorAxisTolerance,
+    townBridgeMaxDistance,
+    townBridgePathTolerance,
+    townPairPathTolerance,
+    bridgeAnchorSnapDistance,
+  });
+  return resolvePath(x, y);
+}
+
+export function createConnectedRoutePathResolver({
+  townAnchors,
+  bridgeAnchors,
+  maxTownPairDistance = 28,
+  townAnchorSnapDistance = 1.1,
+  townAnchorAxisTolerance = 0.35,
+  townBridgeMaxDistance = 16,
+  townBridgePathTolerance = 0.38,
+  townPairPathTolerance = 0.42,
+  bridgeAnchorSnapDistance = 0.8,
+}: {
+  townAnchors: OverworldAnchorLike[];
+  bridgeAnchors: OverworldAnchorLike[];
+  maxTownPairDistance?: number;
+  townAnchorSnapDistance?: number;
+  townAnchorAxisTolerance?: number;
+  townBridgeMaxDistance?: number;
+  townBridgePathTolerance?: number;
+  townPairPathTolerance?: number;
+  bridgeAnchorSnapDistance?: number;
+}) {
   const connectedSegments = resolveConnectedRouteSegments({
     townAnchors,
     bridgeAnchors,
@@ -156,7 +191,68 @@ export function hasConnectedRoutePath({
     townPairPathTolerance,
     townBridgePathTolerance,
   });
-  const nearestTown = findNearestAnchorDistance(townAnchors, x, y);
+  const nearestTownCache =
+    createCoordinateCache<
+      { anchor: OverworldAnchorLike; distance: number; index: number } | null
+    >();
+  const bridgeSnapCache = createCoordinateCache<boolean>();
+
+  return (x: number, y: number) =>
+    resolveConnectedRoutePathAtPoint({
+      x,
+      y,
+      connectedSegments,
+      townAnchors,
+      bridgeAnchors,
+      townAnchorSnapDistance,
+      townAnchorAxisTolerance,
+      bridgeAnchorSnapDistance,
+      resolveNearestTown(targetX, targetY) {
+        return (
+          nearestTownCache.getOrCreate(targetX, targetY, () => {
+            return findNearestAnchorDistance(townAnchors, targetX, targetY) ?? null;
+          }) ?? undefined
+        );
+      },
+      hasNearbyBridge(targetX, targetY) {
+        return bridgeSnapCache.getOrCreate(targetX, targetY, () =>
+          bridgeAnchors.some(
+            (bridge) =>
+              Math.hypot(targetX - bridge.x, targetY - bridge.y) <
+              bridgeAnchorSnapDistance
+          )
+        );
+      },
+    });
+}
+
+function resolveConnectedRoutePathAtPoint({
+  x,
+  y,
+  connectedSegments,
+  townAnchors,
+  bridgeAnchors,
+  townAnchorSnapDistance,
+  townAnchorAxisTolerance,
+  bridgeAnchorSnapDistance,
+  resolveNearestTown,
+  hasNearbyBridge,
+}: {
+  x: number;
+  y: number;
+  connectedSegments: ConnectedRouteSegments;
+  townAnchors: readonly OverworldAnchorLike[];
+  bridgeAnchors: readonly OverworldAnchorLike[];
+  townAnchorSnapDistance: number;
+  townAnchorAxisTolerance: number;
+  bridgeAnchorSnapDistance: number;
+  resolveNearestTown: (
+    x: number,
+    y: number
+  ) => { anchor: OverworldAnchorLike; distance: number; index: number } | undefined;
+  hasNearbyBridge: (x: number, y: number) => boolean;
+}) {
+  const nearestTown = resolveNearestTown(x, y);
 
   if (
     nearestTown &&
@@ -205,10 +301,11 @@ export function hasConnectedRoutePath({
     }
   }
 
-  return bridgeAnchors.some(
-    (bridge) =>
-      Math.hypot(x - bridge.x, y - bridge.y) < bridgeAnchorSnapDistance
-  );
+  if (bridgeAnchors.length === 0 || bridgeAnchorSnapDistance <= 0) {
+    return false;
+  }
+
+  return hasNearbyBridge(x, y);
 }
 
 export function resolveConnectedRouteSegments({
@@ -343,14 +440,19 @@ function hasPredictedRoutePresence({
   townAnchors,
   bridgeAnchors,
   sampleTerrainSignals,
+  hasConnectedRoutePathAt,
 }: {
   x: number;
   y: number;
   townAnchors: OverworldAnchorLike[];
   bridgeAnchors: OverworldAnchorLike[];
   sampleTerrainSignals?: ClassifyOverworldTileContext['sampleTerrainSignals'];
+  hasConnectedRoutePathAt?: (x: number, y: number) => boolean;
 }) {
-  if (hasConnectedRoutePath({ x, y, townAnchors, bridgeAnchors })) {
+  if (
+    (hasConnectedRoutePathAt?.(x, y) ??
+      hasConnectedRoutePath({ x, y, townAnchors, bridgeAnchors }))
+  ) {
     return true;
   }
 
@@ -380,6 +482,10 @@ export function createRoadsideRouteProfile({
   ] as const;
   const cachedSampleTerrainSignals =
     createCachedTerrainSignalSampler(sampleTerrainSignals);
+  const hasConnectedRoutePathAt = createConnectedRoutePathResolver({
+    townAnchors,
+    bridgeAnchors,
+  });
   const routePresenceCache = createCoordinateCache<boolean>();
   const hasRouteAt = (targetX: number, targetY: number) =>
     getCachedRoutePresence(routePresenceCache, targetX, targetY, () =>
@@ -389,6 +495,7 @@ export function createRoadsideRouteProfile({
         townAnchors,
         bridgeAnchors,
         sampleTerrainSignals: cachedSampleTerrainSignals,
+        hasConnectedRoutePathAt,
       })
     );
   const adjacentRouteCells: Array<{ x: number; y: number }> = [];

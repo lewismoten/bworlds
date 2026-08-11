@@ -5,6 +5,7 @@ profile calculation:
 
 - terrain signal reads by coordinate
 - predicted route presence by coordinate
+- nearest-town and bridge-snap route-path lookups by coordinate
 
 This keeps repeated junction and span scans from rediscovering the same nearby
 route cells and terrain samples over and over while preserving deterministic
