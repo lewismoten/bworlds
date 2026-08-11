@@ -1199,6 +1199,60 @@ describe('overworld support', () => {
     expect(second).toEqual(first);
   });
 
+  it('reuses cached composed overworld tiles for repeated composition of the same tile', () => {
+    const sampleTerrainSignals =
+      createOverworldTerrainSignalSampler('spec-seed');
+    let terrainCalls = 0;
+    let overworldCalls = 0;
+    let decorateCalls = 0;
+    const plugins = createTestPluginRegistry({
+      resolveOverworldTile() {
+        return null;
+      },
+      resolveOverworldAnchors() {
+        return {
+          townAnchors: [],
+          bridgeAnchors: [],
+          poiAnchors: [],
+        };
+      },
+      classifyTerrainTile(context) {
+        terrainCalls += 1;
+        return { kind: context.tile.kind };
+      },
+      classifyOverworldTile() {
+        overworldCalls += 1;
+        return null;
+      },
+      decorateOverworldTile(context) {
+        decorateCalls += 1;
+        return { ...context.tile };
+      },
+    });
+
+    const first = composeOverworldTileFromPlugins(
+      createComposeOverworldTilePayload({
+        x: 2,
+        y: -4,
+        sampleTerrainSignals,
+        plugins,
+      })
+    );
+    const second = composeOverworldTileFromPlugins(
+      createComposeOverworldTilePayload({
+        x: 2,
+        y: -4,
+        sampleTerrainSignals,
+        plugins,
+      })
+    );
+
+    expect(second).toEqual(first);
+    expect(terrainCalls).toBe(1);
+    expect(overworldCalls).toBe(1);
+    expect(decorateCalls).toBe(1);
+  });
+
   it('uses the plugin-owned default tile kind as the initial overworld tile', () => {
     const sampleTerrainSignals =
       createOverworldTerrainSignalSampler('spec-seed');

@@ -201,6 +201,11 @@ Always run tests to make sure all tests pass
       `tile-support` now caches reusable town-pair and town-bridge route
       segments with expanded bounds so repeated route-path checks can skip
       distant points before calling `distanceToLineSegment()`, and
+      `overworld-support` now caches fully composed overworld tiles for
+      repeated generation requests that share the same plugin registry, terrain
+      sampler, world-state revision, seed, coordinates, and starting tile kind
+      so the terrain/overworld classification and decoration pipeline does not
+      rerun for the same tile, and
       `overworld-support` now caches one bounds object per river curve or
       fork path so distant terrain samples can skip segment-distance scans
       before walking the sampled path arrays.

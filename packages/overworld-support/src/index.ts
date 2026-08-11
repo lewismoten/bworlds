@@ -21,6 +21,7 @@ import {
 import type {
   ClassifyOverworldTileContext,
   DecorateOverworldTileContext,
+  Kind,
   OverworldAnchorLike,
   OverworldAnchorSet,
   PoiAnchorLike,
@@ -156,9 +157,21 @@ type OverworldGenerationSnapshotCacheStore = {
   >;
 };
 
+type OverworldTileCompositionCacheStore = {
+  stateless: ReturnType<typeof createBoundedCache<string, TileLike>>;
+  stateful: WeakMap<
+    WorldStateLike,
+    ReturnType<typeof createBoundedCache<string, TileLike>>
+  >;
+};
+
 const overworldGenerationSnapshotCaches = new WeakMap<
   PluginRegistryLike,
   WeakMap<OverworldTerrainSignalSampler, OverworldGenerationSnapshotCacheStore>
+>();
+const overworldTileCompositionCaches = new WeakMap<
+  PluginRegistryLike,
+  WeakMap<OverworldTerrainSignalSampler, OverworldTileCompositionCacheStore>
 >();
 
 function normalizeSeedHash(seed: Seed): number {
@@ -212,6 +225,53 @@ function getOverworldGenerationSnapshotCache(
   return cache;
 }
 
+function getOverworldTileCompositionCacheStore(
+  plugins: PluginRegistryLike,
+  sampleTerrainSignals: OverworldTerrainSignalSampler
+): OverworldTileCompositionCacheStore {
+  let pluginCache = overworldTileCompositionCaches.get(plugins);
+  if (!pluginCache) {
+    pluginCache = new WeakMap();
+    overworldTileCompositionCaches.set(plugins, pluginCache);
+  }
+
+  let store = pluginCache.get(sampleTerrainSignals);
+  if (!store) {
+    store = {
+      stateless: createBoundedCache<string, TileLike>(
+        OVERWORLD_GENERATION_SNAPSHOT_CACHE_LIMIT
+      ),
+      stateful: new WeakMap(),
+    };
+    pluginCache.set(sampleTerrainSignals, store);
+  }
+
+  return store;
+}
+
+function getOverworldTileCompositionCache(
+  plugins: PluginRegistryLike,
+  sampleTerrainSignals: OverworldTerrainSignalSampler,
+  state?: WorldStateLike
+) {
+  const store = getOverworldTileCompositionCacheStore(
+    plugins,
+    sampleTerrainSignals
+  );
+  if (!state) {
+    return store.stateless;
+  }
+
+  let cache = store.stateful.get(state);
+  if (!cache) {
+    cache = createBoundedCache<string, TileLike>(
+      OVERWORLD_GENERATION_SNAPSHOT_CACHE_LIMIT
+    );
+    store.stateful.set(state, cache);
+  }
+  return cache;
+}
+
 function createOverworldGenerationSnapshotCacheKey({
   seed,
   x,
@@ -230,6 +290,35 @@ function createOverworldGenerationSnapshotCacheKey({
         0)
       : 0;
   return `${seed}:${x}:${y}:${revision}`;
+}
+
+function canCacheOverworldTileComposition(initialTile?: TileLike) {
+  if (!initialTile) {
+    return true;
+  }
+  const keys = Object.keys(initialTile);
+  return keys.length === 1 && keys[0] === 'kind';
+}
+
+function createOverworldTileCompositionCacheKey({
+  seed,
+  x,
+  y,
+  state,
+  startingKind,
+}: {
+  seed: Seed;
+  x: number;
+  y: number;
+  state?: WorldStateLike;
+  startingKind: Kind;
+}) {
+  return `${createOverworldGenerationSnapshotCacheKey({
+    seed,
+    x,
+    y,
+    state,
+  })}:${startingKind}`;
 }
 
 function createOverworldGenerationSnapshot({
@@ -1844,23 +1933,44 @@ export function composeOverworldTileFromPlugins({
   const startingTile = initialTile ?? {
     kind: plugins.getDefaultTileKind?.('plains') ?? 'plains',
   };
+  const composeTile = () => {
+    const generationContext = createOverworldGenerationContext({
+      seed,
+      x,
+      y,
+      tile: startingTile,
+      plugins,
+      sampleTerrainSignals,
+      state,
+    });
 
-  const generationContext = createOverworldGenerationContext({
-    seed,
-    x,
-    y,
-    tile: startingTile,
+    generationContext.tile =
+      plugins.classifyTerrainTile(generationContext) ?? generationContext.tile;
+    generationContext.tile =
+      plugins.classifyOverworldTile(generationContext) ??
+      generationContext.tile;
+
+    return plugins.decorateOverworldTile(
+      generationContext as DecorateOverworldTileContext
+    );
+  };
+
+  if (!canCacheOverworldTileComposition(initialTile)) {
+    return composeTile();
+  }
+
+  return getOverworldTileCompositionCache(
     plugins,
     sampleTerrainSignals,
-    state,
-  });
-
-  generationContext.tile =
-    plugins.classifyTerrainTile(generationContext) ?? generationContext.tile;
-  generationContext.tile =
-    plugins.classifyOverworldTile(generationContext) ?? generationContext.tile;
-
-  return plugins.decorateOverworldTile(
-    generationContext as DecorateOverworldTileContext
+    state
+  ).getOrCreate(
+    createOverworldTileCompositionCacheKey({
+      seed,
+      x,
+      y,
+      state,
+      startingKind: startingTile.kind,
+    }),
+    composeTile
   );
 }
