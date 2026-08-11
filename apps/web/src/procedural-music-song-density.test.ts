@@ -4,6 +4,7 @@ import { resolveProceduralSongDensityMeasureTargets } from './procedural-music-d
 import { applyProceduralSongDensityPlan } from './procedural-music-song-density.ts';
 import { createProceduralMusicSong } from './procedural-music-song.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
+import type { ProceduralMusicNote } from './procedural-music.ts';
 
 describe('procedural music song density', () => {
   it('thins intro and outro lead measures while ramping variation density toward the center', () => {
@@ -71,6 +72,28 @@ describe('procedural music song density', () => {
       )
     ).toBe(true);
     expect(secondMeasureSupport.length).toBeGreaterThan(0);
+  });
+
+  it('restores one planned note when pruning would otherwise leave a whole measure silent', () => {
+    const notes = applyProceduralSongDensityPlan({
+      notes: [
+        createNote({
+          role: 'harmony',
+          instrumentId: 'strings:voice-0',
+          startMs: 3_120,
+        }),
+      ],
+      sections: [createSection('a', 0, 8_000, 8)],
+      songStartMs: 0,
+    });
+
+    const fourthMeasureNotes = notes.filter(
+      (note) => note.startMs >= 3_000 && note.startMs < 4_000
+    );
+
+    expect(fourthMeasureNotes).toHaveLength(1);
+    expect(fourthMeasureNotes[0]?.role).toBe('harmony');
+    expect(fourthMeasureNotes[0]?.durationMs).toBeGreaterThan(0);
   });
 
   it('applies phrase-based density targets across a representative full song', () => {
@@ -156,6 +179,37 @@ describe('procedural music song density', () => {
       ).toBe(true);
     }
   });
+
+  it('keeps at least one role attacking in every measure of a representative full song', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+
+    for (const section of song.sections) {
+      const roleCounts = (
+        ['bass', 'harmony', 'lead', 'percussion'] as const
+      ).map((role) =>
+        countRoleNotesByMeasure(
+          song.notes,
+          song.startMs + section.startOffsetMs,
+          section.durationMs,
+          section.measureCount,
+          role
+        )
+      );
+      const totalCountsByMeasure = roleCounts[0]!.map((_, measureIndex) =>
+        roleCounts.reduce((sum, counts) => sum + (counts[measureIndex] ?? 0), 0)
+      );
+
+      expect(totalCountsByMeasure.every((count) => count > 0)).toBe(true);
+    }
+  });
 });
 
 function createSection(
@@ -224,7 +278,7 @@ function createNote(overrides: {
   role: 'lead' | 'harmony' | 'bass' | 'percussion';
   instrumentId: string;
   startMs: number;
-}) {
+}): ProceduralMusicNote {
   return {
     themeId: 'frontier-plains',
     instrumentId: overrides.instrumentId,
@@ -234,7 +288,13 @@ function createNote(overrides: {
     frequency: 440,
     volume: 0.5,
     waveform: 'sine' as const,
-    timbre: 'soft' as const,
+    timbre: {
+      harmonicWaveform: 'triangle',
+      harmonicRatio: 2,
+      filterType: 'lowpass',
+      filterCutoffHz: 1_200,
+      filterQ: 0.8,
+    },
     attackMs: 20,
     releaseMs: 80,
     detuneCents: 0,

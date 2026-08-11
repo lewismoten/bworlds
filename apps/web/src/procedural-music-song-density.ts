@@ -10,7 +10,8 @@ export function applyProceduralSongDensityPlan(options: {
   sections: readonly ProceduralMusicSongSection[];
   songStartMs: number;
 }): ProceduralMusicNote[] {
-  const notes = options.notes.map((note) => ({ ...note }));
+  const sourceNotes = options.notes.map((note) => ({ ...note }));
+  const notes = sourceNotes.map((note) => ({ ...note }));
 
   for (
     let sectionIndex = 0;
@@ -21,6 +22,7 @@ export function applyProceduralSongDensityPlan(options: {
     applySectionDensityPlan(notes, {
       section,
       songStartMs: options.songStartMs,
+      sourceNotes,
     });
   }
 
@@ -39,6 +41,7 @@ function applySectionDensityPlan(
   options: {
     section: ProceduralMusicSongSection;
     songStartMs: number;
+    sourceNotes: readonly ProceduralMusicNote[];
   }
 ): void {
   const sectionStartMs = options.songStartMs + options.section.startOffsetMs;
@@ -88,6 +91,8 @@ function applySectionDensityPlan(
         ),
       });
     }
+
+    ensureMeasureRetainsActiveLayer(notes, groupedIndexes, options.sourceNotes);
   }
 }
 
@@ -206,6 +211,42 @@ function compareRemovalPriority(
   return right.startMs - left.startMs;
 }
 
+function ensureMeasureRetainsActiveLayer(
+  notes: ProceduralMusicNote[],
+  groupedIndexes: Record<ProceduralMusicRole, number[]>,
+  sourceNotes: readonly ProceduralMusicNote[]
+): void {
+  if (countActiveMeasureNotes(notes, groupedIndexes) > 0) {
+    return;
+  }
+
+  for (const role of MEASURE_REST_RESTORE_ROLE_PRIORITY) {
+    const noteIndex = groupedIndexes[role].find(
+      (candidateIndex) => sourceNotes[candidateIndex]!.durationMs > 0
+    );
+    if (noteIndex === undefined) {
+      continue;
+    }
+    notes[noteIndex] = {
+      ...sourceNotes[noteIndex]!,
+    };
+    return;
+  }
+}
+
+function countActiveMeasureNotes(
+  notes: readonly ProceduralMusicNote[],
+  groupedIndexes: Record<ProceduralMusicRole, number[]>
+): number {
+  let count = 0;
+  for (const role of SONG_DENSITY_ROLES) {
+    count += groupedIndexes[role].filter(
+      (noteIndex) => notes[noteIndex]!.durationMs > 0
+    ).length;
+  }
+  return count;
+}
+
 function isPhraseBoundaryMeasure(measureIndex: number): boolean {
   return (measureIndex + 1) % 4 === 0;
 }
@@ -241,6 +282,13 @@ function createRoleIndexMap(): Record<ProceduralMusicRole, number[]> {
 }
 
 const SONG_DENSITY_ROLES: readonly ProceduralMusicRole[] = [
+  'bass',
+  'harmony',
+  'lead',
+  'percussion',
+];
+
+const MEASURE_REST_RESTORE_ROLE_PRIORITY: readonly ProceduralMusicRole[] = [
   'bass',
   'harmony',
   'lead',
