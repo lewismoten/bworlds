@@ -190,9 +190,8 @@ describe('music debug timeline', () => {
     ]);
 
     expect(chordLabels.map((entry) => entry.label)).toEqual([
-      '1 maj',
-      '5 min',
-      'Chord 6 minor',
+      'Ch1 maj',
+      'Ch4 maj',
     ]);
   });
 
@@ -340,7 +339,7 @@ describe('music debug timeline', () => {
     expect(markup).toContain('class="music-debug-timeline-section-label-pill"');
     expect(markup).toContain('class="music-debug-timeline-section-label"');
     expect(markup).toContain('class="music-debug-timeline-chord-cue"');
-    expect(markup).toMatch(/>(Chord 1 minor|1 min)</);
+    expect(markup).toMatch(/>(Chord 1 minor|Ch1 min)</);
     expect(markup).toContain('<title>Melody');
     expect(markup).toContain('class="music-debug-timeline-cadence-marker"');
     expect(markup).toContain('class="music-debug-timeline-measure-guide"');

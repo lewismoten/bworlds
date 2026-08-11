@@ -1149,7 +1149,7 @@ function resolveMusicDebugTimelineChordLabelText(
     return cue.label;
   }
   if (spanWidth >= 18) {
-    return `${cue.degreeIndex + 1} ${resolveMusicDebugTimelineChordQualityShortLabel(
+    return `Ch${cue.degreeIndex + 1} ${resolveMusicDebugTimelineChordQualityShortLabel(
       cue.label
     )}`;
   }
