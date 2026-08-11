@@ -16,29 +16,82 @@ import {
   resolveMusicDebugTimelineXForOffset,
 } from './music-debug-timeline.ts';
 
+const DEFAULT_LAYOUT = resolveMusicDebugTimelineLayout(960, 320);
+const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
+const FOREST_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+  clusterX: 4,
+  clusterY: -1,
+});
+const DEFAULT_NOTE_BARS = resolveMusicDebugTimelineNoteBars(
+  DEFAULT_SNAPSHOT,
+  DEFAULT_LAYOUT
+);
+const DEFAULT_PERCUSSION_NOTE = DEFAULT_SNAPSHOT.notes.find(
+  (note) => note.role === 'percussion'
+)!;
+const TIMELINE_PERCUSSION_LANES_SNAPSHOT = {
+  ...DEFAULT_SNAPSHOT,
+  notes: [
+    {
+      ...DEFAULT_PERCUSSION_NOTE,
+      instrumentId: 'debug:perc-kick-36:0',
+      startMs: 0,
+    },
+    {
+      ...DEFAULT_PERCUSSION_NOTE,
+      instrumentId: 'debug:perc-snare-38:1',
+      startMs: 250,
+    },
+    {
+      ...DEFAULT_PERCUSSION_NOTE,
+      instrumentId: 'debug:perc-cymbals-49:2',
+      startMs: 500,
+    },
+  ],
+  durationMs: 1_000,
+};
+const TIMELINE_PERCUSSION_HOVER_SNAPSHOT = {
+  ...DEFAULT_SNAPSHOT,
+  notes: [
+    {
+      ...DEFAULT_PERCUSSION_NOTE,
+      instrumentId: 'debug:perc-cymbals-49:2',
+      startMs: 500,
+      durationMs: 180,
+    },
+  ],
+  durationMs: 1_000,
+};
+
 describe('music debug timeline', () => {
   it('maps offsets to timeline positions and back', () => {
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
     const durationMs = 120_000;
-    const x = resolveMusicDebugTimelineXForOffset(layout, durationMs, 60_000);
-
-    expect(resolveMusicDebugTimelineOffsetForX(layout, durationMs, x)).toBe(
+    const x = resolveMusicDebugTimelineXForOffset(
+      DEFAULT_LAYOUT,
+      durationMs,
       60_000
     );
+
+    expect(
+      resolveMusicDebugTimelineOffsetForX(DEFAULT_LAYOUT, durationMs, x)
+    ).toBe(60_000);
   });
 
   it('uses the requested visible role order for current generated tracks', () => {
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
-
-    expect(layout.roleOrder).toEqual(['lead', 'harmony', 'bass', 'percussion']);
+    expect(DEFAULT_LAYOUT.roleOrder).toEqual([
+      'lead',
+      'harmony',
+      'bass',
+      'percussion',
+    ]);
   });
 
   it('clamps seek offsets to the visible timeline bounds', () => {
-    const snapshot = createMusicDebugSnapshot();
-
     expect(
       resolveMusicDebugTimelineSeekOffset({
-        snapshot,
+        snapshot: DEFAULT_SNAPSHOT,
         canvas: { width: 960, height: 320 },
         clientX: -400,
         boundsLeft: 0,
@@ -47,13 +100,13 @@ describe('music debug timeline', () => {
     ).toBe(0);
     expect(
       resolveMusicDebugTimelineSeekOffset({
-        snapshot,
+        snapshot: DEFAULT_SNAPSHOT,
         canvas: { width: 960, height: 320 },
         clientX: 2_000,
         boundsLeft: 0,
         boundsWidth: 960,
       })
-    ).toBe(snapshot.durationMs);
+    ).toBe(DEFAULT_SNAPSHOT.durationMs);
   });
 
   it('resolves track roles from clicks on the timeline label column', () => {
@@ -93,41 +146,46 @@ describe('music debug timeline', () => {
   });
 
   it('renders short note bars at pitch lanes instead of full-height track blocks', () => {
-    const snapshot = createMusicDebugSnapshot();
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
-    const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
-
-    expect(noteBars.length).toBe(snapshot.notes.length);
+    expect(DEFAULT_NOTE_BARS.length).toBe(DEFAULT_SNAPSHOT.notes.length);
     expect(
-      noteBars.every((bar) => bar.height < layout.trackHeight * 0.35)
+      DEFAULT_NOTE_BARS.every(
+        (bar) => bar.height < DEFAULT_LAYOUT.trackHeight * 0.35
+      )
     ).toBe(true);
     expect(
-      noteBars.some((bar) => {
+      DEFAULT_NOTE_BARS.some((bar) => {
         if (bar.role === 'percussion') {
           return false;
         }
-        const roleIndex = layout.roleOrder.indexOf(bar.role);
-        const trackTop = layout.topPad + roleIndex * layout.trackHeight + 10;
+        const roleIndex = DEFAULT_LAYOUT.roleOrder.indexOf(bar.role);
+        const trackTop =
+          DEFAULT_LAYOUT.topPad + roleIndex * DEFAULT_LAYOUT.trackHeight + 10;
         return bar.y > trackTop;
       })
     ).toBe(true);
   });
 
   it('filters hidden roles out of timeline note bars and hover hit testing', () => {
-    const snapshot = createMusicDebugSnapshot();
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
-    const leadNoteBar = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
-      visibleRoles: ['lead', 'harmony', 'bass', 'percussion'],
-    }).find((bar) => bar.role === 'lead')!;
+    const leadNoteBar = resolveMusicDebugTimelineNoteBars(
+      DEFAULT_SNAPSHOT,
+      DEFAULT_LAYOUT,
+      {
+        visibleRoles: ['lead', 'harmony', 'bass', 'percussion'],
+      }
+    ).find((bar) => bar.role === 'lead')!;
 
-    const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
-      visibleRoles: ['harmony', 'bass', 'percussion'],
-    });
+    const noteBars = resolveMusicDebugTimelineNoteBars(
+      DEFAULT_SNAPSHOT,
+      DEFAULT_LAYOUT,
+      {
+        visibleRoles: ['harmony', 'bass', 'percussion'],
+      }
+    );
 
     expect(noteBars.some((bar) => bar.role === 'lead')).toBe(false);
     expect(
       resolveMusicDebugTimelineHoverDetail({
-        snapshot,
+        snapshot: DEFAULT_SNAPSHOT,
         canvas: { width: 960, height: 320 },
         clientX: leadNoteBar.x + leadNoteBar.width * 0.5,
         clientY: leadNoteBar.y + leadNoteBar.height * 0.5,
@@ -141,41 +199,19 @@ describe('music debug timeline', () => {
   });
 
   it('tracks overlapping note bars so dense stacks can render more vividly', () => {
-    const snapshot = createMusicDebugSnapshot();
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
-    const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
-
-    expect(noteBars.every((bar) => bar.overlapCount >= 1)).toBe(true);
+    expect(DEFAULT_NOTE_BARS.every((bar) => bar.overlapCount >= 1)).toBe(true);
     expect(
-      noteBars.some((bar) => bar.role === 'harmony' && bar.overlapCount > 1)
+      DEFAULT_NOTE_BARS.some(
+        (bar) => bar.role === 'harmony' && bar.overlapCount > 1
+      )
     ).toBe(true);
   });
 
   it('places different percussion instruments on distinct vertical lanes', () => {
-    const baseSnapshot = createMusicDebugSnapshot();
-    const snapshot = {
-      ...baseSnapshot,
-      notes: [
-        {
-          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
-          instrumentId: 'debug:perc-kick-36:0',
-          startMs: 0,
-        },
-        {
-          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
-          instrumentId: 'debug:perc-snare-38:1',
-          startMs: 250,
-        },
-        {
-          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
-          instrumentId: 'debug:perc-cymbals-49:2',
-          startMs: 500,
-        },
-      ],
-      durationMs: 1_000,
-    };
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
-    const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+    const noteBars = resolveMusicDebugTimelineNoteBars(
+      TIMELINE_PERCUSSION_LANES_SNAPSHOT,
+      DEFAULT_LAYOUT
+    );
     const percussionBars = noteBars.filter((bar) => bar.role === 'percussion');
 
     expect(percussionBars).toHaveLength(3);
@@ -233,14 +269,10 @@ describe('music debug timeline', () => {
   });
 
   it('resolves pitched note labels and durations when hovering a note bar', () => {
-    const snapshot = createMusicDebugSnapshot();
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
-    const noteBar = resolveMusicDebugTimelineNoteBars(snapshot, layout).find(
-      (bar) => bar.role === 'lead'
-    )!;
+    const noteBar = DEFAULT_NOTE_BARS.find((bar) => bar.role === 'lead')!;
 
     const hoverDetail = resolveMusicDebugTimelineHoverDetail({
-      snapshot,
+      snapshot: DEFAULT_SNAPSHOT,
       canvas: { width: 960, height: 320 },
       clientX: noteBar.x + noteBar.width * 0.5,
       clientY: noteBar.y + noteBar.height * 0.5,
@@ -260,24 +292,13 @@ describe('music debug timeline', () => {
   });
 
   it('resolves percussion voice labels when hovering percussion notes', () => {
-    const baseSnapshot = createMusicDebugSnapshot();
-    const snapshot = {
-      ...baseSnapshot,
-      notes: [
-        {
-          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
-          instrumentId: 'debug:perc-cymbals-49:2',
-          startMs: 500,
-          durationMs: 180,
-        },
-      ],
-      durationMs: 1_000,
-    };
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
-    const noteBar = resolveMusicDebugTimelineNoteBars(snapshot, layout)[0]!;
+    const noteBar = resolveMusicDebugTimelineNoteBars(
+      TIMELINE_PERCUSSION_HOVER_SNAPSHOT,
+      DEFAULT_LAYOUT
+    )[0]!;
 
     const hoverDetail = resolveMusicDebugTimelineHoverDetail({
-      snapshot,
+      snapshot: TIMELINE_PERCUSSION_HOVER_SNAPSHOT,
       canvas: { width: 960, height: 320 },
       clientX: noteBar.x + noteBar.width * 0.5,
       clientY: noteBar.y + noteBar.height * 0.5,
@@ -297,22 +318,15 @@ describe('music debug timeline', () => {
   });
 
   it('resolves cadence marker details when hovering question and answer labels', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 4,
-      clusterY: -1,
-    });
-    const layout = resolveMusicDebugTimelineLayout(960, 320);
     const [questionMarker, answerMarker] =
-      resolveMusicDebugCadenceMarkers(snapshot);
+      resolveMusicDebugCadenceMarkers(FOREST_SNAPSHOT);
 
     const questionHoverDetail = resolveMusicDebugTimelineHoverDetail({
-      snapshot,
+      snapshot: FOREST_SNAPSHOT,
       canvas: { width: 960, height: 320 },
       clientX: resolveMusicDebugTimelineXForOffset(
-        layout,
-        snapshot.durationMs,
+        DEFAULT_LAYOUT,
+        FOREST_SNAPSHOT.durationMs,
         questionMarker!.offsetMs
       ),
       clientY: 48,
@@ -322,11 +336,11 @@ describe('music debug timeline', () => {
       boundsHeight: 320,
     });
     const answerHoverDetail = resolveMusicDebugTimelineHoverDetail({
-      snapshot,
+      snapshot: FOREST_SNAPSHOT,
       canvas: { width: 960, height: 320 },
       clientX: resolveMusicDebugTimelineXForOffset(
-        layout,
-        snapshot.durationMs,
+        DEFAULT_LAYOUT,
+        FOREST_SNAPSHOT.durationMs,
         answerMarker!.offsetMs
       ),
       clientY: 48,
@@ -355,13 +369,7 @@ describe('music debug timeline', () => {
   });
 
   it('renders a standalone svg export for the timeline graph', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 4,
-      clusterY: -1,
-    });
-    const markup = buildMusicDebugTimelineSvgMarkup(snapshot, {
+    const markup = buildMusicDebugTimelineSvgMarkup(FOREST_SNAPSHOT, {
       playheadOffsetMs: 1_500,
       activeRegion: {
         startOffsetMs: 0,
@@ -386,9 +394,11 @@ describe('music debug timeline', () => {
     expect(markup).toContain('>Q<');
     expect(markup).toContain('>A<');
     expect(markup).toContain('class="music-debug-timeline-playhead-chord"');
-    expect(markup).toContain(snapshot.theme.vocabulary.modeLabel);
+    expect(markup).toContain(FOREST_SNAPSHOT.theme.vocabulary.modeLabel);
     expect(markup).toContain(
-      `Scale ${resolveMusicDebugPitchClassLabel(snapshot.scaleMap.rootMidiNote)}`
+      `Scale ${resolveMusicDebugPitchClassLabel(
+        FOREST_SNAPSHOT.scaleMap.rootMidiNote
+      )}`
     );
     expect(markup).toMatch(/<path d="M[0-9.]+ 84\.00 V296\.00"/);
     expect(markup).toContain('rgba(85,214,190,0.08)');

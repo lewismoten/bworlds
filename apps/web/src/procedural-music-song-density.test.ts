@@ -6,6 +6,25 @@ import { createProceduralMusicSong } from './procedural-music-song.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
+const PLAINS_REPRESENTATIVE_SONG = createProceduralMusicSong({
+  nowMs: 1_000,
+  tileKind: 'plains',
+  contextType: 'overworld',
+  dayProgress: 0.45,
+  yearProgress: 0.25,
+  clusterX: 0,
+  clusterY: 0,
+});
+const FOREST_REPRESENTATIVE_SONG = createProceduralMusicSong({
+  nowMs: 1_000,
+  tileKind: 'forest',
+  contextType: 'overworld',
+  dayProgress: 0.45,
+  yearProgress: 0.25,
+  clusterX: 3,
+  clusterY: -2,
+});
+
 describe('procedural music song density', () => {
   it('thins intro and outro lead measures while ramping variation density toward the center', () => {
     const notes = applyProceduralSongDensityPlan({
@@ -97,19 +116,9 @@ describe('procedural music song density', () => {
   });
 
   it('applies phrase-based density targets across a representative full song', () => {
-    const song = createProceduralMusicSong({
-      nowMs: 1_000,
-      tileKind: 'plains',
-      contextType: 'overworld',
-      dayProgress: 0.45,
-      yearProgress: 0.25,
-      clusterX: 0,
-      clusterY: 0,
-    });
+    expect(PLAINS_REPRESENTATIVE_SONG.notes.length).toBeLessThanOrEqual(620);
 
-    expect(song.notes.length).toBeLessThanOrEqual(620);
-
-    for (const section of song.sections) {
+    for (const section of PLAINS_REPRESENTATIVE_SONG.sections) {
       for (const role of ['bass', 'harmony', 'lead', 'percussion'] as const) {
         const targets = resolveProceduralSongDensityMeasureTargets(
           section.id,
@@ -120,8 +129,8 @@ describe('procedural music song density', () => {
           continue;
         }
         const counts = countRoleNotesByMeasure(
-          song.notes,
-          song.startMs + section.startOffsetMs,
+          PLAINS_REPRESENTATIVE_SONG.notes,
+          PLAINS_REPRESENTATIVE_SONG.startMs + section.startOffsetMs,
           section.durationMs,
           section.measureCount,
           role
@@ -136,16 +145,6 @@ describe('procedural music song density', () => {
   });
 
   it('adds planned accompaniment breathing measures so support layers are not constant in every section', () => {
-    const song = createProceduralMusicSong({
-      nowMs: 1_000,
-      tileKind: 'forest',
-      contextType: 'overworld',
-      dayProgress: 0.45,
-      yearProgress: 0.25,
-      clusterX: 3,
-      clusterY: -2,
-    });
-
     for (const sectionId of [
       'a',
       'a-prime',
@@ -153,21 +152,21 @@ describe('procedural music song density', () => {
       'variation',
       'return',
     ] as const) {
-      const section = song.sections.find(
+      const section = FOREST_REPRESENTATIVE_SONG.sections.find(
         (candidate) => candidate.id === sectionId
       );
       expect(section).toBeDefined();
 
       const harmonyCounts = countRoleNotesByMeasure(
-        song.notes,
-        song.startMs + section!.startOffsetMs,
+        FOREST_REPRESENTATIVE_SONG.notes,
+        FOREST_REPRESENTATIVE_SONG.startMs + section!.startOffsetMs,
         section!.durationMs,
         section!.measureCount,
         'harmony'
       );
       const percussionCounts = countRoleNotesByMeasure(
-        song.notes,
-        song.startMs + section!.startOffsetMs,
+        FOREST_REPRESENTATIVE_SONG.notes,
+        FOREST_REPRESENTATIVE_SONG.startMs + section!.startOffsetMs,
         section!.durationMs,
         section!.measureCount,
         'percussion'
@@ -181,23 +180,13 @@ describe('procedural music song density', () => {
   });
 
   it('keeps at least one role attacking in every measure of a representative full song', () => {
-    const song = createProceduralMusicSong({
-      nowMs: 1_000,
-      tileKind: 'forest',
-      contextType: 'overworld',
-      dayProgress: 0.45,
-      yearProgress: 0.25,
-      clusterX: 3,
-      clusterY: -2,
-    });
-
-    for (const section of song.sections) {
+    for (const section of FOREST_REPRESENTATIVE_SONG.sections) {
       const roleCounts = (
         ['bass', 'harmony', 'lead', 'percussion'] as const
       ).map((role) =>
         countRoleNotesByMeasure(
-          song.notes,
-          song.startMs + section.startOffsetMs,
+          FOREST_REPRESENTATIVE_SONG.notes,
+          FOREST_REPRESENTATIVE_SONG.startMs + section.startOffsetMs,
           section.durationMs,
           section.measureCount,
           role

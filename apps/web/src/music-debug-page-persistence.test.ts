@@ -8,6 +8,8 @@ import {
   resolveMusicDebugPlaybackResumeOffset,
 } from './music-debug-page-persistence.ts';
 
+const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
+
 describe('music debug page persistence', () => {
   it('normalizes partial persisted page state conservatively', () => {
     expect(
@@ -204,19 +206,17 @@ describe('music debug page persistence', () => {
   });
 
   it('restarts from the beginning when the persisted playhead is at song end', () => {
-    const snapshot = createMusicDebugSnapshot();
-
     expect(
       resolveMusicDebugPlaybackResumeOffset({
-        snapshot,
-        previewOffsetMs: snapshot.durationMs,
+        snapshot: DEFAULT_SNAPSHOT,
+        previewOffsetMs: DEFAULT_SNAPSHOT.durationMs,
       })
     ).toBe(0);
     expect(
       resolveMusicDebugPlaybackResumeOffset({
-        snapshot,
-        previewOffsetMs: snapshot.durationMs - 1_000,
+        snapshot: DEFAULT_SNAPSHOT,
+        previewOffsetMs: DEFAULT_SNAPSHOT.durationMs - 1_000,
       })
-    ).toBe(snapshot.durationMs - 1_000);
+    ).toBe(DEFAULT_SNAPSHOT.durationMs - 1_000);
   });
 });
