@@ -29,8 +29,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       sleepers into instanced sets, and full-detail cave mouths now collapse
       their repeated entrance boulders into one `InstancedMesh`, cave mushroom
       tiles now collapse their repeated stems and caps into two `InstancedMesh`
-      nodes, and full-detail dungeons now collapse their repeated tower bodies
-      and caps into two `InstancedMesh` nodes, and `tile-ruins` now collapses
+      nodes, and full-detail dungeons now collapse their repeated tower bodies,
+      caps, and gate posts into instanced sets, and `tile-ruins` now collapses
       its repeated rubble fragments into one `InstancedMesh`, and
       `tile-lighthouse` now collapses its repeated lantern-room frame posts,
       balcony rail posts, and four lantern-room panes into instanced sets, and
@@ -44,11 +44,11 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       sleepers, cave mushroom tiles now instance their repeated stems and caps,
       and full-detail cave mouths now instance their repeated entrance
       boulders, and full-detail dungeons now instance their repeated tower
-      bodies and caps instead of emitting one mesh per repeated prop,
-      lighthouse lantern-room panes now instance their repeated decorative
-      glass planes instead of emitting one mesh per pane, and full-detail
-      forest stone-ring landmarks now instance their repeated stones instead of
-      emitting one mesh per rock.
+      bodies, caps, and gate posts instead of emitting one mesh per repeated
+      prop, lighthouse lantern-room panes now instance their repeated
+      decorative glass planes instead of emitting one mesh per pane, and
+      full-detail forest stone-ring landmarks now instance their repeated
+      stones instead of emitting one mesh per rock.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

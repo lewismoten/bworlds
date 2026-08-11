@@ -204,19 +204,41 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       arch.rotation.z = Math.PI;
       gate.add(arch);
 
-      const leftPost = new three.Mesh(
+      const gatePostInstances = new three.InstancedMesh(
         new three.BoxGeometry(0.08, 0.34, 0.08),
-        style.trimMaterial
+        style.trimMaterial,
+        2
       );
-      leftPost.position.set(-0.16, 0.17, 0.03);
-      gate.add(leftPost);
-
-      const rightPost = new three.Mesh(
-        new three.BoxGeometry(0.08, 0.34, 0.08),
-        style.trimMaterial
+      gatePostInstances.userData = {
+        ...(gatePostInstances.userData ?? {}),
+        dungeonInstancedPart: 'gate-post',
+      };
+      const gatePostMatrixScratch = new three.Matrix4();
+      gatePostInstances.setMatrixAt(
+        0,
+        writeInstancedScalePositionMatrix(
+          gatePostMatrixScratch,
+          -0.16,
+          0.17,
+          0.03,
+          1,
+          1,
+          1
+        )
       );
-      rightPost.position.set(0.16, 0.17, 0.03);
-      gate.add(rightPost);
+      gatePostInstances.setMatrixAt(
+        1,
+        writeInstancedScalePositionMatrix(
+          gatePostMatrixScratch,
+          0.16,
+          0.17,
+          0.03,
+          1,
+          1,
+          1
+        )
+      );
+      gate.add(gatePostInstances);
 
       const portcullis = new three.Mesh(
         new three.PlaneGeometry(0.24, 0.28),
