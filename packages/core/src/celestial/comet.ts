@@ -1,5 +1,5 @@
-import { fract } from '../math';
-import type { CelestialEventLike } from './types';
+import { fract } from '../math.ts';
+import type { CelestialEventLike } from './types.ts';
 export const COMET_NAMES = ['White Lantern', 'Pilgrim Tail'];
 
 export function getCometOrbitProgress(

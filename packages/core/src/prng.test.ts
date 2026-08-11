@@ -1,4 +1,4 @@
-import { createRandom } from './prng';
+import { createRandom } from './prng.ts';
 import { describe, expect, it } from 'vitest';
 
 describe('createRandom', () => {

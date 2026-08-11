@@ -1,5 +1,5 @@
-import { getDaylightCycleState } from './getDaylightCycleState';
-import { DEFAULT_DAY_LENGTH_MS, getWorldTimeMs } from './time';
+import { getDaylightCycleState } from './getDaylightCycleState.ts';
+import { DEFAULT_DAY_LENGTH_MS, getWorldTimeMs } from './time.ts';
 
 export function getWorldDaylightCycle(
   realTimeMs: number,

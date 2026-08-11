@@ -1,5 +1,5 @@
-import { hash2DWithSeed } from './hash';
-import { fract, lerp, smoothstep } from './math';
+import { hash2DWithSeed } from './hash.ts';
+import { fract, lerp, smoothstep } from './math.ts';
 
 export function valueNoise2D(seedHash: number, x: number, y: number): number {
   const x0 = Math.floor(x);

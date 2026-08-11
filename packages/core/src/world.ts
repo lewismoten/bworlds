@@ -2,13 +2,13 @@ import {
   snapWorldCoordinate,
   type FacingPositionLike,
   type WorldPositionLike,
-} from './position';
+} from './position.ts';
 import {
   getTileDefinition,
   type CoreTileDefinitionLike,
   type CoreWorldTileKind,
   type CoreWorldTileLike,
-} from './tile';
+} from './tile.ts';
 
 type CoreWorldContextType =
   | 'overworld'

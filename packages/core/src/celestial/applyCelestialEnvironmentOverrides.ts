@@ -1,15 +1,15 @@
-import { clamp, smoothstep } from '../math';
-import type { AuroraBandLike } from './aurora';
-import type { ConstellationLike } from './constellation';
+import { clamp, smoothstep } from '../math.ts';
+import type { AuroraBandLike } from './aurora.ts';
+import type { ConstellationLike } from './constellation.ts';
 import {
   getEclipseAdjustedDaylight,
   getEclipseAdjustedTwilight,
   type SolarEclipseLike,
-} from './eclipse';
-import type { CelestialEventLike } from './types';
-import type { getDaylightCycleState } from './getDaylightCycleState';
-import type { MilkyWayBeltLike } from './milky-way';
-import { getOrreryBodies, type OrreryBodyLike } from './orrery';
+} from './eclipse.ts';
+import type { CelestialEventLike } from './types.ts';
+import type { getDaylightCycleState } from './getDaylightCycleState.ts';
+import type { MilkyWayBeltLike } from './milky-way.ts';
+import { getOrreryBodies, type OrreryBodyLike } from './orrery.ts';
 
 export function applyCelestialEnvironmentOverrides(
   cycle: ReturnType<typeof getDaylightCycleState>,

@@ -4,7 +4,7 @@ import {
   hash2DWithSeed,
   registerHashLabel,
   registerHashLabels,
-} from './hash';
+} from './hash.ts';
 
 const POI_NAME_PREFIX_SET_LABEL = registerHashLabel('name-prefix-set');
 const POI_NAME_SUFFIX_SET_LABEL = registerHashLabel('name-suffix-set');

@@ -2,7 +2,7 @@ import {
   DEFAULT_CONSTELLATION_COUNT,
   DEFAULT_DAY_LENGTH_MS,
   DEFAULT_YEAR_LENGTH_DAYS,
-} from './time';
+} from './time.ts';
 
 export function advanceWorldTimeOffsetBySeasons(
   currentOffsetMs: number,

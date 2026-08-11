@@ -1,5 +1,5 @@
-import { WORLD_TILES_WIDE } from './const';
-import { clamp, normalizeAngle } from './math';
+import { WORLD_TILES_WIDE } from './const.ts';
+import { clamp, normalizeAngle } from './math.ts';
 type CardinalDirection = 'N' | 'S' | 'E' | 'W';
 
 export type WorldPositionLike = {

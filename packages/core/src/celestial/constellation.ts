@@ -1,10 +1,10 @@
-import { DEFAULT_CONSTELLATION_COUNT } from './time';
+import { DEFAULT_CONSTELLATION_COUNT } from './time.ts';
 import {
   appendHashSeedLabel,
   hash2DWithSeed,
   registerHashLabel,
   registerHashSeed,
-} from '../hash';
+} from '../hash.ts';
 
 export const DEFAULT_CONSTELLATION_SEED = registerHashSeed('bworlds-celestial');
 

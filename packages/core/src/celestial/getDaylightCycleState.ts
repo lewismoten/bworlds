@@ -3,25 +3,25 @@ import {
   DEFAULT_DAY_LENGTH_MS,
   DEFAULT_SEASON_DAYLIGHT_AMPLITUDE,
   DEFAULT_YEAR_LENGTH_DAYS,
-} from './time';
+} from './time.ts';
 import {
   DEFAULT_CONSTELLATION_SEED,
   generateConstellations,
-} from './constellation';
-import { createCelestialRing } from './createCelestialRing';
+} from './constellation.ts';
+import { createCelestialRing } from './createCelestialRing.ts';
 import {
   getEclipseAdjustedDaylight,
   getEclipseAdjustedTwilight,
   getSolarEclipseState,
-} from './eclipse';
-import { formatCelestialDate } from './formatCelestialDate';
-import { getCelestialEventsForDay } from './getCelestialEventsForDay';
-import { createHashSeed, type HashSeed } from '../hash';
-import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math';
-import { getMilkyWayBeltState } from './milky-way';
-import { MOON_PHASE_NAMES } from './moon';
-import { getOrreryBodies } from './orrery';
-import type { AuroraBandLike } from './aurora';
+} from './eclipse.ts';
+import { formatCelestialDate } from './formatCelestialDate.ts';
+import { getCelestialEventsForDay } from './getCelestialEventsForDay.ts';
+import { createHashSeed, type HashSeed } from '../hash.ts';
+import { clamp, fract, lerp, normalizeAngle, smoothstep } from '../math.ts';
+import { getMilkyWayBeltState } from './milky-way.ts';
+import { MOON_PHASE_NAMES } from './moon.ts';
+import { getOrreryBodies } from './orrery.ts';
+import type { AuroraBandLike } from './aurora.ts';
 
 export function getDaylightCycleState(
   timeMs: number,

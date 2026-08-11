@@ -1,5 +1,5 @@
 import { hash2DWithSeed, registerHashLabel } from '../hash.ts';
-import { fract } from '../math';
+import { fract } from '../math.ts';
 import type { CelestialEventLike } from './types.ts';
 import { PLANET_SKY_PROFILES, type PlanetSkyProfile } from './time.ts';
 
