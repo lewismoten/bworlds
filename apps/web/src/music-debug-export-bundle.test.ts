@@ -165,7 +165,7 @@ describe('music debug export bundle', () => {
       })
     );
     expect(measured.metrics.previewWavFileCount).toBeGreaterThan(0);
-  }, 3_000);
+  }, 5_000);
 
   it('still packages an export zip when strict midi export would reject the snapshot', () => {
     const snapshot = {

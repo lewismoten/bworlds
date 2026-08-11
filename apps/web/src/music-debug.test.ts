@@ -246,6 +246,7 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-current-time');
     expect(markup).toContain('music-debug-current-section');
     expect(markup).toContain('music-debug-section-buttons');
+    expect(markup).toContain('music-debug-timeline-hover');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('music-debug-instrument-play');
     expect(markup).toContain('music-debug-contour-graph');
@@ -364,6 +365,7 @@ describe('music debug', () => {
     expect(markup).toContain('Music Laboratory');
     expect(markup).toContain('Generating preview...');
     expect(markup).toContain('music-debug-summary');
+    expect(markup).toContain('music-debug-timeline-hover');
     expect(markup).toContain(pendingSummary.trim());
   });
 

@@ -54,6 +54,7 @@ import {
 import { MUSIC_DEBUG_PLAYBACK_CONTROLLER_LEAD_MS } from './music-debug-playback-profile.ts';
 import {
   drawMusicDebugTimeline,
+  resolveMusicDebugTimelineHoverDetail,
   resolveMusicDebugTimelineSeekOffset,
 } from './music-debug-timeline.ts';
 import {
@@ -81,6 +82,9 @@ const instrumentPanelRoot = document.querySelector<HTMLElement>(
 );
 const timeline = document.querySelector<HTMLCanvasElement>(
   '#music-debug-timeline'
+);
+const timelineHover = document.querySelector<HTMLElement>(
+  '#music-debug-timeline-hover'
 );
 const playButton =
   document.querySelector<HTMLButtonElement>('#music-debug-play');
@@ -796,6 +800,44 @@ timeline?.addEventListener('click', (event) => {
   seekToOffset(nextOffsetMs);
 });
 
+timeline?.addEventListener('pointermove', (event) => {
+  if (!timelineHover) {
+    return;
+  }
+  const snapshot = resolveCurrentSnapshot();
+  if (!snapshot) {
+    hideTimelineHover();
+    return;
+  }
+  const bounds = timeline.getBoundingClientRect();
+  const hoverDetail = resolveMusicDebugTimelineHoverDetail({
+    snapshot,
+    canvas: timeline,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    boundsLeft: bounds.left,
+    boundsTop: bounds.top,
+    boundsWidth: bounds.width,
+    boundsHeight: bounds.height,
+  });
+  if (!hoverDetail) {
+    hideTimelineHover();
+    return;
+  }
+  showTimelineHover({
+    label: hoverDetail.hoverLabel,
+    durationLabel: hoverDetail.hoverDurationLabel,
+    x:
+      ((event.clientX - bounds.left) / Math.max(1, bounds.width)) *
+      timeline.clientWidth,
+    y:
+      ((event.clientY - bounds.top) / Math.max(1, bounds.height)) *
+      timeline.clientHeight,
+  });
+});
+
+timeline?.addEventListener('pointerleave', hideTimelineHover);
+
 const scheduleAfterPaint =
   globalThis.requestAnimationFrame?.bind(globalThis) ??
   ((callback: FrameRequestCallback) =>
@@ -856,3 +898,31 @@ import.meta.hot?.dispose(() => {
   persistPageState(playbackController.isPlaying());
   pagePersistence.flush();
 });
+
+function showTimelineHover(options: {
+  label: string;
+  durationLabel: string;
+  x: number;
+  y: number;
+}): void {
+  if (!timelineHover || !timeline) {
+    return;
+  }
+  timelineHover.hidden = false;
+  timelineHover.textContent = `${options.label} • ${options.durationLabel}`;
+  timelineHover.style.left = `${Math.max(
+    12,
+    Math.min(timeline.clientWidth - 12, options.x)
+  )}px`;
+  timelineHover.style.top = `${Math.max(12, options.y - 10)}px`;
+  timeline.title = `${options.label} (${options.durationLabel})`;
+}
+
+function hideTimelineHover(): void {
+  if (!timelineHover || !timeline) {
+    return;
+  }
+  timelineHover.hidden = true;
+  timelineHover.textContent = '';
+  timeline.removeAttribute('title');
+}

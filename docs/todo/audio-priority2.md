@@ -83,8 +83,9 @@
 - [x] Show chord labels above the timeline.
 - [x] Show section labels and cadence markers.
 - [x] Section labels should be less overwealming
-- [ ] Show note name and duration on hover.
-- [ ] Show drum voice name on percussion hover.
+- [ ] Chord labels above the timeline overlap eachother and are not readable
+- [x] Show note name and duration on hover.
+- [x] Show drum voice name on percussion hover.
 - [ ] Add per-track eye icons to hide tracks.
 - [ ] Add per-track ear icons to solo or mute tracks.
 - [ ] Add per-drum toggles within the percussion lane.
@@ -106,6 +107,7 @@
 - [ ] Add density heatmaps behind each lane.
 - [ ] Add a legend toggle so overlays can be hidden.
 - [ ] Add filter icons for chords, cadence, motif, contour.
+- [ ] Move Lead Contour Graph between timeline and instrument samples
 
 ## 9) Improve sound bank debug usefulness
 

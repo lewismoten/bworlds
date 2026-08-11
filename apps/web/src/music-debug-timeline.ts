@@ -45,11 +45,26 @@ const MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y = 78;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
+  noteIndex: number;
+  noteLabel: string;
+  hoverLabel: string;
+  hoverDurationLabel: string;
   x: number;
   y: number;
   width: number;
   height: number;
   overlapCount: number;
+};
+
+export type MusicDebugTimelineHoverDetail = {
+  noteIndex: number;
+  role: ProceduralMusicNote['role'];
+  hoverLabel: string;
+  hoverDurationLabel: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 export function resolveMusicDebugTimelineLayout(
@@ -120,6 +135,54 @@ export function resolveMusicDebugTimelineSeekOffset(options: {
     options.snapshot.durationMs,
     canvasX
   );
+}
+
+export function resolveMusicDebugTimelineHoverDetail(options: {
+  snapshot: MusicDebugSnapshot;
+  canvas: Pick<HTMLCanvasElement, 'width' | 'height'>;
+  clientX: number;
+  clientY: number;
+  boundsLeft: number;
+  boundsTop: number;
+  boundsWidth: number;
+  boundsHeight: number;
+}): MusicDebugTimelineHoverDetail | null {
+  const layout = resolveMusicDebugTimelineLayout(
+    options.canvas.width,
+    options.canvas.height
+  );
+  const canvasX =
+    ((options.clientX - options.boundsLeft) /
+      Math.max(1, options.boundsWidth)) *
+    options.canvas.width;
+  const canvasY =
+    ((options.clientY - options.boundsTop) /
+      Math.max(1, options.boundsHeight)) *
+    options.canvas.height;
+  const noteBars = resolveMusicDebugTimelineNoteBars(options.snapshot, layout);
+
+  for (let index = noteBars.length - 1; index >= 0; index -= 1) {
+    const noteBar = noteBars[index]!;
+    if (
+      canvasX >= noteBar.x &&
+      canvasX <= noteBar.x + noteBar.width &&
+      canvasY >= noteBar.y &&
+      canvasY <= noteBar.y + noteBar.height
+    ) {
+      return {
+        noteIndex: noteBar.noteIndex,
+        role: noteBar.role,
+        hoverLabel: noteBar.hoverLabel,
+        hoverDurationLabel: noteBar.hoverDurationLabel,
+        x: noteBar.x,
+        y: noteBar.y,
+        width: noteBar.width,
+        height: noteBar.height,
+      };
+    }
+  }
+
+  return null;
 }
 
 export function drawMusicDebugTimeline(
@@ -412,7 +475,9 @@ export function buildMusicDebugTimelineSvgMarkup(
             )}" fill="${resolveMusicDebugTimelineNoteBarColor(
               resolveMusicDebugDisplayRoleColor(noteBar.role),
               noteBar.overlapCount
-            )}" rx="2" ry="2"></rect>`
+            )}" rx="2" ry="2"><title>${escapeMusicDebugTimelineSvgText(
+              `${noteBar.hoverLabel} (${noteBar.hoverDurationLabel})`
+            )}</title></rect>`
         )
         .join('')}
       ${scaleOverlay.guides
@@ -442,10 +507,10 @@ export function resolveMusicDebugTimelineNoteBars(
   const noteBars: MusicDebugTimelineNoteBar[] = [];
   const usableWidth = layout.width - layout.leftPad - layout.rightPad;
 
-  for (const note of snapshot.notes) {
+  snapshot.notes.forEach((note, noteIndex) => {
     const roleIndex = layout.roleOrder.indexOf(note.role);
     if (roleIndex < 0) {
-      continue;
+      return;
     }
     const trackTop = layout.topPad + roleIndex * layout.trackHeight + 10;
     const trackBottom = trackTop + Math.max(10, layout.trackHeight - 18);
@@ -482,13 +547,19 @@ export function resolveMusicDebugTimelineNoteBars(
 
     noteBars.push({
       role: note.role,
+      noteIndex,
+      noteLabel: resolveMusicDebugTimelineNoteLabel(note),
+      hoverLabel: resolveMusicDebugTimelineHoverLabel(note),
+      hoverDurationLabel: formatMusicDebugTimelineHoverDuration(
+        note.durationMs
+      ),
       x: layout.leftPad + startRatio * usableWidth,
       y: clampNoteBarY(centerY - height * 0.5, trackTop, trackBottom - height),
       width,
       height,
       overlapCount: 1,
     });
-  }
+  });
 
   applyNoteBarOverlapCounts(noteBars);
   return noteBars;
@@ -901,6 +972,72 @@ function drawMusicDebugTimelinePlayheadChordLabel(
     MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y
   );
   context.textAlign = 'start';
+}
+
+function resolveMusicDebugTimelineHoverLabel(
+  note: ProceduralMusicNote
+): string {
+  if (note.role === 'percussion') {
+    return `Percussion ${formatMusicDebugTimelinePercussionVoiceLabel(
+      note.instrumentId
+    )}`;
+  }
+  return `${formatMusicDebugDisplayRoleLabel(note.role)} ${resolveMusicDebugTimelineNoteLabel(note)}`;
+}
+
+function resolveMusicDebugTimelineNoteLabel(note: ProceduralMusicNote): string {
+  const midiNote = Math.round(69 + 12 * Math.log2(note.frequency / 440));
+  const pitchClass =
+    MUSIC_DEBUG_TIMELINE_PITCH_CLASS_NAMES[mod(midiNote, 12)] ?? 'C';
+  const octave = Math.floor(midiNote / 12) - 1;
+  return `${pitchClass}${octave}`;
+}
+
+function formatMusicDebugTimelinePercussionVoiceLabel(
+  instrumentId: string
+): string {
+  const voiceId = resolvePercussionVoiceIdFromInstrumentId(instrumentId);
+  const voiceName = voiceId
+    ? resolvePercussionVoiceById(voiceId).name
+    : (resolvePercussionFamilyFromInstrumentId(instrumentId) ?? 'percussion');
+  return voiceName
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function formatMusicDebugTimelineHoverDuration(durationMs: number): string {
+  if (durationMs < 1_000) {
+    return `${Math.max(0, Math.round(durationMs))} ms`;
+  }
+  return `${(durationMs / 1000).toFixed(2)} s`;
+}
+
+function escapeMusicDebugTimelineSvgText(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+const MUSIC_DEBUG_TIMELINE_PITCH_CLASS_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+] as const;
+
+function mod(value: number, divisor: number): number {
+  return ((value % divisor) + divisor) % divisor;
 }
 
 function clampMusicDebugTimelineLabelCenterX(

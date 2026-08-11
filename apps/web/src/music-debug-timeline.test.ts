@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   buildMusicDebugTimelineSvgMarkup,
+  resolveMusicDebugTimelineHoverDetail,
   resolveMusicDebugTimelineNoteBarColor,
   resolveMusicDebugTimelineLayout,
   resolveMusicDebugTimelineNoteBars,
@@ -121,6 +122,70 @@ describe('music debug timeline', () => {
     expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 3)).toBe('#6fa1ff');
   });
 
+  it('resolves pitched note labels and durations when hovering a note bar', () => {
+    const snapshot = createMusicDebugSnapshot();
+    const layout = resolveMusicDebugTimelineLayout(960, 320);
+    const noteBar = resolveMusicDebugTimelineNoteBars(snapshot, layout).find(
+      (bar) => bar.role === 'lead'
+    )!;
+
+    const hoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot,
+      canvas: { width: 960, height: 320 },
+      clientX: noteBar.x + noteBar.width * 0.5,
+      clientY: noteBar.y + noteBar.height * 0.5,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(hoverDetail).toEqual(
+      expect.objectContaining({
+        role: 'lead',
+        hoverLabel: expect.stringMatching(/^Melody [A-G]#?-?\d$/),
+        hoverDurationLabel: expect.stringMatching(/(ms|s)$/),
+      })
+    );
+  });
+
+  it('resolves percussion voice labels when hovering percussion notes', () => {
+    const baseSnapshot = createMusicDebugSnapshot();
+    const snapshot = {
+      ...baseSnapshot,
+      notes: [
+        {
+          ...baseSnapshot.notes.find((note) => note.role === 'percussion')!,
+          instrumentId: 'debug:perc-cymbals-49:2',
+          startMs: 500,
+          durationMs: 180,
+        },
+      ],
+      durationMs: 1_000,
+    };
+    const layout = resolveMusicDebugTimelineLayout(960, 320);
+    const noteBar = resolveMusicDebugTimelineNoteBars(snapshot, layout)[0]!;
+
+    const hoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot,
+      canvas: { width: 960, height: 320 },
+      clientX: noteBar.x + noteBar.width * 0.5,
+      clientY: noteBar.y + noteBar.height * 0.5,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(hoverDetail).toEqual(
+      expect.objectContaining({
+        role: 'percussion',
+        hoverLabel: 'Percussion Crash',
+        hoverDurationLabel: '180 ms',
+      })
+    );
+  });
+
   it('renders a standalone svg export for the timeline graph', () => {
     const snapshot = createMusicDebugSnapshot({
       tileKind: 'forest',
@@ -144,6 +209,7 @@ describe('music debug timeline', () => {
     expect(markup).toContain('class="music-debug-timeline-section-label"');
     expect(markup).toContain('class="music-debug-timeline-chord-cue"');
     expect(markup).toContain('>Chord 1 minor<');
+    expect(markup).toContain('<title>Melody');
     expect(markup).toContain('class="music-debug-timeline-cadence-marker"');
     expect(markup).toContain('class="music-debug-timeline-measure-guide"');
     expect(markup).toContain('class="music-debug-timeline-beat-guide"');

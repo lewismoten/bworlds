@@ -713,14 +713,35 @@ body {
   font-size: 0.92rem;
 }
 
+.music-debug-timeline-shell {
+  position: relative;
+  margin-top: 1rem;
+}
+
 #music-debug-timeline {
   width: 100%;
   height: auto;
-  margin-top: 1rem;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #071019;
   cursor: pointer;
+}
+
+.music-debug-timeline-hover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(320px, calc(100% - 1.5rem));
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(85, 214, 190, 0.28);
+  border-radius: 12px;
+  background: rgba(7, 16, 25, 0.92);
+  color: #ebfffb;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 960px) {
