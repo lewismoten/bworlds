@@ -16,6 +16,13 @@ That test simulates a hung run and verifies the supervisor prints the active
 test files, last started test, worker PIDs, and hang-debug rerun command
 before it forces shutdown.
 
+Fast-path `npm run test` is intended to stay focused on short feedback loops.
+Expensive cache-rollover and broad deterministic-search scenarios should live in
+dedicated long-suite files that are only included by `npm run test:long` and
+`npm run test:all` through [vitest.suite-mode.ts](/Users/lewismoten/dev/bworlds/vitest.suite-mode.ts:1).
+Keep the normal `*.test.ts` files for behavior checks that should run during
+every `npm run check`.
+
 If a test needs one of these patterns intentionally, add a suppression comment
 directly above the line:
 
