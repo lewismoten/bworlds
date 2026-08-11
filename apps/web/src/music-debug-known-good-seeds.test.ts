@@ -5,6 +5,7 @@ import {
   MUSIC_DEBUG_KNOWN_GOOD_SEEDS,
   resolveMusicDebugKnownGoodSeed,
 } from './music-debug-known-good-seeds.ts';
+import { createMusicDebugSnapshotSignature } from './music-debug-snapshot-signature.ts';
 
 describe('music debug known-good seeds', () => {
   it('defines unique known-good seed ids for regression coverage', () => {
@@ -18,13 +19,9 @@ describe('music debug known-good seeds', () => {
       const first = createMusicDebugSnapshot(seed.options);
       const second = createMusicDebugSnapshot(seed.options);
 
-      expect(first.theme.id).toBe(second.theme.id);
-      expect(first.songDna.identityId).toBe(second.songDna.identityId);
-      expect(first.notes).toEqual(second.notes);
-      expect(first.sectionLayerComparisons).toEqual(
-        second.sectionLayerComparisons
+      expect(createMusicDebugSnapshotSignature(first)).toBe(
+        createMusicDebugSnapshotSignature(second)
       );
-      expect(first.sectionMotifMatches).toEqual(second.sectionMotifMatches);
     }
   }, 3_000);
 

@@ -34,6 +34,13 @@ WAV previews, or other debug-package outputs: if multiple tests assert on the
 same deterministic artifact, build it once in a shared test fixture module and
 reuse it across files.
 
+When the goal is determinism rather than object-shape exhaustiveness, prefer a
+small stable signature over whole-object deep equality. Music snapshot
+regression checks now use
+[createMusicDebugSnapshotSignature](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-signature.ts:1)
+to compare the parts of a snapshot that matter for repeatability without paying
+for large nested equality diffs.
+
 When a fast-path test intentionally exercises timeout handling, prefer the
 smallest timeout that still proves the behavior. Both
 [registerTestCleanup](/Users/lewismoten/dev/bworlds/apps/web/src/test-cleanup.ts:27)
