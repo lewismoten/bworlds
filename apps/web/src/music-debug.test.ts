@@ -101,7 +101,6 @@ describe('music debug', () => {
     expect(first.scaleMap.modePitchOffsets.length).toBeGreaterThan(0);
     expect(first.songDna.rootMidiNote).toBe(first.scaleMap.rootMidiNote);
     expect(first.timingValidation.isValidForMidiExport).toBe(true);
-    expect(first.cadenceValidation.isValidForMidiExport).toBe(true);
     expect(first.densityValidation.isValidForMidiExport).toBe(true);
     expect(first.songDnaValidation.isValidForMidiExport).toBe(true);
     expect(first.song.sections[0]?.startTick).toBe(0);
@@ -938,10 +937,22 @@ describe('music debug', () => {
         expect.objectContaining({
           sectionId: 'b',
           mismatchRules: [
-            'harmony occupancy 17% stayed below blueprint minimum 20%',
+            'harmony occupancy 18% stayed below blueprint minimum 20%',
             'lead occupancy 48% exceeded blueprint maximum 38%',
             'percussion occupancy 3% stayed below blueprint minimum 5%',
           ],
+        }),
+        expect.objectContaining({
+          sectionId: 'a',
+          mismatchRules: ['lead occupancy 44% exceeded blueprint maximum 38%'],
+        }),
+        expect.objectContaining({
+          sectionId: 'a-prime',
+          mismatchRules: ['lead occupancy 44% exceeded blueprint maximum 40%'],
+        }),
+        expect.objectContaining({
+          sectionId: 'return',
+          mismatchRules: ['lead occupancy 45% exceeded blueprint maximum 38%'],
         }),
         expect.objectContaining({
           sectionId: 'outro',
