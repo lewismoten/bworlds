@@ -191,6 +191,7 @@ import {
   getVisibleWorldTileBuildOrder,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
+  buildRecoverableVisibleTileModelDetailEntry,
   reconcilePendingWorldBuildQueue,
   recordRenderDebugEvent,
   recordRecentCountMetric,
@@ -4866,6 +4867,60 @@ describe('render3d visibility helpers', () => {
         { modelRoot: null }
       )
     ).toBe(true);
+  });
+
+  it('keeps the requested lod when the first visible replacement build succeeds', () => {
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') => ({
+      detailLevel,
+      modelRoot: { type: 'Group' } as never,
+    }));
+
+    expect(
+      buildRecoverableVisibleTileModelDetailEntry('full', buildEntry)
+    ).toEqual({
+      entry: { detailLevel: 'full', modelRoot: { type: 'Group' } },
+      resolvedDetailLevel: 'full',
+    });
+    expect(buildEntry).toHaveBeenCalledTimes(1);
+    expect(buildEntry).toHaveBeenCalledWith('full');
+  });
+
+  it('retries visible lod replacements at low detail when a full-detail build falls back', () => {
+    const lowEntry = {
+      detailLevel: 'low' as const,
+      modelRoot: { type: 'Group' } as never,
+    };
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') =>
+      detailLevel === 'full'
+        ? {
+            detailLevel,
+            modelRoot: null,
+          }
+        : lowEntry
+    );
+
+    expect(
+      buildRecoverableVisibleTileModelDetailEntry('full', buildEntry)
+    ).toEqual({
+      entry: lowEntry,
+      resolvedDetailLevel: 'low',
+    });
+    expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
+  });
+
+  it('returns the low-detail fallback only after the recovery chain is exhausted', () => {
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') => ({
+      detailLevel,
+      modelRoot: null,
+    }));
+
+    expect(
+      buildRecoverableVisibleTileModelDetailEntry('full', buildEntry)
+    ).toEqual({
+      entry: { detailLevel: 'low', modelRoot: null },
+      resolvedDetailLevel: 'low',
+    });
+    expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
   });
 
   it('uses low detail for non-near pending builds while the queue is still draining', () => {

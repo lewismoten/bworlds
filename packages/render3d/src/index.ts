@@ -3019,19 +3019,33 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         continue;
       }
 
-      const nextEntry = buildTileNode(
-        state,
-        registry,
-        entry.tileX,
-        entry.tileY,
+      const {
+        entry: nextEntry,
+        resolvedDetailLevel,
+      } = buildRecoverableVisibleTileModelDetailEntry(
         requestedDetailLevel,
-        createTilePluginRenderBudget(
-          renderBudget,
-          requestedDetailLevel,
-          frameBudget ? getRemainingFrameTimeBudgetMs(frameBudget) : undefined
-        )
+        (detailLevel) =>
+          buildTileNode(
+            state,
+            registry,
+            entry.tileX,
+            entry.tileY,
+            detailLevel,
+            createTilePluginRenderBudget(
+              renderBudget,
+              detailLevel,
+              frameBudget
+                ? getRemainingFrameTimeBudgetMs(frameBudget)
+                : undefined
+            )
+          )
       );
+      if ((entry.detailLevel ?? 'full') === resolvedDetailLevel) {
+        disposeObject3DResources(nextEntry.node);
+        continue;
+      }
       if (!shouldReplaceVisibleTileModelDetailEntry(entry, nextEntry)) {
+        disposeObject3DResources(nextEntry.node);
         continue;
       }
       visibleTileNodes.set(key, nextEntry);
@@ -3044,7 +3058,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         type: 'lod-changed',
         tileKey: key,
         fromDetailLevel: entry.detailLevel ?? 'full',
-        toDetailLevel: requestedDetailLevel,
+        toDetailLevel: resolvedDetailLevel,
       });
       recordRecentMetric(renderChurnMetrics.lodReplacements, nowMs);
     }
@@ -3930,6 +3944,29 @@ export function shouldReplaceVisibleTileModelDetailEntry(
   nextEntry: { modelRoot?: THREE.Object3D | null }
 ): boolean {
   return !currentEntry.modelRoot || Boolean(nextEntry.modelRoot);
+}
+
+export function buildRecoverableVisibleTileModelDetailEntry<
+  Entry extends { modelRoot?: THREE.Object3D | null }
+>(
+  requestedDetailLevel: RenderBudgetDetailLevel,
+  buildEntry: (detailLevel: RenderBudgetDetailLevel) => Entry
+): {
+  entry: Entry;
+  resolvedDetailLevel: RenderBudgetDetailLevel;
+} {
+  const requestedEntry = buildEntry(requestedDetailLevel);
+  if (requestedDetailLevel !== 'full' || requestedEntry.modelRoot) {
+    return {
+      entry: requestedEntry,
+      resolvedDetailLevel: requestedDetailLevel,
+    };
+  }
+
+  return {
+    entry: buildEntry('low'),
+    resolvedDetailLevel: 'low',
+  };
 }
 
 export function getPendingWorldBuildDetailLevel(

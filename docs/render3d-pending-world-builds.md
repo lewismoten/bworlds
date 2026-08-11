@@ -27,6 +27,9 @@ Current behavior:
 - Visible-tile LOD reevaluation keeps the existing model in place when a
   replacement build cannot produce a real `modelRoot`, which avoids swapping a
   valid model for a shell-only fallback during ordinary LOD churn.
+- When a visible tile tries to upgrade back to full detail and that build
+  cannot produce a real model, `syncTileModelDetailLevels()` now retries the
+  same tile at low detail before it allows any shell-only fallback through.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep
