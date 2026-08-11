@@ -434,7 +434,10 @@ describe('tile cave', () => {
                   position?: { x: number; y: number; z: number };
                 }>;
               }>;
-              matrices?: Array<{ scale: { x: number; y: number; z: number } }>;
+              matrices?: Array<{
+                scale: { x: number; y: number; z: number };
+                position?: { x: number; y: number; z: number };
+              }>;
             }>;
           }
         | null
@@ -443,16 +446,12 @@ describe('tile cave', () => {
       const boulderInstances = model?.children?.filter(
         (child) => child.userData?.caveInstancedPart === 'entrance-boulder'
       );
-      const cheekInstances = model?.children
-        ?.flatMap((child) => child.children ?? [])
-        ?.filter(
-          (child) => child.userData?.caveInstancedPart === 'entrance-cheek'
-        );
-      const pillarInstances = model?.children
-        ?.flatMap((child) => child.children ?? [])
-        ?.filter(
-          (child) => child.userData?.caveInstancedPart === 'entrance-pillar'
-        );
+      const cheekInstances = model?.children?.filter(
+        (child) => child.userData?.caveInstancedPart === 'entrance-cheek'
+      );
+      const pillarInstances = model?.children?.filter(
+        (child) => child.userData?.caveInstancedPart === 'entrance-pillar'
+      );
 
       expect(boulderInstances).toHaveLength(1);
       expect(cheekInstances).toHaveLength(1);
@@ -468,12 +467,9 @@ describe('tile cave', () => {
       expect(
         boulderInstances?.[0]?.matrices?.some((matrix) => matrix.scale.x > 1)
       ).toBe(true);
-      expect(
-        cheekInstances?.[0]?.matrices?.some((matrix) => matrix.position.x < 0)
-      ).toBe(true);
-      expect(
-        cheekInstances?.[0]?.matrices?.some((matrix) => matrix.position.x > 0)
-      ).toBe(true);
+      expect(cheekInstances?.[0]?.matrices?.[0]?.position).not.toEqual(
+        cheekInstances?.[0]?.matrices?.[1]?.position
+      );
     } finally {
       globalThis.document = previousDocument;
     }
@@ -502,6 +498,40 @@ function createFakeThree() {
     }
     setPosition(x: number, y: number, z: number) {
       this.position = { x, y, z };
+      return this;
+    }
+    set(
+      n11: number,
+      n12: number,
+      n13: number,
+      n14: number,
+      n21: number,
+      n22: number,
+      n23: number,
+      n24: number,
+      n31: number,
+      n32: number,
+      n33: number,
+      n34: number,
+      n41: number,
+      n42: number,
+      n43: number,
+      n44: number
+    ) {
+      void n11;
+      void n12;
+      void n13;
+      void n21;
+      void n22;
+      void n23;
+      void n31;
+      void n32;
+      void n33;
+      void n41;
+      void n42;
+      void n43;
+      void n44;
+      this.position = { x: n14, y: n24, z: n34 };
       return this;
     }
     clone() {
@@ -635,17 +665,17 @@ function findPortalChildren(
   children:
     | Array<{
         children?: Array<{ material?: { options?: { color?: unknown } } }>;
+        material?: { options?: { color?: unknown } };
       }>
     | undefined
 ) {
   return (
-    children?.find(
+    children?.filter(
       (child) =>
-        Array.isArray(child.children) &&
-        child.children.some(
-          (grandchild) => grandchild.material?.options?.color === '#010308'
-        )
-    )?.children ?? []
+        child.material?.options?.color === '#010308' ||
+        child.material?.options?.color === '#03060a' ||
+        child.material?.options?.color === '#f59e0b'
+    ) ?? []
   );
 }
 

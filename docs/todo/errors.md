@@ -30,7 +30,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       sleepers into instanced sets, and full-detail cave mouths now collapse
       their repeated entrance boulders into one `InstancedMesh`, their
       mirrored cheek rocks into one `InstancedMesh`, and their mirrored inner
-      pillars into one `InstancedMesh`, cave mushroom tiles now collapse their
+      pillars into one `InstancedMesh`, full-detail cave mouths now place
+      their portal crown, arch, sill, tunnel, and lantern pieces directly
+      under the tile root instead of a dedicated portal subgroup, cave
+      mushroom tiles now collapse their
       repeated stems and caps into two `InstancedMesh` nodes, cave dripstone
       tiles now collapse their repeated floor spires into one `InstancedMesh`,
       cave obstacle tiles now collapse their repeated fallen-rock boulders
