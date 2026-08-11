@@ -24,6 +24,10 @@ Current behavior:
 - Notes that fall outside the active mode now render with a warning fill on the
   browser timeline and in exported SVG timelines, driven by the existing
   `notePitchDiagnostics` snapshot data.
+- In-mode notes that miss the active planned chord tones now render with a
+  separate amber warning fill. That uses the same shared chord timeline and
+  root/scale snapshot data as the playhead chord label, so the browser canvas
+  and exported SVG stay aligned on which notes are outside the current triad.
 - Hovering a note now shows its pitch or resolved drum voice plus duration, and
   the exported SVG note bars carry the same labels through `<title>` metadata.
 - Planned question and answer cadence markers now appear on the timeline header

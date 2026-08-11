@@ -31,6 +31,7 @@ import {
   resolveMusicDebugMeasureMarkers,
 } from './music-debug-measure-guides.ts';
 import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
+import { getProceduralScaleDegreeSemitones } from './procedural-music-scale.ts';
 
 const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
@@ -57,7 +58,7 @@ export type MusicDebugTimelineNoteBar = {
   noteLabel: string;
   hoverLabel: string;
   hoverDurationLabel: string;
-  warningKind: 'out-of-scale' | null;
+  warningKind: 'out-of-scale' | 'non-chord-tone' | null;
   x: number;
   y: number;
   width: number;
@@ -864,6 +865,9 @@ export function resolveMusicDebugTimelineNoteBarFill(
   if (noteBar.warningKind === 'out-of-scale') {
     return '#ff7b72';
   }
+  if (noteBar.warningKind === 'non-chord-tone') {
+    return '#ffd166';
+  }
   return resolveMusicDebugTimelineNoteBarColor(
     resolveMusicDebugDisplayRoleColor(noteBar.role),
     noteBar.overlapCount
@@ -908,10 +912,59 @@ function resolveMusicDebugTimelineNoteWarningKind(
   noteIndex: number
 ): MusicDebugTimelineNoteBar['warningKind'] {
   const diagnostic = snapshot.notePitchDiagnostics[noteIndex];
-  if (!diagnostic || diagnostic.role === 'percussion' || diagnostic.inMode) {
+  if (!diagnostic || diagnostic.role === 'percussion') {
     return null;
   }
-  return 'out-of-scale';
+  if (!diagnostic.inMode) {
+    return 'out-of-scale';
+  }
+  return isMusicDebugTimelineNonChordTone(snapshot, noteIndex)
+    ? 'non-chord-tone'
+    : null;
+}
+
+function isMusicDebugTimelineNonChordTone(
+  snapshot: MusicDebugSnapshot,
+  noteIndex: number
+): boolean {
+  const note = snapshot.notes[noteIndex];
+  const diagnostic = snapshot.notePitchDiagnostics[noteIndex];
+  if (
+    !note ||
+    !diagnostic ||
+    note.role === 'percussion' ||
+    diagnostic.midiNote === null
+  ) {
+    return false;
+  }
+
+  const chordCue = resolveMusicDebugChordCueAtOffset(
+    snapshot,
+    Math.max(0, note.startMs - snapshot.song.startMs)
+  );
+  if (!chordCue) {
+    return false;
+  }
+
+  const activeChordPitchClasses = new Set(
+    [0, 2, 4].map((degreeOffset) =>
+      normalizeMusicDebugTimelinePitchClass(
+        snapshot.scaleMap.rootMidiNote +
+          getProceduralScaleDegreeSemitones(
+            snapshot.theme.scale,
+            chordCue.degreeIndex + degreeOffset
+          )
+      )
+    )
+  );
+
+  return !activeChordPitchClasses.has(
+    normalizeMusicDebugTimelinePitchClass(diagnostic.midiNote)
+  );
+}
+
+function normalizeMusicDebugTimelinePitchClass(midiNote: number): number {
+  return ((Math.round(midiNote) % 12) + 12) % 12;
 }
 
 function drawMusicDebugSectionBands(

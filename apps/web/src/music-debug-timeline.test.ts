@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { resolveMusicDebugCadenceMarkers } from './music-debug-cadence-markers.ts';
+import { resolveMusicDebugChordCueAtOffset } from './music-debug-chord-cues.ts';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
+import {
+  getProceduralScaleDegreeSemitones,
+  resolveProceduralMidiNoteFrequency,
+} from './procedural-music-scale.ts';
 import {
   buildMusicDebugTimelineSvgMarkup,
   resolveMusicDebugTimelineChordLabels,
@@ -79,6 +84,63 @@ const OUT_OF_SCALE_TIMELINE_SNAPSHOT = (() => {
               ...diagnostic,
               inMode: false,
               accidentalReason: 'unresolved-chromatic',
+            }
+          : diagnostic
+    ),
+  };
+})();
+const NON_CHORD_TONE_TIMELINE_SNAPSHOT = (() => {
+  const leadIndex = DEFAULT_SNAPSHOT.notes.findIndex(
+    (note) => note.role === 'lead'
+  );
+  const leadNote = DEFAULT_SNAPSHOT.notes[leadIndex]!;
+  const chordCue = resolveMusicDebugChordCueAtOffset(
+    DEFAULT_SNAPSHOT,
+    Math.max(0, leadNote.startMs - DEFAULT_SNAPSHOT.song.startMs)
+  )!;
+  const scaleLength = DEFAULT_SNAPSHOT.theme.scale.length;
+  const normalizedChordDegrees = new Set([
+    chordCue.degreeIndex % scaleLength,
+    (chordCue.degreeIndex + 2) % scaleLength,
+    (chordCue.degreeIndex + 4) % scaleLength,
+  ]);
+  const nonChordDegreeIndex =
+    DEFAULT_SNAPSHOT.theme.scale.findIndex(
+      (_, degreeIndex) => !normalizedChordDegrees.has(degreeIndex)
+    ) ?? 1;
+  const relativeSemitones = getProceduralScaleDegreeSemitones(
+    DEFAULT_SNAPSHOT.theme.scale,
+    nonChordDegreeIndex
+  );
+  const midiNote = DEFAULT_SNAPSHOT.scaleMap.rootMidiNote + relativeSemitones;
+  const frequency = resolveProceduralMidiNoteFrequency(midiNote);
+  const isBlackKey = [1, 3, 6, 8, 10].includes(((midiNote % 12) + 12) % 12);
+
+  return {
+    ...DEFAULT_SNAPSHOT,
+    notes: DEFAULT_SNAPSHOT.notes.map((note, index) =>
+      index === leadIndex
+        ? {
+            ...note,
+            frequency,
+          }
+        : note
+    ),
+    notePitchDiagnostics: DEFAULT_SNAPSHOT.notePitchDiagnostics.map(
+      (diagnostic, index) =>
+        index === leadIndex
+          ? {
+              ...diagnostic,
+              frequency,
+              midiNote,
+              relativeSemitones,
+              scaleDegree: nonChordDegreeIndex + 1,
+              scaleDegreeLabel: `degree ${nonChordDegreeIndex + 1}`,
+              isBlackKey,
+              inMode: true,
+              accidentalReason: 'in-mode',
+              accidentalRuleLabel: 'In mode',
+              accidentalExplanation: 'Matches the active mode.',
             }
           : diagnostic
     ),
@@ -270,6 +332,20 @@ describe('music debug timeline', () => {
       })
     );
     expect(resolveMusicDebugTimelineNoteBarFill(warningBar!)).toBe('#ff7b72');
+  });
+
+  it('uses a warning fill for in-mode notes that miss the active chord tones', () => {
+    const warningBar = resolveMusicDebugTimelineNoteBars(
+      NON_CHORD_TONE_TIMELINE_SNAPSHOT,
+      DEFAULT_LAYOUT
+    ).find((bar) => bar.role === 'lead');
+
+    expect(warningBar).toEqual(
+      expect.objectContaining({
+        warningKind: 'non-chord-tone',
+      })
+    );
+    expect(resolveMusicDebugTimelineNoteBarFill(warningBar!)).toBe('#ffd166');
   });
 
   it('thins dense chord labels and abbreviates narrow cue spans', () => {
