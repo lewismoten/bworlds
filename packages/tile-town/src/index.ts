@@ -445,9 +445,68 @@ export function createTownTilePlugin(): RuntimePlugin {
           createTownNameSign(three, tile.poi.name, tileX, tileY, style)
         );
       }
-      createTownBannerDescriptors(tileX, tileY).forEach((banner, index) => {
-        group.add(createTownBanner(three, banner, style, tileX, tileY, index));
-      });
+      const banners = createTownBannerDescriptors(tileX, tileY);
+      if (banners.length > 0) {
+        const bannerPoleInstances = new three.InstancedMesh(
+          new three.CylinderGeometry(0.018, 0.02, 1, 5),
+          style.trimMaterial,
+          banners.length
+        );
+        bannerPoleInstances.userData = {
+          ...(bannerPoleInstances.userData ?? {}),
+          townInstancedPart: 'banner-pole',
+        };
+        const bannerCrossbarInstances = new three.InstancedMesh(
+          new three.BoxGeometry(1, 1, 1),
+          style.trimMaterial,
+          banners.length
+        );
+        bannerCrossbarInstances.userData = {
+          ...(bannerCrossbarInstances.userData ?? {}),
+          townInstancedPart: 'banner-crossbar',
+        };
+        const bannerPoleMatrixScratch = new three.Matrix4();
+        const bannerCrossbarMatrixScratch = new three.Matrix4();
+
+        banners.forEach((banner, index) => {
+          bannerPoleInstances.setMatrixAt(
+            index,
+            writeTownRotatedInstancedScalePositionMatrix(
+              bannerPoleMatrixScratch,
+              tileX + banner.x,
+              banner.y + banner.height * 0.5,
+              tileY + banner.z,
+              1,
+              banner.height,
+              1,
+              banner.rotationY
+            )
+          );
+          const crossbarOffset = rotateTownLocalOffset(
+            banner.width * 0.45,
+            0,
+            banner.rotationY
+          );
+          bannerCrossbarInstances.setMatrixAt(
+            index,
+            writeTownRotatedInstancedScalePositionMatrix(
+              bannerCrossbarMatrixScratch,
+              tileX + banner.x + crossbarOffset.x,
+              banner.y + banner.height - 0.04,
+              tileY + banner.z + crossbarOffset.z,
+              banner.width * 0.9,
+              0.025,
+              0.025,
+              banner.rotationY
+            )
+          );
+          group.add(
+            createTownBannerCloth(three, banner, style, tileX, tileY, index)
+          );
+        });
+        group.add(bannerPoleInstances);
+        group.add(bannerCrossbarInstances);
+      }
       createTownNightLights(three, descriptors).forEach((light) => {
         group.add(light);
       });
@@ -604,7 +663,7 @@ function createTownLabelSprite(
   });
 }
 
-function createTownBanner(
+function createTownBannerCloth(
   three: ThreeHostLike,
   descriptor: TownBannerDescriptor,
   style: TownStyle,
@@ -612,24 +671,6 @@ function createTownBanner(
   tileY: number,
   index: number
 ) {
-  const banner = new three.Group();
-  banner.position.set(tileX + descriptor.x, descriptor.y, tileY + descriptor.z);
-  banner.rotation.y = descriptor.rotationY;
-
-  const pole = new three.Mesh(
-    new three.CylinderGeometry(0.018, 0.02, descriptor.height, 5),
-    style.trimMaterial
-  );
-  pole.position.y = descriptor.height * 0.5;
-  banner.add(pole);
-
-  const crossbar = new three.Mesh(
-    new three.BoxGeometry(descriptor.width * 0.9, 0.025, 0.025),
-    style.trimMaterial
-  );
-  crossbar.position.set(descriptor.width * 0.45, descriptor.height - 0.04, 0);
-  banner.add(crossbar);
-
   const cloth = markPoiWindResponder(
     new three.Mesh(
       new three.PlaneGeometry(descriptor.width, descriptor.length),
@@ -654,17 +695,22 @@ function createTownBanner(
         2,
     }
   );
-  cloth.position.set(
+  const clothOffset = rotateTownLocalOffset(
     descriptor.width * 0.48,
-    descriptor.height - descriptor.length * 0.5,
-    0
+    0,
+    descriptor.rotationY
   );
+  cloth.position.set(
+    tileX + descriptor.x + clothOffset.x,
+    descriptor.y + descriptor.height - descriptor.length * 0.5,
+    tileY + descriptor.z + clothOffset.z
+  );
+  cloth.rotation.y = descriptor.rotationY;
   cloth.userData = {
     ...(cloth.userData ?? {}),
     [TOWN_BANNER_KEY]: index,
   };
-  banner.add(cloth);
-  return banner;
+  return cloth;
 }
 
 function createTownBannerDescriptors(

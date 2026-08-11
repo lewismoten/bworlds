@@ -557,9 +557,27 @@ describe('tile town', () => {
         lowBanners.push(node);
       }
     });
+    const bannerPoleInstances = fullModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.townInstancedPart === 'banner-pole'
+    ) as FakeInstancedMesh[];
+    const bannerCrossbarInstances = fullModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.townInstancedPart === 'banner-crossbar'
+    ) as FakeInstancedMesh[];
 
     expect(fullBanners.length).toBeGreaterThan(0);
     expect(lowBanners.length).toBe(0);
+    expect(bannerPoleInstances).toHaveLength(1);
+    expect(bannerCrossbarInstances).toHaveLength(1);
+    expect(bannerPoleInstances[0]?.count).toBe(fullBanners.length);
+    expect(bannerCrossbarInstances[0]?.count).toBe(fullBanners.length);
+    expect(bannerPoleInstances[0]?.matrices).toHaveLength(fullBanners.length);
+    expect(bannerCrossbarInstances[0]?.matrices).toHaveLength(
+      fullBanners.length
+    );
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
