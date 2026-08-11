@@ -47,6 +47,7 @@
 - [ ] Store footprint width and depth for quick rejection.
 - [ ] Store each footprint's required occupied tile offsets.
 - [ ] Store optional empty gaps inside irregular footprints.
+- [ ] Larger, more detailed items should be limited to larger footprints
 
 ## Finding Groups
 
