@@ -19,6 +19,28 @@ class FakeMaterial {
   }
 }
 
+class FakeMatrix4 {
+  position = { x: 0, y: 0, z: 0 };
+  scale = { x: 1, y: 1, z: 1 };
+
+  makeScale(x: number, y: number, z: number) {
+    this.scale = { x, y, z };
+    return this;
+  }
+
+  setPosition(x: number, y: number, z: number) {
+    this.position = { x, y, z };
+    return this;
+  }
+
+  clone() {
+    const next = new FakeMatrix4();
+    next.position = { ...this.position };
+    next.scale = { ...this.scale };
+    return next;
+  }
+}
+
 vi.mock('@bworlds/three-support', () => ({
   createMountainTerrainMaterials() {
     return {
@@ -79,6 +101,22 @@ class FakeMesh extends FakeNode {
   }
 }
 
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial,
+    public count = 0
+  ) {
+    super();
+  }
+
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
+  }
+}
+
 class FakePointLight extends FakeNode {
   intensity: number;
 
@@ -96,6 +134,8 @@ class FakePointLight extends FakeNode {
 const fakeThree = {
   Group: FakeGroup,
   Mesh: FakeMesh,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
   CylinderGeometry: FakeGeometry,
@@ -187,6 +227,38 @@ describe('tile quarry', () => {
     }) as FakeNode | undefined;
 
     expect(createModelSignature(second)).toEqual(createModelSignature(first));
+  });
+
+  it('instances the repeated quarry rubble stones instead of emitting one mesh per stone', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createQuarryState(),
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    const stoneInstances = model?.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.quarryInstancedPart === 'rubble-stone'
+    ) as FakeInstancedMesh[];
+    const standaloneStoneMeshes = model?.children.filter(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.material instanceof FakeMaterial &&
+        child.material.options.color === '#9c9186'
+    );
+
+    expect(stoneInstances).toHaveLength(1);
+    expect(stoneInstances[0]?.count).toBe(6);
+    expect(stoneInstances[0]?.matrices).toHaveLength(6);
+    expect(
+      stoneInstances[0]?.matrices.some((matrix) => matrix.scale.x > 0.14)
+    ).toBe(true);
+    expect(standaloneStoneMeshes).toHaveLength(0);
   });
 
   it('reuses shared quarry materials across repeated model builds', () => {
@@ -299,7 +371,7 @@ function countSharedMaterialReferences(
 function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root?.traverse((node) => {
-    if (node instanceof FakeMesh) {
+    if (node instanceof FakeMesh || node instanceof FakeInstancedMesh) {
       if (Array.isArray(node.material)) {
         node.material.forEach((material) => materials.add(material));
       } else if (node.material) {

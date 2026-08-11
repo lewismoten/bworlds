@@ -14,13 +14,13 @@ import {
 import type {
   Create3DModelContext,
   RuntimePlugin,
+  ThreeMatrix4Like,
   ThreeMaterialLike,
 } from '@bworlds/plugin-api';
 
 const QUARRY_STONE_WIDTH_SEED = registerHashLabel('quarry-stone-w');
 const QUARRY_STONE_HEIGHT_SEED = registerHashLabel('quarry-stone-h');
 const QUARRY_STONE_DEPTH_SEED = registerHashLabel('quarry-stone-d');
-const QUARRY_STONE_ROTATION_SEED = registerHashLabel('quarry-stone-rot');
 const QUARRY_FACING_SEED = registerHashLabel('quarry-facing');
 const quarryMaterialCache = new WeakMap<
   object,
@@ -83,27 +83,34 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       pit.position.set(tileX, 0.03, tileY);
       group.add(pit);
 
-      for (let index = 0; index < 6; index += 1) {
+      const stoneInstances = new three.InstancedMesh(
+        new three.BoxGeometry(1, 1, 1),
+        rubbleMaterial,
+        6
+      );
+      stoneInstances.userData = {
+        ...stoneInstances.userData,
+        quarryInstancedPart: 'rubble-stone',
+      };
+      const stoneMatrixScratch = new three.Matrix4();
+
+      for (let index = 0; index < stoneInstances.count; index += 1) {
         const angle = (index / 6) * Math.PI * 2;
-        const stone = new three.Mesh(
-          new three.BoxGeometry(
+        stoneInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            stoneMatrixScratch,
+            tileX + Math.cos(angle) * 0.58,
+            0.08,
+            tileY + Math.sin(angle) * 0.58,
             0.14 + hash2D(QUARRY_STONE_WIDTH_SEED, tileX + index, tileY) * 0.08,
             0.08 +
               hash2D(QUARRY_STONE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
             0.14 + hash2D(QUARRY_STONE_DEPTH_SEED, tileX - index, tileY) * 0.08
-          ),
-          rubbleMaterial
+          )
         );
-        stone.position.set(
-          tileX + Math.cos(angle) * 0.58,
-          0.08,
-          tileY + Math.sin(angle) * 0.58
-        );
-        stone.rotation.y =
-          hash2D(QUARRY_STONE_ROTATION_SEED, tileX + index, tileY - index) *
-          Math.PI;
-        group.add(stone);
       }
+      group.add(stoneInstances);
 
       const derrick = new three.Group();
       derrick.position.set(
@@ -218,6 +225,18 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function writeInstancedScalePositionMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return target.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
 
 function getQuarrySharedMaterials(three: Create3DModelContext['three']) {
