@@ -39,6 +39,10 @@ Current behavior:
 - Bass root drift now uses matching amber measure overlays with `B` badges so
   root mismatches can be distinguished from harmony-voicing drift without
   opening the audit panel.
+- Section-level motif diagnostics now render exact-match `M` badges and
+  variation `V` badges on the header row, driven directly from
+  `sectionMotifMatches` so the timeline reflects the same section counters as
+  the debug summary and MIDI export validation.
 - The active playhead also renders the current planned chord in a dedicated
   badge, using the same cue source as the exported SVG timeline.
 - Chord cues are grouped across repeated measures so long tonic spans render as

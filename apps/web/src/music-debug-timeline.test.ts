@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { resolveMusicDebugCadenceMarkers } from './music-debug-cadence-markers.ts';
 import { resolveMusicDebugChordCueAtOffset } from './music-debug-chord-cues.ts';
+import { resolveMusicDebugKnownGoodSeed } from './music-debug-known-good-seeds.ts';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
 import {
@@ -14,6 +15,7 @@ import {
   resolveMusicDebugTimelineChordLabels,
   resolveMusicDebugTimelineHarmonyDriftMarkers,
   resolveMusicDebugTimelineHoverDetail,
+  resolveMusicDebugTimelineMotifMarkers,
   resolveMusicDebugTimelineNoteBarFill,
   resolveMusicDebugTimelineNoteBarColor,
   resolveMusicDebugTimelineLayout,
@@ -33,6 +35,9 @@ const FOREST_SNAPSHOT = createMusicDebugSnapshot({
   clusterX: 4,
   clusterY: -1,
 });
+const PLAINS_MOTIF_SNAPSHOT = createMusicDebugSnapshot(
+  resolveMusicDebugKnownGoodSeed('plains-motif-baseline').options
+);
 const FOREST_WARNING_MARKER = resolveMusicDebugCadenceMarkers(FOREST_SNAPSHOT)[0]!;
 const DEFAULT_NOTE_BARS = resolveMusicDebugTimelineNoteBars(
   DEFAULT_SNAPSHOT,
@@ -190,6 +195,43 @@ const BASS_DRIFT_TIMELINE_SNAPSHOT = (() => {
               ),
             }
           : entry
+    ),
+  };
+})();
+const MOTIF_TIMELINE_SNAPSHOT = (() => {
+  const sectionA = PLAINS_MOTIF_SNAPSHOT.sectionMotifMatches.find(
+    (entry) => entry.sectionId === 'a'
+  );
+  const sectionAPrime = PLAINS_MOTIF_SNAPSHOT.sectionMotifMatches.find(
+    (entry) => entry.sectionId === 'a-prime'
+  );
+  if (!sectionA || !sectionAPrime) {
+    return PLAINS_MOTIF_SNAPSHOT;
+  }
+  return {
+    ...PLAINS_MOTIF_SNAPSHOT,
+    sectionMotifMatches: PLAINS_MOTIF_SNAPSHOT.sectionMotifMatches.map(
+      (entry) => {
+        if (entry.sectionId === sectionA.sectionId) {
+          const exactMatchCount = Math.max(1, entry.exactMatchCount);
+          return {
+            ...entry,
+            exactMatchCount,
+            variedMatchCount: 0,
+            matchCount: exactMatchCount,
+          };
+        }
+        if (entry.sectionId === sectionAPrime.sectionId) {
+          const variedMatchCount = Math.max(1, entry.variedMatchCount);
+          return {
+            ...entry,
+            exactMatchCount: 0,
+            variedMatchCount,
+            matchCount: variedMatchCount,
+          };
+        }
+        return entry;
+      }
     ),
   };
 })();
@@ -693,6 +735,63 @@ describe('music debug timeline', () => {
     );
   });
 
+  it('surfaces motif match and variation details when hovering motif markers', () => {
+    const exactMarker = resolveMusicDebugTimelineMotifMarkers(
+      MOTIF_TIMELINE_SNAPSHOT
+    ).find((marker) => marker.kind === 'exact')!;
+    const variedMarker = resolveMusicDebugTimelineMotifMarkers(
+      MOTIF_TIMELINE_SNAPSHOT
+    ).find((marker) => marker.kind === 'varied')!;
+
+    const exactHoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot: MOTIF_TIMELINE_SNAPSHOT,
+      canvas: { width: 960, height: 320 },
+      clientX:
+        resolveMusicDebugTimelineXForOffset(
+          DEFAULT_LAYOUT,
+          MOTIF_TIMELINE_SNAPSHOT.durationMs,
+          exactMarker.offsetMs
+        ) - 8,
+      clientY: 24,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+    const variedHoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot: MOTIF_TIMELINE_SNAPSHOT,
+      canvas: { width: 960, height: 320 },
+      clientX:
+        resolveMusicDebugTimelineXForOffset(
+          DEFAULT_LAYOUT,
+          MOTIF_TIMELINE_SNAPSHOT.durationMs,
+          variedMarker.offsetMs
+        ) + 8,
+      clientY: 24,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(exactHoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: expect.stringContaining('motif matches'),
+        hoverDurationLabel: expect.stringContaining('motif exact matches'),
+      })
+    );
+    expect(variedHoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: expect.stringContaining('motif variations'),
+        hoverDurationLabel: expect.stringContaining('motif variations'),
+      })
+    );
+  });
+
   it('renders a standalone svg export for the timeline graph', () => {
     const markup = buildMusicDebugTimelineSvgMarkup(FOREST_SNAPSHOT, {
       playheadOffsetMs: 1_500,
@@ -774,5 +873,15 @@ describe('music debug timeline', () => {
     expect(markup).toContain('class="music-debug-timeline-bass-drift-marker"');
     expect(markup).toContain('D vs C');
     expect(markup).toContain('bass drift');
+  });
+
+  it('renders motif markers in svg exports', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(MOTIF_TIMELINE_SNAPSHOT);
+
+    expect(markup).toContain('class="music-debug-timeline-motif-marker');
+    expect(markup).toContain('music-debug-timeline-motif-marker-exact');
+    expect(markup).toContain('music-debug-timeline-motif-marker-varied');
+    expect(markup).toContain('motif matches');
+    expect(markup).toContain('motif variations');
   });
 });
