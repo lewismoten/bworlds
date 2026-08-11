@@ -1,79 +1,54 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMusicDebugSnapshot } from './music-debug.ts';
+import {
+  resolveKnownGoodInstrumentPatch,
+  type KnownGoodInstrumentPatchComparison,
+  type KnownGoodInstrumentPatchRole,
+} from './music-instrument-timbres.ts';
 import {
   collectMusicDebugPatchQualityWarnings,
   resolveMusicDebugPatchQualityTone,
 } from './music-debug-patch-quality.ts';
+import type {
+  ProceduralInstrument,
+  ProceduralInstrumentBank,
+} from './procedural-music-sound-bank.ts';
 
 describe('music debug patch quality', () => {
   it('returns no warnings for instruments that match their reference targets', () => {
-    const snapshot = withPerfectPatchComparisons(
-      createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        clusterX: 4,
-        clusterY: -1,
-      })
-    );
-
     expect(
-      collectMusicDebugPatchQualityWarnings(snapshot.instrumentBank)
+      collectMusicDebugPatchQualityWarnings(createInstrumentBank())
     ).toEqual([]);
   });
 
   it('warns when a generated patch drifts away from its target reference', () => {
-    const snapshot = withPerfectPatchComparisons(
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      })
-    );
-    const warningSnapshot = {
-      ...snapshot,
-      instrumentBank: {
-        ...snapshot.instrumentBank,
-        instruments: {
-          ...snapshot.instrumentBank.instruments,
-          lead: {
-            ...snapshot.instrumentBank.instruments.lead,
-            knownGoodPatchComparison: {
-              ...snapshot.instrumentBank.instruments.lead
-                .knownGoodPatchComparison,
-              similarityScore: 0.58,
-              familyMatches: false,
-              waveformMatches: false,
-              prominentDifferences: [
-                {
-                  key: 'brightness',
-                  similarity: 0.2,
-                  generatedValue: 1.3,
-                  referenceValue: 0.9,
-                },
-                {
-                  key: 'timbre.noiseMix',
-                  similarity: 0.15,
-                  generatedValue: 0.32,
-                  referenceValue: 0.05,
-                },
-              ],
-            },
+    const instrumentBank = createInstrumentBank({
+      lead: {
+        similarityScore: 0.58,
+        familyMatches: false,
+        waveformMatches: false,
+        prominentDifferences: [
+          {
+            key: 'brightness',
+            similarity: 0.2,
+            generatedValue: 1.3,
+            referenceValue: 0.9,
           },
-        },
+          {
+            key: 'timbre.noiseMix',
+            similarity: 0.15,
+            generatedValue: 0.32,
+            referenceValue: 0.05,
+          },
+        ],
       },
-    };
+    });
 
-    const [warning] = collectMusicDebugPatchQualityWarnings(
-      warningSnapshot.instrumentBank
-    );
+    const [warning] = collectMusicDebugPatchQualityWarnings(instrumentBank);
+    const leadComparison =
+      instrumentBank.instruments.lead.knownGoodPatchComparison;
 
-    expect(
-      resolveMusicDebugPatchQualityTone(
-        warningSnapshot.instrumentBank.instruments.lead.knownGoodPatchComparison
-      )
-    ).toBe('failure');
+    expect(resolveMusicDebugPatchQualityTone(leadComparison)).toBe('failure');
     expect(warning).toMatchObject({
       role: 'lead',
       severity: 'failure',
@@ -90,46 +65,40 @@ describe('music debug patch quality', () => {
   });
 });
 
-function withPerfectPatchComparisons(
-  snapshot: ReturnType<typeof createMusicDebugSnapshot>
-): ReturnType<typeof createMusicDebugSnapshot> {
+function createInstrumentBank(
+  overrides: Partial<
+    Record<
+      keyof ProceduralInstrumentBank['instruments'],
+      Partial<KnownGoodInstrumentPatchComparison>
+    >
+  > = {}
+): Pick<ProceduralInstrumentBank, 'instruments'> {
   return {
-    ...snapshot,
-    instrumentBank: {
-      ...snapshot.instrumentBank,
-      instruments: {
-        lead: toPerfectPatchComparison(
-          snapshot.instrumentBank.instruments.lead
-        ),
-        harmony: toPerfectPatchComparison(
-          snapshot.instrumentBank.instruments.harmony
-        ),
-        bass: toPerfectPatchComparison(
-          snapshot.instrumentBank.instruments.bass
-        ),
-        percussion: toPerfectPatchComparison(
-          snapshot.instrumentBank.instruments.percussion
-        ),
-      },
+    instruments: {
+      lead: createInstrument('lead', overrides.lead),
+      harmony: createInstrument('harmony', overrides.harmony),
+      bass: createInstrument('bass', overrides.bass),
+      percussion: createInstrument('percussion', overrides.percussion),
     },
   };
 }
 
-function toPerfectPatchComparison<
-  T extends ReturnType<
-    typeof createMusicDebugSnapshot
-  >['instrumentBank']['instruments'][keyof ReturnType<
-    typeof createMusicDebugSnapshot
-  >['instrumentBank']['instruments']],
->(instrument: T): T {
+function createInstrument(
+  role: KnownGoodInstrumentPatchRole,
+  comparisonOverride: Partial<KnownGoodInstrumentPatchComparison> | undefined
+): ProceduralInstrument {
+  const referencePatch = resolveKnownGoodInstrumentPatch(role);
+
   return {
-    ...instrument,
     knownGoodPatchComparison: {
-      ...instrument.knownGoodPatchComparison,
+      role,
+      referenceLabel: referencePatch.label,
       similarityScore: 1,
       familyMatches: true,
       waveformMatches: true,
+      dimensions: {},
       prominentDifferences: [],
+      ...comparisonOverride,
     },
-  };
+  } as ProceduralInstrument;
 }

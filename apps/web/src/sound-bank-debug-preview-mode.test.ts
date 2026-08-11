@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { resolveKnownGoodInstrumentPatch } from './music-instrument-timbres.ts';
 import {
   createSoundBankDebugPercussionRangeAuditionNotes,
   createSoundBankDebugSnapshot,
+  resolveSoundBankDebugReferencePreviewPhraseRole,
   resolveSoundBankDebugPreviewPhraseRole,
   resolveSoundBankDebugPreviewNoteRole,
 } from './sound-bank-debug.ts';
@@ -149,5 +151,38 @@ describe('sound bank debug preview mode', () => {
 
     expect(note?.timbre.fundamentalGainMultiplier ?? 1).toBeGreaterThan(0);
     expect(note?.harmonicGain).toBe(0);
+  });
+
+  it('can preview a generated phrase using the locked reference patch values', () => {
+    const referencePatch = resolveKnownGoodInstrumentPatch('harmony');
+    const generatedNotes = resolveSoundBankDebugPreviewPhraseRole(
+      FOREST_SNAPSHOT,
+      'harmony',
+      10_000
+    );
+    const referenceNotes = resolveSoundBankDebugReferencePreviewPhraseRole(
+      FOREST_SNAPSHOT,
+      'harmony',
+      10_000
+    );
+
+    expect(referenceNotes.length).toBe(generatedNotes.length);
+    expect(referenceNotes[0]?.startMs).toBe(generatedNotes[0]?.startMs);
+    expect(referenceNotes.every((note) => note.role === 'harmony')).toBe(true);
+    expect(referenceNotes[0]?.waveform).toBe(referencePatch.waveform);
+    expect(referenceNotes[0]?.attackMs).toBe(referencePatch.attackMs);
+    expect(referenceNotes[0]?.releaseMs).toBe(referencePatch.releaseMs);
+    expect(referenceNotes[0]?.detuneCents).toBe(referencePatch.detuneCents);
+    expect(referenceNotes[0]?.harmonicGain).toBe(referencePatch.harmonicGain);
+    expect(referenceNotes[0]?.pulseRate).toBe(referencePatch.pulseRate);
+    expect(referenceNotes[0]?.timbre.filterType).toBe(
+      referencePatch.timbre.filterType
+    );
+    expect(referenceNotes[0]?.timbre.filterCutoffHz).toBe(
+      referencePatch.timbre.filterCutoffHz
+    );
+    expect(referenceNotes[0]?.timbre.noiseMix ?? 0).toBe(
+      referencePatch.timbre.noiseMix ?? 0
+    );
   });
 });

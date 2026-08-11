@@ -59,6 +59,13 @@ keeps the fast-path route classifier and dock smoke checks, while
 [packages/tile-route/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-route/src/index.long.test.ts:1)
 holds the heavier bridge/dock scan and cache-churn coverage.
 
+When a fast-path assertion only needs one derived field from a large generated
+object, prefer a tiny purpose-built fixture over a full snapshot bootstrap.
+[apps/web/src/music-debug-patch-quality.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-patch-quality.test.ts:1)
+now builds a minimal instrument-bank fixture around
+`knownGoodPatchComparison` instead of generating a full procedural music
+snapshot just to exercise warning thresholds and message formatting.
+
 When fast-path tests must import one of the heavy procedural snapshot modules,
 prefer keeping related assertions in the same `*.test.ts` file so Vitest only
 pays the module-load cost once. The sound-bank preview mode and phrase checks
