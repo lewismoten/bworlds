@@ -18,6 +18,7 @@ import {
   type SoundBankDebugLayoutMode,
   type SoundBankDebugOptions,
   type SoundBankDebugPercussionBrowserState,
+  type SoundBankDebugPreviewMode,
   type SoundBankDebugSnapshot,
 } from './sound-bank-debug.ts';
 import type { MusicDebugInstrumentPreviewTarget } from './music-debug-instrument-panel.ts';
@@ -44,6 +45,7 @@ let percussionBrowserState = DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
 let audioStatus = 'Audio idle';
 let errorMessage: string | null = null;
 let layoutMode: SoundBankDebugLayoutMode = 'expanded';
+let previewMode: SoundBankDebugPreviewMode = 'processed';
 const SOUND_BANK_TILE_KINDS: readonly MusicDebugTileKind[] = [
   'plains',
   'forest',
@@ -315,6 +317,7 @@ function renderPage(): void {
     masterGain: getInstrumentPreviewMasterGain(),
     muted: isInstrumentPreviewMuted(),
     layoutMode,
+    previewMode,
     errorMessage,
     generalMidiBrowserState,
     percussionBrowserState,
@@ -358,6 +361,32 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
       'click',
       () => {
         layoutMode = 'expanded';
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>(
+      '#sound-bank-debug-preview-mode-processed'
+    )
+    ?.addEventListener(
+      'click',
+      () => {
+        previewMode = 'processed';
+        setAudioFeedback('Processed previews enabled', null);
+        renderPage();
+      },
+      pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+    );
+
+  document
+    .querySelector<HTMLButtonElement>('#sound-bank-debug-preview-mode-dry')
+    ?.addEventListener(
+      'click',
+      () => {
+        previewMode = 'dry';
+        setAudioFeedback('Dry previews enabled', null);
         renderPage();
       },
       pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
@@ -469,6 +498,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           DEFAULT_SOUND_BANK_DEBUG_GENERAL_MIDI_BROWSER_STATE;
         percussionBrowserState =
           DEFAULT_SOUND_BANK_DEBUG_PERCUSSION_BROWSER_STATE;
+        previewMode = 'processed';
         audioStatus = 'Audio idle';
         errorMessage = null;
         renderPage();
@@ -497,7 +527,8 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           const previewNote = resolveSoundBankDebugPreviewNoteRole(
             snapshot,
             previewTarget,
-            performance.now()
+            performance.now(),
+            { dry: previewMode === 'dry' }
           );
           if (!previewNote) {
             setAudioFeedback(
@@ -509,7 +540,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           stopPreview();
           player.play(previewNote);
           setAudioFeedback(
-            `Previewing ${previewTarget.replace('percussion:', 'percussion / ')}`,
+            `Previewing ${previewTarget.replace('percussion:', 'percussion / ')} (${previewMode})`,
             null
           );
         },
@@ -535,7 +566,8 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         const notes = createSoundBankDebugPercussionRangeAuditionNotes(
           snapshot,
           readPercussionBrowserState(),
-          performance.now()
+          performance.now(),
+          { dry: previewMode === 'dry' }
         );
         if (notes.length === 0) {
           setAudioFeedback(
@@ -549,7 +581,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           player.play(note);
         }
         setAudioFeedback(
-          `Previewing percussion range (${notes.length} hits)`,
+          `Previewing percussion range (${previewMode}, ${notes.length} hits)`,
           null
         );
       },
@@ -574,7 +606,8 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         const notes = createSoundBankDebugStandardPercussionPatternNotes(
           snapshot,
           readPercussionBrowserState(),
-          performance.now()
+          performance.now(),
+          { dry: previewMode === 'dry' }
         );
         if (notes.length === 0) {
           setAudioFeedback(
@@ -588,7 +621,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           player.play(note);
         }
         setAudioFeedback(
-          `Previewing standard percussion pattern (${notes.length} hits)`,
+          `Previewing standard percussion pattern (${previewMode}, ${notes.length} hits)`,
           null
         );
       },
@@ -613,7 +646,8 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         const notes = createSoundBankDebugQuietPercussionPatternNotes(
           snapshot,
           readPercussionBrowserState(),
-          performance.now()
+          performance.now(),
+          { dry: previewMode === 'dry' }
         );
         if (notes.length === 0) {
           setAudioFeedback(
@@ -627,7 +661,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           player.play(note);
         }
         setAudioFeedback(
-          `Previewing quiet percussion pattern (${notes.length} hits)`,
+          `Previewing quiet percussion pattern (${previewMode}, ${notes.length} hits)`,
           null
         );
       },

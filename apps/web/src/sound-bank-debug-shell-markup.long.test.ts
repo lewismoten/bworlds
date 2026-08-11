@@ -30,6 +30,10 @@ describe('sound bank debug shell markup', () => {
     expect(markup).toContain('sound-bank-debug-output-latency');
     expect(markup).toContain('sound-bank-debug-toggle-mute');
     expect(markup).toContain('sound-bank-debug-master-gain');
+    expect(markup).toContain('sound-bank-debug-preview-mode-processed');
+    expect(markup).toContain('sound-bank-debug-preview-mode-dry');
+    expect(markup).toContain('Processed previews');
+    expect(markup).toContain('Dry previews');
     expect(markup).toContain('Instrument Browser');
     expect(markup).toContain('Role Patches');
     expect(markup).toContain('Percussion Browser');
@@ -144,6 +148,20 @@ describe('sound bank debug shell markup', () => {
     expect(markup).toContain('id="sound-bank-debug-layout-compact"');
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('id="sound-bank-debug-layout-expanded"');
+    expect(markup).toContain('aria-pressed="false"');
+  });
+
+  it('renders the selected preview mode in the audio controls', () => {
+    const markup = buildSoundBankDebugMarkup(createSoundBankDebugSnapshot(), {
+      audioStatus: 'Audio idle',
+      previewMode: 'dry',
+    });
+
+    expect(markup).toContain('id="sound-bank-debug-preview-mode-processed"');
+    expect(markup).toContain('id="sound-bank-debug-preview-mode-dry"');
+    expect(markup).toContain('Processed previews');
+    expect(markup).toContain('Dry previews');
+    expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('aria-pressed="false"');
   });
 

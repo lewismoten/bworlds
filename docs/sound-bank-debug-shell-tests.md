@@ -10,6 +10,10 @@ now runs as three focused files:
   covers the main browser shell markup, layout toggles, and patch-variant rendering.
 - [apps/web/src/sound-bank-debug-shell-audio.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-bank-debug-shell-audio.long.test.ts)
   covers audio status diagnostics, mute-state warnings, and invalid instrument registration warnings.
+- [apps/web/src/sound-bank-debug-preview-mode.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/sound-bank-debug-preview-mode.test.ts)
+  covers the processed-versus-dry preview toggle so melodic and percussion
+  preview notes can share the same debug controls while selectively zeroing the
+  wet send.
 
 This keeps the same assertions while giving the long-suite runner more files to
 parallelize, which reduces the wall-clock impact of the largest remaining

@@ -103,6 +103,16 @@ body {
   background: rgba(8, 18, 29, 0.92);
 }
 
+.sound-bank-debug-preview-mode-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(172, 208, 255, 0.2);
+  background: rgba(8, 18, 29, 0.92);
+}
+
 .sound-bank-debug-grid,
 .sound-bank-debug-role-grid {
   display: grid;
@@ -158,7 +168,24 @@ body {
   padding-inline: 0.85rem;
 }
 
+.sound-bank-debug-preview-mode-toggle button {
+  min-width: 0;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(172, 208, 255, 0.24);
+  background: rgba(6, 16, 27, 0.92);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .sound-bank-debug-layout-toggle button[aria-pressed='true'] {
+  border-color: rgba(172, 208, 255, 0.44);
+  background: linear-gradient(180deg, #24425f 0%, #14293f 100%);
+  box-shadow: inset 0 0 0 1px rgba(220, 235, 255, 0.08);
+}
+
+.sound-bank-debug-preview-mode-toggle button[aria-pressed='true'] {
   border-color: rgba(172, 208, 255, 0.44);
   background: linear-gradient(180deg, #24425f 0%, #14293f 100%);
   box-shadow: inset 0 0 0 1px rgba(220, 235, 255, 0.08);
@@ -208,7 +235,18 @@ body {
   margin-top: 0.9rem;
 }
 
+.sound-bank-debug-preview-mode {
+  margin-top: 0.9rem;
+}
+
 .sound-bank-debug-master-gain span {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  color: #b8cae4;
+}
+
+.sound-bank-debug-preview-mode > span {
   display: block;
   margin-bottom: 0.35rem;
   font-size: 0.82rem;

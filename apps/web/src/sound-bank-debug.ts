@@ -58,6 +58,7 @@ export type SoundBankDebugSnapshot = {
 };
 
 export type SoundBankDebugLayoutMode = 'compact' | 'expanded';
+export type SoundBankDebugPreviewMode = 'processed' | 'dry';
 export type SoundBankDebugGeneralMidiSortMode = 'program' | 'name' | 'family';
 export type SoundBankDebugPercussionFamilyFilter = 'all' | PercussionFamily;
 
@@ -204,6 +205,7 @@ export function buildSoundBankDebugMarkup(
     masterGain?: number;
     muted?: boolean;
     layoutMode?: SoundBankDebugLayoutMode;
+    previewMode?: SoundBankDebugPreviewMode;
     errorMessage?: string | null;
     generalMidiBrowserState?: Partial<SoundBankDebugGeneralMidiBrowserState>;
     percussionBrowserState?: Partial<SoundBankDebugPercussionBrowserState>;
@@ -354,6 +356,7 @@ export function buildSoundBankDebugMarkup(
       </section>
     `;
   const layoutMode = viewState.layoutMode ?? 'expanded';
+  const previewMode = viewState.previewMode ?? 'processed';
   const audioContextState = viewState.audioContextState ?? 'idle';
   const canStartAudio = audioContextState === 'idle';
   const canResumeAudio = audioContextState === 'suspended';
@@ -504,6 +507,29 @@ export function buildSoundBankDebugMarkup(
                   </output>
                 </div>
               </label>
+              <div class="sound-bank-debug-preview-mode">
+                <span>Preview mode</span>
+                <div
+                  class="sound-bank-debug-preview-mode-toggle"
+                  role="group"
+                  aria-label="Preview mode"
+                >
+                  <button
+                    id="sound-bank-debug-preview-mode-processed"
+                    type="button"
+                    aria-pressed="${previewMode === 'processed'}"
+                  >
+                    Processed previews
+                  </button>
+                  <button
+                    id="sound-bank-debug-preview-mode-dry"
+                    type="button"
+                    aria-pressed="${previewMode === 'dry'}"
+                  >
+                    Dry previews
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="sound-bank-debug-audio-actions">
               <button
@@ -832,7 +858,8 @@ export function buildSoundBankDebugMarkup(
 export function resolveSoundBankDebugPreviewNoteRole(
   snapshot: SoundBankDebugSnapshot,
   role: MusicDebugInstrumentPreviewTarget,
-  nowMs: number
+  nowMs: number,
+  options: { dry?: boolean } = {}
 ) {
   const existingPreview = resolveMusicDebugInstrumentPreviewNote(
     snapshot.musicSnapshot,
@@ -840,23 +867,27 @@ export function resolveSoundBankDebugPreviewNoteRole(
     nowMs
   );
   if (existingPreview) {
-    return existingPreview;
+    return applySoundBankDebugPreviewMode(existingPreview, options);
   }
   if (!role.startsWith('percussion:')) {
     return null;
   }
 
-  return createFallbackPercussionPreviewNote(
-    snapshot.musicSnapshot,
-    role.slice('percussion:'.length) as PercussionVoiceId,
-    nowMs
+  return applySoundBankDebugPreviewMode(
+    createFallbackPercussionPreviewNote(
+      snapshot.musicSnapshot,
+      role.slice('percussion:'.length) as PercussionVoiceId,
+      nowMs
+    ),
+    options
   );
 }
 
 export function createSoundBankDebugPercussionRangeAuditionNotes(
   snapshot: SoundBankDebugSnapshot,
   state: Partial<SoundBankDebugPercussionBrowserState>,
-  nowMs: number
+  nowMs: number,
+  options: { dry?: boolean } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
     normalizeSoundBankDebugPercussionBrowserState(state);
@@ -868,7 +899,8 @@ export function createSoundBankDebugPercussionRangeAuditionNotes(
     const note = resolveSoundBankDebugPreviewNoteRole(
       snapshot,
       voice.previewTarget,
-      nowMs + index * 180
+      nowMs + index * 180,
+      options
     );
     return note ? [note] : [];
   });
@@ -877,7 +909,8 @@ export function createSoundBankDebugPercussionRangeAuditionNotes(
 export function createSoundBankDebugStandardPercussionPatternNotes(
   snapshot: SoundBankDebugSnapshot,
   state: Partial<SoundBankDebugPercussionBrowserState>,
-  nowMs: number
+  nowMs: number,
+  options: { dry?: boolean } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
     normalizeSoundBankDebugPercussionBrowserState(state);
@@ -894,7 +927,8 @@ export function createSoundBankDebugStandardPercussionPatternNotes(
     const note = resolveSoundBankDebugPreviewNoteRole(
       snapshot,
       `percussion:${voiceId}`,
-      nowMs + index * 170
+      nowMs + index * 170,
+      options
     );
     return note ? [note] : [];
   });
@@ -903,12 +937,14 @@ export function createSoundBankDebugStandardPercussionPatternNotes(
 export function createSoundBankDebugQuietPercussionPatternNotes(
   snapshot: SoundBankDebugSnapshot,
   state: Partial<SoundBankDebugPercussionBrowserState>,
-  nowMs: number
+  nowMs: number,
+  options: { dry?: boolean } = {}
 ): readonly ProceduralMusicNote[] {
   return createSoundBankDebugStandardPercussionPatternNotes(
     snapshot,
     state,
-    nowMs
+    nowMs,
+    options
   ).map((note) => ({
     ...note,
     volume: Number(
@@ -1574,6 +1610,22 @@ function programHasPlayableMidiNote(
 
 function resolveFrequencyFromMidiNote(midiNote: number): number {
   return 440 * 2 ** ((midiNote - 69) / 12);
+}
+
+function applySoundBankDebugPreviewMode(
+  note: ProceduralMusicNote,
+  options: { dry?: boolean }
+): ProceduralMusicNote {
+  if (!options.dry || !note.space) {
+    return note;
+  }
+  return {
+    ...note,
+    space: {
+      ...note.space,
+      wetGain: 0,
+    },
+  };
 }
 
 const PERCUSSION_FAMILY_ORDER: readonly PercussionFamily[] = [
