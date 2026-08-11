@@ -362,10 +362,10 @@ describe('tile lighthouse', () => {
     });
 
     expect(fullEstimate).toEqual({
-      object3dCount: 27,
+      object3dCount: 25,
       groupCount: 2,
-      meshCount: 24,
-      geometryCount: 24,
+      meshCount: 22,
+      geometryCount: 22,
       materialCount: 9,
       lightCount: 1,
       shadowLightCount: 0,
@@ -413,10 +413,10 @@ describe('tile lighthouse', () => {
         model,
       })
     ).toEqual({
-      object3dCount: 27,
+      object3dCount: 25,
       groupCount: 2,
-      meshCount: 24,
-      geometryCount: 24,
+      meshCount: 22,
+      geometryCount: 22,
       materialCount: 9,
       lightCount: 1,
       shadowLightCount: 0,
@@ -492,6 +492,10 @@ describe('tile lighthouse', () => {
       model,
       'lighthouseBalconyRailPostInstanced'
     );
+    const paneInstances = collectTaggedInstancedMeshes(
+      model,
+      'lighthousePaneInstanced'
+    );
 
     expect(glassMeshes).toHaveLength(1);
     expect(frameMeshes).toHaveLength(3);
@@ -503,6 +507,8 @@ describe('tile lighthouse', () => {
     expect(framePostInstances[0]?.count).toBe(4);
     expect(balconyRailPostInstances).toHaveLength(1);
     expect(balconyRailPostInstances[0]?.count).toBe(4);
+    expect(paneInstances).toHaveLength(2);
+    expect(paneInstances.map((pane) => pane.count)).toEqual([2, 2]);
     expect(
       (glassMeshes[0]?.material as FakeMaterial | undefined)?.options
         .transparent

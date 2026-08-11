@@ -31,19 +31,22 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       collapse their repeated tower bodies and caps into two `InstancedMesh`
       nodes, and `tile-ruins` now collapses its repeated rubble fragments into
       one `InstancedMesh`, and `tile-lighthouse` now collapses its repeated
-      lantern-room frame posts and balcony rail posts into two `InstancedMesh`
-      nodes, and full-detail forest stone-ring landmarks now collapse their
-      repeated stones into one `InstancedMesh`, which removes small clusters of
-      redundant static child nodes from each visible landmark or track tile.
+      lantern-room frame posts, balcony rail posts, and four lantern-room
+      panes into instanced sets, and full-detail forest stone-ring landmarks
+      now collapse their repeated stones into one `InstancedMesh`, which
+      removes small clusters of redundant static child nodes from each visible
+      landmark or track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
       stones and cart wheels, rail tiles now instance their repeated sleepers,
       and full-detail cave mouths now instance their repeated entrance boulders,
-      and full-detail dungeons now instance their repeated tower bodies and caps
-      instead of emitting one mesh per repeated prop, and full-detail forest
-      stone-ring landmarks now instance their repeated stones instead of
-      emitting one mesh per rock.
+      and full-detail dungeons now instance their repeated tower bodies and
+      caps instead of emitting one mesh per repeated prop, lighthouse
+      lantern-room panes now instance their repeated decorative glass planes
+      instead of emitting one mesh per pane, and full-detail forest stone-ring
+      landmarks now instance their repeated stones instead of emitting one mesh
+      per rock.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

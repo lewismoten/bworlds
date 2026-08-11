@@ -45,6 +45,7 @@ const LIGHTHOUSE_WALL_GLOW_KEY = 'lighthouseWallGlow';
 const LIGHTHOUSE_FRAME_POST_INSTANCED_KEY = 'lighthouseFramePostInstanced';
 const LIGHTHOUSE_BALCONY_RAIL_POST_INSTANCED_KEY =
   'lighthouseBalconyRailPostInstanced';
+const LIGHTHOUSE_PANE_INSTANCED_KEY = 'lighthousePaneInstanced';
 const LIGHTHOUSE_REGION_SIZE = 18;
 export const LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES = 96;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
@@ -84,10 +85,10 @@ const LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS = [
   { radius: 0.24, length: 1.5, opacity: 0.1, emissiveIntensity: 0.58 },
 ] as const;
 const LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
-  object3dCount: 27,
+  object3dCount: 25,
   groupCount: 2,
-  meshCount: 24,
-  geometryCount: 24,
+  meshCount: 22,
+  geometryCount: 22,
   materialCount: 9,
   lightCount: 1,
   shadowLightCount: 0,
@@ -561,32 +562,97 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       });
       group.add(balconyRailPostInstances);
 
-      for (const offset of [
-        { x: 0.22, z: 0 },
-        { x: -0.22, z: 0 },
-        { x: 0, z: 0.22 },
-        { x: 0, z: -0.22 },
-      ]) {
-        const pane = markOptionalDecorativeRenderBudgetPart(
-          markPoiLightEmitter(
-            new three.Mesh(new three.PlaneGeometry(0.16, 0.12), paneMaterial),
-            {
-              kind: 'emissive-mesh',
-              dayIntensity: 0.08,
-              nightIntensity: 1.3,
-            }
+      const verticalPaneInstances = markOptionalDecorativeRenderBudgetPart(
+        markPoiLightEmitter(
+          new three.InstancedMesh(
+            new three.PlaneGeometry(0.16, 0.12),
+            paneMaterial,
+            2
           ),
           {
-            label: 'pane',
-            priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+            kind: 'emissive-mesh',
+            dayIntensity: 0.08,
+            nightIntensity: 1.3,
           }
-        );
-        pane.position.set(tileX + offset.x, 1.86, tileY + offset.z);
-        if (offset.x !== 0) {
-          pane.rotation.y = Math.PI / 2;
+        ),
+        {
+          label: 'pane',
+          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
         }
-        group.add(pane);
-      }
+      );
+      verticalPaneInstances.userData = {
+        ...(verticalPaneInstances.userData ?? {}),
+        [LIGHTHOUSE_PANE_INSTANCED_KEY]: 'vertical',
+      };
+      const verticalPaneMatrixScratch = new three.Matrix4();
+      writeInstancedScalePositionMatrix(
+        verticalPaneMatrixScratch,
+        0.22,
+        1.86,
+        0,
+        1,
+        1,
+        1
+      );
+      verticalPaneInstances.setMatrixAt(0, verticalPaneMatrixScratch);
+      writeInstancedScalePositionMatrix(
+        verticalPaneMatrixScratch,
+        -0.22,
+        1.86,
+        0,
+        1,
+        1,
+        1
+      );
+      verticalPaneInstances.setMatrixAt(1, verticalPaneMatrixScratch);
+      group.add(verticalPaneInstances);
+
+      const horizontalPaneInstances = markOptionalDecorativeRenderBudgetPart(
+        markPoiLightEmitter(
+          new three.InstancedMesh(
+            new three.PlaneGeometry(0.16, 0.12),
+            paneMaterial,
+            2
+          ),
+          {
+            kind: 'emissive-mesh',
+            dayIntensity: 0.08,
+            nightIntensity: 1.3,
+          }
+        ),
+        {
+          label: 'pane',
+          priority: RENDER_BUDGET_PART_PRIORITIES.optionalFeature,
+        }
+      );
+      horizontalPaneInstances.userData = {
+        ...(horizontalPaneInstances.userData ?? {}),
+        [LIGHTHOUSE_PANE_INSTANCED_KEY]: 'horizontal',
+      };
+      horizontalPaneInstances.position.set(tileX, 0, tileY);
+      horizontalPaneInstances.rotation.y = Math.PI / 2;
+      const horizontalPaneMatrixScratch = new three.Matrix4();
+      writeInstancedScalePositionMatrix(
+        horizontalPaneMatrixScratch,
+        0,
+        1.86,
+        0.22,
+        1,
+        1,
+        1
+      );
+      horizontalPaneInstances.setMatrixAt(0, horizontalPaneMatrixScratch);
+      writeInstancedScalePositionMatrix(
+        horizontalPaneMatrixScratch,
+        0,
+        1.86,
+        -0.22,
+        1,
+        1,
+        1
+      );
+      horizontalPaneInstances.setMatrixAt(1, horizontalPaneMatrixScratch);
+      group.add(horizontalPaneInstances);
 
       const beamPivot = new three.Group();
       beamPivot.userData = {
