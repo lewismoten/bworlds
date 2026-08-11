@@ -257,6 +257,56 @@ describe('tile cave', () => {
       globalThis.document = previousDocument;
     }
   });
+
+  it('instances repeated entrance boulders in the full-detail cave mouth', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+
+    const three = createFakeThree() as never;
+    const state = {
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return { walkable: true };
+      },
+    } as never;
+
+    try {
+      const model = caveTile?.create3DModel?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+        detailLevel: 'full',
+      }) as
+        | {
+            children?: Array<{
+              userData?: Record<string, unknown>;
+              count?: number;
+              matrices?: Array<{ scale: { x: number; y: number; z: number } }>;
+            }>;
+          }
+        | null
+        | undefined;
+
+      const boulderInstances = model?.children?.filter(
+        (child) => child.userData?.caveInstancedPart === 'entrance-boulder'
+      );
+
+      expect(boulderInstances).toHaveLength(1);
+      expect((boulderInstances?.[0]?.count ?? 0) >= 3).toBe(true);
+      expect(boulderInstances?.[0]?.matrices?.length).toBe(
+        boulderInstances?.[0]?.count
+      );
+      expect(
+        boulderInstances?.[0]?.matrices?.some((matrix) => matrix.scale.x > 1)
+      ).toBe(true);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
 });
 
 function createFakeThree() {
@@ -270,6 +320,24 @@ function createFakeThree() {
     rotation = { x: 0, y: 0, z: 0 };
     add(child: unknown) {
       this.children.push(child);
+    }
+  }
+  class Matrix4 {
+    scale = { x: 1, y: 1, z: 1 };
+    position = { x: 0, y: 0, z: 0 };
+    makeScale(x: number, y: number, z: number) {
+      this.scale = { x, y, z };
+      return this;
+    }
+    setPosition(x: number, y: number, z: number) {
+      this.position = { x, y, z };
+      return this;
+    }
+    clone() {
+      const next = new Matrix4();
+      next.scale = { ...this.scale };
+      next.position = { ...this.position };
+      return next;
     }
   }
   class Mesh {
@@ -289,6 +357,19 @@ function createFakeThree() {
       public geometry: unknown,
       public material: unknown
     ) {}
+  }
+  class InstancedMesh {
+    rotation = { x: 0, y: 0, z: 0 };
+    userData: Record<string, unknown> = {};
+    matrices: Matrix4[] = [];
+    constructor(
+      public geometry: unknown,
+      public material: unknown,
+      public count: number
+    ) {}
+    setMatrixAt(index: number, matrix: Matrix4) {
+      this.matrices[index] = matrix.clone();
+    }
   }
   class PointLight {
     position = {
@@ -360,6 +441,8 @@ function createFakeThree() {
   return {
     Group,
     Mesh,
+    InstancedMesh,
+    Matrix4,
     PointLight,
     CanvasTexture,
     MeshBasicMaterial,

@@ -22,6 +22,7 @@ import type {
   TileLike,
   TilePlugin,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
@@ -176,12 +177,18 @@ export function createCaveTilePlugin(): RuntimePlugin {
 
       const boulderCount =
         3 + Math.floor(hash2D(CAVE_BOULDER_COUNT_SEED, tileX, tileY) * 3);
+      const boulderInstances = new three.InstancedMesh(
+        new three.SphereGeometry(0.36, 8, 7),
+        mountainMaterial,
+        boulderCount
+      );
+      boulderInstances.userData = {
+        ...boulderInstances.userData,
+        caveInstancedPart: 'entrance-boulder',
+      };
+      const boulderMatrixScratch = new three.Matrix4();
 
-      for (let index = 0; index < boulderCount; index += 1) {
-        const boulder = new three.Mesh(
-          new three.SphereGeometry(0.36, 8, 7),
-          mountainMaterial
-        );
+      for (let index = 0; index < boulderInstances.count; index += 1) {
         const radiusScale =
           0.9 +
           hash2D(CAVE_BOULDER_SCALE_SEED, tileX * 13 + index, tileY * 17) *
@@ -193,14 +200,20 @@ export function createCaveTilePlugin(): RuntimePlugin {
         const yOffset =
           0.2 +
           hash2D(CAVE_BOULDER_Y_SEED, tileX + index, tileY - index) * 0.32;
-        boulder.position.set(tileX + xOffset, yOffset, tileY + zOffset);
-        boulder.scale.set(
-          width * radiusScale,
-          height * (0.72 + radiusScale * 0.12),
-          depth * radiusScale
+        boulderInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            boulderMatrixScratch,
+            tileX + xOffset,
+            yOffset,
+            tileY + zOffset,
+            width * radiusScale,
+            height * (0.72 + radiusScale * 0.12),
+            depth * radiusScale
+          )
         );
-        group.add(boulder);
       }
+      group.add(boulderInstances);
 
       const cap = new three.Mesh(
         new three.SphereGeometry(0.3, 7, 6),
@@ -827,4 +840,16 @@ function createCaveObstacleGroup(
   }
 
   return group;
+}
+
+function writeInstancedScalePositionMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return target.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
