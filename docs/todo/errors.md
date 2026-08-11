@@ -32,7 +32,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       mirrored cheek rocks into one `InstancedMesh`, and their mirrored inner
       pillars into one `InstancedMesh`, full-detail cave mouths now place
       their portal crown, arch, sill, tunnel, and lantern pieces directly
-      under the tile root instead of a dedicated portal subgroup, cave
+      under the tile root instead of a dedicated portal subgroup, and low-
+      detail cave mouths now place their mouth and tunnel-back pieces
+      directly under the tile root instead of a portal subgroup, cave
       mushroom tiles now collapse their
       repeated stems and caps into two `InstancedMesh` nodes, cave dripstone
       tiles now collapse their repeated floor spires into one `InstancedMesh`,

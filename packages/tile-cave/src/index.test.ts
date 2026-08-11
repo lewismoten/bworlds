@@ -388,12 +388,25 @@ describe('tile cave', () => {
         tileX: 4,
         tileY: 6,
         detailLevel: 'low',
-      }) as { children?: Array<{ children?: unknown[] }> } | null | undefined;
+      }) as
+        | {
+            children?: Array<{
+              children?: Array<{ children?: unknown[] }>;
+            }>;
+          }
+        | null
+        | undefined;
 
       expect(low?.children?.length ?? 0).toBeLessThan(
         full?.children?.length ?? Infinity
       );
-      expect(low?.children?.[0]?.children).toHaveLength(2);
+      expect(low?.children).toHaveLength(1);
+      expect(low?.children?.[0]?.children).toHaveLength(3);
+      expect(
+        low?.children?.[0]?.children?.every(
+          (child) => !Array.isArray(child.children)
+        )
+      ).toBe(true);
     } finally {
       globalThis.document = previousDocument;
     }

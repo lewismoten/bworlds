@@ -899,29 +899,34 @@ function createLowDetailCaveModel(
   mound.scale.set(width * 1.9, height * 1.22, depth * 1.55);
   group.add(mound);
 
-  const portal = new three.Group();
-  portal.position.set(
-    tileX + entrance.dx * 0.46,
-    0,
-    tileY + entrance.dy * 0.46
-  );
-  portal.rotation.y = entrance.rotationY;
+  const portalOriginX = tileX + entrance.dx * 0.46;
+  const portalOriginZ = tileY + entrance.dy * 0.46;
 
   const mouthVoid = new three.Mesh(
     new three.CircleGeometry(0.19, 16),
     mouthVoidMaterial
   );
-  mouthVoid.position.set(0, 0.22, 0.2);
-  portal.add(mouthVoid);
+  const mouthVoidOffset = rotateCaveLocalOffset(0, 0.2, entrance.rotationY);
+  mouthVoid.position.set(
+    portalOriginX + mouthVoidOffset.x,
+    0.22,
+    portalOriginZ + mouthVoidOffset.z
+  );
+  mouthVoid.rotation.y = entrance.rotationY;
+  group.add(mouthVoid);
 
   const tunnelBack = new three.Mesh(
     new three.CircleGeometry(0.13, 14),
     tunnelBackMaterial
   );
-  tunnelBack.position.set(0, 0.2, -0.12);
-  portal.add(tunnelBack);
-
-  group.add(portal);
+  const tunnelBackOffset = rotateCaveLocalOffset(0, -0.12, entrance.rotationY);
+  tunnelBack.position.set(
+    portalOriginX + tunnelBackOffset.x,
+    0.2,
+    portalOriginZ + tunnelBackOffset.z
+  );
+  tunnelBack.rotation.y = entrance.rotationY;
+  group.add(tunnelBack);
   return group;
 }
 
