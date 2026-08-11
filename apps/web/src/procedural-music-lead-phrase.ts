@@ -69,6 +69,7 @@ export function shapeProceduralPhraseLeadNotes(
       leadNoteIndexes,
       measureEndMs,
       phraseRestEndMs,
+      phraseRestEndMs < measureEndMs,
       subdivisionDurationMs,
       measureTemplate?.attacks ?? []
     );
@@ -147,6 +148,7 @@ function connectLeadMeasureDurations(
   leadNoteIndexes: readonly number[],
   measureEndMs: number,
   phraseRestEndMs: number,
+  phraseEndingMeasure: boolean,
   subdivisionDurationMs: number,
   attackTemplates: readonly {
     subdivisionLength: number;
@@ -182,9 +184,14 @@ function connectLeadMeasureDurations(
       nextNote === null
         ? phraseRestEndMs
         : Math.min(phraseRestEndMs, nextNote.startMs - minimumGapMs);
+    const phraseEndingSustainMs =
+      nextNote === null && phraseEndingMeasure ? phraseRestEndMs : 0;
     const desiredEndMs = Math.min(
       phraseRestEndMs,
-      note.startMs + Math.max(targetDurationMs, note.durationMs)
+      Math.max(
+        note.startMs + Math.max(targetDurationMs, note.durationMs),
+        phraseEndingSustainMs
+      )
     );
     const resolvedEndMs = Math.max(
       note.startMs + minimumDurationMs,

@@ -58,8 +58,27 @@ describe('procedural music lead phrase shaping', () => {
     );
 
     expect(notes).toHaveLength(2);
-    expect(notes[0]!.startMs + notes[0]!.durationMs).toBeLessThanOrEqual(3_750);
-    expect(notes[1]!.startMs + notes[1]!.durationMs).toBeLessThanOrEqual(7_750);
+    expect(notes[0]!.startMs + notes[0]!.durationMs).toBe(3_750);
+    expect(notes[1]!.startMs + notes[1]!.durationMs).toBe(7_750);
+  });
+
+  it('sustains phrase-ending lead notes longer than comparable non-ending notes', () => {
+    const notes = shapeProceduralPhraseLeadNotes(
+      [
+        createLeadNote({ startMs: 220, durationMs: 120, releaseMs: 70 }),
+        createLeadNote({ startMs: 3_220, durationMs: 120, releaseMs: 70 }),
+      ],
+      {
+        phraseStartMs: 0,
+        phraseDurationMs: 8_000,
+        clusterX: 3,
+        clusterY: -2,
+      }
+    );
+
+    expect(notes).toHaveLength(2);
+    expect(notes[1]!.durationMs).toBeGreaterThan(notes[0]!.durationMs);
+    expect(notes[1]!.startMs + notes[1]!.durationMs).toBe(3_750);
   });
 });
 
