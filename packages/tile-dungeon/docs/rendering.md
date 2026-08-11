@@ -1,8 +1,8 @@
 # Dungeon Rendering
 
 The full-detail dungeon landmark now instances its repeated corner towers,
-roof caps, gate posts, and tower beacon braziers instead of emitting separate
-meshes for each one.
+roof caps, gate posts, tower beacon braziers, and banner support hardware
+instead of emitting separate meshes for each one.
 
 Current layout:
 
@@ -14,7 +14,11 @@ Current layout:
   `InstancedMesh`.
 - The repeated tower beacon braziers share one cylinder geometry, one trim
   material, and one `InstancedMesh`.
-- The gate, beacon lights, banners, gate beacon brazier, and central keep
+- The repeated banner poles share one cylinder geometry, one trim material,
+  and one `InstancedMesh`.
+- The repeated banner crossbars share one box geometry, one trim material, and
+  one `InstancedMesh`.
+- The gate, beacon lights, banner cloth, gate beacon brazier, and central keep
   remain ordinary objects because they have distinct materials, animation, or
   interaction data.
 

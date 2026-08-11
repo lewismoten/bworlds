@@ -340,6 +340,8 @@ describe('tile dungeon', () => {
     const towerCaps: FakeInstancedMesh[] = [];
     const gatePosts: FakeInstancedMesh[] = [];
     const beaconBraziers: FakeInstancedMesh[] = [];
+    const bannerPoles: FakeInstancedMesh[] = [];
+    const bannerCrossbars: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
       if (
         node instanceof FakeInstancedMesh &&
@@ -365,12 +367,26 @@ describe('tile dungeon', () => {
       ) {
         beaconBraziers.push(node);
       }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.dungeonInstancedPart === 'banner-pole'
+      ) {
+        bannerPoles.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.dungeonInstancedPart === 'banner-crossbar'
+      ) {
+        bannerCrossbars.push(node);
+      }
     });
 
     expect(towerBodies).toHaveLength(1);
     expect(towerCaps).toHaveLength(1);
     expect(gatePosts).toHaveLength(1);
     expect(beaconBraziers).toHaveLength(1);
+    expect(bannerPoles).toHaveLength(1);
+    expect(bannerCrossbars).toHaveLength(1);
     expect(towerBodies[0]?.count).toBeGreaterThanOrEqual(2);
     expect(towerBodies[0]?.count).toBe(towerCaps[0]?.count);
     expect(towerBodies[0]?.matrices.length).toBe(towerBodies[0]?.count);
@@ -379,6 +395,10 @@ describe('tile dungeon', () => {
     expect(gatePosts[0]?.matrices.length).toBe(gatePosts[0]?.count);
     expect(beaconBraziers[0]?.count).toBeGreaterThanOrEqual(2);
     expect(beaconBraziers[0]?.matrices.length).toBe(beaconBraziers[0]?.count);
+    expect(bannerPoles[0]?.count).toBe(2);
+    expect(bannerPoles[0]?.matrices.length).toBe(bannerPoles[0]?.count);
+    expect(bannerCrossbars[0]?.count).toBe(2);
+    expect(bannerCrossbars[0]?.matrices.length).toBe(bannerCrossbars[0]?.count);
   });
 
   it('intensifies red stronghold beacons at night', () => {

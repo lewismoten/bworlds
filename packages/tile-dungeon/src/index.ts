@@ -315,13 +315,63 @@ export function createDungeonTilePlugin(): RuntimePlugin {
         createDungeonBeacon(three, group, beacon, style, false);
       });
       group.add(towerBeaconBraziers);
-      getDungeonBannerDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
-        (banner, index) => {
-          group.add(
-            createDungeonBanner(three, banner, style, tileX, tileY, index)
-          );
-        }
+      const banners = getDungeonBannerDescriptors(
+        tileX,
+        tileY,
+        baseWidth,
+        baseDepth
       );
+      const bannerPoleInstances = new three.InstancedMesh(
+        new three.CylinderGeometry(0.018, 0.022, 1, 5),
+        style.trimMaterial,
+        banners.length
+      );
+      bannerPoleInstances.userData = {
+        ...(bannerPoleInstances.userData ?? {}),
+        dungeonInstancedPart: 'banner-pole',
+      };
+      const bannerCrossbarInstances = new three.InstancedMesh(
+        new three.BoxGeometry(1, 1, 1),
+        style.trimMaterial,
+        banners.length
+      );
+      bannerCrossbarInstances.userData = {
+        ...(bannerCrossbarInstances.userData ?? {}),
+        dungeonInstancedPart: 'banner-crossbar',
+      };
+      const bannerPoleMatrixScratch = new three.Matrix4();
+      const bannerCrossbarMatrixScratch = new three.Matrix4();
+      banners.forEach((banner, index) => {
+        bannerPoleInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            bannerPoleMatrixScratch,
+            banner.x,
+            banner.height * 0.5,
+            banner.z,
+            1,
+            banner.height,
+            1
+          )
+        );
+        bannerCrossbarInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            bannerCrossbarMatrixScratch,
+            banner.x + banner.width * 0.46,
+            banner.height - 0.03,
+            banner.z,
+            banner.width * 0.88,
+            0.028,
+            0.028
+          )
+        );
+        group.add(
+          createDungeonBanner(three, banner, style, tileX, tileY, index, false)
+        );
+      });
+      group.add(bannerPoleInstances);
+      group.add(bannerCrossbarInstances);
 
       return group;
     },
@@ -662,25 +712,28 @@ function createDungeonBanner(
   style: DungeonStyle,
   tileX: number,
   tileY: number,
-  index: number
+  index: number,
+  includeSupports = true
 ) {
   const banner = new three.Group();
   banner.position.set(descriptor.x, descriptor.y, descriptor.z);
   banner.rotation.y = descriptor.rotationY;
 
-  const pole = new three.Mesh(
-    new three.CylinderGeometry(0.018, 0.022, descriptor.height, 5),
-    style.trimMaterial
-  );
-  pole.position.y = descriptor.height * 0.5;
-  banner.add(pole);
+  if (includeSupports) {
+    const pole = new three.Mesh(
+      new three.CylinderGeometry(0.018, 0.022, descriptor.height, 5),
+      style.trimMaterial
+    );
+    pole.position.y = descriptor.height * 0.5;
+    banner.add(pole);
 
-  const crossbar = new three.Mesh(
-    new three.BoxGeometry(descriptor.width * 0.88, 0.028, 0.028),
-    style.trimMaterial
-  );
-  crossbar.position.set(descriptor.width * 0.46, descriptor.height - 0.03, 0);
-  banner.add(crossbar);
+    const crossbar = new three.Mesh(
+      new three.BoxGeometry(descriptor.width * 0.88, 0.028, 0.028),
+      style.trimMaterial
+    );
+    crossbar.position.set(descriptor.width * 0.46, descriptor.height - 0.03, 0);
+    banner.add(crossbar);
+  }
 
   const cloth = markPoiWindResponder(
     new three.Mesh(
