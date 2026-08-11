@@ -522,6 +522,34 @@ describe('tile town', () => {
     );
   });
 
+  it('places town name sign parts directly under the town root', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const signParts = model.children.filter(
+      (child) => typeof child.userData?.townSignPart === 'string'
+    );
+    const nestedGroups = model.children.filter(
+      (child) => child instanceof FakeGroup
+    );
+
+    expect(signParts).toHaveLength(5);
+    expect(
+      signParts.map((child) => child.userData?.townSignPart).sort()
+    ).toEqual(['back-label', 'cap', 'front-label', 'placard', 'post']);
+    expect(nestedGroups).toHaveLength(0);
+  });
+
   it('adds windy banners to full-detail town models and sways them with weather strength', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');

@@ -75,15 +75,17 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       full-detail forest beaver-cut trunks now collapse into shared
       `InstancedMesh` sets by severity, and `tile-town` now collapses its
       repeated full-detail building bodies, roofs, doors, windows, banner
-      poles, and banner crossbars into shared `InstancedMesh` sets, and dock
-      tiles now collapse their repeated rails, support piles, and dock route
-      sign stop placards into shared `InstancedMesh` sets, and dock paddle
-      boats now collapse their repeated side wheels into one shared
-      `InstancedMesh`, and forest log bridges now collapse their repeated
-      support posts into one shared `InstancedMesh`, and standard bridge
-      railings and covered bridge spans now collapse their repeated rails and
-      posts into shared `InstancedMesh` sets, and stone bridges now collapse
-      their repeated parapets into one shared `InstancedMesh`, and
+      poles, and banner crossbars into shared `InstancedMesh` sets, full-
+      detail town tiles now place their town-name sign pieces directly under
+      the tile root instead of a dedicated sign subgroup, and dock tiles now
+      collapse their repeated rails, support piles, and dock route sign stop
+      placards into shared `InstancedMesh` sets, and dock paddle boats now
+      collapse their repeated side wheels into one shared `InstancedMesh`,
+      and forest log bridges now collapse their repeated support posts into
+      one shared `InstancedMesh`, and standard bridge railings and covered
+      bridge spans now collapse their repeated rails and posts into shared
+      `InstancedMesh` sets, and stone bridges now collapse their repeated
+      parapets into one shared `InstancedMesh`, and
       drawbridges now collapse their repeated tower frames into one shared
       `InstancedMesh`, and low-detail town tiles now collapse their repeated
       distant building bodies into one shared `InstancedMesh`, and full-

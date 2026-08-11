@@ -33,6 +33,7 @@ import type {
   TileLike,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeObject3DLike,
   ThreeTextureLike,
 } from '@bworlds/plugin-api';
 
@@ -451,9 +452,7 @@ export function createTownTilePlugin(): RuntimePlugin {
       }
 
       if (tile.poi?.name) {
-        group.add(
-          createTownNameSign(three, tile.poi.name, tileX, tileY, style)
-        );
+        addTownNameSign(group, three, tile.poi.name, tileX, tileY, style);
       }
       const banners = createTownBannerDescriptors(tileX, tileY);
       if (banners.length > 0) {
@@ -593,19 +592,23 @@ export function getTownNightLightDistance(buildingCount: number): number {
   return buildingCount >= LARGE_TOWN_BUILDING_COUNT ? 4.8 : 3.8;
 }
 
-function createTownNameSign(
+function addTownNameSign(
+  group: ThreeObject3DLike,
   three: ThreeHostLike,
   name: string,
   tileX: number,
   tileY: number,
   style: TownStyle
 ) {
-  const sign = new three.Group();
   const signHeight = 1.08;
   const postThickness = 0.08;
   const placardWidth = Math.min(1.38, Math.max(0.72, 0.5 + name.length * 0.06));
   const placardHeight = 0.2;
   const placardDepth = 0.05;
+  const signOriginX = tileX - 0.34;
+  const signOriginZ = tileY + 0.34;
+  const signRotationY =
+    hash2D(TOWN_SIGN_ROTATION_SEED, tileX, tileY) * 0.35 - 0.18;
   const label = createTownLabelSprite(
     three,
     name,
@@ -618,15 +621,25 @@ function createTownNameSign(
     new three.BoxGeometry(postThickness, signHeight, postThickness),
     style.trimMaterial
   );
-  post.position.y = signHeight * 0.5;
-  sign.add(post);
+  post.position.set(signOriginX, signHeight * 0.5, signOriginZ);
+  post.rotation.y = signRotationY;
+  post.userData = {
+    ...(post.userData ?? {}),
+    townSignPart: 'post',
+  };
+  group.add(post);
 
   const placard = new three.Mesh(
     new three.BoxGeometry(placardWidth, placardHeight, placardDepth),
     style.wallMaterial
   );
-  placard.position.set(0, signHeight * 0.7, 0);
-  sign.add(placard);
+  placard.position.set(signOriginX, signHeight * 0.7, signOriginZ);
+  placard.rotation.y = signRotationY;
+  placard.userData = {
+    ...(placard.userData ?? {}),
+    townSignPart: 'placard',
+  };
+  group.add(placard);
 
   const cap = new three.Mesh(
     new three.BoxGeometry(
@@ -636,11 +649,34 @@ function createTownNameSign(
     ),
     style.trimMaterial
   );
-  cap.position.set(0, placard.position.y + placardHeight * 0.5 + 0.03, 0);
-  sign.add(cap);
+  cap.position.set(
+    signOriginX,
+    placard.position.y + placardHeight * 0.5 + 0.03,
+    signOriginZ
+  );
+  cap.rotation.y = signRotationY;
+  cap.userData = {
+    ...(cap.userData ?? {}),
+    townSignPart: 'cap',
+  };
+  group.add(cap);
 
-  label.position.set(0, placard.position.y, placardDepth * 0.65);
-  sign.add(label);
+  const frontLabelOffset = rotateTownLocalOffset(
+    0,
+    placardDepth * 0.65,
+    signRotationY
+  );
+  label.position.set(
+    signOriginX + frontLabelOffset.x,
+    placard.position.y,
+    signOriginZ + frontLabelOffset.z
+  );
+  label.rotation.y = signRotationY;
+  label.userData = {
+    ...(label.userData ?? {}),
+    townSignPart: 'front-label',
+  };
+  group.add(label);
 
   const backLabel = createTownLabelSprite(
     three,
@@ -649,13 +685,22 @@ function createTownNameSign(
     placardHeight,
     style
   );
-  backLabel.position.set(0, placard.position.y, -placardDepth * 0.65);
-  backLabel.rotation.y = Math.PI;
-  sign.add(backLabel);
-
-  sign.position.set(tileX - 0.34, 0, tileY + 0.34);
-  sign.rotation.y = hash2D(TOWN_SIGN_ROTATION_SEED, tileX, tileY) * 0.35 - 0.18;
-  return sign;
+  const backLabelOffset = rotateTownLocalOffset(
+    0,
+    -placardDepth * 0.65,
+    signRotationY
+  );
+  backLabel.position.set(
+    signOriginX + backLabelOffset.x,
+    placard.position.y,
+    signOriginZ + backLabelOffset.z
+  );
+  backLabel.rotation.y = signRotationY + Math.PI;
+  backLabel.userData = {
+    ...(backLabel.userData ?? {}),
+    townSignPart: 'back-label',
+  };
+  group.add(backLabel);
 }
 
 function createTownLabelSprite(
