@@ -1686,7 +1686,7 @@ function applySoundBankDebugPreviewMode(
   };
 }
 
-export function buildSoundBankDebugPreviewEnvelopeControlsMarkup(
+function buildSoundBankDebugPreviewEnvelopeControlsMarkup(
   instrument: ProceduralInstrument,
   previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null
 ): string {
