@@ -24,8 +24,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
 - [ ] Reduce unique materials and shader program variants.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
       Progress: `tile-quarry` now collapses its six repeated rubble stones into
-      one `InstancedMesh`, its repeated cart wheels into one `InstancedMesh`,
-      and `tile-rail` now collapses its two repeated rails and four repeated
+      one `InstancedMesh`, its two mirrored derrick posts into one
+      `InstancedMesh`, its repeated cart wheels into one `InstancedMesh`, and
+      `tile-rail` now collapses its two repeated rails and four repeated
       sleepers into instanced sets, and full-detail cave mouths now collapse
       their repeated entrance boulders into one `InstancedMesh`, cave mushroom
       tiles now collapse their repeated stems and caps into two `InstancedMesh`
@@ -48,22 +49,22 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
-      stones and cart wheels, rail tiles now instance their repeated rails and
-      sleepers, cave mushroom tiles now instance their repeated stems and caps,
-      cave dripstone tiles now instance their repeated floor spires, cave
-      obstacle tiles now instance their repeated fallen-rock boulders, and
-      full-detail cave mouths now instance their repeated entrance boulders,
-      and full-detail dungeons now instance their repeated tower bodies, caps,
-      and gate posts instead of emitting one mesh per repeated prop, ruins
-      landmarks now instance their repeated column ring and taller column caps,
-      tall ships now instance their repeated rigging parts instead of emitting
-      one mesh per mast, yard, or sail, lighthouse lantern-room panes and
-      wall-glow boxes now instance their repeated decorative geometry instead
-      of emitting one mesh per piece, and full-detail forest stone-ring
-      landmarks now instance their repeated stones instead of emitting one mesh
-      per rock, and full-detail forest mushroom-ring landmarks now instance
-      their repeated stems and caps instead of emitting one mesh per mushroom
-      piece.
+      stones, derrick posts, and cart wheels, rail tiles now instance their
+      repeated rails and sleepers, cave mushroom tiles now instance their
+      repeated stems and caps, cave dripstone tiles now instance their repeated
+      floor spires, cave obstacle tiles now instance their repeated fallen-rock
+      boulders, and full-detail cave mouths now instance their repeated
+      entrance boulders, and full-detail dungeons now instance their repeated
+      tower bodies, caps, and gate posts instead of emitting one mesh per
+      repeated prop, ruins landmarks now instance their repeated column ring
+      and taller column caps, tall ships now instance their repeated rigging
+      parts instead of emitting one mesh per mast, yard, or sail, lighthouse
+      lantern-room panes and wall-glow boxes now instance their repeated
+      decorative geometry instead of emitting one mesh per piece, and
+      full-detail forest stone-ring landmarks now instance their repeated
+      stones instead of emitting one mesh per rock, and full-detail forest
+      mushroom-ring landmarks now instance their repeated stems and caps
+      instead of emitting one mesh per mushroom piece.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

@@ -120,19 +120,41 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       );
       derrick.rotation.y = facing.rotationY;
 
-      const leftPost = new three.Mesh(
+      const derrickPostInstances = new three.InstancedMesh(
         new three.BoxGeometry(0.06, 0.56, 0.06),
         timberMaterial
       );
-      leftPost.position.set(-0.18, 0.28, 0.18);
-      derrick.add(leftPost);
-
-      const rightPost = new three.Mesh(
-        new three.BoxGeometry(0.06, 0.56, 0.06),
-        timberMaterial
+      derrickPostInstances.count = 2;
+      derrickPostInstances.userData = {
+        ...derrickPostInstances.userData,
+        quarryInstancedPart: 'derrick-post',
+      };
+      const derrickPostMatrixScratch = new three.Matrix4();
+      derrickPostInstances.setMatrixAt(
+        0,
+        writeInstancedScalePositionMatrix(
+          derrickPostMatrixScratch,
+          -0.18,
+          0.28,
+          0.18,
+          1,
+          1,
+          1
+        )
       );
-      rightPost.position.set(0.18, 0.28, 0.18);
-      derrick.add(rightPost);
+      derrickPostInstances.setMatrixAt(
+        1,
+        writeInstancedScalePositionMatrix(
+          derrickPostMatrixScratch,
+          0.18,
+          0.28,
+          0.18,
+          1,
+          1,
+          1
+        )
+      );
+      derrick.add(derrickPostInstances);
 
       const beam = new three.Mesh(
         new three.BoxGeometry(0.46, 0.05, 0.05),

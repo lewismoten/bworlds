@@ -294,6 +294,46 @@ describe('tile quarry', () => {
     expect(standaloneWheelMeshes).toHaveLength(0);
   });
 
+  it('instances the repeated quarry derrick posts instead of emitting one mesh per post', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createQuarryState(),
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    const derrickPostInstances = model?.children
+      .flatMap((child) => child.children)
+      .filter(
+        (child) =>
+          child instanceof FakeInstancedMesh &&
+          child.userData?.quarryInstancedPart === 'derrick-post'
+      ) as FakeInstancedMesh[];
+    const standalonePosts = model?.children
+      .flatMap((child) => child.children)
+      .filter(
+        (child) =>
+          child instanceof FakeMesh &&
+          child.material instanceof FakeMaterial &&
+          child.material.options.color === '#7a573b' &&
+          child.position.y === 0.28
+      );
+
+    expect(derrickPostInstances).toHaveLength(1);
+    expect(derrickPostInstances[0]?.count).toBe(2);
+    expect(derrickPostInstances[0]?.matrices).toHaveLength(2);
+    expect(
+      derrickPostInstances[0]?.matrices.some((matrix) => matrix.position.x < 0)
+    ).toBe(true);
+    expect(
+      derrickPostInstances[0]?.matrices.some((matrix) => matrix.position.x > 0)
+    ).toBe(true);
+    expect(standalonePosts).toHaveLength(0);
+  });
+
   it('reuses shared quarry materials across repeated model builds', () => {
     const plugin = createQuarryTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
