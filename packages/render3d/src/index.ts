@@ -2206,7 +2206,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           );
         }
       }
-    } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
+    }
+    const builtWallHeightFallback =
+      !pluginModel && !isWaterKind(tile.kind) && definition.wallHeight > 0.08;
+    if (builtWallHeightFallback) {
       recordRenderDebugEvent(recentDebugEvents, {
         nowMs: pluginBuildStartMs,
         type: 'fallback-box',
@@ -2214,7 +2217,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         plugin: tilePluginOwnerLabel,
         summary: getFallbackBoxReason(
           lastRejectedSummary,
-          usedTilePluginModelFactory
+          usedTilePluginModelFactory,
+          true
         ),
       });
       recordRecentMetric(renderChurnMetrics.fallbackBoxes, pluginBuildStartMs);
@@ -2243,7 +2247,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const finalUniqueTextures = collectUniqueObjectTextures(tileNode);
     const fallbackReason = pluginModel
       ? undefined
-      : getFallbackBoxReason(lastRejectedSummary, usedTilePluginModelFactory);
+      : getFallbackBoxReason(
+          lastRejectedSummary,
+          usedTilePluginModelFactory,
+          builtWallHeightFallback
+        );
 
     return {
       key,
@@ -4337,13 +4345,17 @@ export function summarizeVisibleTileRecoveryAttempt(
 
 export function getFallbackBoxReason(
   lastRejectedSummary: string | null,
-  usedTilePluginModelFactory: boolean
+  usedTilePluginModelFactory: boolean,
+  builtWallHeightFallback: boolean
 ): string {
   if (lastRejectedSummary) {
     return lastRejectedSummary;
   }
   if (usedTilePluginModelFactory) {
     return 'tile plugin returned no model';
+  }
+  if (!builtWallHeightFallback) {
+    return 'tile has no plugin model';
   }
   return 'tile has no plugin model and uses the wall-height fallback';
 }

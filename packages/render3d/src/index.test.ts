@@ -5440,20 +5440,26 @@ describe('render3d visibility helpers', () => {
   });
 
   it('prefers the last rejected summary when reporting a fallback box reason', () => {
-    expect(getFallbackBoxReason('vertexCount 10000>8000', true)).toBe(
+    expect(getFallbackBoxReason('vertexCount 10000>8000', true, true)).toBe(
       'vertexCount 10000>8000'
     );
   });
 
   it('describes plugin fallback boxes that were built without a rejected summary', () => {
-    expect(getFallbackBoxReason(null, true)).toBe(
+    expect(getFallbackBoxReason(null, true, true)).toBe(
       'tile plugin returned no model'
     );
   });
 
   it('describes non-plugin fallback boxes explicitly', () => {
-    expect(getFallbackBoxReason(null, false)).toBe(
+    expect(getFallbackBoxReason(null, false, true)).toBe(
       'tile has no plugin model and uses the wall-height fallback'
+    );
+  });
+
+  it('distinguishes missing plugin models from built wall-height fallback boxes', () => {
+    expect(getFallbackBoxReason(null, false, false)).toBe(
+      'tile has no plugin model'
     );
   });
 
