@@ -3146,6 +3146,10 @@ describe('tile forest', () => {
     expect(targetTile).not.toBeNull();
     state.player.x = targetTile!.x;
     state.player.y = targetTile!.y;
+    const hollowCount = getForestTreeHollows(
+      targetTile!.x,
+      targetTile!.y
+    ).length;
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -3163,10 +3167,13 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    let fullHollowCount = 0;
+    const hollowInstances: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
-      if (node.userData?.forestHollow) {
-        fullHollowCount += 1;
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestHollowInstanced
+      ) {
+        hollowInstances.push(node);
       }
     });
 
@@ -3177,7 +3184,9 @@ describe('tile forest', () => {
       }
     });
 
-    expect(fullHollowCount).toBeGreaterThan(0);
+    expect(hollowInstances).toHaveLength(1);
+    expect(hollowInstances[0]?.count).toBe(hollowCount);
+    expect(hollowInstances[0]?.matrices).toHaveLength(hollowCount);
     expect(lowHollowCount).toBe(0);
   });
 

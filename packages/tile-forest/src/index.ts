@@ -1522,33 +1522,43 @@ export function createForestTilePlugin(): RuntimePlugin {
                 > => decoration.kind === 'hollow'
               )
             : [];
-          for (const hollow of hollows) {
-            const treeDescriptor = descriptors[hollow.treeIndex];
-            if (!treeDescriptor) {
-              continue;
-            }
-
-            const hollowMesh = new three.Mesh(
+          if (hollows.length > 0) {
+            const hollowInstances = new three.InstancedMesh(
               geometry.foliage,
-              floorDetailStyle.hollowMaterial
+              floorDetailStyle.hollowMaterial,
+              hollows.length
             );
-            hollowMesh.position.set(
-              tileX +
-                treeDescriptor.x +
-                treeDescriptor.radius * 0.7 * hollow.sideOffset,
-              hollow.height,
-              tileY + treeDescriptor.y
-            );
-            hollowMesh.scale.set(
-              hollow.scale,
-              hollow.scale * 0.82,
-              hollow.depth
-            );
-            hollowMesh.userData = {
-              ...(hollowMesh.userData ?? {}),
+            hollowInstances.userData = {
+              ...(hollowInstances.userData ?? {}),
               [HOLLOW_KEY]: true,
+              forestHollowInstanced: true,
             };
-            group.add(hollowMesh);
+            const hollowMatrixScratch = new three.Matrix4();
+            let hollowIndex = 0;
+            for (const hollow of hollows) {
+              const treeDescriptor = descriptors[hollow.treeIndex];
+              if (!treeDescriptor) {
+                continue;
+              }
+
+              hollowInstances.setMatrixAt(
+                hollowIndex,
+                writeLowDetailInstancedMatrix(
+                  hollowMatrixScratch,
+                  tileX +
+                    treeDescriptor.x +
+                    treeDescriptor.radius * 0.7 * hollow.sideOffset,
+                  hollow.height,
+                  tileY + treeDescriptor.y,
+                  hollow.scale,
+                  hollow.scale * 0.82,
+                  hollow.depth
+                )
+              );
+              hollowIndex += 1;
+            }
+            hollowInstances.count = hollowIndex;
+            group.add(hollowInstances);
           }
           if (renderCloseDetails) {
             const owls = scene.inhabitants.filter(
