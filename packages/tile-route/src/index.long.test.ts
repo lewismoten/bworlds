@@ -380,9 +380,7 @@ function createStandardBridgeState(centerX: number, centerY: number) {
   };
 }
 
-function createRoadModelState(
-  kinds: Record<string, string>
-): {
+function createRoadModelState(kinds: Record<string, string>): {
   player: { x: number; y: number; facing: number };
   getCurrentContext(): { id: string; depth: number; type: 'overworld' };
   getCurrentTile(x: number, y: number): { kind: string };
@@ -1002,9 +1000,9 @@ describe('tile route', () => {
       totalSteps: progress[1]?.totalSteps ?? 0,
       label: 'railings-or-parapets',
     });
-    expect(progress.every((entry) => entry.totalSteps === progress.length)).toBe(
-      true
-    );
+    expect(
+      progress.every((entry) => entry.totalSteps === progress.length)
+    ).toBe(true);
     expect(progress.at(-1)?.completedSteps).toBe(progress.length);
   });
 
