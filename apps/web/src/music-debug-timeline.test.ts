@@ -10,6 +10,7 @@ import {
   resolveProceduralMidiNoteFrequency,
 } from './procedural-music-scale.ts';
 import {
+  resolveMusicDebugTimelineClimaxMarkers,
   buildMusicDebugTimelineSvgMarkup,
   resolveMusicDebugTimelineBassDriftMarkers,
   resolveMusicDebugTimelineChordLabels,
@@ -233,6 +234,54 @@ const MOTIF_TIMELINE_SNAPSHOT = (() => {
         return entry;
       }
     ),
+  };
+})();
+const CLIMAX_TIMELINE_SNAPSHOT = (() => {
+  const points = DEFAULT_SNAPSHOT.leadContourAnalysis.points.filter(
+    (point) => point.actualRelativeSemitones !== null
+  );
+  const plannedStepIndex = DEFAULT_SNAPSHOT.leadContourAnalysis.plannedClimaxStepIndex;
+  const actualPoint =
+    [...points]
+      .filter(
+        (point) =>
+          point.stepIndex !== plannedStepIndex && point.actualNoteLabel !== null
+      )
+      .sort(
+        (left, right) =>
+          Math.abs(right.stepIndex - (plannedStepIndex ?? 0)) -
+          Math.abs(left.stepIndex - (plannedStepIndex ?? 0))
+      )[0] ?? points[0];
+  if (!actualPoint) {
+    return DEFAULT_SNAPSHOT;
+  }
+  return {
+    ...DEFAULT_SNAPSHOT,
+    leadContourAnalysis: {
+      ...DEFAULT_SNAPSHOT.leadContourAnalysis,
+      points: DEFAULT_SNAPSHOT.leadContourAnalysis.points.map((point) =>
+        point.stepIndex === actualPoint.stepIndex
+          ? {
+              ...point,
+              actualStartMs: Math.min(
+                DEFAULT_SNAPSHOT.durationMs - 1,
+                (point.actualStartMs ?? 0) + 12_000
+              ),
+            }
+          : point
+      ),
+      actualClimaxStepIndex: actualPoint.stepIndex,
+      climaxNearPlannedPeak:
+        actualPoint.stepIndex ===
+        DEFAULT_SNAPSHOT.leadContourAnalysis.plannedClimaxStepIndex,
+      messages: [
+        `Lead contour climax peaked at measure ${actualPoint.songMeasure} on ${actualPoint.actualNoteLabel ?? 'unknown'} instead of the planned peak near measure ${
+          DEFAULT_SNAPSHOT.leadContourAnalysis.points.find(
+            (point) => point.stepIndex === plannedStepIndex
+          )?.songMeasure ?? 'unknown'
+        }.`,
+      ],
+    },
   };
 })();
 const NON_CHORD_TONE_TIMELINE_SNAPSHOT = (() => {
@@ -792,6 +841,63 @@ describe('music debug timeline', () => {
     );
   });
 
+  it('surfaces planned and actual climax details when hovering climax markers', () => {
+    const plannedMarker = resolveMusicDebugTimelineClimaxMarkers(
+      CLIMAX_TIMELINE_SNAPSHOT
+    ).find((marker) => marker.kind === 'planned')!;
+    const actualMarker = resolveMusicDebugTimelineClimaxMarkers(
+      CLIMAX_TIMELINE_SNAPSHOT
+    ).find((marker) => marker.kind === 'actual')!;
+
+    const plannedHoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot: CLIMAX_TIMELINE_SNAPSHOT,
+      canvas: { width: 960, height: 320 },
+      clientX:
+        resolveMusicDebugTimelineXForOffset(
+          DEFAULT_LAYOUT,
+          CLIMAX_TIMELINE_SNAPSHOT.durationMs,
+          plannedMarker.offsetMs
+        ) - 8,
+      clientY: 40,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+    const actualHoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot: CLIMAX_TIMELINE_SNAPSHOT,
+      canvas: { width: 960, height: 320 },
+      clientX:
+        resolveMusicDebugTimelineXForOffset(
+          DEFAULT_LAYOUT,
+          CLIMAX_TIMELINE_SNAPSHOT.durationMs,
+          actualMarker.offsetMs
+        ) + 8,
+      clientY: 40,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(plannedHoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: expect.stringContaining('Planned climax near measure'),
+        hoverDurationLabel: 'Lead contour • planned climax',
+      })
+    );
+    expect(actualHoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: expect.stringContaining('Actual climax at measure'),
+        hoverDurationLabel: 'Lead contour • actual climax',
+      })
+    );
+  });
+
   it('renders a standalone svg export for the timeline graph', () => {
     const markup = buildMusicDebugTimelineSvgMarkup(FOREST_SNAPSHOT, {
       playheadOffsetMs: 1_500,
@@ -883,5 +989,15 @@ describe('music debug timeline', () => {
     expect(markup).toContain('music-debug-timeline-motif-marker-varied');
     expect(markup).toContain('motif matches');
     expect(markup).toContain('motif variations');
+  });
+
+  it('renders planned and actual climax markers in svg exports', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(CLIMAX_TIMELINE_SNAPSHOT);
+
+    expect(markup).toContain('class="music-debug-timeline-climax-marker');
+    expect(markup).toContain('music-debug-timeline-climax-marker-planned');
+    expect(markup).toContain('music-debug-timeline-climax-marker-actual');
+    expect(markup).toContain('Planned climax near measure');
+    expect(markup).toContain('Actual climax at measure');
   });
 });
