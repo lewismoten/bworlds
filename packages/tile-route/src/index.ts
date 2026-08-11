@@ -45,6 +45,7 @@ import type {
   SurfaceProfile3D,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeObject3DLike,
   RuntimePlugin,
   ThreeTextureLike,
   TraversalProfile3DContext,
@@ -1460,24 +1461,14 @@ function createDockGroup(
 
   const route = resolveDockBoatRoute(state, tileX, tileY);
   if (route && info.segmentIndex === 0) {
-    const sign = createDockRouteSign(
-      three,
-      state,
-      style,
-      alongX,
-      tileX,
-      tileY,
-      route
-    );
-    if (sign) {
-      group.add(sign);
-    }
+    addDockRouteSign(group, three, state, style, alongX, tileX, tileY, route);
   }
 
   return group;
 }
 
-function createDockRouteSign(
+function addDockRouteSign(
+  group: ThreeObject3DLike,
   three: ThreeHostLike,
   state: WorldStateLike,
   style: DockStyle,
@@ -1490,23 +1481,42 @@ function createDockRouteSign(
     (_stop, index) => index !== route.currentStopIndex
   );
   if (destinations.length === 0) {
-    return null;
+    return;
   }
 
-  const group = new three.Group();
   const side = getDockLandwardSide(state, tileX, tileY, alongX);
+  const signOriginX = alongX ? 0 : side * -0.28;
+  const signOriginZ = alongX ? side * -0.28 : 0;
+  const signRotationY = alongX ? 0 : Math.PI * 0.5;
+  const signMetadata = {
+    dockRouteSign: true,
+    dockRouteBoatName: route.boatName,
+    dockRouteStops: destinations.map((destination) => destination.name),
+  };
   const post = new three.Mesh(
     new three.BoxGeometry(0.05, 0.52, 0.05),
     style.pileMaterial
   );
-  post.position.y = 0.22;
+  post.position.set(signOriginX, 0.22, signOriginZ);
+  post.rotation.y = signRotationY;
+  post.userData = {
+    ...(post.userData ?? {}),
+    ...signMetadata,
+    dockRouteSignPart: 'post',
+  };
   group.add(post);
 
   const mainBoard = new three.Mesh(
     new three.BoxGeometry(0.46, 0.12, 0.04),
     style.trimMaterial
   );
-  mainBoard.position.y = 0.46;
+  mainBoard.position.set(signOriginX, 0.46, signOriginZ);
+  mainBoard.rotation.y = signRotationY;
+  mainBoard.userData = {
+    ...(mainBoard.userData ?? {}),
+    ...signMetadata,
+    dockRouteSignPart: 'main-board',
+  };
   group.add(mainBoard);
 
   const mainLabel = createDockRouteLabelPlane(three, {
@@ -1516,7 +1526,18 @@ function createDockRouteSign(
     height: 0.09,
     key: `boat:${route.boatName}`,
   });
-  mainLabel.position.set(0, 0.46, 0.03);
+  const mainLabelOffset = rotateRouteLocalOffset(0, 0.03, signRotationY);
+  mainLabel.position.set(
+    signOriginX + mainLabelOffset.x,
+    0.46,
+    signOriginZ + mainLabelOffset.z
+  );
+  mainLabel.rotation.y = signRotationY;
+  mainLabel.userData = {
+    ...(mainLabel.userData ?? {}),
+    ...signMetadata,
+    dockRouteSignPart: 'main-label',
+  };
   group.add(mainLabel);
 
   const visibleDestinations = destinations.slice(0, 3);
@@ -1528,6 +1549,7 @@ function createDockRouteSign(
     );
     placardInstances.userData = {
       ...(placardInstances.userData ?? {}),
+      ...signMetadata,
       dockRouteSignPart: 'stop-placard',
     };
     const placardMatrixScratch = new three.Matrix4();
@@ -1537,9 +1559,9 @@ function createDockRouteSign(
         index,
         writeRouteInstancedScalePositionMatrix(
           placardMatrixScratch,
-          0,
+          signOriginX,
           0.32 - index * 0.12,
-          0,
+          signOriginZ,
           1,
           1,
           1
@@ -1553,27 +1575,22 @@ function createDockRouteSign(
         height: 0.075,
         key: `stop:${route.boatName}:${destination.name}`,
       });
-      label.position.set(0, 0.32 - index * 0.12, 0.025);
+      const labelOffset = rotateRouteLocalOffset(0, 0.025, signRotationY);
+      label.position.set(
+        signOriginX + labelOffset.x,
+        0.32 - index * 0.12,
+        signOriginZ + labelOffset.z
+      );
+      label.rotation.y = signRotationY;
+      label.userData = {
+        ...(label.userData ?? {}),
+        ...signMetadata,
+        dockRouteSignPart: 'stop-label',
+      };
       group.add(label);
     });
     group.add(placardInstances);
   }
-
-  group.userData = {
-    ...(group.userData ?? {}),
-    dockRouteSign: true,
-    dockRouteBoatName: route.boatName,
-    dockRouteStops: destinations.map((destination) => destination.name),
-  };
-
-  if (alongX) {
-    group.position.set(0, 0, side * -0.28);
-  } else {
-    group.position.set(side * -0.28, 0, 0);
-    group.rotation.y = Math.PI * 0.5;
-  }
-
-  return group;
 }
 
 function createDockRouteLabelPlane(
@@ -2511,6 +2528,19 @@ function writeRouteInstancedScalePositionMatrix(
     0,
     1
   );
+}
+
+function rotateRouteLocalOffset(
+  localX: number,
+  localZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return {
+    x: localX * cosRotation + localZ * sinRotation,
+    z: -localX * sinRotation + localZ * cosRotation,
+  };
 }
 
 function getBridgeClusterInfo(

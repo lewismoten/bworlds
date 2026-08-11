@@ -79,7 +79,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       detail town tiles now place their town-name sign pieces directly under
       the tile root instead of a dedicated sign subgroup, and dock tiles now
       collapse their repeated rails, support piles, and dock route sign stop
-      placards into shared `InstancedMesh` sets, and dock paddle boats now
+      placards into shared `InstancedMesh` sets, dock route signs now place
+      their post, main board, and label planes directly under the dock root
+      instead of a dedicated sign subgroup, and dock paddle boats now
       collapse their repeated side wheels into one shared `InstancedMesh`,
       and forest log bridges now collapse their repeated support posts into
       one shared `InstancedMesh`, and standard bridge railings and covered

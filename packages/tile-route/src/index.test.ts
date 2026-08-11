@@ -755,6 +755,7 @@ describe('tile route', () => {
 
     let signData: Record<string, unknown> | null = null;
     const signPlacardInstances: FakeInstancedMesh[] = [];
+    const nestedSignGroups: FakeGroup[] = [];
     model.traverse((node) => {
       if (node.userData?.dockRouteSign) {
         signData = node.userData;
@@ -764,6 +765,11 @@ describe('tile route', () => {
         node.userData?.dockRouteSignPart === 'stop-placard'
       ) {
         signPlacardInstances.push(node);
+      }
+    });
+    model.children.forEach((child) => {
+      if (child instanceof FakeGroup && child.userData?.dockRouteSign) {
+        nestedSignGroups.push(child);
       }
     });
 
@@ -777,6 +783,7 @@ describe('tile route', () => {
     expect(signPlacardInstances).toHaveLength(1);
     expect(signPlacardInstances[0]?.count).toBe(2);
     expect(signPlacardInstances[0]?.matrices).toHaveLength(2);
+    expect(nestedSignGroups).toHaveLength(0);
   });
 
   it('instances repeated bridge railing posts on standard bridges', () => {
