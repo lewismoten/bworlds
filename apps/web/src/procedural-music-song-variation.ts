@@ -18,6 +18,11 @@ type RoleHumanizationProfile = {
   velocityMultiplier: readonly number[];
 };
 
+type PhraseBoundaryArticulation = {
+  attackMultiplier: number;
+  releaseMultiplier: number;
+};
+
 const ROLE_HUMANIZATION_PROFILES: Record<
   ProceduralMusicNote['role'],
   RoleHumanizationProfile
@@ -79,6 +84,11 @@ export function transformSongSectionNote(
     phrasePosition: sectionContext.phrasePosition,
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
+  const phraseBoundaryArticulation = resolvePhraseBoundaryArticulation({
+    role: note.role,
+    phrasePosition: sectionContext.phrasePosition,
+    preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+  });
 
   switch (section.id) {
     case 'intro':
@@ -92,7 +102,9 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier:
           layerTreatment.releaseMultiplier *
-          (leadRhythmOptions?.releaseMultiplier ?? 1),
+          (leadRhythmOptions?.releaseMultiplier ?? 1) *
+          phraseBoundaryArticulation.releaseMultiplier,
+        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -114,7 +126,10 @@ export function transformSongSectionNote(
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
-        releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
+        releaseMultiplier:
+          (leadRhythmOptions?.releaseMultiplier ?? 1) *
+          phraseBoundaryArticulation.releaseMultiplier,
+        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -137,7 +152,10 @@ export function transformSongSectionNote(
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
-        releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
+        releaseMultiplier:
+          (leadRhythmOptions?.releaseMultiplier ?? 1) *
+          phraseBoundaryArticulation.releaseMultiplier,
+        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -152,7 +170,9 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier:
           layerTreatment.releaseMultiplier *
-          (leadRhythmOptions?.releaseMultiplier ?? 1),
+          (leadRhythmOptions?.releaseMultiplier ?? 1) *
+          phraseBoundaryArticulation.releaseMultiplier,
+        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -164,7 +184,10 @@ export function transformSongSectionNote(
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
-        releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
+        releaseMultiplier:
+          (leadRhythmOptions?.releaseMultiplier ?? 1) *
+          phraseBoundaryArticulation.releaseMultiplier,
+        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -209,7 +232,18 @@ function transformAprimeSectionNote(
       layerTreatment.durationMultiplier *
       harmonySustainMultiplier *
       (leadRhythmOptions?.durationMultiplier ?? 1),
-    releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
+    releaseMultiplier:
+      (leadRhythmOptions?.releaseMultiplier ?? 1) *
+      resolvePhraseBoundaryArticulation({
+        role: note.role,
+        phrasePosition,
+        preserveRepairPitch,
+      }).releaseMultiplier,
+    attackMultiplier: resolvePhraseBoundaryArticulation({
+      role: note.role,
+      phrasePosition,
+      preserveRepairPitch,
+    }).attackMultiplier,
     startOffsetMs:
       rhythmShiftMs +
       (leadRhythmOptions?.startOffsetMs ?? 0) +
@@ -413,18 +447,59 @@ function resolveRoleVelocityMultiplier(options: {
   return pattern[options.phrasePosition % pattern.length] ?? 1;
 }
 
+function resolvePhraseBoundaryArticulation(options: {
+  role: ProceduralMusicNote['role'];
+  phrasePosition: number;
+  preserveRepairPitch: boolean;
+}): PhraseBoundaryArticulation {
+  if (options.role === 'percussion') {
+    return {
+      attackMultiplier: 1,
+      releaseMultiplier: 1,
+    };
+  }
+
+  if (options.preserveRepairPitch && options.role === 'lead') {
+    return {
+      attackMultiplier: 1,
+      releaseMultiplier: 1,
+    };
+  }
+
+  const normalizedPhrasePosition = options.phrasePosition % 8;
+  if (normalizedPhrasePosition === 0) {
+    return {
+      attackMultiplier: 0.82,
+      releaseMultiplier: 0.88,
+    };
+  }
+  if (normalizedPhrasePosition === 7) {
+    return {
+      attackMultiplier: 1.08,
+      releaseMultiplier: 1.2,
+    };
+  }
+
+  return {
+    attackMultiplier: 1,
+    releaseMultiplier: 1,
+  };
+}
+
 function scaleSongNote(
   note: ProceduralMusicNote,
   options: {
     volumeMultiplier?: number;
     velocityMultiplier?: number;
     durationMultiplier?: number;
+    attackMultiplier?: number;
     releaseMultiplier?: number;
     startOffsetMs?: number;
     transposeSemitones?: number;
   }
 ): ProceduralMusicNote {
   const durationMultiplier = options.durationMultiplier ?? 1;
+  const attackMultiplier = options.attackMultiplier ?? 1;
   const releaseMultiplier = options.releaseMultiplier ?? 1;
   const transposeSemitones = options.transposeSemitones ?? 0;
   const nextVelocity =
@@ -448,6 +523,7 @@ function scaleSongNote(
     frequency,
     volume: note.volume * (options.volumeMultiplier ?? 1),
     velocity: nextVelocity,
+    attackMs: Math.max(4, Math.round(note.attackMs * attackMultiplier)),
     timbre:
       nextVelocity === undefined
         ? note.timbre

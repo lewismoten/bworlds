@@ -182,7 +182,7 @@
 - [x] Let percussion timing vary within strict limits.
 - [x] Avoid randomizing every note independently.
 - [x] Keep repeated phrases similar enough to recognize.
-- [ ] Change articulation at musical phrase boundaries.
+- [x] Change articulation at musical phrase boundaries.
 - [ ] Add subtle vibrato only to suitable sustained notes.
       Regression coverage now proves phrase-repetition analysis keeps exact
       repeats and near matches distinguishable, representative debug

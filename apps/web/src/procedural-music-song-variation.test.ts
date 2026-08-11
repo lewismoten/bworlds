@@ -284,6 +284,79 @@ describe('procedural music song variation', () => {
     expect(firstPercussion?.velocity).toBe(repeatedPercussion?.velocity);
   });
 
+  it('changes articulation at phrase boundaries for sustained non-percussion roles', () => {
+    const section = createSection('a');
+    const openingLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      0,
+      0
+    );
+    const middleLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      3,
+      0
+    );
+    const closingLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      7,
+      0
+    );
+
+    expect(openingLead).not.toBeNull();
+    expect(middleLead).not.toBeNull();
+    expect(closingLead).not.toBeNull();
+    expect(openingLead?.attackMs).toBeLessThan(middleLead?.attackMs ?? 0);
+    expect(openingLead?.releaseMs).toBeLessThan(middleLead?.releaseMs ?? 0);
+    expect(closingLead?.attackMs).toBeGreaterThan(middleLead?.attackMs ?? 0);
+    expect(closingLead?.releaseMs).toBeGreaterThan(middleLead?.releaseMs ?? 0);
+  });
+
+  it('leaves percussion articulation unchanged at phrase boundaries', () => {
+    const section = createSection('a');
+    const openingPercussion = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'percussion',
+        instrumentId: 'deep-forest:percussion:0:0',
+      },
+      section,
+      0,
+      0
+    );
+    const closingPercussion = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'percussion',
+        instrumentId: 'deep-forest:percussion:0:0',
+      },
+      section,
+      7,
+      0
+    );
+
+    expect(openingPercussion).not.toBeNull();
+    expect(closingPercussion).not.toBeNull();
+    expect(openingPercussion?.attackMs).toBe(BASE_NOTE.attackMs);
+    expect(openingPercussion?.releaseMs).toBe(BASE_NOTE.releaseMs);
+    expect(closingPercussion?.attackMs).toBe(BASE_NOTE.attackMs);
+    expect(closingPercussion?.releaseMs).toBe(BASE_NOTE.releaseMs);
+  });
+
   it('adds small velocity changes across phrase positions', () => {
     const section = createSection('a');
     const firstLead = transformSongSectionNote(
