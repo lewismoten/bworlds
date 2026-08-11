@@ -93,6 +93,7 @@ type DebugSnapshotExportOptions = {
         minimum: number;
       };
       pendingBuildBudgetMs: {
+        soft: number;
         minimum: number;
         maximum: number;
       };
@@ -706,6 +707,34 @@ export function formatDebugSnapshotFilename(timestamp: Date): string {
 function buildResourceBudgetSnapshot(
   options: DebugSnapshotExportOptions
 ): DebugSnapshotExport['resourceBudget'] {
+  assertIncreasingMetricThresholdOrder(
+    'frameMs',
+    options.performanceBudget.caps.frameMs.soft,
+    options.performanceBudget.caps.frameMs.hard
+  );
+  assertDecreasingMetricThresholdOrder(
+    'visibilityRadius',
+    options.performanceBudget.caps.visibilityRadius.reduced,
+    options.performanceBudget.caps.visibilityRadius.minimum,
+    options.performanceBudget.caps.visibilityRadius.full
+  );
+  assertDecreasingMetricThresholdOrder(
+    'pendingBuildBudgetMs',
+    options.performanceBudget.caps.pendingBuildBudgetMs.soft,
+    options.performanceBudget.caps.pendingBuildBudgetMs.minimum,
+    options.performanceBudget.caps.pendingBuildBudgetMs.maximum
+  );
+  assertDecreasingMetricThresholdOrder(
+    'pendingBuildTiles',
+    options.performanceBudget.caps.pendingBuildTiles.soft,
+    options.performanceBudget.caps.pendingBuildTiles.hard
+  );
+  assertIncreasingMetricThresholdOrder(
+    'estimatedGpuMemoryBytes',
+    options.performanceBudget.caps.estimatedGpuMemoryBytes.soft,
+    options.performanceBudget.caps.estimatedGpuMemoryBytes.hard
+  );
+
   const frameCurrentUtilizationPct = getIncreasingMetricUtilizationPct(
     options.snapshot.frameMs,
     options.performanceBudget.caps.frameMs.hard
@@ -787,17 +816,17 @@ function buildResourceBudgetSnapshot(
         hard: options.performanceBudget.caps.visibilityRadius.minimum,
         status: getDecreasingMetricStatus(
           options.performanceBudget.visibilityRadius,
-          options.performanceBudget.caps.visibilityRadius.full,
+          options.performanceBudget.caps.visibilityRadius.reduced,
           options.performanceBudget.caps.visibilityRadius.minimum
         ),
       },
       pendingBuildBudgetMs: {
         current: options.performanceBudget.pendingBuildBudgetMs,
-        soft: options.performanceBudget.caps.pendingBuildBudgetMs.maximum,
+        soft: options.performanceBudget.caps.pendingBuildBudgetMs.soft,
         hard: options.performanceBudget.caps.pendingBuildBudgetMs.minimum,
         status: getDecreasingMetricStatus(
           options.performanceBudget.pendingBuildBudgetMs,
-          options.performanceBudget.caps.pendingBuildBudgetMs.maximum,
+          options.performanceBudget.caps.pendingBuildBudgetMs.soft,
           options.performanceBudget.caps.pendingBuildBudgetMs.minimum
         ),
       },
@@ -862,16 +891,47 @@ function getIncreasingMetricStatus(
 
 function getDecreasingMetricStatus(
   current: number,
-  fullValue: number,
+  softLimit: number,
   hardLimit: number
 ): 'ok' | 'warning' | 'critical' {
   if (current <= hardLimit) {
     return 'critical';
   }
-  if (current < fullValue) {
+  if (current < softLimit) {
     return 'warning';
   }
   return 'ok';
+}
+
+function assertIncreasingMetricThresholdOrder(
+  metric: string,
+  softLimit: number,
+  hardLimit: number
+): void {
+  if (softLimit < hardLimit) {
+    return;
+  }
+  throw new Error(
+    `${metric} thresholds are invalid: expected soft < hard but received soft=${softLimit} and hard=${hardLimit}.`
+  );
+}
+
+function assertDecreasingMetricThresholdOrder(
+  metric: string,
+  softLimit: number,
+  hardLimit: number,
+  fullValue?: number
+): void {
+  if (softLimit <= hardLimit) {
+    throw new Error(
+      `${metric} thresholds are invalid: expected soft > hard but received soft=${softLimit} and hard=${hardLimit}.`
+    );
+  }
+  if (typeof fullValue === 'number' && fullValue < softLimit) {
+    throw new Error(
+      `${metric} thresholds are invalid: expected full >= soft but received full=${fullValue} and soft=${softLimit}.`
+    );
+  }
 }
 
 function parseQualityLimiterList(limiters: string): string[] {

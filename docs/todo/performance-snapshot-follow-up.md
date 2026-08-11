@@ -11,9 +11,9 @@
 - [x] Explain why 59 FPS reports a 33.3 ms average frame.
 - [x] Do not report performance as healthy with critical limits.
 - [x] Derive performance tier from all active budget limits.
-- [ ] Validate soft and hard threshold ordering by metric type.
-- [ ] Document whether higher or lower values are better.
-- [ ] Add tests for inverted lower-is-worse limits.
+- [x] Validate soft and hard threshold ordering by metric type.
+- [x] Document whether higher or lower values are better.
+- [x] Add tests for inverted lower-is-worse limits.
 
 ## Material Count
 

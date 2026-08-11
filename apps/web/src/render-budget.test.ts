@@ -317,6 +317,7 @@ describe('render budget', () => {
         minimum: MIN_VISIBILITY_RADIUS,
       },
       pendingBuildBudgetMs: {
+        soft: 2.7,
         minimum: 0.75,
         maximum: 3.5,
       },
@@ -382,7 +383,9 @@ describe('render budget', () => {
       },
     });
 
-    expect(getRenderBudgetCaps({ targetFps: 30 })).toMatchObject({
+    const reducedCaps = getRenderBudgetCaps({ targetFps: 30 });
+    expect(reducedCaps.pendingBuildBudgetMs.soft).toBeCloseTo(1.45, 5);
+    expect(reducedCaps).toMatchObject({
       pendingBuildBudgetMs: {
         minimum: 0.75,
         maximum: 2.25,

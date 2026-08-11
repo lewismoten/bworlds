@@ -62,6 +62,7 @@ export type RenderBudgetCaps = {
     minimum: number;
   };
   pendingBuildBudgetMs: {
+    soft: number;
     minimum: number;
     maximum: number;
   };
@@ -585,6 +586,7 @@ export function getPendingWorldBuildBudget(
 export function getRenderBudgetCaps(
   state: Pick<RenderBudgetState, 'targetFps'>
 ): RenderBudgetCaps {
+  const pendingBuildBudgetCaps = getPendingBuildBudgetCaps(state.targetFps);
   return {
     frameMs: {
       soft: LOW_FPS_FRAME_MS,
@@ -595,10 +597,7 @@ export function getRenderBudgetCaps(
       reduced: REDUCED_VISIBILITY_RADIUS,
       minimum: MIN_VISIBILITY_RADIUS,
     },
-    pendingBuildBudgetMs: {
-      minimum: 0.75,
-      maximum: state.targetFps === 60 ? 3.5 : 2.25,
-    },
+    pendingBuildBudgetMs: pendingBuildBudgetCaps,
     pendingBuildTiles:
       state.targetFps === 30
         ? {
@@ -665,6 +664,24 @@ export function getRenderBudgetCaps(
       soft: SOFT_VISIBLE_MESH_LIMIT,
       hard: HARD_VISIBLE_MESH_LIMIT,
     },
+  };
+}
+
+function getPendingBuildBudgetCaps(targetFps: 60 | 30): {
+  soft: number;
+  minimum: number;
+  maximum: number;
+} {
+  const minimum = 0.75;
+  const maximum = targetFps === 60 ? 3.5 : 2.25;
+  const soft = getPendingWorldBuildBudget({
+    smoothedFrameMs: 1000 / targetFps,
+    targetFps,
+  }).pendingBuildBudgetMs;
+  return {
+    soft,
+    minimum,
+    maximum,
   };
 }
 

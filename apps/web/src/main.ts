@@ -2344,7 +2344,7 @@ function collectCurrentDebugSnapshot(
         ),
         getDecreasingLimitStatus(
           pendingWorldBuildBudget.pendingBuildBudgetMs,
-          renderBudgetCaps.pendingBuildBudgetMs.maximum,
+          renderBudgetCaps.pendingBuildBudgetMs.soft,
           renderBudgetCaps.pendingBuildBudgetMs.minimum
         ),
         getDecreasingLimitStatus(
