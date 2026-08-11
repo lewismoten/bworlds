@@ -1642,6 +1642,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const materialCache = new Map();
   const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
+  const lastSuccessfulVisibleTileDetailLevels = new Map<
+    string,
+    RenderBudgetDetailLevel
+  >();
   const persistentSceneResourceStats = collectSceneResourceStats(scene);
   const persistentSceneLightCount = persistentSceneResourceStats.lightCount;
   const persistentSceneShadowLightCount =
@@ -1695,6 +1699,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function clearWorld() {
     worldRoot.clear();
     visibleTileNodes.clear();
+    lastSuccessfulVisibleTileDetailLevels.clear();
     lastLodSyncPlayerPosition = null;
     lastWorldCurvaturePlayerPosition = null;
     visibleWorldMutationVersion += 1;
@@ -2539,6 +2544,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         );
         const buildDurationMs = activePendingTileBuild.pluginBuildDurationMs;
         visibleTileNodes.set(tileNode.key, tileNode);
+        if (tileNode.modelRoot) {
+          lastSuccessfulVisibleTileDetailLevels.set(
+            tileNode.key,
+            tileNode.detailLevel ?? 'full'
+          );
+        }
         worldRoot.add(tileNode.node);
         visibleWorldMutationVersion += 1;
         recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
@@ -2579,11 +2590,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         dx * dx + dy * dy,
         tile
       );
-      const detailLevel = getPendingWorldBuildDetailLevel(
-        desiredDetailLevel,
-        dx * dx + dy * dy,
-        pendingWorldBuild.queue.length - processedEntryCount,
-        tile
+      const detailLevel = getPreferredVisibleTileBuildDetailLevel(
+        getPendingWorldBuildDetailLevel(
+          desiredDetailLevel,
+          dx * dx + dy * dy,
+          pendingWorldBuild.queue.length - processedEntryCount,
+          tile
+        ),
+        lastSuccessfulVisibleTileDetailLevels.get(entry.key)
       );
       const pendingBuild = startPendingTileBuild(
         state,
@@ -2606,6 +2620,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (pendingBuild.tileNode) {
         const buildDurationMs = performance.now() - buildStartMs;
         visibleTileNodes.set(entry.key, pendingBuild.tileNode);
+        if (pendingBuild.tileNode.modelRoot) {
+          lastSuccessfulVisibleTileDetailLevels.set(
+            entry.key,
+            pendingBuild.tileNode.detailLevel ?? 'full'
+          );
+        }
         worldRoot.add(pendingBuild.tileNode.node);
         visibleWorldMutationVersion += 1;
         recordRecentMetric(renderChurnMetrics.tileBuilds, nowMs);
@@ -3068,6 +3088,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         continue;
       }
       visibleTileNodes.set(key, nextEntry);
+      if (nextEntry.modelRoot) {
+        lastSuccessfulVisibleTileDetailLevels.set(
+          key,
+          nextEntry.detailLevel ?? 'full'
+        );
+      }
       worldRoot.remove(entry.node);
       disposeObject3DResources(entry.node);
       worldRoot.add(nextEntry.node);
@@ -3999,6 +4025,16 @@ export function getFallbackBoxReason(
     return 'tile plugin returned no model';
   }
   return 'tile has no plugin model and uses the wall-height fallback';
+}
+
+export function getPreferredVisibleTileBuildDetailLevel(
+  requestedDetailLevel: RenderBudgetDetailLevel,
+  lastSuccessfulDetailLevel?: RenderBudgetDetailLevel
+): RenderBudgetDetailLevel {
+  if (requestedDetailLevel === 'low') {
+    return 'low';
+  }
+  return lastSuccessfulDetailLevel === 'low' ? 'low' : requestedDetailLevel;
 }
 
 export function getPendingWorldBuildDetailLevel(

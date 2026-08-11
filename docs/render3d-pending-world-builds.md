@@ -33,6 +33,10 @@ Current behavior:
 - Shell-only fallback boxes are now logged as dedicated debug events with the
   tile key and the best available failure reason, so fallback churn is visible
   in the renderer diagnostics instead of being inferred indirectly.
+- `create3DRenderer()` now remembers the last successful visible detail level
+  for each tile key and uses that cached level as a pending-build hint, so a
+  tile that last succeeded on low detail can come back quickly before it tries
+  to climb back to full detail again.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

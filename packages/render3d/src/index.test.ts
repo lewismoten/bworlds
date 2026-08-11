@@ -190,6 +190,7 @@ import {
   getPendingWorldBuildDetailLevel,
   getVisibleWorldTileBuildOrder,
   getFallbackBoxReason,
+  getPreferredVisibleTileBuildDetailLevel,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   buildRecoverableVisibleTileModelDetailEntry,
@@ -4954,6 +4955,22 @@ describe('render3d visibility helpers', () => {
     expect(getFallbackBoxReason(null, false)).toBe(
       'tile has no plugin model and uses the wall-height fallback'
     );
+  });
+
+  it('prefers the last successful low-detail build for pending visible tiles', () => {
+    expect(getPreferredVisibleTileBuildDetailLevel('full', 'low')).toBe('low');
+  });
+
+  it('keeps the requested full detail when there is no lower cached visible lod', () => {
+    expect(getPreferredVisibleTileBuildDetailLevel('full', 'full')).toBe(
+      'full'
+    );
+    expect(getPreferredVisibleTileBuildDetailLevel('full')).toBe('full');
+  });
+
+  it('keeps low detail requests low regardless of the cached visible lod', () => {
+    expect(getPreferredVisibleTileBuildDetailLevel('low', 'full')).toBe('low');
+    expect(getPreferredVisibleTileBuildDetailLevel('low', 'low')).toBe('low');
   });
 
   it('uses low detail for non-near pending builds while the queue is still draining', () => {
