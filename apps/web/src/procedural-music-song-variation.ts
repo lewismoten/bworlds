@@ -19,6 +19,12 @@ const ROLE_TIMING_OFFSET_PATTERNS = {
   harmony: [6, 8, 5, 7, 6, 8, 5, 7],
   percussion: [-4, 0, 3, -2, -4, 0, 3, -2],
 } as const;
+const ROLE_VELOCITY_MULTIPLIER_PATTERNS = {
+  lead: [1.04, 0.98, 1.02, 0.97, 1.03, 0.99, 1.01, 0.96],
+  bass: [1.02, 0.99, 1.01, 0.98, 1.02, 0.99, 1, 0.97],
+  harmony: [0.99, 1.02, 0.98, 1.01, 0.99, 1.02, 0.98, 1],
+  percussion: [1.06, 0.96, 1.04, 0.98, 1.05, 0.97, 1.03, 0.99],
+} as const;
 
 export function transformSongSectionNote(
   note: ProceduralMusicNote,
@@ -54,12 +60,18 @@ export function transformSongSectionNote(
     phrasePosition: sectionContext.phrasePosition,
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
+  const roleVelocityMultiplier = resolveRoleVelocityMultiplier({
+    role: note.role,
+    phrasePosition: sectionContext.phrasePosition,
+    preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+  });
 
   switch (section.id) {
     case 'intro':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
-        velocityMultiplier: layerTreatment.velocityMultiplier,
+        velocityMultiplier:
+          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -82,7 +94,8 @@ export function transformSongSectionNote(
     case 'b':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
-        velocityMultiplier: layerTreatment.velocityMultiplier,
+        velocityMultiplier:
+          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -105,7 +118,8 @@ export function transformSongSectionNote(
     case 'return':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
-        velocityMultiplier: layerTreatment.velocityMultiplier,
+        velocityMultiplier:
+          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
@@ -116,7 +130,8 @@ export function transformSongSectionNote(
     case 'outro':
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
-        velocityMultiplier: layerTreatment.velocityMultiplier,
+        velocityMultiplier:
+          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -130,7 +145,8 @@ export function transformSongSectionNote(
     case 'a':
     default:
       return scaleSongNote(note, {
-        velocityMultiplier: layerTreatment.velocityMultiplier,
+        velocityMultiplier:
+          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
@@ -168,7 +184,13 @@ function transformAprimeSectionNote(
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
-    velocityMultiplier: layerTreatment.velocityMultiplier,
+    velocityMultiplier:
+      layerTreatment.velocityMultiplier *
+      resolveRoleVelocityMultiplier({
+        role: note.role,
+        phrasePosition,
+        preserveRepairPitch,
+      }),
     durationMultiplier:
       layerTreatment.durationMultiplier *
       harmonySustainMultiplier *
@@ -219,7 +241,13 @@ function transformVariationSectionNote(
 
   return scaleSongNote(note, {
     volumeMultiplier: layerTreatment.volumeMultiplier,
-    velocityMultiplier: layerTreatment.velocityMultiplier,
+    velocityMultiplier:
+      layerTreatment.velocityMultiplier *
+      resolveRoleVelocityMultiplier({
+        role: note.role,
+        phrasePosition,
+        preserveRepairPitch,
+      }),
     durationMultiplier:
       layerTreatment.durationMultiplier *
       harmonySustainMultiplier *
@@ -356,6 +384,19 @@ function resolveRoleTimingOffsetMs(options: {
 
   const pattern = ROLE_TIMING_OFFSET_PATTERNS[options.role];
   return pattern[options.phrasePosition % pattern.length] ?? 0;
+}
+
+function resolveRoleVelocityMultiplier(options: {
+  role: ProceduralMusicNote['role'];
+  phrasePosition: number;
+  preserveRepairPitch: boolean;
+}): number {
+  if (options.preserveRepairPitch && options.role === 'lead') {
+    return 1;
+  }
+
+  const pattern = ROLE_VELOCITY_MULTIPLIER_PATTERNS[options.role];
+  return pattern[options.phrasePosition % pattern.length] ?? 1;
 }
 
 function scaleSongNote(

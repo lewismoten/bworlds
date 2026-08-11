@@ -1180,6 +1180,36 @@ describe('procedural music song', () => {
     expect(postClimaxAverage).toBeGreaterThan(climaxApproachAverage);
   });
 
+  it('varies lead note velocity within the opening phrase instead of keeping one flat dynamic level', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a');
+
+    expect(sectionA).toBeDefined();
+
+    const openingPhraseLeadVelocities = song.notes
+      .filter(
+        (note): note is ProceduralMusicNote & { velocity: number } =>
+          note.role === 'lead' &&
+          note.velocity !== undefined &&
+          note.startMs >= song.startMs + sectionA!.startOffsetMs &&
+          note.startMs <
+            song.startMs + sectionA!.startOffsetMs + sectionA!.durationMs / 2
+      )
+      .slice(0, 8)
+      .map((note) => note.velocity);
+
+    expect(openingPhraseLeadVelocities.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(openingPhraseLeadVelocities).size).toBeGreaterThan(1);
+  });
+
   it('keeps transformed notes fully inside their assigned section windows', () => {
     const song = createProceduralMusicSong({
       nowMs: 1_000,

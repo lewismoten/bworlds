@@ -26,6 +26,11 @@ const BASE_NOTE: ProceduralMusicNote = {
   pulseRate: 1,
 };
 
+const BASE_NOTE_WITH_VELOCITY: ProceduralMusicNote = {
+  ...BASE_NOTE,
+  velocity: 80,
+};
+
 function createSection(
   id: ProceduralMusicSongSection['id']
 ): ProceduralMusicSongSection {
@@ -150,6 +155,59 @@ describe('procedural music song variation', () => {
     expect(bass?.startMs).toBe(BASE_NOTE.startMs + 2);
     expect(harmony?.startMs).toBe(BASE_NOTE.startMs + 8);
     expect(percussion?.startMs).toBe(BASE_NOTE.startMs);
+  });
+
+  it('adds small velocity changes across phrase positions', () => {
+    const section = createSection('a');
+    const firstLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      0,
+      0
+    );
+    const secondLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      1,
+      0
+    );
+    const firstHarmony = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'harmony',
+        instrumentId: 'deep-forest:harmony:0:0',
+      },
+      section,
+      0,
+      0
+    );
+    const secondHarmony = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'harmony',
+        instrumentId: 'deep-forest:harmony:0:0',
+      },
+      section,
+      1,
+      0
+    );
+
+    expect(firstLead).not.toBeNull();
+    expect(secondLead).not.toBeNull();
+    expect(firstHarmony).not.toBeNull();
+    expect(secondHarmony).not.toBeNull();
+    expect(firstLead?.velocity).toBe(83);
+    expect(secondLead?.velocity).toBe(78);
+    expect(firstHarmony?.velocity).toBe(79);
+    expect(secondHarmony?.velocity).toBe(82);
   });
 
   it('assigns deterministic lead rhythm identities to each named song section', () => {

@@ -170,7 +170,7 @@
 ## Humanization
 
 - [x] Add small timing offsets by instrument role.
-- [ ] Add small velocity changes within each phrase.
+- [x] Add small velocity changes within each phrase.
 - [ ] Keep one humanization profile per virtual performer.
 - [ ] Stagger harmony notes by a few milliseconds.
 - [ ] Let bass play slightly ahead or behind the beat.
@@ -184,7 +184,9 @@
       snapshots retain non-zero average phrase similarity instead of drifting
       into unrelated material, and the shared section-note transform now
       applies small deterministic timing offsets that differ across lead, bass,
-      harmony, and percussion roles.
+      harmony, and percussion roles while also shaping small deterministic
+      velocity changes across phrase positions instead of leaving note dynamics
+      flat within a phrase.
 
 ## Mixing
 
