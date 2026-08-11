@@ -9,7 +9,7 @@ import {
   getTownProfile,
 } from './index.ts';
 
-describe('town support long-running checks', () => {
+describe('town support long checks', () => {
   it('keeps deterministic town data stable after many cache evictions', () => {
     const profile = {
       level: 5,
@@ -86,4 +86,34 @@ describe('town support long-running checks', () => {
     ).toEqual(baselineServices);
     expect(getTownProfile(3, 7)).toEqual(baselineProfile);
   }, 4000);
+
+  it('keeps household rosters stable after bounded town cache churn', () => {
+    const baseline = getTownNpcs(10, -4).map((npc) => ({
+      id: npc.id,
+      name: npc.name,
+      age: npc.age,
+      mother: npc.mother.name,
+      father: npc.father.name,
+      profession: npc.profession,
+      workplaceBuildingId: npc.workplaceBuildingId,
+    }));
+
+    for (let index = 0; index < 320; index += 1) {
+      getTownProfile(index - 160, Math.floor(index / 8) - 20);
+      getTownBuildings(index - 160, Math.floor(index / 8) - 20);
+      getTownNpcs(index - 160, Math.floor(index / 8) - 20);
+    }
+
+    expect(
+      getTownNpcs(10, -4).map((npc) => ({
+        id: npc.id,
+        name: npc.name,
+        age: npc.age,
+        mother: npc.mother.name,
+        father: npc.father.name,
+        profession: npc.profession,
+        workplaceBuildingId: npc.workplaceBuildingId,
+      }))
+    ).toEqual(baseline);
+  });
 });

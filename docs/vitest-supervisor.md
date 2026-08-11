@@ -27,6 +27,12 @@ Related commands:
   [ambience-debug.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/ambience-debug.test.ts:1),
   [packages/map-overworld/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/map-overworld/src/index.test.ts:1),
   and [packages/overworld-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/overworld-support/src/index.test.ts:1).
+  Recent companion `*.long.test.ts` splits also keep brute-force cache churn and
+  seed-sweep checks off the default path, including
+  [packages/runtime-overworld-anchors/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/runtime-overworld-anchors/src/index.long.test.ts:1),
+  [packages/dock-route-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/dock-route-support/src/index.long.test.ts:1),
+  [packages/town-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/town-support/src/index.long.test.ts:1),
+  and [packages/tile-sign/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-sign/src/index.long.test.ts:1).
 - `npm run test:all`
   Runs the supervised full suite without fast-suite exclusions.
 - `npm run test:long`

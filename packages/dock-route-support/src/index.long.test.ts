@@ -55,7 +55,7 @@ function createCircularDockRouteState() {
   };
 }
 
-describe('dock route support long', () => {
+describe('dock route support long checks', () => {
   it('keeps dock routes deterministic after bounded route-cache eviction churn', () => {
     const state = createCircularDockRouteState();
     const baselineRoute = resolveDockBoatRoute(state as never, 0, 0);
@@ -78,6 +78,38 @@ describe('dock route support long', () => {
     expect(resolveDockBoatRoute(state as never, 0, 0)).toEqual(baselineRoute);
     expect(getDockBoatPlacements(state as never, 0, 0, 0)).toEqual(
       baselinePlacements
+    );
+  });
+
+  it('reports arrival and departure whistle windows near dock approaches', () => {
+    const state = createCircularDockRouteState();
+    let departurePlacement:
+      ReturnType<typeof getDockBoatPlacements>[number] | undefined;
+    let arrivalPlacement:
+      ReturnType<typeof getDockBoatPlacements>[number] | undefined;
+
+    for (let timeMs = 0; timeMs <= 30 * 60 * 1000; timeMs += 2_000) {
+      const placements = getDockBoatPlacements(state as never, timeMs, 0, 0);
+      departurePlacement ??= placements.find(
+        (placement) => placement.whistlePhase === 'departure'
+      );
+      arrivalPlacement ??= placements.find(
+        (placement) => placement.whistlePhase === 'arrival'
+      );
+      if (departurePlacement && arrivalPlacement) {
+        break;
+      }
+    }
+
+    expect(departurePlacement).toEqual(
+      expect.objectContaining({
+        whistlePhase: 'departure',
+      })
+    );
+    expect(arrivalPlacement).toEqual(
+      expect.objectContaining({
+        whistlePhase: 'arrival',
+      })
     );
   });
 });

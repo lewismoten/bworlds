@@ -77,36 +77,6 @@ describe('town support', () => {
     ).toBe(true);
   });
 
-  it('keeps household rosters stable after bounded town cache churn', () => {
-    const baseline = getTownNpcs(10, -4).map((npc) => ({
-      id: npc.id,
-      name: npc.name,
-      age: npc.age,
-      mother: npc.mother.name,
-      father: npc.father.name,
-      profession: npc.profession,
-      workplaceBuildingId: npc.workplaceBuildingId,
-    }));
-
-    for (let index = 0; index < 320; index += 1) {
-      getTownProfile(index - 160, Math.floor(index / 8) - 20);
-      getTownBuildings(index - 160, Math.floor(index / 8) - 20);
-      getTownNpcs(index - 160, Math.floor(index / 8) - 20);
-    }
-
-    expect(
-      getTownNpcs(10, -4).map((npc) => ({
-        id: npc.id,
-        name: npc.name,
-        age: npc.age,
-        mother: npc.mother.name,
-        father: npc.father.name,
-        profession: npc.profession,
-        workplaceBuildingId: npc.workplaceBuildingId,
-      }))
-    ).toEqual(baseline);
-  });
-
   it('assigns working adults to matching town workplaces while elders retire', () => {
     const npcs = getTownNpcs(3, 7);
     const buildings = new Map(
