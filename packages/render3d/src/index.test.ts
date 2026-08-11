@@ -189,6 +189,7 @@ import {
   getTileModelDetailLevelWithHysteresis,
   getPendingWorldBuildDetailLevel,
   getVisibleWorldTileBuildOrder,
+  getVisibleTileDebugInfoFromState,
   getFallbackBoxReason,
   getPreferredVisibleTileBuildDetailLevel,
   shouldRebuildVisibleTileModelDetailEntry,
@@ -4282,6 +4283,57 @@ describe('render3d visibility helpers', () => {
       topLabel: 'tile-forest',
       summary: 'tile-forest:2, tile-town:2',
     });
+  });
+
+  it('reads current tile lod debug info from visible and cached tile state', () => {
+    expect(
+      getVisibleTileDebugInfoFromState(
+        new Map([
+          [
+            '15:-9',
+            {
+              tilePluginOwnerLabel: 'tile-forest',
+              requestedDetailLevel: 'full',
+              detailLevel: 'low',
+              fallbackReason: 'low failed',
+              modelRoot: { type: 'Group' },
+            },
+          ],
+        ]),
+        new Map([['15:-9', 'low']]),
+        15,
+        -9
+      )
+    ).toEqual({
+      tileKey: '15:-9',
+      plugin: 'tile-forest',
+      requestedDetailLevel: 'full',
+      renderedDetailLevel: 'low',
+      cachedDetailLevel: 'low',
+      fallbackReason: 'low failed',
+      hasVisibleModel: true,
+    });
+
+    expect(
+      getVisibleTileDebugInfoFromState(
+        new Map(),
+        new Map([['15:-9', 'low']]),
+        15,
+        -9
+      )
+    ).toEqual({
+      tileKey: '15:-9',
+      plugin: null,
+      requestedDetailLevel: null,
+      renderedDetailLevel: null,
+      cachedDetailLevel: 'low',
+      fallbackReason: null,
+      hasVisibleModel: false,
+    });
+
+    expect(
+      getVisibleTileDebugInfoFromState(new Map(), new Map(), 15, -9)
+    ).toBeNull();
   });
 
   it('records bounded recent debug events and filters them to the active window', () => {

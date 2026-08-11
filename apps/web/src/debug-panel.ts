@@ -45,6 +45,12 @@ export type DebugSnapshot = {
   fallbackBoxSummary?: string;
   lastLodFailureReason?: string;
   lastFallbackReason?: string;
+  currentTilePlugin?: string;
+  currentTileRequestedDetailLevel?: string;
+  currentTileRenderedDetailLevel?: string;
+  currentTileCachedDetailLevel?: string;
+  currentTileFallbackReason?: string;
+  currentTileHasVisibleModel?: boolean;
   object3dCount: number;
   visibleObjectCount?: number;
   invisibleObjectCount?: number;
@@ -220,6 +226,12 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.fallbackBoxSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
     snapshot.lastFallbackReason ?? '',
+    snapshot.currentTilePlugin ?? '',
+    snapshot.currentTileRequestedDetailLevel ?? '',
+    snapshot.currentTileRenderedDetailLevel ?? '',
+    snapshot.currentTileCachedDetailLevel ?? '',
+    snapshot.currentTileFallbackReason ?? '',
+    snapshot.currentTileHasVisibleModel ? '1' : '0',
     snapshot.object3dCount,
     snapshot.groupCount,
     snapshot.meshCount,
@@ -358,6 +370,12 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Fallback Summary</dt><dd>${snapshot.fallbackBoxSummary || 'None'}</dd></div>
     <div><dt>Last LOD Failure</dt><dd>${snapshot.lastLodFailureReason || 'None'}</dd></div>
     <div><dt>Fallback Reason</dt><dd>${snapshot.lastFallbackReason || 'None'}</dd></div>
+    <div><dt>Current Tile Plugin</dt><dd>${snapshot.currentTilePlugin || 'None'}</dd></div>
+    <div><dt>Current Tile Requested LOD</dt><dd>${snapshot.currentTileRequestedDetailLevel || 'None'}</dd></div>
+    <div><dt>Current Tile Rendered LOD</dt><dd>${snapshot.currentTileRenderedDetailLevel || 'None'}</dd></div>
+    <div><dt>Current Tile Cached LOD</dt><dd>${snapshot.currentTileCachedDetailLevel || 'None'}</dd></div>
+    <div><dt>Current Tile Has Model</dt><dd>${snapshot.currentTileHasVisibleModel ? 'Yes' : 'No'}</dd></div>
+    <div><dt>Current Tile Fallback</dt><dd>${snapshot.currentTileFallbackReason || 'None'}</dd></div>
     <div><dt>Active Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Three.js Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>

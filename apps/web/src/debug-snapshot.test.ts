@@ -237,6 +237,12 @@ describe('debug snapshot', () => {
         lastLodFailureReason:
           '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
         lastFallbackReason: '15:-9 / tile-forest: low failed',
+        currentTilePlugin: 'tile-forest',
+        currentTileRequestedDetailLevel: 'full',
+        currentTileRenderedDetailLevel: 'low',
+        currentTileCachedDetailLevel: 'low',
+        currentTileFallbackReason: 'low failed',
+        currentTileHasVisibleModel: true,
         object3dCount: 318,
         visibleObjectCount: 301,
         invisibleObjectCount: 17,
@@ -593,6 +599,14 @@ describe('debug snapshot', () => {
       lastFailureReason:
         '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
       lastFallbackReason: '15:-9 / tile-forest: low failed',
+      currentTile: {
+        plugin: 'tile-forest',
+        requestedDetailLevel: 'full',
+        renderedDetailLevel: 'low',
+        cachedDetailLevel: 'low',
+        fallbackReason: 'low failed',
+        hasVisibleModel: true,
+      },
       thresholds: {
         lowDetailDistance: 6.5,
         lowDetailEnterDistance: 6.5,

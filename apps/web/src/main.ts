@@ -2406,12 +2406,27 @@ function collectCurrentDebugSnapshot(
     rendererStats.recentEvents,
     'fallback-box'
   );
+  const currentTileDebugInfo = renderer3d.getVisibleTileDebugInfo(
+    spatial.gridX,
+    spatial.gridY
+  );
   debugSnapshot.lastLodFailureReason = lastLodFailureEvent
     ? (formatRecentDebugEventReason(lastLodFailureEvent) ?? undefined)
     : undefined;
   debugSnapshot.lastFallbackReason = lastFallbackEvent
     ? (formatRecentDebugEventReason(lastFallbackEvent) ?? undefined)
     : undefined;
+  debugSnapshot.currentTilePlugin = currentTileDebugInfo?.plugin ?? undefined;
+  debugSnapshot.currentTileRequestedDetailLevel =
+    currentTileDebugInfo?.requestedDetailLevel ?? undefined;
+  debugSnapshot.currentTileRenderedDetailLevel =
+    currentTileDebugInfo?.renderedDetailLevel ?? undefined;
+  debugSnapshot.currentTileCachedDetailLevel =
+    currentTileDebugInfo?.cachedDetailLevel ?? undefined;
+  debugSnapshot.currentTileFallbackReason =
+    currentTileDebugInfo?.fallbackReason ?? undefined;
+  debugSnapshot.currentTileHasVisibleModel =
+    currentTileDebugInfo?.hasVisibleModel ?? false;
   debugSnapshot.resourceWarnings = [
     ...getPerformanceWarnings(debugSnapshot),
     ...getWorkQueueWarnings(debugSnapshot),

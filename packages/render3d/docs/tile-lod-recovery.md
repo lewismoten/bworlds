@@ -40,3 +40,5 @@ These counters are surfaced through the web debug snapshot, debug panel, and exp
 The web debug surfaces also expose the latest visible-tile recovery failure summary and the latest fallback-box reason directly from the renderer's recent debug events.
 
 They also surface recent per-plugin summaries for visible-tile LOD swaps and fallback-box usage, which makes it easier to identify which plugin is causing churn without inspecting the full event log.
+
+For the player's current snapped tile, the web debug panel also exposes the requested visible LOD, the currently rendered LOD, the last cached successful LOD, whether a real model is currently visible, and the current tile fallback reason when one exists.

@@ -75,6 +75,12 @@ describe('debug panel', () => {
       lastLodFailureReason:
         '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
       lastFallbackReason: '15:-9 / tile-forest: low failed',
+      currentTilePlugin: 'tile-forest',
+      currentTileRequestedDetailLevel: 'full',
+      currentTileRenderedDetailLevel: 'low',
+      currentTileCachedDetailLevel: 'low',
+      currentTileFallbackReason: 'low failed',
+      currentTileHasVisibleModel: true,
       object3dCount: 318,
       groupCount: 54,
       meshCount: 180,
@@ -158,6 +164,12 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Fallback Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Last LOD Failure');
     expect(buildDebugMarkup(snapshot)).toContain('Fallback Reason');
+    expect(buildDebugMarkup(snapshot)).toContain('Current Tile Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Current Tile Requested LOD');
+    expect(buildDebugMarkup(snapshot)).toContain('Current Tile Rendered LOD');
+    expect(buildDebugMarkup(snapshot)).toContain('Current Tile Cached LOD');
+    expect(buildDebugMarkup(snapshot)).toContain('Current Tile Has Model');
+    expect(buildDebugMarkup(snapshot)).toContain('Current Tile Fallback');
     expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');

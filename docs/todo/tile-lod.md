@@ -188,8 +188,8 @@ This is also partially due to performance issues which can be seen here, and add
 ## Debug Views
 
 - [ ] Show current LOD level above each debug tile.
-- [ ] Show requested and rendered LOD separately.
-- [ ] Show cached LOD levels for the selected tile.
+- [x] Show requested and rendered LOD separately.
+- [x] Show cached LOD levels for the selected tile.
 - [x] Show the last LOD failure reason.
 - [x] Show fallback reason when a box is rendered.
 - [ ] Show consolidated footprint outlines.

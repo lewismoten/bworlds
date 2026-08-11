@@ -268,6 +268,14 @@ export type DebugSnapshotExport = {
     fallbackSummary: string;
     lastFailureReason: string | null;
     lastFallbackReason: string | null;
+    currentTile: {
+      plugin: string | null;
+      requestedDetailLevel: string | null;
+      renderedDetailLevel: string | null;
+      cachedDetailLevel: string | null;
+      fallbackReason: string | null;
+      hasVisibleModel: boolean;
+    };
     thresholds: LodThresholdSummary;
   };
   budgetViolations: {
@@ -565,6 +573,18 @@ export function buildDebugSnapshotExport(
       fallbackSummary: options.snapshot.fallbackBoxSummary ?? '',
       lastFailureReason: options.snapshot.lastLodFailureReason?.trim() || null,
       lastFallbackReason: options.snapshot.lastFallbackReason?.trim() || null,
+      currentTile: {
+        plugin: options.snapshot.currentTilePlugin?.trim() || null,
+        requestedDetailLevel:
+          options.snapshot.currentTileRequestedDetailLevel?.trim() || null,
+        renderedDetailLevel:
+          options.snapshot.currentTileRenderedDetailLevel?.trim() || null,
+        cachedDetailLevel:
+          options.snapshot.currentTileCachedDetailLevel?.trim() || null,
+        fallbackReason:
+          options.snapshot.currentTileFallbackReason?.trim() || null,
+        hasVisibleModel: options.snapshot.currentTileHasVisibleModel ?? false,
+      },
       thresholds: options.lod.thresholds,
     },
     budgetViolations: {

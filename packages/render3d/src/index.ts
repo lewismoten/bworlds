@@ -293,6 +293,18 @@ type Render3DOptions = {
 };
 type Render3DController = {
   canOccupy(state: Render3DState, nextX: number, nextY: number): boolean;
+  getVisibleTileDebugInfo(
+    tileX: number,
+    tileY: number
+  ): {
+    tileKey: string;
+    plugin: string | null;
+    requestedDetailLevel: RenderBudgetDetailLevel | null;
+    renderedDetailLevel: RenderBudgetDetailLevel | null;
+    cachedDetailLevel: RenderBudgetDetailLevel | null;
+    fallbackReason: string | null;
+    hasVisibleModel: boolean;
+  } | null;
   getStats(): {
     drawCalls: number;
     triangles: number;
@@ -944,6 +956,7 @@ type DynamicTileNode = {
   modelVisibilityOpacity?: number;
   distanceFadeEligible?: boolean;
   detailLevel?: RenderBudgetDetailLevel;
+  requestedDetailLevel?: RenderBudgetDetailLevel;
   sync3DModel?: NonNullable<TilePlugin['sync3DModel']>;
 };
 type TileNodeBuildShell = {
@@ -2238,6 +2251,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       distanceFadeEligible:
         Boolean(pluginModel) && definition.walkable && !isWaterKind(tile.kind),
       detailLevel,
+      requestedDetailLevel: detailLevel,
       sync3DModel: tilePlugin?.sync3DModel,
     };
   }
@@ -3119,6 +3133,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           ),
         lastSuccessfulVisibleTileDetailLevels.get(key)
       );
+      nextEntry.requestedDetailLevel = requestedDetailLevel;
       if (!nextEntry.modelRoot) {
         recordRenderDebugEvent(recentDebugEvents, {
           nowMs,
@@ -3167,6 +3182,26 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       });
     }
     return processedEntryCount;
+  }
+
+  function getVisibleTileDebugInfo(
+    tileX: number,
+    tileY: number
+  ): {
+    tileKey: string;
+    plugin: string | null;
+    requestedDetailLevel: RenderBudgetDetailLevel | null;
+    renderedDetailLevel: RenderBudgetDetailLevel | null;
+    cachedDetailLevel: RenderBudgetDetailLevel | null;
+    fallbackReason: string | null;
+    hasVisibleModel: boolean;
+  } | null {
+    return getVisibleTileDebugInfoFromState(
+      visibleTileNodes,
+      lastSuccessfulVisibleTileDetailLevels,
+      tileX,
+      tileY
+    );
   }
 
   function createTileBuildCache(state): TileBuildCache {
@@ -3831,6 +3866,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   return {
     canOccupy,
+    getVisibleTileDebugInfo,
     getDrawCalls,
     getMaxChunkDrawCalls,
     getMaxChunkObjects,
@@ -4061,6 +4097,51 @@ export function shouldRebuildVisibleTileModelDetailEntry(
     !currentEntry.modelRoot ||
     (currentEntry.detailLevel ?? 'full') !== requestedDetailLevel
   );
+}
+
+export function getVisibleTileDebugInfoFromState(
+  visibleTileNodes: ReadonlyMap<
+    string,
+    Pick<
+      DynamicTileNode,
+      | 'tilePluginOwnerLabel'
+      | 'requestedDetailLevel'
+      | 'detailLevel'
+      | 'fallbackReason'
+      | 'modelRoot'
+    >
+  >,
+  lastSuccessfulVisibleTileDetailLevels: ReadonlyMap<
+    string,
+    RenderBudgetDetailLevel
+  >,
+  tileX: number,
+  tileY: number
+): {
+  tileKey: string;
+  plugin: string | null;
+  requestedDetailLevel: RenderBudgetDetailLevel | null;
+  renderedDetailLevel: RenderBudgetDetailLevel | null;
+  cachedDetailLevel: RenderBudgetDetailLevel | null;
+  fallbackReason: string | null;
+  hasVisibleModel: boolean;
+} | null {
+  const key = `${tileX}:${tileY}`;
+  const entry = visibleTileNodes.get(key);
+  const cachedDetailLevel =
+    lastSuccessfulVisibleTileDetailLevels.get(key) ?? null;
+  if (!entry && !cachedDetailLevel) {
+    return null;
+  }
+  return {
+    tileKey: key,
+    plugin: entry?.tilePluginOwnerLabel?.trim() || null,
+    requestedDetailLevel: entry?.requestedDetailLevel ?? null,
+    renderedDetailLevel: entry?.detailLevel ?? null,
+    cachedDetailLevel,
+    fallbackReason: entry?.fallbackReason ?? null,
+    hasVisibleModel: Boolean(entry?.modelRoot),
+  };
 }
 
 export function buildRecoverableVisibleTileModelDetailEntry<
