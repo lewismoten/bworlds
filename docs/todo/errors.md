@@ -39,13 +39,13 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       ring into one `InstancedMesh`, and taller column caps into one
       `InstancedMesh`, tall ships now collapse their repeated masts, yards,
       and sails into instanced sets, and `tile-lighthouse` now collapses its
-      repeated lantern-room frame posts, balcony rail posts, four lantern-room
-      panes, and four wall-glow boxes into instanced sets, and full-detail
-      forest stone-ring landmarks now collapse their repeated stones into one
-      `InstancedMesh`, and full-detail forest mushroom-ring landmarks now
-      collapse their repeated stems and caps into two `InstancedMesh` nodes,
-      which removes small clusters of redundant static child nodes from each
-      visible landmark or track tile.
+      two lantern-room frame rings, repeated lantern-room frame posts, balcony
+      rail posts, four lantern-room panes, and four wall-glow boxes into
+      instanced sets, and full-detail forest stone-ring landmarks now collapse
+      their repeated stones into one `InstancedMesh`, and full-detail forest
+      mushroom-ring landmarks now collapse their repeated stems and caps into
+      two `InstancedMesh` nodes, which removes small clusters of redundant
+      static child nodes from each visible landmark or track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
@@ -59,12 +59,13 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       emitting one mesh per repeated prop, ruins landmarks now instance their
       repeated column ring and taller column caps, tall ships now instance
       their repeated rigging parts instead of emitting one mesh per mast,
-      yard, or sail, lighthouse lantern-room panes and wall-glow boxes now
-      instance their repeated decorative geometry instead of emitting one mesh
-      per piece, and full-detail forest stone-ring landmarks now instance
-      their repeated stones instead of emitting one mesh per rock, and
-      full-detail forest mushroom-ring landmarks now instance their repeated
-      stems and caps instead of emitting one mesh per mushroom piece.
+      yard, or sail, lighthouse lantern-room frame rings, panes, and wall-
+      glow boxes now instance their repeated decorative geometry instead of
+      emitting one mesh per piece, and full-detail forest stone-ring
+      landmarks now instance their repeated stones instead of emitting one
+      mesh per rock, and full-detail forest mushroom-ring landmarks now
+      instance their repeated stems and caps instead of emitting one mesh per
+      mushroom piece.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

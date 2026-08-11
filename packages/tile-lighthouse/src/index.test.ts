@@ -362,10 +362,10 @@ describe('tile lighthouse', () => {
     });
 
     expect(fullEstimate).toEqual({
-      object3dCount: 23,
+      object3dCount: 22,
       groupCount: 2,
-      meshCount: 20,
-      geometryCount: 20,
+      meshCount: 19,
+      geometryCount: 19,
       materialCount: 9,
       lightCount: 1,
       shadowLightCount: 0,
@@ -413,10 +413,10 @@ describe('tile lighthouse', () => {
         model,
       })
     ).toEqual({
-      object3dCount: 23,
+      object3dCount: 22,
       groupCount: 2,
-      meshCount: 20,
-      geometryCount: 20,
+      meshCount: 19,
+      geometryCount: 19,
       materialCount: 9,
       lightCount: 1,
       shadowLightCount: 0,
@@ -484,6 +484,10 @@ describe('tile lighthouse', () => {
       'lighthouseBalconyRail'
     );
     const wallGlowMeshes = collectTaggedMeshes(model, 'lighthouseWallGlow');
+    const frameRingInstances = collectTaggedInstancedMeshes(
+      model,
+      'lighthouseFrameRingInstanced'
+    );
     const framePostInstances = collectTaggedInstancedMeshes(
       model,
       'lighthouseFramePostInstanced'
@@ -502,11 +506,13 @@ describe('tile lighthouse', () => {
     );
 
     expect(glassMeshes).toHaveLength(1);
-    expect(frameMeshes).toHaveLength(3);
+    expect(frameMeshes).toHaveLength(2);
     expect(lensMeshes).toHaveLength(1);
     expect(balconyMeshes).toHaveLength(1);
     expect(balconyRailMeshes).toHaveLength(2);
     expect(wallGlowMeshes).toHaveLength(2);
+    expect(frameRingInstances).toHaveLength(1);
+    expect(frameRingInstances[0]?.count).toBe(2);
     expect(framePostInstances).toHaveLength(1);
     expect(framePostInstances[0]?.count).toBe(4);
     expect(balconyRailPostInstances).toHaveLength(1);

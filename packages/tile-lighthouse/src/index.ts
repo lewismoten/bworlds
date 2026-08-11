@@ -39,6 +39,7 @@ const LIGHTHOUSE_BEAM_KEY = 'lighthouseBeam';
 const LIGHTHOUSE_LENS_KEY = 'lighthouseLens';
 const LIGHTHOUSE_GLASS_KEY = 'lighthouseGlass';
 const LIGHTHOUSE_FRAME_KEY = 'lighthouseFrame';
+const LIGHTHOUSE_FRAME_RING_INSTANCED_KEY = 'lighthouseFrameRingInstanced';
 const LIGHTHOUSE_BALCONY_KEY = 'lighthouseBalcony';
 const LIGHTHOUSE_BALCONY_RAIL_KEY = 'lighthouseBalconyRail';
 const LIGHTHOUSE_WALL_GLOW_KEY = 'lighthouseWallGlow';
@@ -86,10 +87,10 @@ const LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS = [
   { radius: 0.24, length: 1.5, opacity: 0.1, emissiveIntensity: 0.58 },
 ] as const;
 const LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
-  object3dCount: 23,
+  object3dCount: 22,
   groupCount: 2,
-  meshCount: 20,
-  geometryCount: 20,
+  meshCount: 19,
+  geometryCount: 19,
   materialCount: 9,
   lightCount: 1,
   shadowLightCount: 0,
@@ -394,21 +395,35 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       lanternGlass.position.set(tileX, 1.86, tileY);
       group.add(lanternGlass);
 
-      for (const yOffset of [-0.13, 0.13]) {
-        const frameRing = markOptionalDecorativeRenderBudgetPart(
-          new three.Mesh(
-            getSharedCylinderGeometry(three, 0.29, 0.29, 0.03, 8),
-            frameMaterial
-          ),
-          { label: 'frame-ring' }
+      const frameRingInstances = markOptionalDecorativeRenderBudgetPart(
+        new three.InstancedMesh(
+          getSharedCylinderGeometry(three, 0.29, 0.29, 0.03, 8),
+          frameMaterial,
+          2
+        ),
+        { label: 'frame-ring' }
+      );
+      frameRingInstances.userData = {
+        ...(frameRingInstances.userData ?? {}),
+        [LIGHTHOUSE_FRAME_KEY]: true,
+        [LIGHTHOUSE_FRAME_RING_INSTANCED_KEY]: true,
+      };
+      const frameRingMatrixScratch = new three.Matrix4();
+      [-0.13, 0.13].forEach((yOffset, index) => {
+        frameRingInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            frameRingMatrixScratch,
+            tileX,
+            1.86 + yOffset,
+            tileY,
+            1,
+            1,
+            1
+          )
         );
-        frameRing.userData = {
-          ...(frameRing.userData ?? {}),
-          [LIGHTHOUSE_FRAME_KEY]: true,
-        };
-        frameRing.position.set(tileX, 1.86 + yOffset, tileY);
-        group.add(frameRing);
-      }
+      });
+      group.add(frameRingInstances);
 
       const framePostInstances = markOptionalDecorativeRenderBudgetPart(
         new three.InstancedMesh(
