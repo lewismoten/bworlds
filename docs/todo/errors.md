@@ -2,25 +2,7 @@
 
 Always run tests to make sure all tests pass
 
-- [x] Fix console error on music debug page
-      music-debug-percussion-playback.ts:82 Uncaught (in promise) TypeError: Cannot read properties of null (reading 'notes')
-      at createMusicDebugPercussionPlaybackVoices (music-debug-percussion-playback.ts:82:57
-      at buildMusicDebugPercussionLaneTogglesMarkup (music-debug-percussion-playback.ts:241:18
-      at buildTrackVisibilityButtonMarkup (music-debug-page.ts:280:9)
-      at music-debug-page.ts:303:5
-      at Array.map (<anonymous>)
-      at renderTrackVisibilityControls (music-debug-page.ts:302:66)
-      at music-debug-page.ts:1042:1
-      (anonymous) @ music-debug-percussion-playback.ts:82
-      (anonymous) @ music-debug-percussion-playback.ts:241
-      buildTrackVisibilityButtonMarkup @ music-debug-page.ts:280
-      (anonymous) @ music-debug-page.ts:303
-      renderTrackVisibilityControls @ music-debug-page.ts:302
-      (anonymous) @ music-debug-page.ts:1042
-      Resolution: percussion playback helpers now treat a missing snapshot as having
-      no available percussion voices yet, so the bootstrap render can safely skip
-      lane toggles until `pageState` has produced the first snapshot.
-
+- [ ] Complete client-error-snapshot.md
 - [ ] Complete audio-priority2.md
 
 # Next Highest
