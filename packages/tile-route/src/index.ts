@@ -2308,18 +2308,48 @@ function addDrawbridgeDetails(
   deckWidth: number
 ) {
   const towerOffset = 0.24;
+  const frameInstances = new three.InstancedMesh(
+    new three.BoxGeometry(0.09, 0.42, 0.09),
+    style.postMaterial,
+    2
+  );
+  frameInstances.userData = {
+    ...(frameInstances.userData ?? {}),
+    routeInstancedPart: 'drawbridge-frame',
+  };
+  const frameMatrixScratch = new three.Matrix4();
+  let nextFrameIndex = 0;
   for (let side = -1; side <= 1; side += 2) {
-    const frame = new three.Mesh(
-      new three.BoxGeometry(0.09, 0.42, 0.09),
-      style.postMaterial
-    );
     if (alongX) {
-      frame.position.set(side * towerOffset, 0.21, 0);
+      frameInstances.setMatrixAt(
+        nextFrameIndex,
+        writeRouteInstancedScalePositionMatrix(
+          frameMatrixScratch,
+          side * towerOffset,
+          0.21,
+          0,
+          1,
+          1,
+          1
+        )
+      );
     } else {
-      frame.position.set(0, 0.21, side * towerOffset);
+      frameInstances.setMatrixAt(
+        nextFrameIndex,
+        writeRouteInstancedScalePositionMatrix(
+          frameMatrixScratch,
+          0,
+          0.21,
+          side * towerOffset,
+          1,
+          1,
+          1
+        )
+      );
     }
-    group.add(frame);
+    nextFrameIndex += 1;
   }
+  group.add(frameInstances);
 
   const spindle = new three.Mesh(
     new three.CylinderGeometry(0.025, 0.025, deckWidth * 0.72, 6),

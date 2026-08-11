@@ -851,6 +851,40 @@ describe('tile route', () => {
     );
   });
 
+  it('instances repeated drawbridge tower frames', () => {
+    let drawbridgeFrameInstances: FakeInstancedMesh[] = [];
+    let bridgeCoordinates: { x: number; y: number } | null = null;
+
+    for (let tileY = 0; tileY < 44 && !bridgeCoordinates; tileY += 1) {
+      for (let tileX = 0; tileX < 44; tileX += 1) {
+        const state = createStandardBridgeState(tileX, tileY);
+        const model = bridgeTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: state as never,
+          tile: { kind: 'bridge' } as never,
+          tileX,
+          tileY,
+        }) as FakeGroup;
+        const matches = collectTaggedInstancedMeshes(
+          model,
+          'routeInstancedPart'
+        ).filter(
+          (mesh) => mesh.userData?.routeInstancedPart === 'drawbridge-frame'
+        );
+        if (matches.length > 0 && (matches[0]?.count ?? 0) > 0) {
+          bridgeCoordinates = { x: tileX, y: tileY };
+          drawbridgeFrameInstances = matches;
+          break;
+        }
+      }
+    }
+
+    expect(bridgeCoordinates).not.toBeNull();
+    expect(drawbridgeFrameInstances).toHaveLength(1);
+    expect(drawbridgeFrameInstances[0]?.count).toBe(2);
+    expect(drawbridgeFrameInstances[0]?.matrices).toHaveLength(2);
+  });
+
   it('keeps deterministic dock and bridge visuals stable after bounded cache eviction churn', () => {
     const dockState = createRoutedDockModelState();
     const bridgeState = createForestLogBridgeState();
