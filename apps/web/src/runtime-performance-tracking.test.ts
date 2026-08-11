@@ -261,6 +261,9 @@ describe('runtime performance tracking', () => {
       'frame time',
       'materials',
     ]);
+    expect(issue?.renderState.visibilityRadiusDetail).toBe(
+      'Visibility radius is currently reduced to 6 from full 18. Weather currently caps draw distance at 6. Weather is pushing draw distance below the minimum-quality radius 10.'
+    );
     expect(issue?.renderState.latestQualityChangeLimiter).toBe(
       'Scene materials exceeded the hard cap'
     );
@@ -272,6 +275,9 @@ describe('runtime performance tracking', () => {
     );
     expect(issue?.reasons).toContain(
       'Latest quality change was triggered by Scene materials 467 exceeded hard cap 48.'
+    );
+    expect(issue?.reasons).toContain(
+      'Visibility radius is currently reduced to 6 from full 18. Weather currently caps draw distance at 6. Weather is pushing draw distance below the minimum-quality radius 10.'
     );
     expect(issue?.reasons).toContain(
       'Top draw-call plugins: tile-forest dominates draw calls.'
@@ -336,6 +342,9 @@ describe('runtime performance tracking', () => {
       'Chunk draw calls 184 exceeded soft cap 160',
       'Scene materials 52 exceeded hard cap 48',
     ]);
+    expect(issue?.renderState.visibilityRadiusDetail).toBe(
+      'Visibility radius is currently reduced to 10 from full 18. Weather currently caps draw distance at 10. The renderer is operating at the minimum visibility radius 10.'
+    );
     expect(issue?.reasons).toContain(
       'Graphics quality is constrained by Visibility radius reduced to 10 (full 18, reduced 14, minimum 10); Weather visibility capped draw distance at 10 (full 18, weather cap 10); Chunk draw calls 184 exceeded soft cap 160; Scene materials 52 exceeded hard cap 48.'
     );

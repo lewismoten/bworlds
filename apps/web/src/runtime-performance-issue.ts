@@ -33,6 +33,7 @@ export type RuntimePerformanceIssueReport = {
     renderQualityLevel: string;
     renderQualityLimiters: string[];
     renderQualityLimiterDetails: string[];
+    visibilityRadiusDetail: string | null;
     latestQualityChangeLimiter: string | null;
     latestQualityChangeLimiterDetail: string | null;
     latestQualityChangeSummary: string | null;
@@ -129,6 +130,9 @@ export function buildRuntimePerformanceIssueReport(
         options.debugSnapshot.renderQualityLimiters
       ),
       renderQualityLimiterDetails,
+      visibilityRadiusDetail: describeVisibilityRadiusReduction(
+        options.debugSnapshot
+      ),
       latestQualityChangeLimiter:
         options.debugSnapshot.latestQualityChangeLimiter?.trim() || null,
       latestQualityChangeLimiterDetail: describeLatestQualityChangeLimiter(
@@ -148,8 +152,7 @@ export function buildRuntimePerformanceIssueReport(
       instancingWarnings:
         options.debugSnapshot.instancingWarningTopPluginLabel?.trim() || null,
       materials:
-        options.debugSnapshot.sceneUniqueMaterialTopPluginLabel?.trim() ||
-        null,
+        options.debugSnapshot.sceneUniqueMaterialTopPluginLabel?.trim() || null,
       drawCalls: options.debugSnapshot.drawCallTopPluginLabel?.trim() || null,
       objects: options.debugSnapshot.objectTopPluginLabel?.trim() || null,
       meshes: options.debugSnapshot.meshTopPluginLabel?.trim() || null,
@@ -204,9 +207,16 @@ function collectRuntimePerformanceIssueReasons(
         : `Graphics quality is constrained by ${limiters.join(', ')}.`
     );
   }
+  const visibilityRadiusDetail =
+    describeVisibilityRadiusReduction(debugSnapshot);
+  if (visibilityRadiusDetail) {
+    reasons.push(visibilityRadiusDetail);
+  }
 
   const latestQualityChangeLimiterDetail =
-    reasons.length > 0 ? describeLatestQualityChangeLimiter(debugSnapshot) : null;
+    reasons.length > 0
+      ? describeLatestQualityChangeLimiter(debugSnapshot)
+      : null;
   if (latestQualityChangeLimiterDetail) {
     reasons.push(
       `Latest quality change was triggered by ${latestQualityChangeLimiterDetail}.`
@@ -562,6 +572,39 @@ function describeRuntimePerformanceLimiter(
       return limiter;
     }
   }
+}
+
+function describeVisibilityRadiusReduction(
+  debugSnapshot: DebugSnapshot
+): string | null {
+  if (debugSnapshot.renderQualityLevel.trim().toLowerCase() === 'full') {
+    return null;
+  }
+  if (debugSnapshot.visibilityRadius >= DEFAULT_VISIBILITY_RADIUS) {
+    return null;
+  }
+
+  const weatherCap = Math.floor(
+    debugSnapshot.weatherVisibilityRadiusCap ?? debugSnapshot.visibilityRadius
+  );
+  const segments = [
+    `Visibility radius is currently reduced to ${debugSnapshot.visibilityRadius} from full ${DEFAULT_VISIBILITY_RADIUS}.`,
+  ];
+  if (weatherCap < DEFAULT_VISIBILITY_RADIUS) {
+    segments.push(`Weather currently caps draw distance at ${weatherCap}.`);
+  }
+  if (debugSnapshot.visibilityRadius <= MIN_VISIBILITY_RADIUS) {
+    segments.push(
+      weatherCap < MIN_VISIBILITY_RADIUS
+        ? `Weather is pushing draw distance below the minimum-quality radius ${MIN_VISIBILITY_RADIUS}.`
+        : `The renderer is operating at the minimum visibility radius ${MIN_VISIBILITY_RADIUS}.`
+    );
+  } else if (debugSnapshot.visibilityRadius <= REDUCED_VISIBILITY_RADIUS) {
+    segments.push(
+      `The renderer remains below the reduced-quality radius ${REDUCED_VISIBILITY_RADIUS}.`
+    );
+  }
+  return segments.join(' ');
 }
 
 function limiterValueLabel(

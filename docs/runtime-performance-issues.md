@@ -18,6 +18,8 @@ Captured issue reports currently include:
 - the nested runtime performance snapshot with hard-limit violations
 - current render tier, quality limiters, target FPS, visibility radius, and
   pending tile count
+- an explicit visibility-radius reduction consequence when draw distance has
+  already been lowered below the full-radius target
 - measured quality-limiter details plus the limiter that triggered the latest
   graphics-quality downgrade
 - recent plugin warnings that suggest repeated meshes should be instanced
