@@ -64,7 +64,12 @@ Always run tests to make sure all tests pass
   - [ ] Let generators yield progress without creating final Three.js objects yet.
   - [x] Warn when a plugin performs long synchronous work between yields.
   - [ ] Keep simple/cheap plugin methods synchronous where generators add no value.
-  - [ ] If enough CPU budget remains in a frame, generator can be called again to do next bit of work
+  - [x] If enough CPU budget remains in a frame, generator can be called again to do next bit of work
+        Pending world builds already reuse the same frame flush while budget
+        remains: `flushPendingWorldBuild()` loops through multiple queued tiles in
+        one frame, and `pending-world-build-processing.test.ts` now proves the
+        helper keeps admitting additional entries until the shared budget is
+        exhausted.
 - [ ] Reduce unique materials and shader program variants.
 - [x] Stop cloning materials when shared materials can be reused.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
