@@ -9,13 +9,13 @@ import {
   resolveMusicDebugPlaybackIntent,
 } from './music-debug-playback-intent.ts';
 
+const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
+
 describe('music debug playback intent', () => {
   it('defaults to a whole-song preview when loop mode is off', () => {
-    const snapshot = createMusicDebugSnapshot();
-
     expect(
       resolveMusicDebugPlaybackIntent({
-        snapshot,
+        snapshot: DEFAULT_SNAPSHOT,
         previewOffsetMs: 0,
         loopEnabled: false,
       })
@@ -29,12 +29,10 @@ describe('music debug playback intent', () => {
   });
 
   it('keeps the full-song rewind behavior when the playhead is already at the end', () => {
-    const snapshot = createMusicDebugSnapshot();
-
     expect(
       resolveMusicDebugPlaybackIntent({
-        snapshot,
-        previewOffsetMs: snapshot.durationMs,
+        snapshot: DEFAULT_SNAPSHOT,
+        previewOffsetMs: DEFAULT_SNAPSHOT.durationMs,
         loopEnabled: true,
       })
     ).toEqual({

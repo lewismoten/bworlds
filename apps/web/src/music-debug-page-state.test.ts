@@ -5,11 +5,17 @@ import {
 } from './music-debug.ts';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
 
+const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
+const OFFSET_SNAPSHOTS = [
+  createMusicDebugSnapshot({ clusterX: 0 }),
+  createMusicDebugSnapshot({ clusterX: 1 }),
+] as const;
+
 describe('music debug page state', () => {
   it('debounces repeated refresh requests into one snapshot rebuild', () => {
     vi.useFakeTimers();
     const rendered: MusicDebugSnapshot[] = [];
-    const createSnapshot = vi.fn(() => createMusicDebugSnapshot());
+    const createSnapshot = vi.fn(() => DEFAULT_SNAPSHOT);
     const state = createMusicDebugPageState({
       createSnapshot,
       onSnapshot: (snapshot) => {
@@ -34,7 +40,7 @@ describe('music debug page state', () => {
 
   it('reuses the current snapshot until another refresh is requested', () => {
     const rendered: MusicDebugSnapshot[] = [];
-    const createSnapshot = vi.fn(() => createMusicDebugSnapshot());
+    const createSnapshot = vi.fn(() => DEFAULT_SNAPSHOT);
     const state = createMusicDebugPageState({
       createSnapshot,
       onSnapshot: (snapshot) => {
@@ -54,10 +60,8 @@ describe('music debug page state', () => {
   it('flushes pending work immediately when playback needs the latest snapshot', () => {
     vi.useFakeTimers();
     const rendered: MusicDebugSnapshot[] = [];
-    const createSnapshot = vi.fn(() =>
-      createMusicDebugSnapshot({
-        clusterX: rendered.length,
-      })
+    const createSnapshot = vi.fn(
+      () => OFFSET_SNAPSHOTS[rendered.length] ?? OFFSET_SNAPSHOTS.at(-1)!
     );
     const state = createMusicDebugPageState({
       createSnapshot,

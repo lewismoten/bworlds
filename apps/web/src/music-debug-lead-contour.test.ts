@@ -8,15 +8,42 @@ import type { MusicDebugNotePitchDiagnostic } from './music-debug-note-analysis.
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
+const PLAINS_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'plains',
+  contextType: 'overworld',
+  clusterX: 0,
+  clusterY: 0,
+});
+const SECTION_A = createSectionA();
+const TEMPLATE_ANALYSIS = createMusicDebugLeadContourAnalysis({
+  theme: PLAINS_SNAPSHOT.theme,
+  clusterX: PLAINS_SNAPSHOT.options.clusterX,
+  clusterY: PLAINS_SNAPSHOT.options.clusterY,
+  songStartMs: 0,
+  sections: [SECTION_A],
+  notes: [],
+  diagnostics: [],
+});
+const PLANNED_CLIMAX_STEP_INDEX = TEMPLATE_ANALYSIS.plannedClimaxStepIndex;
+const PLANNED_CLIMAX_POINT = TEMPLATE_ANALYSIS.points.find(
+  (point) => point.stepIndex === PLANNED_CLIMAX_STEP_INDEX
+);
+const FINAL_POINT = TEMPLATE_ANALYSIS.points.at(-1);
+const OFF_PEAK_POINT = TEMPLATE_ANALYSIS.points
+  .filter(
+    (point) =>
+      point.stepIndex !== PLANNED_CLIMAX_STEP_INDEX &&
+      point.songMeasure !== FINAL_POINT?.songMeasure
+  )
+  .sort(
+    (left, right) =>
+      Math.abs((right.stepIndex ?? 0) - (PLANNED_CLIMAX_STEP_INDEX ?? 0)) -
+      Math.abs((left.stepIndex ?? 0) - (PLANNED_CLIMAX_STEP_INDEX ?? 0))
+  )[0];
+
 describe('music debug lead contour', () => {
   it('captures planned versus actual lead contour checkpoints for review', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'plains',
-      contextType: 'overworld',
-      clusterX: 0,
-      clusterY: 0,
-    });
-    const analysis = snapshot.leadContourAnalysis;
+    const analysis = PLAINS_SNAPSHOT.leadContourAnalysis;
 
     expect(analysis.points.length).toBeGreaterThan(0);
     expect(
@@ -38,86 +65,53 @@ describe('music debug lead contour', () => {
   });
 
   it('reports exact measures and note labels for contour failures', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'plains',
-      contextType: 'overworld',
-      clusterX: 0,
-      clusterY: 0,
-    });
-    const sectionA = createSectionA();
-    const templateAnalysis = createMusicDebugLeadContourAnalysis({
-      theme: snapshot.theme,
-      clusterX: snapshot.options.clusterX,
-      clusterY: snapshot.options.clusterY,
-      songStartMs: 0,
-      sections: [sectionA],
-      notes: [],
-      diagnostics: [],
-    });
-    const plannedClimaxStepIndex = templateAnalysis.plannedClimaxStepIndex;
-    const plannedClimaxPoint = templateAnalysis.points.find(
-      (point) => point.stepIndex === plannedClimaxStepIndex
-    );
-    const finalPoint = templateAnalysis.points.at(-1);
-    const offPeakPoint = templateAnalysis.points
-      .filter(
-        (point) =>
-          point.stepIndex !== plannedClimaxStepIndex &&
-          point.songMeasure !== finalPoint?.songMeasure
-      )
-      .sort(
-        (left, right) =>
-          Math.abs((right.stepIndex ?? 0) - (plannedClimaxStepIndex ?? 0)) -
-          Math.abs((left.stepIndex ?? 0) - (plannedClimaxStepIndex ?? 0))
-      )[0];
-
-    expect(offPeakPoint).toBeDefined();
-    expect(plannedClimaxPoint).toBeDefined();
-    expect(finalPoint).toBeDefined();
+    expect(OFF_PEAK_POINT).toBeDefined();
+    expect(PLANNED_CLIMAX_POINT).toBeDefined();
+    expect(FINAL_POINT).toBeDefined();
 
     const analysis = createMusicDebugLeadContourAnalysis({
-      theme: snapshot.theme,
-      clusterX: snapshot.options.clusterX,
-      clusterY: snapshot.options.clusterY,
+      theme: PLAINS_SNAPSHOT.theme,
+      clusterX: PLAINS_SNAPSHOT.options.clusterX,
+      clusterY: PLAINS_SNAPSHOT.options.clusterY,
       songStartMs: 0,
-      sections: [sectionA],
+      sections: [SECTION_A],
       notes: [
         createLeadNote(
           withPointStartMs(
-            sectionA,
-            snapshot.theme.stepPattern.length,
-            offPeakPoint!
+            SECTION_A,
+            PLAINS_SNAPSHOT.theme.stepPattern.length,
+            OFF_PEAK_POINT!
           ),
           72
         ),
         createLeadNote(
           withPointStartMs(
-            sectionA,
-            snapshot.theme.stepPattern.length,
-            finalPoint!
+            SECTION_A,
+            PLAINS_SNAPSHOT.theme.stepPattern.length,
+            FINAL_POINT!
           ),
           62
         ),
       ],
       diagnostics: [
-        createLeadDiagnostic(0, 72, offPeakPoint!.plannedMaxSemitones + 5, 5),
-        createLeadDiagnostic(1, 62, finalPoint!.plannedTargetSemitones, 2),
+        createLeadDiagnostic(0, 72, OFF_PEAK_POINT!.plannedMaxSemitones + 5, 5),
+        createLeadDiagnostic(1, 62, FINAL_POINT!.plannedTargetSemitones, 2),
       ],
     });
 
     expect(analysis.matchesPlannedContour).toBe(false);
     expect(analysis.messages).toContain(
-      `Lead contour checkpoint at measure ${offPeakPoint!.songMeasure} expected ${offPeakPoint!.plannedMinSemitones}-${offPeakPoint!.plannedMaxSemitones} semitones but observed C5 (${offPeakPoint!.plannedMaxSemitones + 5} semitones).`
+      `Lead contour checkpoint at measure ${OFF_PEAK_POINT!.songMeasure} expected ${OFF_PEAK_POINT!.plannedMinSemitones}-${OFF_PEAK_POINT!.plannedMaxSemitones} semitones but observed C5 (${OFF_PEAK_POINT!.plannedMaxSemitones + 5} semitones).`
     );
     expect(
       analysis.messages.some((message) =>
         message.includes(
-          `Lead contour climax peaked at measure ${offPeakPoint!.songMeasure} on C5 instead of the planned peak near measure ${plannedClimaxPoint!.songMeasure}.`
+          `Lead contour climax peaked at measure ${OFF_PEAK_POINT!.songMeasure} on C5 instead of the planned peak near measure ${PLANNED_CLIMAX_POINT!.songMeasure}.`
         )
       )
     ).toBe(true);
     expect(analysis.messages).toContain(
-      `Lead contour ending at measure ${finalPoint!.songMeasure} on D4 resolved to scale degree 2 instead of tonic.`
+      `Lead contour ending at measure ${FINAL_POINT!.songMeasure} on D4 resolved to scale degree 2 instead of tonic.`
     );
   });
 });
