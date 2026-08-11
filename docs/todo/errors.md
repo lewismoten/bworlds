@@ -3,6 +3,7 @@
 Always run tests to make sure all tests pass
 
 - [x] Complete client-error-snapshot.md
+- [ ] Complete [Performance Snapshot Follow-Up](performance-snapshot-follow-up.md)
 - [ ] Complete audio-priority2.md
 
 # Next Highest
