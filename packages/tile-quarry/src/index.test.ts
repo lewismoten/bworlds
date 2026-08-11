@@ -261,6 +261,39 @@ describe('tile quarry', () => {
     expect(standaloneStoneMeshes).toHaveLength(0);
   });
 
+  it('instances the repeated quarry cart wheels instead of emitting one mesh per wheel', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createQuarryState(),
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    const wheelInstances = model?.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.quarryInstancedPart === 'cart-wheel'
+    ) as FakeInstancedMesh[];
+    const standaloneWheelMeshes = model?.children.filter(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.material instanceof FakeMaterial &&
+        child.material.options.color === '#2f261f' &&
+        child.position.y === 0.04
+    );
+
+    expect(wheelInstances).toHaveLength(1);
+    expect(wheelInstances[0]?.count).toBe(2);
+    expect(wheelInstances[0]?.matrices).toHaveLength(2);
+    expect(
+      wheelInstances[0]?.matrices.every((matrix) => matrix.position.z > 0)
+    ).toBe(true);
+    expect(standaloneWheelMeshes).toHaveLength(0);
+  });
+
   it('reuses shared quarry materials across repeated model builds', () => {
     const plugin = createQuarryTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');

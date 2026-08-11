@@ -200,19 +200,32 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       cart.rotation.y = facing.rotationY;
       group.add(cart);
 
-      for (const wheelOffset of [-0.08, 0.08]) {
-        const wheel = new three.Mesh(
-          new three.CylinderGeometry(0.04, 0.04, 0.02, 8),
-          darkMetalMaterial
+      const wheelInstances = new three.InstancedMesh(
+        new three.CylinderGeometry(0.04, 0.04, 0.02, 8),
+        darkMetalMaterial,
+        2
+      );
+      wheelInstances.userData = {
+        ...wheelInstances.userData,
+        quarryInstancedPart: 'cart-wheel',
+      };
+      const wheelMatrixScratch = new three.Matrix4();
+
+      [-0.08, 0.08].forEach((wheelOffset, index) => {
+        wheelInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            wheelMatrixScratch,
+            cart.position.x + wheelOffset,
+            0.04,
+            cart.position.z + 0.08,
+            1,
+            1,
+            1
+          )
         );
-        wheel.position.set(
-          cart.position.x + wheelOffset,
-          0.04,
-          cart.position.z + 0.08
-        );
-        wheel.rotation.z = Math.PI / 2;
-        group.add(wheel);
-      }
+      });
+      group.add(wheelInstances);
 
       return group;
     },

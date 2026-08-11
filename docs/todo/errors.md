@@ -24,26 +24,26 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
 - [ ] Reduce unique materials and shader program variants.
 - [ ] Reduce Object3D count and unnecessary scene hierarchy depth.
       Progress: `tile-quarry` now collapses its six repeated rubble stones into
-      one `InstancedMesh`, and `tile-rail` now collapses four repeated sleepers
-      into one `InstancedMesh`, and full-detail cave mouths now collapse their
-      repeated entrance boulders into one `InstancedMesh`, and full-detail
-      dungeons now collapse their repeated tower bodies and caps into two
-      `InstancedMesh` nodes, and `tile-ruins` now collapses its repeated rubble
-      fragments into one `InstancedMesh`, and `tile-lighthouse` now collapses
-      its repeated lantern-room frame posts and balcony rail posts into two
-      `InstancedMesh` nodes, and full-detail forest stone-ring landmarks now
-      collapse their repeated stones into one `InstancedMesh`, which removes
-      small clusters of redundant static child nodes from each visible landmark
-      or track tile.
+      one `InstancedMesh`, its repeated cart wheels into one `InstancedMesh`,
+      and `tile-rail` now collapses four repeated sleepers into one
+      `InstancedMesh`, and full-detail cave mouths now collapse their repeated
+      entrance boulders into one `InstancedMesh`, and full-detail dungeons now
+      collapse their repeated tower bodies and caps into two `InstancedMesh`
+      nodes, and `tile-ruins` now collapses its repeated rubble fragments into
+      one `InstancedMesh`, and `tile-lighthouse` now collapses its repeated
+      lantern-room frame posts and balcony rail posts into two `InstancedMesh`
+      nodes, and full-detail forest stone-ring landmarks now collapse their
+      repeated stones into one `InstancedMesh`, which removes small clusters of
+      redundant static child nodes from each visible landmark or track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
-      stones, rail tiles now instance their repeated sleepers, and full-detail
-      cave mouths now instance their repeated entrance boulders, and full-detail
-      dungeons now instance their repeated tower bodies and caps instead of
-      emitting one mesh per repeated prop, and full-detail forest stone-ring
-      landmarks now instance their repeated stones instead of emitting one mesh
-      per rock.
+      stones and cart wheels, rail tiles now instance their repeated sleepers,
+      and full-detail cave mouths now instance their repeated entrance boulders,
+      and full-detail dungeons now instance their repeated tower bodies and caps
+      instead of emitting one mesh per repeated prop, and full-detail forest
+      stone-ring landmarks now instance their repeated stones instead of
+      emitting one mesh per rock.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.
