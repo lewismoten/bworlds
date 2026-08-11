@@ -44,3 +44,20 @@ They also surface recent per-plugin summaries for visible-tile LOD swaps and fal
 For the player's current snapped tile, the web debug panel also exposes the requested visible LOD, the currently rendered LOD, the last cached successful LOD, whether a real model is currently visible, and the current tile fallback reason when one exists.
 
 The debug panel also includes a `Freeze LOD` toggle that stops new visible-tile LOD resync passes while it is active. That makes it easier to inspect a problematic tile without movement immediately retriggering another selection pass.
+
+## Checklist Coverage
+
+The current implementation already covers these `docs/todo/tile-lod.md` items:
+
+- Prefer the last valid cached LOD before using a fallback box.
+- Walk down the LOD chain until a valid model is found.
+- Use a box only when no cached or lower LOD can render.
+- Keep the old model visible while a new LOD is being built.
+- Swap LODs only after the replacement model is ready.
+- Cache the last successful LOD for each visible tile.
+- Track why each requested LOD failed to build.
+- Prefer cached LODs over new high-detail generation.
+- Reserve fallback boxes for hard generation failures.
+- Log every fallback box with its tile and failure reason.
+
+The existing renderer tests in `packages/render3d/src/index.test.ts` also cover the currently checked fallback-path test items from that checklist.

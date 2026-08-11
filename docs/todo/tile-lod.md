@@ -4,19 +4,19 @@ This is also partially due to performance issues which can be seen here, and add
 
 ## LOD Recovery
 
-- [ ] Prefer the last valid cached LOD before using a fallback box.
+- [x] Prefer the last valid cached LOD before using a fallback box.
 - [ ] Try a lower LOD when the requested LOD exceeds its budget.
-- [ ] Walk down the LOD chain until a valid model is found.
-- [ ] Use a box only when no cached or lower LOD can render.
-- [ ] Keep the old model visible while a new LOD is being built.
-- [ ] Swap LODs only after the replacement model is ready.
-- [ ] Cache the last successful LOD for each visible tile.
-- [ ] Track why each requested LOD failed to build.
+- [x] Walk down the LOD chain until a valid model is found.
+- [x] Use a box only when no cached or lower LOD can render.
+- [x] Keep the old model visible while a new LOD is being built.
+- [x] Swap LODs only after the replacement model is ready.
+- [x] Cache the last successful LOD for each visible tile.
+- [x] Track why each requested LOD failed to build.
 - [ ] Keep lower LODs cached after higher LODs are requested.
 - [ ] Cancel stale LOD work when the player moves away.
-- [ ] Prefer cached LODs over new high-detail generation.
-- [ ] Reserve fallback boxes for hard generation failures.
-- [ ] Log every fallback box with its tile and failure reason.
+- [x] Prefer cached LODs over new high-detail generation.
+- [x] Reserve fallback boxes for hard generation failures.
+- [x] Log every fallback box with its tile and failure reason.
 
 ## Stable LOD Dimensions
 
@@ -218,9 +218,9 @@ This is also partially due to performance issues which can be seen here, and add
 
 ## Tests
 
-- [ ] Test failed high LOD uses the cached lower LOD.
-- [ ] Test failed high LOD tries lower LODs before a box.
-- [ ] Test a box appears only after all LODs fail.
+- [x] Test failed high LOD uses the cached lower LOD.
+- [x] Test failed high LOD tries lower LODs before a box.
+- [x] Test a box appears only after all LODs fail.
 - [ ] Test LOD swaps preserve canonical model bounds.
 - [ ] Test LOD swaps preserve pivot and ground alignment.
 - [ ] Test LOD hysteresis prevents rapid switching.
