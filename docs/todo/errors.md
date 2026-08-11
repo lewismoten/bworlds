@@ -37,7 +37,10 @@ Always run tests to make sure all tests pass
 - [x] Make the agent wait for one test run to finish.
 - [x] Run hanging files alone with one worker and verbose output.
 - [x] Record worker PIDs when the full suite starts.
-- [ ] Add a regression test after finding each hang.
+- [x] Add a regression test after finding each hang.
+      `vitest-supervisor.test.ts` now simulates a hung full-suite run and
+      asserts the timeout diagnostics, worker PID reporting, and forced
+      shutdown path so the hang-mitigation behavior stays covered.
 
 # Next Highest
 

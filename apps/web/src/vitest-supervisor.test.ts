@@ -1,4 +1,5 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { EventEmitter } from 'node:events';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +11,7 @@ import {
   parseProcessTable,
   parseSupervisorArgs,
   readExistingLockMetadata,
+  runVitest,
   updateVitestSupervisorState,
   waitForFullSuiteLock,
 } from '../../../scripts/vitest-supervisor.mjs';
@@ -146,4 +148,81 @@ describe('vitest supervisor', () => {
 
     await releaseLock();
   });
+
+  it('prints timeout diagnostics and kills a hung full-suite run', async () => {
+    vi.useFakeTimers();
+    const child = createMockVitestChild(321);
+    const consoleRef = {
+      log: vi.fn(),
+      error: vi.fn(),
+    };
+    const killVitestProcessGroup = vi.fn(async () => {
+      child.emit('exit', null, 'SIGKILL');
+    });
+    const releaseLock = vi.fn(async () => {});
+
+    const runPromise = runVitest(['--suite-timeout-ms', '25'], {
+      console: consoleRef,
+      cwd: '/repo',
+      env: {},
+      spawn: () => child,
+      getWorkerPids: async () => [901, 902],
+      killVitestProcessGroup,
+      waitForFullSuiteLock: async () => releaseLock,
+    });
+
+    await Promise.resolve();
+
+    child.stdout.emit(
+      'data',
+      ' ❯ apps/web/src/hanging-a.test.ts > hanging suite > starts\n'
+    );
+    child.stderr.emit(
+      'data',
+      ' ✓ packages/core/src/hanging-b.test.ts > helper suite > stays busy\n'
+    );
+
+    await vi.advanceTimersByTimeAsync(25);
+
+    await expect(runPromise).resolves.toBe(1);
+    expect(killVitestProcessGroup).toHaveBeenCalledTimes(1);
+    expect(releaseLock).toHaveBeenCalledTimes(1);
+    expect(consoleRef.error).toHaveBeenCalledWith(
+      'Vitest supervisor: suite timeout exceeded after 0s.'
+    );
+    expect(consoleRef.error).toHaveBeenCalledWith(
+      'Vitest supervisor: active test files: apps/web/src/hanging-a.test.ts, packages/core/src/hanging-b.test.ts.'
+    );
+    expect(consoleRef.error).toHaveBeenCalledWith(
+      'Vitest supervisor: last started test: packages/core/src/hanging-b.test.ts > helper suite > stays busy.'
+    );
+    expect(consoleRef.error).toHaveBeenCalledWith(
+      'Vitest supervisor: worker PIDs: 901, 902.'
+    );
+    expect(consoleRef.error).toHaveBeenCalledWith(
+      'Vitest supervisor: rerun likely hanging files with npm run test:hang-debug -- apps/web/src/hanging-a.test.ts packages/core/src/hanging-b.test.ts'
+    );
+  });
 });
+
+function createMockVitestChild(pid: number) {
+  const child = new EventEmitter() as EventEmitter & {
+    pid: number;
+    stdout: EventEmitter & { setEncoding: (encoding: string) => void };
+    stderr: EventEmitter & { setEncoding: (encoding: string) => void };
+  };
+
+  child.pid = pid;
+  child.stdout = createMockVitestStream();
+  child.stderr = createMockVitestStream();
+
+  return child;
+}
+
+function createMockVitestStream() {
+  const stream = new EventEmitter() as EventEmitter & {
+    setEncoding: (encoding: string) => void;
+  };
+  stream.setEncoding = (_encoding: string) => {};
+  return stream;
+}

@@ -211,28 +211,28 @@ async function getWorkerPids(rootPid) {
   }
 }
 
-function printTimeoutSummary(state, suiteTimeoutMs) {
-  console.error(
+function printTimeoutSummary(state, suiteTimeoutMs, consoleRef = console) {
+  consoleRef.error(
     `Vitest supervisor: suite timeout exceeded after ${Math.round(
       suiteTimeoutMs / 1000
     )}s.`
   );
-  console.error(
+  consoleRef.error(
     `Vitest supervisor: active test files: ${
       state.recentTestFiles.join(', ') || 'none observed yet'
     }.`
   );
-  console.error(
+  consoleRef.error(
     `Vitest supervisor: last started test: ${
       state.lastStartedTest ?? 'none observed yet'
     }.`
   );
-  console.error(
+  consoleRef.error(
     `Vitest supervisor: worker PIDs: ${
       state.workerPids.join(', ') || 'none recorded'
     }.`
   );
-  console.error(
+  consoleRef.error(
     `Vitest supervisor: rerun likely hanging files with ${buildHangDebugCommand(
       state.recentTestFiles
     )}`
@@ -253,29 +253,40 @@ async function killVitestProcessGroup(child) {
   }
 }
 
-async function runVitest(argv = process.argv.slice(2)) {
+async function runVitest(argv = process.argv.slice(2), options = {}) {
   const args = parseSupervisorArgs(argv);
-  const rootDir = process.cwd();
+  const spawnFn = options.spawn ?? spawn;
+  const consoleRef = options.console ?? console;
+  const cwd = options.cwd ?? process.cwd();
+  const env = options.env ?? process.env;
+  const clearTimeoutFn = options.clearTimeout ?? clearTimeout;
+  const getWorkerPidsFn = options.getWorkerPids ?? getWorkerPids;
+  const killVitestProcessGroupFn =
+    options.killVitestProcessGroup ?? killVitestProcessGroup;
+  const setTimeoutFn = options.setTimeout ?? setTimeout;
+  const waitForFullSuiteLockFn =
+    options.waitForFullSuiteLock ?? waitForFullSuiteLock;
+  const rootDir = cwd;
   const lockFilePath = path.join(rootDir, LOCK_FILE_NAME);
   let releaseLock = null;
 
   if (args.isFullSuiteRun) {
     let announcedWait = false;
-    releaseLock = await waitForFullSuiteLock(lockFilePath, {
+    releaseLock = await waitForFullSuiteLockFn(lockFilePath, {
       onWait(metadata) {
         if (announcedWait) {
           return;
         }
         announcedWait = true;
         const owner = metadata?.pid ? ` by PID ${metadata.pid}` : '';
-        console.error(
+        consoleRef.error(
           `Vitest supervisor: another full-suite run is already active${owner}. Waiting for it to finish.`
         );
       },
     });
   }
 
-  const child = spawn(
+  const child = spawnFn(
     'npm',
     [
       'exec',
@@ -287,7 +298,7 @@ async function runVitest(argv = process.argv.slice(2)) {
     ],
     {
       cwd: rootDir,
-      env: process.env,
+      env,
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     }
@@ -297,11 +308,11 @@ async function runVitest(argv = process.argv.slice(2)) {
     updateVitestSupervisorState(state, line);
   };
   const stdoutBuffer = createLineBuffer((line) => {
-    console.log(line);
+    consoleRef.log(line);
     handleOutputLine(line);
   });
   const stderrBuffer = createLineBuffer((line) => {
-    console.error(line);
+    consoleRef.error(line);
     handleOutputLine(line);
   });
 
@@ -311,23 +322,23 @@ async function runVitest(argv = process.argv.slice(2)) {
   child.stderr?.on('data', stderrBuffer);
 
   if (args.isFullSuiteRun) {
-    setTimeout(async () => {
-      state.workerPids = await getWorkerPids(child.pid);
+    setTimeoutFn(async () => {
+      state.workerPids = await getWorkerPidsFn(child.pid);
       if (state.workerPids.length > 0) {
-        console.error(
+        consoleRef.error(
           `Vitest supervisor: worker PIDs ${state.workerPids.join(', ')}.`
         );
       }
-    }, 1_500).unref();
+    }, 1_500)?.unref?.();
   }
 
   let timedOut = false;
   const suiteTimeout = args.isFullSuiteRun
-    ? setTimeout(async () => {
+    ? setTimeoutFn(async () => {
         timedOut = true;
-        state.workerPids = await getWorkerPids(child.pid);
-        printTimeoutSummary(state, args.suiteTimeoutMs);
-        await killVitestProcessGroup(child);
+        state.workerPids = await getWorkerPidsFn(child.pid);
+        printTimeoutSummary(state, args.suiteTimeoutMs, consoleRef);
+        await killVitestProcessGroupFn(child);
       }, args.suiteTimeoutMs)
     : null;
   suiteTimeout?.unref?.();
@@ -344,7 +355,7 @@ async function runVitest(argv = process.argv.slice(2)) {
   });
 
   if (suiteTimeout !== null) {
-    clearTimeout(suiteTimeout);
+    clearTimeoutFn(suiteTimeout);
   }
   await releaseLock?.();
 

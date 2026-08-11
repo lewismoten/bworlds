@@ -10,6 +10,12 @@ The audit lives in [apps/web/src/testing/test-source-audit.ts](/Users/lewismoten
 and runs as part of the normal Vitest suite through
 [apps/web/src/testing/test-source-audit.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/testing/test-source-audit.test.ts:1).
 
+The suite also keeps a direct regression test around the full-suite timeout
+path in [apps/web/src/vitest-supervisor.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/vitest-supervisor.test.ts:1).
+That test simulates a hung run and verifies the supervisor prints the active
+test files, last started test, worker PIDs, and hang-debug rerun command
+before it forces shutdown.
+
 If a test needs one of these patterns intentionally, add a suppression comment
 directly above the line:
 
