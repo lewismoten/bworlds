@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   normalizeProceduralMusicLoudness,
+  PROCEDURAL_MUSIC_TARGET_LOUDNESS,
+  PROCEDURAL_MUSIC_ROLE_LOUDNESS_WEIGHTS,
+  resolveProceduralMusicLoudnessPolicy,
   resolveProceduralMusicLoudness,
+  resolveProceduralMusicRoleLoudnessTargets,
 } from './procedural-music-loudness.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
@@ -35,6 +39,18 @@ function createNote(
 }
 
 describe('procedural music loudness', () => {
+  it('defines explicit loudness targets for each song role from one shared target band', () => {
+    const policy = resolveProceduralMusicLoudnessPolicy();
+    const targets = resolveProceduralMusicRoleLoudnessTargets();
+
+    expect(policy.targetLoudness).toBe(PROCEDURAL_MUSIC_TARGET_LOUDNESS);
+    expect(policy.roleWeights).toEqual(PROCEDURAL_MUSIC_ROLE_LOUDNESS_WEIGHTS);
+    expect(targets.lead).toBeCloseTo(PROCEDURAL_MUSIC_TARGET_LOUDNESS, 6);
+    expect(targets.harmony).toBeLessThan(targets.lead);
+    expect(targets.bass).toBeLessThan(targets.harmony);
+    expect(targets.percussion).toBeLessThan(targets.bass);
+  });
+
   it('measures louder note groups above quieter ones', () => {
     const quiet = [
       createNote('lead', 0.018, 260),
@@ -77,5 +93,13 @@ describe('procedural music loudness', () => {
 
     expect(afterGap).toBeLessThan(beforeGap);
     expect(afterGap).toBeLessThan(0.004);
+    expect(resolveProceduralMusicLoudness(quiet)).toBeCloseTo(
+      PROCEDURAL_MUSIC_TARGET_LOUDNESS,
+      3
+    );
+    expect(resolveProceduralMusicLoudness(loud)).toBeCloseTo(
+      PROCEDURAL_MUSIC_TARGET_LOUDNESS,
+      3
+    );
   });
 });

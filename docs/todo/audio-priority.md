@@ -168,7 +168,7 @@
 
 ## Mixing
 
-- [ ] Set a loudness target for each song role.
+- [x] Set a loudness target for each song role.
 - [ ] Measure each track before applying the final mix.
 - [x] Keep bass centered and below the harmony register.
 - [x] Keep lead clear of the harmony's strongest frequencies.
@@ -182,8 +182,10 @@
 - [ ] Export dry and processed versions for comparison.
       Regression coverage now proves the bass stays mostly centered, sampled
       bass notes remain below the harmony and lead centers, EQ stages protect
-      lead space and low end, and one shared room reverb bus is reused per
-      environment profile.
+      lead space and low end, one shared room reverb bus is reused per
+      environment profile, and the loudness normalizer now exposes one shared
+      target band with explicit role weights that keep lead, harmony, bass, and
+      percussion on ordered target levels.
 
 ## Debugging Workflow
 
