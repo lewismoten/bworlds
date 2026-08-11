@@ -8,10 +8,12 @@ import {
 
 describe('test cleanup helpers', () => {
   it('fails fast when a registered cleanup promise never settles', async () => {
-    registerTestCleanup(() => new Promise<void>(() => {}));
+    registerTestCleanup(() => new Promise<void>(() => {}), {
+      timeoutMs: 5,
+    });
 
     await expect(runRegisteredTestCleanups()).rejects.toThrow(
-      'registered test cleanup did not resolve or reject within 100ms.'
+      'registered test cleanup did not resolve or reject within 5ms.'
     );
   });
 
@@ -25,11 +27,12 @@ describe('test cleanup helpers', () => {
       },
       {
         label: 'hung callback close',
+        timeoutMs: 5,
       }
     );
 
     await expect(runRegisteredTestCleanups()).rejects.toThrow(
-      'hung callback close did not resolve or reject within 100ms.'
+      'hung callback close did not resolve or reject within 5ms.'
     );
   });
 

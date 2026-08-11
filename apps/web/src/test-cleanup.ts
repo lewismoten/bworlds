@@ -10,6 +10,7 @@ type ClosableResource = Partial<
 type TrackClosableResourceOptions = {
   methodName?: ClosableMethodName;
   label?: string;
+  timeoutMs?: number;
 };
 
 type RegisterTestCleanupOptions = {
@@ -58,6 +59,7 @@ export function trackClosableTestResource<Resource extends ClosableResource>(
     () => invokeClosableResourceMethod(resource, methodName, label),
     {
       label,
+      timeoutMs: options.timeoutMs,
     }
   );
   return resource;

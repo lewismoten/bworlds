@@ -23,6 +23,14 @@ dedicated long-suite files that are only included by `npm run test:long` and
 Keep the normal `*.test.ts` files for behavior checks that should run during
 every `npm run check`.
 
+When a fast-path test intentionally exercises timeout handling, prefer the
+smallest timeout that still proves the behavior. Both
+[registerTestCleanup](/Users/lewismoten/dev/bworlds/apps/web/src/test-cleanup.ts:27)
+and
+[trackClosableTestResource](/Users/lewismoten/dev/bworlds/apps/web/src/test-cleanup.ts:39)
+accept `timeoutMs` so timeout-path assertions do not burn an extra `100ms` in
+the normal suite unless the production default itself is what needs coverage.
+
 If a test needs one of these patterns intentionally, add a suppression comment
 directly above the line:
 
