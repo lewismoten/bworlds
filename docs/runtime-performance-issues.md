@@ -50,6 +50,11 @@ Recent mitigation work:
   sprite variant. Variant selection now lives in cached per-geometry UV
   remaps, which reduces scene material churn without flattening the visible
   floor art variety.
+- `tile-forest` birds now collapse into three animated instanced sets per
+  tile instead of one group plus three child meshes per bird. Bird motion is
+  still updated every frame, but the repeated wing/body draw calls and object
+  nodes now scale with three instanced meshes instead of three meshes per
+  inhabitant.
 
 Captured issue reports currently include:
 

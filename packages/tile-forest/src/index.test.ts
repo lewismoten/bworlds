@@ -11,7 +11,11 @@ vi.mock('@bworlds/three-support', async (importOriginal) => {
   };
 });
 
-import { createForestTilePlugin, getForestMeadows } from './index.ts';
+import {
+  createForestTilePlugin,
+  getForestBirds,
+  getForestMeadows,
+} from './index.ts';
 import {
   FakeGroup,
   FakeInstancedMesh,
@@ -405,6 +409,52 @@ describe('tile forest', () => {
     expect(fullGrassInstances.length).toBeGreaterThan(0);
     expect(fullGrassInstances.every((mesh) => mesh.count > 0)).toBe(true);
     expect(lowGrassInstances).toHaveLength(0);
+  });
+
+  it('instances animated birds instead of emitting one group per bird', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        if (getForestBirds(tileX, tileY).length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const model = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const birdInstanceParts = new Set<string>();
+    let legacyBirdGroups = 0;
+    model.traverse((node) => {
+      if (node.userData?.forestBirdInstancedPart) {
+        birdInstanceParts.add(String(node.userData.forestBirdInstancedPart));
+      }
+      if (
+        node instanceof FakeGroup &&
+        node.userData?.forestBird &&
+        !Array.isArray(node.userData.forestBird)
+      ) {
+        legacyBirdGroups += 1;
+      }
+    });
+
+    expect(birdInstanceParts).toEqual(
+      new Set(['left-wing', 'right-wing', 'body'])
+    );
+    expect(legacyBirdGroups).toBe(0);
   });
 });
 

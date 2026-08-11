@@ -25,6 +25,9 @@ Current layout:
   `InstancedMesh` and each tree's repeated foliage clumps into one
   `InstancedMesh`, while keeping the trunk segments and special-case detail
   nodes as ordinary children.
+- Full-detail forest birds now collapse into three animated `InstancedMesh`
+  sets per tile for left wings, right wings, and bodies instead of emitting
+  one `Group` with three child meshes per bird.
 - Other close-detail landmark, wildlife, and decoration meshes remain ordinary
   nodes where they carry unique shapes, animation, or interaction metadata.
 

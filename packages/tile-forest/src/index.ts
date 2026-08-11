@@ -93,6 +93,7 @@ const BARK_DAMAGE_KEY = 'forestBarkDamage';
 const HISTORICAL_TREE_KEY = 'forestHistoricalTree';
 const MEADOW_KEY = 'forestMeadow';
 const BIRD_KEY = 'forestBird';
+const BIRD_INSTANCED_PART_KEY = 'forestBirdInstancedPart';
 const WEB_KEY = 'forestWeb';
 const SPIDER_KEY = 'forestSpider';
 const BEAVER_DAMAGE_KEY = 'forestBeaverDamage';
@@ -1712,47 +1713,14 @@ function* createForestModelProgressive({
   }
 
   if (renderCloseDetails) {
-    for (const bird of scene.inhabitants.filter(
+    const birds = scene.inhabitants.filter(
       (
         inhabitant
       ): inhabitant is Extract<ForestTreeInhabitant, { kind: 'bird' }> =>
         inhabitant.kind === 'bird'
-    )) {
-      const birdGroup = new three.Group();
-      birdGroup.userData = {
-        ...(birdGroup.userData ?? {}),
-        [BIRD_KEY]: bird,
-      };
-
-      const leftWing = new three.Mesh(
-        geometry.branch,
-        floorDetailStyle.birdMaterial
-      );
-      leftWing.position.set(-bird.wingScale * 0.5, 0, 0);
-      leftWing.rotation.z = -0.35;
-      leftWing.scale.set(0.18, bird.wingScale, 0.18);
-      birdGroup.add(leftWing);
-
-      const rightWing = new three.Mesh(
-        geometry.branch,
-        floorDetailStyle.birdMaterial
-      );
-      rightWing.position.set(bird.wingScale * 0.5, 0, 0);
-      rightWing.rotation.z = 0.35;
-      rightWing.scale.set(0.18, bird.wingScale, 0.18);
-      birdGroup.add(rightWing);
-
-      const body = new three.Mesh(
-        geometry.foliage,
-        floorDetailStyle.birdMaterial
-      );
-      body.scale.set(
-        bird.wingScale * 0.55,
-        bird.wingScale * 0.3,
-        bird.wingScale * 0.3
-      );
-      birdGroup.add(body);
-      group.add(birdGroup);
+    );
+    if (birds.length > 0) {
+      addForestBirdInstances(three, group, geometry, floorDetailStyle, birds);
     }
   }
 
@@ -4519,6 +4487,82 @@ function addForestBreadcrumbInstances(
   group.add(breadcrumbInstances);
 }
 
+function addForestBirdInstances(
+  three: ThreeHostLike,
+  group: ThreeObject3DLike,
+  geometry: TreeGeometry,
+  style: ForestTreeStyle,
+  birds: ForestBirdDescriptor[]
+) {
+  const leftWingMatrixScratch = new three.Matrix4();
+  const rightWingMatrixScratch = new three.Matrix4();
+  const bodyMatrixScratch = new three.Matrix4();
+  const leftWingInstances = new three.InstancedMesh(
+    geometry.branch,
+    style.birdMaterial,
+    birds.length
+  );
+  leftWingInstances.userData = {
+    ...(leftWingInstances.userData ?? {}),
+    [BIRD_KEY]: birds,
+    [BIRD_INSTANCED_PART_KEY]: 'left-wing',
+    forestBirdMatrixScratch: leftWingMatrixScratch,
+  };
+  const rightWingInstances = new three.InstancedMesh(
+    geometry.branch,
+    style.birdMaterial,
+    birds.length
+  );
+  rightWingInstances.userData = {
+    ...(rightWingInstances.userData ?? {}),
+    [BIRD_KEY]: birds,
+    [BIRD_INSTANCED_PART_KEY]: 'right-wing',
+    forestBirdMatrixScratch: rightWingMatrixScratch,
+  };
+  const bodyInstances = new three.InstancedMesh(
+    geometry.foliage,
+    style.birdMaterial,
+    birds.length
+  );
+  bodyInstances.userData = {
+    ...(bodyInstances.userData ?? {}),
+    [BIRD_KEY]: birds,
+    [BIRD_INSTANCED_PART_KEY]: 'body',
+    forestBirdMatrixScratch: bodyMatrixScratch,
+  };
+
+  birds.forEach((bird, index) => {
+    syncForestBirdInstance(
+      leftWingInstances,
+      index,
+      leftWingMatrixScratch,
+      bird,
+      0,
+      'left-wing'
+    );
+    syncForestBirdInstance(
+      rightWingInstances,
+      index,
+      rightWingMatrixScratch,
+      bird,
+      0,
+      'right-wing'
+    );
+    syncForestBirdInstance(
+      bodyInstances,
+      index,
+      bodyMatrixScratch,
+      bird,
+      0,
+      'body'
+    );
+  });
+
+  group.add(leftWingInstances);
+  group.add(rightWingInstances);
+  group.add(bodyInstances);
+}
+
 function addForestWebInstances(
   three: ThreeHostLike,
   group: ThreeObject3DLike,
@@ -5686,7 +5730,44 @@ function clampForestUnit(value: number) {
 
 function syncForestBirds(root: ThreeObject3DLike, timeMs: number) {
   root.traverse?.((node) => {
-    const bird = node.userData?.[BIRD_KEY] as ForestBirdDescriptor | undefined;
+    const part = node.userData?.[BIRD_INSTANCED_PART_KEY];
+    const birds = node.userData?.[BIRD_KEY] as
+      | ForestBirdDescriptor[]
+      | ForestBirdDescriptor
+      | undefined;
+    if (
+      typeof part === 'string' &&
+      Array.isArray(birds) &&
+      'setMatrixAt' in (node as object)
+    ) {
+      const instancedNode = node as ThreeObject3DLike & {
+        setMatrixAt: (index: number, matrix: ThreeMatrix4Like) => void;
+        count?: number;
+        instanceMatrix?: { needsUpdate?: boolean };
+      };
+      const matrixScratch = node.userData?.forestBirdMatrixScratch as
+        | ThreeMatrix4Like
+        | undefined;
+      if (!matrixScratch) {
+        return;
+      }
+      birds.forEach((bird, index) => {
+        syncForestBirdInstance(
+          instancedNode,
+          index,
+          matrixScratch,
+          bird,
+          timeMs,
+          part as 'left-wing' | 'right-wing' | 'body'
+        );
+      });
+      if (instancedNode.instanceMatrix) {
+        instancedNode.instanceMatrix.needsUpdate = true;
+      }
+      return;
+    }
+
+    const bird = birds as ForestBirdDescriptor | undefined;
     if (!bird) {
       return;
     }
@@ -5708,6 +5789,127 @@ function syncForestBirds(root: ThreeObject3DLike, timeMs: number) {
       birdNode.children![1].rotation.z = 0.35 + flap * 0.4;
     }
   });
+}
+
+function syncForestBirdInstance(
+  node: {
+    setMatrixAt: (index: number, matrix: ThreeMatrix4Like) => void;
+  },
+  index: number,
+  target: ThreeMatrix4Like,
+  bird: ForestBirdDescriptor,
+  timeMs: number,
+  part: 'left-wing' | 'right-wing' | 'body'
+) {
+  const angle = bird.phase * Math.PI * 2 + timeMs * bird.speed;
+  const flap = Math.sin(angle * 8);
+  const positionX = bird.x + Math.cos(angle) * bird.radius;
+  const positionY = bird.height + Math.sin(angle * 2.2) * 0.04;
+  const positionZ = bird.y + Math.sin(angle) * bird.radius;
+  const yaw = angle + Math.PI / 2;
+
+  if (part === 'body') {
+    node.setMatrixAt(
+      index,
+      writeForestBirdBodyInstancedMatrix(
+        target,
+        positionX,
+        positionY,
+        positionZ,
+        yaw,
+        bird.wingScale * 0.55,
+        bird.wingScale * 0.3,
+        bird.wingScale * 0.3
+      )
+    );
+    return;
+  }
+
+  const isLeftWing = part === 'left-wing';
+  const wingOffset = bird.wingScale * 0.5 * (isLeftWing ? -1 : 1);
+  node.setMatrixAt(
+    index,
+    writeForestBirdWingInstancedMatrix(
+      target,
+      positionX,
+      positionY,
+      positionZ,
+      yaw,
+      wingOffset,
+      isLeftWing ? -0.35 - flap * 0.4 : 0.35 + flap * 0.4,
+      0.18,
+      bird.wingScale,
+      0.18
+    )
+  );
+}
+
+function writeForestBirdBodyInstancedMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  yaw: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+) {
+  const cosYaw = Math.cos(yaw);
+  const sinYaw = Math.sin(yaw);
+  return target.set(
+    cosYaw * scaleX,
+    0,
+    sinYaw * scaleZ,
+    x,
+    0,
+    scaleY,
+    0,
+    y,
+    -sinYaw * scaleX,
+    0,
+    cosYaw * scaleZ,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
+}
+
+function writeForestBirdWingInstancedMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  yaw: number,
+  localOffsetX: number,
+  wingRoll: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+) {
+  const cosYaw = Math.cos(yaw);
+  const sinYaw = Math.sin(yaw);
+  const cosRoll = Math.cos(wingRoll);
+  const sinRoll = Math.sin(wingRoll);
+  return target.set(
+    cosYaw * cosRoll * scaleX,
+    -cosYaw * sinRoll * scaleY,
+    sinYaw * scaleZ,
+    x + cosYaw * localOffsetX,
+    sinRoll * scaleX,
+    cosRoll * scaleY,
+    0,
+    y,
+    -sinYaw * cosRoll * scaleX,
+    sinYaw * sinRoll * scaleY,
+    cosYaw * scaleZ,
+    z - sinYaw * localOffsetX,
+    0,
+    0,
+    0,
+    1
+  );
 }
 
 function tagForestFoliageWind(
