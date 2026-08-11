@@ -812,23 +812,38 @@ function createCaveDripstoneGroup(
   const group = new three.Group();
   const spireCount =
     3 + Math.floor(hash2D(CAVE_DRIPSTONE_COUNT_SEED, tileX, tileY) * 3);
+  const spireGeometry = new three.ConeGeometry(0.08, 1, 5);
+  const spireInstances = new three.InstancedMesh(
+    spireGeometry,
+    mountainMaterial,
+    spireCount
+  );
+  const spireMatrix = new three.Matrix4();
+  spireInstances.userData = {
+    caveInstancedPart: 'dripstone-spire',
+  };
 
   for (let index = 0; index < spireCount; index += 1) {
     const height =
       0.45 + hash2D(CAVE_DRIPSTONE_HEIGHT_SEED, tileX + index, tileY) * 0.38;
-    const spire = new three.Mesh(
-      new three.ConeGeometry(0.08, height, 5),
-      mountainMaterial
+    spireInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        spireMatrix,
+        tileX +
+          (hash2D(CAVE_DRIPSTONE_X_SEED, tileX * 17 + index, tileY) - 0.5) *
+            0.46,
+        height * 0.5,
+        tileY +
+          (hash2D(CAVE_DRIPSTONE_Z_SEED, tileX, tileY * 19 + index) - 0.5) *
+            0.46,
+        1,
+        height,
+        1
+      )
     );
-    spire.position.set(
-      tileX +
-        (hash2D(CAVE_DRIPSTONE_X_SEED, tileX * 17 + index, tileY) - 0.5) * 0.46,
-      height * 0.5,
-      tileY +
-        (hash2D(CAVE_DRIPSTONE_Z_SEED, tileX, tileY * 19 + index) - 0.5) * 0.46
-    );
-    group.add(spire);
   }
+  group.add(spireInstances);
 
   const hanging = new three.Mesh(
     new three.ConeGeometry(0.07, 0.28, 5),

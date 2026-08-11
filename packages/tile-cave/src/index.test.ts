@@ -263,6 +263,52 @@ describe('tile cave', () => {
     ).toBe(true);
   });
 
+  it('instances repeated cave dripstone spires as one shared set', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+
+    const three = createFakeThree() as never;
+    const dripstoneTile = plugin.tiles?.find(
+      (tile) => tile.kind === 'cave-dripstone'
+    );
+
+    try {
+      const model = dripstoneTile?.create3DModel?.({
+        tile: { kind: 'cave-dripstone' },
+        three,
+        state: {} as never,
+        tileX: 2,
+        tileY: 3,
+      }) as
+        | {
+            children?: Array<{
+              userData?: Record<string, unknown>;
+              count?: number;
+              matrices?: Array<{
+                scale: { x: number; y: number; z: number };
+              }>;
+            }>;
+          }
+        | null
+        | undefined;
+
+      const spireInstances = model?.children?.filter(
+        (child) => child.userData?.caveInstancedPart === 'dripstone-spire'
+      );
+
+      expect(spireInstances).toHaveLength(1);
+      expect((spireInstances?.[0]?.count ?? 0) >= 3).toBe(true);
+      expect(spireInstances?.[0]?.matrices?.length).toBe(
+        spireInstances?.[0]?.count
+      );
+      expect(
+        spireInstances?.[0]?.matrices?.some((matrix) => matrix.scale.y > 0.6)
+      ).toBe(true);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
+
   it('builds a lightweight low-detail cave mouth silhouette for distant rendering', () => {
     const previousDocument = globalThis.document;
     globalThis.document = createFakeDocument() as never;
