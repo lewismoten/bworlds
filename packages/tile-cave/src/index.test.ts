@@ -217,6 +217,52 @@ describe('tile cave', () => {
     );
   });
 
+  it('instances repeated cave mushrooms as shared stem and cap sets', () => {
+    const three = createFakeThree() as never;
+    const mushroomTile = plugin.tiles?.find(
+      (tile) => tile.kind === 'cave-mushrooms'
+    );
+
+    const model = mushroomTile?.create3DModel?.({
+      tile: { kind: 'cave-mushrooms' },
+      three,
+      state: {} as never,
+      tileX: 2,
+      tileY: 3,
+    }) as
+      | {
+          children?: Array<{
+            userData?: Record<string, unknown>;
+            count?: number;
+            matrices?: Array<{ scale: { x: number; y: number; z: number } }>;
+          }>;
+        }
+      | null
+      | undefined;
+
+    const stemInstances = model?.children?.filter(
+      (child) => child.userData?.caveInstancedPart === 'mushroom-stem'
+    );
+    const capInstances = model?.children?.filter(
+      (child) => child.userData?.caveInstancedPart === 'mushroom-cap'
+    );
+
+    expect(stemInstances).toHaveLength(1);
+    expect(capInstances).toHaveLength(1);
+    expect(stemInstances?.[0]?.count).toBe(capInstances?.[0]?.count);
+    expect((stemInstances?.[0]?.count ?? 0) >= 3).toBe(true);
+    expect(stemInstances?.[0]?.matrices?.length).toBe(
+      stemInstances?.[0]?.count
+    );
+    expect(capInstances?.[0]?.matrices?.length).toBe(capInstances?.[0]?.count);
+    expect(
+      stemInstances?.[0]?.matrices?.some((matrix) => matrix.scale.y > 1)
+    ).toBe(true);
+    expect(
+      capInstances?.[0]?.matrices?.some((matrix) => matrix.scale.x > 1)
+    ).toBe(true);
+  });
+
   it('builds a lightweight low-detail cave mouth silhouette for distant rendering', () => {
     const previousDocument = globalThis.document;
     globalThis.document = createFakeDocument() as never;

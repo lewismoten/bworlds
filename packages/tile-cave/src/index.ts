@@ -643,28 +643,62 @@ function createCaveMushroomGroup(
     getCaveSharedMaterials(three);
   const count =
     3 + Math.floor(hash2D(CAVE_MUSHROOM_COUNT_SEED, tileX, tileY) * 3);
+  const stemInstances = new three.InstancedMesh(
+    new three.CylinderGeometry(0.025, 0.04, 0.12, 6),
+    mushroomStemMaterial,
+    count
+  );
+  stemInstances.userData = {
+    ...(stemInstances.userData ?? {}),
+    caveInstancedPart: 'mushroom-stem',
+  };
+  const capInstances = new three.InstancedMesh(
+    new three.SphereGeometry(0.075, 8, 6),
+    mushroomCapMaterial,
+    count
+  );
+  capInstances.userData = {
+    ...(capInstances.userData ?? {}),
+    caveInstancedPart: 'mushroom-cap',
+  };
+  const stemMatrixScratch = new three.Matrix4();
+  const capMatrixScratch = new three.Matrix4();
 
   for (let index = 0; index < count; index += 1) {
-    const stem = new three.Mesh(
-      new three.CylinderGeometry(0.025, 0.04, 0.12, 6),
-      mushroomStemMaterial
-    );
-    const cap = new three.Mesh(
-      new three.SphereGeometry(0.075, 8, 6),
-      mushroomCapMaterial
-    );
     const offsetX =
       (hash2D(CAVE_MUSHROOM_X_SEED, tileX * 11 + index, tileY) - 0.5) * 0.45;
     const offsetZ =
       (hash2D(CAVE_MUSHROOM_Z_SEED, tileX, tileY * 13 + index) - 0.5) * 0.45;
     const height =
       0.11 + hash2D(CAVE_MUSHROOM_HEIGHT_SEED, tileX + index, tileY) * 0.05;
-    stem.position.set(tileX + offsetX, height * 0.5, tileY + offsetZ);
-    cap.position.set(tileX + offsetX, height, tileY + offsetZ);
-    cap.scale.set(1.15, 0.7, 1.15);
-    group.add(stem);
-    group.add(cap);
+    stemInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        stemMatrixScratch,
+        tileX + offsetX,
+        height * 0.5,
+        tileY + offsetZ,
+        1,
+        height / 0.12,
+        1
+      )
+    );
+    capInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        capMatrixScratch,
+        tileX + offsetX,
+        height,
+        tileY + offsetZ,
+        1.15,
+        0.7,
+        1.15
+      )
+    );
   }
+
+  group.add(stemInstances);
+  group.add(capInstances);
 
   return group;
 }

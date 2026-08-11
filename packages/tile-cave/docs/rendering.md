@@ -1,15 +1,19 @@
 # Cave Rendering
 
-The full-detail cave entrance now instances its repeated outer boulders instead
-of emitting one mesh per rock.
+The cave tile now instances its repeated mushroom props and full-detail
+entrance boulders instead of emitting one mesh per repeated decoration.
 
 Current layout:
 
+- The repeated cave mushrooms now share one `CylinderGeometry`, one
+  `SphereGeometry`, and two `InstancedMesh` nodes, with per-instance scale and
+  position stored in matrices for the stem and cap sets.
 - The repeated entrance boulders now share one `SphereGeometry`, one material,
   and one `InstancedMesh`, with per-instance scale and position stored in
   matrices.
 - The cap, portal, lantern, and interior tunnel pieces remain ordinary meshes
   because they have distinct shapes, materials, or lighting behavior.
 
-This keeps the cave entrance silhouette intact while trimming another repeated
-static `Object3D` cluster from visible overworld landmarks.
+This keeps the cave silhouette and mushroom patch layout intact while trimming
+repeated static `Object3D` clusters from visible cave landmarks and cave-floor
+decorations.
