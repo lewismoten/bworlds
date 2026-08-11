@@ -14,6 +14,7 @@ import {
 } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   RuntimePlugin,
   ThreeMaterialLike,
 } from '@bworlds/plugin-api';
@@ -39,88 +40,13 @@ export function createTowerTilePlugin(): RuntimePlugin {
       fillRect(context, x + 6, y + 1, 4, 1, '#5b524b');
       return true;
     }),
-    create3DModel({
-      three,
-      tileX,
-      tileY,
-      detailLevel = 'full',
-    }: Create3DModelContext) {
-      const { stoneMaterial, trimMaterial, roofMaterial, lampMaterial } =
-        getTowerSharedMaterials(three);
-      const group = new three.Group();
-
-      const base = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.56, 0.7, 0.22, 8),
-        stoneMaterial
+    create3DModel(context: Create3DModelContext) {
+      return runTowerModelBuildToCompletion(
+        createTowerModelProgressive(context)
       );
-      base.position.set(tileX, 0.11, tileY);
-      group.add(base);
-
-      const shaft = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.42, 0.5, 1.48, 8),
-        stoneMaterial
-      );
-      shaft.position.set(tileX, 0.96, tileY);
-      group.add(shaft);
-
-      if (detailLevel === 'low') {
-        const cap = new three.Mesh(
-          getSharedConeGeometry(three, 0.52, 0.3, 8),
-          roofMaterial
-        );
-        cap.position.set(tileX, 1.8, tileY);
-        group.add(cap);
-        return group;
-      }
-
-      const ring = new three.Mesh(
-        getSharedCylinderGeometry(three, 0.5, 0.56, 0.08, 8),
-        trimMaterial
-      );
-      ring.position.set(tileX, 1.64, tileY);
-      group.add(ring);
-
-      const cap = new three.Mesh(
-        getSharedConeGeometry(three, 0.56, 0.34, 8),
-        roofMaterial
-      );
-      cap.position.set(tileX, 1.86, tileY);
-      group.add(cap);
-
-      const doorway = new three.Mesh(
-        getSharedBoxGeometry(three, 0.22, 0.34, 0.08),
-        trimMaterial
-      );
-      doorway.position.set(tileX, 0.17, tileY + 0.44);
-      group.add(doorway);
-
-      const lantern = markPoiLightEmitter(
-        new three.Mesh(
-          getSharedSphereGeometry(three, 0.04, 6, 6),
-          lampMaterial
-        ),
-        {
-          kind: 'emissive-mesh',
-          dayIntensity: 0.02,
-          nightIntensity: 1.26,
-        }
-      );
-      lantern.position.set(tileX + 0.2, 0.42, tileY + 0.32);
-      group.add(lantern);
-
-      const light = markPoiLightEmitter(
-        new three.PointLight('#f8cd74', 0, 3.4, 1.85),
-        {
-          kind: 'point-light',
-          nightIntensity: 0.72,
-          visibleThreshold: 0.04,
-        }
-      );
-      light.position.set(tileX + 0.2, 0.42, tileY + 0.32);
-      light.visible = false;
-      group.add(light);
-
-      return group;
+    },
+    create3DModelProgressive(context: Create3DModelContext) {
+      return createTowerModelProgressive(context);
     },
     sync3DModel({ model, cycle }) {
       if (model && typeof model === 'object') {
@@ -131,6 +57,120 @@ export function createTowerTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function* createTowerModelProgressive({
+  three,
+  tileX,
+  tileY,
+  detailLevel = 'full',
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const { stoneMaterial, trimMaterial, roofMaterial, lampMaterial } =
+    getTowerSharedMaterials(three);
+  const group = new three.Group();
+
+  const totalSteps = detailLevel === 'low' ? 2 : 3;
+
+  const base = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.56, 0.7, 0.22, 8),
+    stoneMaterial
+  );
+  base.position.set(tileX, 0.11, tileY);
+  group.add(base);
+
+  const shaft = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.42, 0.5, 1.48, 8),
+    stoneMaterial
+  );
+  shaft.position.set(tileX, 0.96, tileY);
+  group.add(shaft);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'base',
+  };
+
+  if (detailLevel === 'low') {
+    const lowCap = new three.Mesh(
+      getSharedConeGeometry(three, 0.52, 0.3, 8),
+      roofMaterial
+    );
+    lowCap.position.set(tileX, 1.8, tileY);
+    group.add(lowCap);
+    yield {
+      completedSteps: 2,
+      totalSteps,
+      label: 'roof',
+    };
+    return group;
+  }
+
+  const ring = new three.Mesh(
+    getSharedCylinderGeometry(three, 0.5, 0.56, 0.08, 8),
+    trimMaterial
+  );
+  ring.position.set(tileX, 1.64, tileY);
+  group.add(ring);
+
+  const cap = new three.Mesh(
+    getSharedConeGeometry(three, 0.56, 0.34, 8),
+    roofMaterial
+  );
+  cap.position.set(tileX, 1.86, tileY);
+  group.add(cap);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'crown',
+  };
+
+  const doorway = new three.Mesh(
+    getSharedBoxGeometry(three, 0.22, 0.34, 0.08),
+    trimMaterial
+  );
+  doorway.position.set(tileX, 0.17, tileY + 0.44);
+  group.add(doorway);
+
+  const lantern = markPoiLightEmitter(
+    new three.Mesh(getSharedSphereGeometry(three, 0.04, 6, 6), lampMaterial),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: 0.02,
+      nightIntensity: 1.26,
+    }
+  );
+  lantern.position.set(tileX + 0.2, 0.42, tileY + 0.32);
+  group.add(lantern);
+
+  const light = markPoiLightEmitter(
+    new three.PointLight('#f8cd74', 0, 3.4, 1.85),
+    {
+      kind: 'point-light',
+      nightIntensity: 0.72,
+      visibleThreshold: 0.04,
+    }
+  );
+  light.position.set(tileX + 0.2, 0.42, tileY + 0.32);
+  light.visible = false;
+  group.add(light);
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'entry-lantern',
+  };
+
+  return group;
+}
+
+function runTowerModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function getTowerSharedMaterials(three: Create3DModelContext['three']) {

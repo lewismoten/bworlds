@@ -51,6 +51,85 @@ describe('tile tower', () => {
     expect(first?.children[5]?.material).toBe(second?.children[5]?.material);
   });
 
+  it('builds the full-detail tower progressively before returning the final model', () => {
+    const plugin = createTowerTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
+    const build = tile?.create3DModelProgressive?.({
+      tile: { kind: 'tower' },
+      three: createFakeThree() as never,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+      detailLevel: 'full',
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'base',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'crown',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'entry-lantern',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous tower build aligned with the progressive final model', () => {
+    const plugin = createTowerTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
+    const three = createFakeThree() as never;
+    const syncModel = tile?.create3DModel?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+    }) as GroupNode | undefined;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+    });
+    let progressiveModel: GroupNode | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as GroupNode | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel)).toEqual(
+      createModelSignature(syncModel)
+    );
+  });
+
   it('builds a simplified low-detail tower without the doorway and lantern rig', () => {
     const plugin = createTowerTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
@@ -80,66 +159,125 @@ describe('tile tower', () => {
   });
 });
 
-function createFakeThree() {
-  class Group {
-    children: unknown[] = [];
-    add(child: unknown) {
-      this.children.push(child);
-    }
+class Group {
+  children: unknown[] = [];
+  position = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set: (x: number, y: number, z: number) => {
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z;
+      return this.position;
+    },
+  };
+  rotation = { x: 0, y: 0, z: 0 };
+  visible = true;
+  userData?: Record<string, unknown>;
+  add(child: unknown) {
+    this.children.push(child);
   }
-  class Mesh {
-    position = {
-      set() {
-        return undefined;
-      },
-    };
-    constructor(
-      public geometry: unknown,
-      public material: unknown
-    ) {}
+  traverse(visit: (child: unknown) => void) {
+    visit(this);
+    this.children.forEach((child) => {
+      if (
+        typeof child === 'object' &&
+        child !== null &&
+        'traverse' in child &&
+        typeof child.traverse === 'function'
+      ) {
+        child.traverse(visit);
+      } else {
+        visit(child);
+      }
+    });
   }
-  class PointLight {
-    position = {
-      set() {
-        return undefined;
-      },
-    };
-    visible = true;
-    userData: Record<string, unknown> = {};
-    constructor(
-      public color: unknown,
-      public intensity: unknown,
-      public distance: unknown,
-      public decay: unknown
-    ) {}
-  }
-  class MeshBasicMaterial {
-    constructor(public options: unknown) {}
-  }
-  class MeshStandardMaterial {
-    constructor(public options: unknown) {}
-  }
-  class CylinderGeometry {
-    constructor(...args: unknown[]) {
-      void args;
-    }
-  }
-  class ConeGeometry {
-    constructor(...args: unknown[]) {
-      void args;
-    }
-  }
-  class BoxGeometry {
-    constructor(...args: unknown[]) {
-      void args;
-    }
-  }
-  class SphereGeometry {
-    constructor(...args: unknown[]) {
-      void args;
-    }
-  }
+}
 
+class Mesh {
+  position = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set: (x: number, y: number, z: number) => {
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z;
+      return this.position;
+    },
+  };
+  rotation = { x: 0, y: 0, z: 0 };
+  visible = true;
+  userData?: Record<string, unknown>;
+  constructor(
+    public geometry: unknown,
+    public material: unknown
+  ) {}
+  traverse(visit: (child: unknown) => void) {
+    visit(this);
+  }
+}
+
+class PointLight {
+  position = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set: (x: number, y: number, z: number) => {
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z;
+      return this.position;
+    },
+  };
+  rotation = { x: 0, y: 0, z: 0 };
+  visible = true;
+  userData: Record<string, unknown> = {};
+  constructor(
+    public color: unknown,
+    public intensity: unknown,
+    public distance: unknown,
+    public decay: unknown
+  ) {}
+  traverse(visit: (child: unknown) => void) {
+    visit(this);
+  }
+}
+
+class MeshBasicMaterial {
+  constructor(public options: unknown) {}
+}
+
+class MeshStandardMaterial {
+  constructor(public options: unknown) {}
+}
+
+class CylinderGeometry {
+  constructor(...args: unknown[]) {
+    void args;
+  }
+}
+
+class ConeGeometry {
+  constructor(...args: unknown[]) {
+    void args;
+  }
+}
+
+class BoxGeometry {
+  constructor(...args: unknown[]) {
+    void args;
+  }
+}
+
+class SphereGeometry {
+  constructor(...args: unknown[]) {
+    void args;
+  }
+}
+
+function createFakeThree() {
   return {
     Group,
     Mesh,
@@ -151,4 +289,51 @@ function createFakeThree() {
     BoxGeometry,
     SphereGeometry,
   };
+}
+
+type GroupNode = InstanceType<typeof Group>;
+
+function createModelSignature(model: GroupNode | undefined) {
+  const signature: Array<Record<string, unknown>> = [];
+  model?.traverse((node) => {
+    if (typeof node !== 'object' || node === null) {
+      return;
+    }
+
+    const typedNode = node as {
+      constructor: { name: string };
+      position?: { x: number; y: number; z: number };
+      rotation?: { x: number; y: number; z: number };
+      visible?: boolean;
+      children?: unknown[];
+      userData?: Record<string, unknown>;
+      material?: { options?: unknown } | Array<{ options?: unknown }>;
+    };
+
+    signature.push({
+      type: typedNode.constructor.name,
+      x: typedNode.position?.x,
+      y: typedNode.position?.y,
+      z: typedNode.position?.z,
+      rotationX: typedNode.rotation?.x,
+      rotationY: typedNode.rotation?.y,
+      rotationZ: typedNode.rotation?.z,
+      visible: typedNode.visible,
+      childCount: typedNode.children?.length ?? 0,
+      material:
+        node instanceof Mesh
+          ? Array.isArray(typedNode.material)
+            ? typedNode.material.map((material) => material.options)
+            : typedNode.material?.options
+          : undefined,
+      light:
+        node instanceof PointLight
+          ? {
+              visible: typedNode.visible,
+            }
+          : undefined,
+      userData: typedNode.userData,
+    });
+  });
+  return signature;
 }
