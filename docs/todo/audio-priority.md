@@ -163,16 +163,20 @@
 
 - [ ] Set a loudness target for each song role.
 - [ ] Measure each track before applying the final mix.
-- [ ] Keep bass centered and below the harmony register.
-- [ ] Keep lead clear of the harmony's strongest frequencies.
+- [x] Keep bass centered and below the harmony register.
+- [x] Keep lead clear of the harmony's strongest frequencies.
 - [ ] Reduce harmony gain while important motifs play.
 - [ ] Pan percussion voices instead of the whole kit.
-- [ ] Use one shared room reverb for the ensemble.
+- [x] Use one shared room reverb for the ensemble.
 - [ ] Give each instrument a controlled reverb send.
 - [ ] Prevent long releases from blurring chord changes.
 - [ ] Test the mix in mono.
 - [ ] Test the mix through laptop speakers.
 - [ ] Export dry and processed versions for comparison.
+      Regression coverage now proves the bass stays mostly centered, sampled
+      bass notes remain below the harmony and lead centers, EQ stages protect
+      lead space and low end, and one shared room reverb bus is reused per
+      environment profile.
 
 ## Debugging Workflow
 

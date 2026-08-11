@@ -154,4 +154,101 @@ describe('music debug track stats', () => {
       expect(bassStats.rangeLabel).toMatch(/^[A-G]#?-?\d-[A-G]#?-?\d$/);
     }
   }, 4_000);
+
+  it('keeps sampled bass notes below the harmony and lead centers', () => {
+    const snapshots = [
+      createMusicDebugSnapshot({
+        tileKind: 'plains',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      }),
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 3,
+        clusterY: -2,
+      }),
+      createMusicDebugSnapshot({
+        tileKind: 'town',
+        contextType: 'town',
+        clusterX: 3,
+        clusterY: -2,
+      }),
+    ];
+
+    for (const snapshot of snapshots) {
+      const bassRange = parseRangeLabel(snapshot.trackStats.bass.rangeLabel);
+      const harmonyRange = parseRangeLabel(
+        snapshot.trackStats.harmony.rangeLabel
+      );
+      const leadRange = parseRangeLabel(snapshot.trackStats.lead.rangeLabel);
+
+      expect(bassRange).not.toBeNull();
+      expect(harmonyRange).not.toBeNull();
+      expect(leadRange).not.toBeNull();
+      expect(averageMidi(bassRange!)).toBeLessThan(averageMidi(harmonyRange!));
+      expect(averageMidi(bassRange!)).toBeLessThan(averageMidi(leadRange!));
+    }
+  }, 4_000);
 });
+
+function averageMidi(values: readonly number[]): number {
+  return (
+    values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length)
+  );
+}
+
+function parseRangeLabel(rangeLabel: string): [number, number] | null {
+  const match = rangeLabel.match(/^([A-G]#?-?\d)-([A-G]#?-?\d)$/);
+  if (!match) {
+    return null;
+  }
+  const lower = parseMidiLabel(match[1]);
+  const upper = parseMidiLabel(match[2]);
+  if (lower === null || upper === null) {
+    return null;
+  }
+  return [lower, upper];
+}
+
+function parseMidiLabel(label: string): number | null {
+  const match = label.match(/^([A-G])(#?)(-?\d)$/);
+  if (!match) {
+    return null;
+  }
+  const pitchClass = resolvePitchClass(match[1], match[2] === '#');
+  const octave = Number.parseInt(match[3] ?? '0', 10);
+  return (octave + 1) * 12 + pitchClass;
+}
+
+function resolvePitchClass(noteName: string, sharp: boolean): number {
+  switch (`${noteName}${sharp ? '#' : ''}`) {
+    case 'C':
+      return 0;
+    case 'C#':
+      return 1;
+    case 'D':
+      return 2;
+    case 'D#':
+      return 3;
+    case 'E':
+      return 4;
+    case 'F':
+      return 5;
+    case 'F#':
+      return 6;
+    case 'G':
+      return 7;
+    case 'G#':
+      return 8;
+    case 'A':
+      return 9;
+    case 'A#':
+      return 10;
+    case 'B':
+      return 11;
+    default:
+      return 0;
+  }
+}
