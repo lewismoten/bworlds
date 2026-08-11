@@ -118,6 +118,10 @@ import {
   type MusicDebugSectionProminence,
 } from './music-debug-section-prominence.ts';
 import {
+  createMusicDebugSectionValidationSummary,
+  type MusicDebugSectionValidationSummary,
+} from './music-debug-section-validation-summary.ts';
+import {
   createMusicDebugMidiExportAudit,
   type MusicDebugMidiAudit,
 } from './music-debug-midi-audit.ts';
@@ -226,6 +230,7 @@ export type MusicDebugSnapshot = {
   cadenceDetections: MusicDebugCadenceDetection[];
   cadenceValidation: MusicDebugCadenceValidation;
   densityValidation: MusicDebugDensityValidation;
+  sectionValidationSummary: MusicDebugSectionValidationSummary[];
   percussionValidation: MusicDebugPercussionValidation;
   songDnaValidation: MusicDebugSongDnaValidation;
   densitySections: MusicDebugSectionDensityValidation[];
@@ -550,6 +555,13 @@ export function createMusicDebugSnapshot(
     sections: song.sections,
     activities: sectionLayerActivity,
   });
+  const sectionValidationSummary = createMusicDebugSectionValidationSummary({
+    sections: song.sections,
+    harmonyChordDetections,
+    bassProgressionDetections,
+    cadenceValidation,
+    densityValidation,
+  });
   const percussionValidation = validateMusicDebugPercussion({
     notes: song.notes,
     sections: song.sections,
@@ -609,6 +621,7 @@ export function createMusicDebugSnapshot(
     cadenceDetections: cadenceValidation.detections,
     cadenceValidation,
     densityValidation,
+    sectionValidationSummary,
     percussionValidation,
     songDnaValidation,
     densitySections: densityValidation.sections,
@@ -984,6 +997,9 @@ export function buildMusicDebugSummaryMarkup(
       <span>Density Check ${formatMusicDebugDensityValidationSummary(snapshot.densityValidation)}</span>
     </div>
     <div class="music-debug-role-counts">
+      <span>Section Checks ${formatMusicDebugSectionValidationSummary(snapshot.sectionValidationSummary)}</span>
+    </div>
+    <div class="music-debug-role-counts">
       <span>Percussion Check ${formatMusicDebugPercussionValidationSummary(snapshot.percussionValidation)}</span>
     </div>
     ${buildMusicDebugPercussionPlaybackControlsMarkup(
@@ -1125,6 +1141,25 @@ function formatMusicDebugPercussionValidationSummary(
     return validation.messages.join(' | ');
   }
   return 'ok';
+}
+
+function formatMusicDebugSectionValidationSummary(
+  sections: readonly MusicDebugSectionValidationSummary[]
+): string {
+  if (sections.length === 0) {
+    return 'missing';
+  }
+  return sections
+    .map((section) => {
+      const checks = [
+        `H ${section.harmony}`,
+        `B ${section.bass}`,
+        `C ${section.cadence}`,
+        `D ${section.density}`,
+      ].join(', ');
+      return `${section.sectionLabel} ${section.overall} (${checks})`;
+    })
+    .join(' | ');
 }
 
 function formatMusicDebugSongDnaValidationSummary(

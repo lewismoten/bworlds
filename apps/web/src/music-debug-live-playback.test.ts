@@ -1,21 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { resolveMusicDebugLivePlaybackIntent } from './music-debug-live-playback.ts';
-import { createMusicDebugSnapshot } from './music-debug.ts';
+import type { MusicDebugSnapshot } from './music-debug.ts';
 
 describe('music debug live playback', () => {
   it('keeps the current playback offset when inputs rebuild the song', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 3,
-      clusterY: -2,
-    });
-    const nextSnapshot = createMusicDebugSnapshot({
-      tileKind: 'shore',
-      contextType: 'overworld',
-      clusterX: 8,
-      clusterY: -4,
-    });
+    const snapshot = createSnapshot(120_000);
+    const nextSnapshot = createSnapshot(180_000);
 
     const intent = resolveMusicDebugLivePlaybackIntent({
       snapshot: nextSnapshot,
@@ -34,12 +24,7 @@ describe('music debug live playback', () => {
   });
 
   it('falls back to the preview offset when playback is inactive', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'town',
-      contextType: 'town',
-      clusterX: 3,
-      clusterY: -2,
-    });
+    const snapshot = createSnapshot(150_000);
 
     const intent = resolveMusicDebugLivePlaybackIntent({
       snapshot,
@@ -53,3 +38,7 @@ describe('music debug live playback', () => {
     expect(intent.startOffsetMs).toBe(0);
   });
 });
+
+function createSnapshot(durationMs: number): MusicDebugSnapshot {
+  return { durationMs } as MusicDebugSnapshot;
+}

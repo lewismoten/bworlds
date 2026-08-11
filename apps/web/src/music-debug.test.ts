@@ -172,6 +172,9 @@ describe('music debug', () => {
     expect(first.bassProgressionDetections).toHaveLength(
       first.song.sections.length
     );
+    expect(first.sectionValidationSummary).toHaveLength(
+      first.song.sections.length
+    );
     expect(first.sectionLayerActivity).toHaveLength(first.song.sections.length);
     expect(first.sectionLayerComparisons).toHaveLength(
       first.song.sections.length
@@ -322,6 +325,7 @@ describe('music debug', () => {
     expect(summary).toContain('Chord Measures');
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('Bass Progression');
+    expect(summary).toContain('Section Checks');
     expect(summary).toContain('Cadence Harmony Conflicts');
     expect(summary).toContain('Percussion Substitutions');
     expect(summary).toContain('Drum Counts');
@@ -335,6 +339,7 @@ describe('music debug', () => {
     expect(summary).toContain('avg gap');
     expect(summary).toContain('peak poly');
     expect(summary).toContain('Section Measures');
+    expect(summary).toContain('Intro ');
     expect(summary).toContain(snapshot.theme.id);
     expect(summary).toContain(snapshot.theme.vocabulary.modeLabel);
     expect(summary).toContain(snapshot.theme.motif.adaptationLabel);

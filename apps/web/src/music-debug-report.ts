@@ -72,6 +72,7 @@ export function buildMusicDebugParameterReport(
     motifValidation: snapshot.motifValidation,
     timingValidation: snapshot.timingValidation,
     cadenceValidation: snapshot.cadenceValidation,
+    sectionValidationSummary: snapshot.sectionValidationSummary,
     percussionValidation: snapshot.percussionValidation,
     songDnaValidation: snapshot.songDnaValidation,
     midiExportValidation: snapshot.midiExportValidation,

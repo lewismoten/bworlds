@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T00:00:00.000Z",
+  "generatedAt": "2026-08-11T00:00:00.000Z",
   "initialJavaScript": {
     "baselineBytes": 1557922,
     "maxIncreaseBytes": 49152
@@ -16,7 +16,7 @@
     "minimumTrackedBytes": 64000,
     "baselineBytesByName": {
       "main": 1153645,
-      "music-debug-instrument-preview": 155428,
+      "music-debug-instrument-preview": 168275,
       "procedural-music-audio-sink": 136881,
       "sound-effects": 144366,
       "src": 102071
