@@ -299,13 +299,20 @@ export function createRouteTilePlugin(): RuntimePlugin {
         return createRouteTraversalProfile();
       },
       classifyOverworldTile(context: ClassifyOverworldTileContext) {
-        const connectedRoadKind = classifyConnectedRoad(context);
+        const signalSampler = createCachedTerrainSignalSampler(
+          context.sampleTerrainSignals
+        );
+        const cachedContext = {
+          ...context,
+          sampleTerrainSignals: signalSampler,
+        };
+        const connectedRoadKind = classifyConnectedRoad(cachedContext);
         if (connectedRoadKind) {
           return {
-            ...context.tile,
+            ...cachedContext.tile,
             kind: connectedRoadKind,
             note:
-              context.tile.note ??
+              cachedContext.tile.note ??
               (connectedRoadKind === 'bridge'
                 ? 'A crossing links the nearby routes.'
                 : connectedRoadKind === 'dock'
@@ -314,14 +321,14 @@ export function createRouteTilePlugin(): RuntimePlugin {
           };
         }
 
-        if (classifyForestRiverLogBridge(context)) {
+        if (classifyForestRiverLogBridge(cachedContext)) {
           return {
             kind: 'bridge',
             note: 'A fallen tree spans the river between the woods.',
           };
         }
 
-        const noiseRoadKind = classifyNoiseRoad(context);
+        const noiseRoadKind = classifyNoiseRoad(cachedContext);
         if (!noiseRoadKind) {
           return null;
         }
@@ -864,6 +871,19 @@ function hasParallelLandWithinBridgeSpan(
     }
     return count >= 5;
   });
+}
+
+function createCachedTerrainSignalSampler(
+  sampleTerrainSignals: ClassifyOverworldTileContext['sampleTerrainSignals']
+): ClassifyOverworldTileContext['sampleTerrainSignals'] {
+  if (!sampleTerrainSignals) {
+    return sampleTerrainSignals;
+  }
+  const cache = createCoordinateCache<
+    ReturnType<NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>>
+  >();
+  return (x: number, y: number) =>
+    cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
 }
 
 function createRoadGroup(

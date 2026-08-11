@@ -166,7 +166,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       Progress: `overworld-support` now caches sampled main-channel river
       curve points per control cell and reuses them during terrain signal
       sampling instead of rematerializing bezier segments on each river-path
-      probe.
+      probe, and `tile-route` now wraps `sampleTerrainSignals()` in a
+      per-classification coordinate cache so dock, bridge, and neighboring
+      route checks reuse repeated terrain reads within one route-classifier
+      pass.
 
 - [ ] Move deterministic world-generation computation into workers.
       The CPU profile is dominated by cache/hashing/world-generation code that does not need access to WebGL. Move terrain signals, hashes, anchors, river paths, tree descriptors, cave descriptors, etc. into workers and send compact numeric results back to the rendering thread.

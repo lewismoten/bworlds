@@ -576,7 +576,9 @@ describe('tile route', () => {
   });
 
   it('creates multi-tile bridge crossings across wider river spans', () => {
+    let sampleCalls = 0;
     const sampleTerrainSignals = (sampleX: number, sampleY: number) => {
+      sampleCalls += 1;
       if (sampleY !== 0) {
         return {
           continent: 0.62,
@@ -639,6 +641,7 @@ describe('tile route', () => {
         kind: 'bridge',
       })
     );
+    expect(sampleCalls).toBe(14);
   });
 
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
