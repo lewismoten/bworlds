@@ -109,7 +109,7 @@
 - [ ] Mark motif matches and motif variations.
 - [ ] Mark the planned and actual climax positions.
 - [x] Show current chord under the playhead.
-- [ ] Show current scale under the playhead.
+- [x] Show current scale under the playhead.
 - [ ] Add density heatmaps behind each lane.
 - [ ] Add a legend toggle so overlays can be hidden.
 - [ ] Add filter icons for chords, cadence, motif, contour.

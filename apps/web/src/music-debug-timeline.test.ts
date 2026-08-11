@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createMusicDebugSnapshot } from './music-debug.ts';
+import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
 import {
   buildMusicDebugTimelineSvgMarkup,
   resolveMusicDebugTimelineChordLabels,
@@ -290,6 +291,10 @@ describe('music debug timeline', () => {
     expect(markup).toContain('>Q<');
     expect(markup).toContain('>A<');
     expect(markup).toContain('class="music-debug-timeline-playhead-chord"');
+    expect(markup).toContain(snapshot.theme.vocabulary.modeLabel);
+    expect(markup).toContain(
+      `Scale ${resolveMusicDebugPitchClassLabel(snapshot.scaleMap.rootMidiNote)}`
+    );
     expect(markup).toContain('rgba(85,214,190,0.08)');
     expect(markup).toContain('stroke="#f5f7fb"');
   });

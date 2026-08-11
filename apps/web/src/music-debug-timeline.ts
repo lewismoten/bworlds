@@ -27,6 +27,7 @@ import {
   resolveMusicDebugBeatSubdivisionMarkers,
   resolveMusicDebugMeasureMarkers,
 } from './music-debug-measure-guides.ts';
+import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
 
 const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
@@ -279,6 +280,13 @@ export function drawMusicDebugTimeline(
     typeof options.playheadOffsetMs === 'number'
       ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
       : null;
+  const playheadLabel =
+    typeof options.playheadOffsetMs === 'number'
+      ? resolveMusicDebugTimelinePlayheadLabel({
+          snapshot,
+          chordCue: activeChordCue,
+        })
+      : null;
 
   context.clearRect(0, 0, width, height);
   context.fillStyle = '#071019';
@@ -393,12 +401,12 @@ export function drawMusicDebugTimeline(
     context.moveTo(playheadX, 12);
     context.lineTo(playheadX, height - layout.bottomPad + 6);
     context.stroke();
-    if (activeChordCue) {
+    if (playheadLabel) {
       drawMusicDebugTimelinePlayheadChordLabel(
         context,
         layout,
         playheadX,
-        activeChordCue.label
+        playheadLabel
       );
     }
   }
@@ -438,6 +446,13 @@ export function buildMusicDebugTimelineSvgMarkup(
     typeof options.playheadOffsetMs === 'number'
       ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
       : null;
+  const playheadLabel =
+    typeof options.playheadOffsetMs === 'number'
+      ? resolveMusicDebugTimelinePlayheadLabel({
+          snapshot,
+          chordCue: activeChordCue,
+        })
+      : null;
   const playheadMarkup =
     typeof options.playheadOffsetMs === 'number'
       ? buildMusicDebugTimelinePlayheadSvgMarkup(
@@ -445,7 +460,7 @@ export function buildMusicDebugTimelineSvgMarkup(
           durationMs,
           options.playheadOffsetMs,
           height,
-          activeChordCue?.label ?? null
+          playheadLabel
         )
       : '';
 
@@ -989,7 +1004,7 @@ function buildMusicDebugTimelinePlayheadSvgMarkup(
   durationMs: number,
   playheadOffsetMs: number,
   height: number,
-  chordLabel: string | null
+  playheadLabel: string | null
 ): string {
   const playheadX = resolveMusicDebugTimelineXForOffset(
     layout,
@@ -1001,10 +1016,10 @@ function buildMusicDebugTimelinePlayheadSvgMarkup(
     layout.bottomPad +
     6
   ).toFixed(2)}" fill="none" stroke="#f5f7fb" stroke-width="2"></path>`;
-  if (!chordLabel) {
+  if (!playheadLabel) {
     return playheadPath;
   }
-  const labelWidth = Math.max(58, chordLabel.length * 6.2 + 18);
+  const labelWidth = Math.max(58, playheadLabel.length * 6.2 + 18);
   const labelCenterX = clampMusicDebugTimelineLabelCenterX(
     layout,
     playheadX,
@@ -1021,16 +1036,16 @@ function buildMusicDebugTimelinePlayheadSvgMarkup(
     2
   )}" y="${MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y.toFixed(
     2
-  )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${chordLabel}</text>`;
+  )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${playheadLabel}</text>`;
 }
 
 function drawMusicDebugTimelinePlayheadChordLabel(
   context: CanvasRenderingContext2D,
   layout: MusicDebugTimelineLayout,
   playheadX: number,
-  chordLabel: string
+  playheadLabel: string
 ): void {
-  const labelWidth = Math.max(58, chordLabel.length * 6.2 + 18);
+  const labelWidth = Math.max(58, playheadLabel.length * 6.2 + 18);
   const labelCenterX = clampMusicDebugTimelineLabelCenterX(
     layout,
     playheadX,
@@ -1047,11 +1062,30 @@ function drawMusicDebugTimelinePlayheadChordLabel(
   context.font = '11px Trebuchet MS';
   context.textAlign = 'center';
   context.fillText(
-    chordLabel,
+    playheadLabel,
     labelCenterX,
     MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y
   );
   context.textAlign = 'start';
+}
+
+function resolveMusicDebugTimelinePlayheadScaleLabel(
+  snapshot: MusicDebugSnapshot
+): string {
+  return `Scale ${resolveMusicDebugPitchClassLabel(snapshot.scaleMap.rootMidiNote)} ${snapshot.theme.vocabulary.modeLabel}`;
+}
+
+function resolveMusicDebugTimelinePlayheadLabel(options: {
+  snapshot: MusicDebugSnapshot;
+  chordCue?: MusicDebugChordCue | null;
+}): string {
+  const scaleLabel = resolveMusicDebugTimelinePlayheadScaleLabel(
+    options.snapshot
+  );
+  if (!options.chordCue) {
+    return scaleLabel;
+  }
+  return `${options.chordCue.label} • ${scaleLabel}`;
 }
 
 function resolveMusicDebugTimelineChordLabelText(
