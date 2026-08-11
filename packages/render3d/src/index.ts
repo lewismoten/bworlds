@@ -3058,6 +3058,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       const {
         entry: nextEntry,
         resolvedDetailLevel,
+        attemptedDetailLevels,
       } = buildRecoverableVisibleTileModelDetailEntry(
         requestedDetailLevel,
         (detailLevel) =>
@@ -3077,6 +3078,17 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           ),
         lastSuccessfulVisibleTileDetailLevels.get(key)
       );
+      if (!nextEntry.modelRoot) {
+        recordRenderDebugEvent(recentDebugEvents, {
+          nowMs,
+          type: 'model-rejected',
+          tileKey: key,
+          plugin: entry.tilePluginOwnerLabel,
+          summary: `visible lod recovery failed after ${summarizeVisibleTileRecoveryAttempt(
+            attemptedDetailLevels
+          )}`,
+        });
+      }
       if ((entry.detailLevel ?? 'full') === resolvedDetailLevel) {
         disposeObject3DResources(nextEntry.node);
         continue;
@@ -4011,32 +4023,47 @@ export function buildRecoverableVisibleTileModelDetailEntry<
 ): {
   entry: Entry;
   resolvedDetailLevel: RenderBudgetDetailLevel;
+  attemptedDetailLevels: RenderBudgetDetailLevel[];
 } {
+  const attemptedDetailLevels: RenderBudgetDetailLevel[] = [];
+  const buildTrackedEntry = (detailLevel: RenderBudgetDetailLevel) => {
+    attemptedDetailLevels.push(detailLevel);
+    return buildEntry(detailLevel);
+  };
   if (
     requestedDetailLevel === 'full' &&
     preferredRecoveryDetailLevel === 'low'
   ) {
-    const preferredEntry = buildEntry('low');
+    const preferredEntry = buildTrackedEntry('low');
     if (preferredEntry.modelRoot) {
       return {
         entry: preferredEntry,
         resolvedDetailLevel: 'low',
+        attemptedDetailLevels,
       };
     }
   }
 
-  const requestedEntry = buildEntry(requestedDetailLevel);
+  const requestedEntry = buildTrackedEntry(requestedDetailLevel);
   if (requestedDetailLevel !== 'full' || requestedEntry.modelRoot) {
     return {
       entry: requestedEntry,
       resolvedDetailLevel: requestedDetailLevel,
+      attemptedDetailLevels,
     };
   }
 
   return {
-    entry: buildEntry('low'),
+    entry: buildTrackedEntry('low'),
     resolvedDetailLevel: 'low',
+    attemptedDetailLevels,
   };
+}
+
+export function summarizeVisibleTileRecoveryAttempt(
+  attemptedDetailLevels: readonly RenderBudgetDetailLevel[]
+): string {
+  return attemptedDetailLevels.join(' -> ');
 }
 
 export function getFallbackBoxReason(

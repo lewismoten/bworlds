@@ -192,6 +192,7 @@ import {
   getFallbackBoxReason,
   getPreferredVisibleTileBuildDetailLevel,
   shouldRebuildVisibleTileModelDetailEntry,
+  summarizeVisibleTileRecoveryAttempt,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   buildRecoverableVisibleTileModelDetailEntry,
@@ -4924,6 +4925,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: { detailLevel: 'full', modelRoot: { type: 'Group' } },
       resolvedDetailLevel: 'full',
+      attemptedDetailLevels: ['full'],
     });
     expect(buildEntry).toHaveBeenCalledTimes(1);
     expect(buildEntry).toHaveBeenCalledWith('full');
@@ -4948,6 +4950,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: lowEntry,
       resolvedDetailLevel: 'low',
+      attemptedDetailLevels: ['full', 'low'],
     });
     expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
   });
@@ -4971,6 +4974,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: lowEntry,
       resolvedDetailLevel: 'low',
+      attemptedDetailLevels: ['low'],
     });
     expect(buildEntry.mock.calls).toEqual([['low']]);
   });
@@ -4993,6 +4997,7 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: { detailLevel: 'full', modelRoot: { type: 'Group' } },
       resolvedDetailLevel: 'full',
+      attemptedDetailLevels: ['low', 'full'],
     });
     expect(buildEntry.mock.calls).toEqual([['low'], ['full']]);
   });
@@ -5008,8 +5013,15 @@ describe('render3d visibility helpers', () => {
     ).toEqual({
       entry: { detailLevel: 'low', modelRoot: null },
       resolvedDetailLevel: 'low',
+      attemptedDetailLevels: ['full', 'low'],
     });
     expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
+  });
+
+  it('summarizes the visible lod recovery chain in attempt order', () => {
+    expect(summarizeVisibleTileRecoveryAttempt(['low', 'full', 'low'])).toBe(
+      'low -> full -> low'
+    );
   });
 
   it('prefers the last rejected summary when reporting a fallback box reason', () => {
