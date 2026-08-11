@@ -392,6 +392,34 @@ describe('procedural music song', () => {
     );
   });
 
+  it('makes the variation section audibly distinct through changed lead rhythm', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const variation = song.sections.find(
+      (section) => section.id === 'variation'
+    )!;
+    const sectionARhythm = collectLeadMotifRhythmShape(song, sectionA).slice(
+      0,
+      4
+    );
+    const variationRhythm = collectLeadMotifRhythmShape(song, variation).slice(
+      0,
+      4
+    );
+
+    expect(sectionARhythm).toHaveLength(4);
+    expect(variationRhythm).toHaveLength(4);
+    expect(variationRhythm).not.toEqual(sectionARhythm);
+  });
+
   it('builds an eight-measure phrase before repeating it across the full song', () => {
     const options = {
       nowMs: 1_000,

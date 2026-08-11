@@ -125,18 +125,22 @@
 
 ## Rhythm and Phrasing
 
-- [ ] Create a small library of phrase rhythm templates.
+- [x] Create a small library of phrase rhythm templates.
 - [ ] Assign one rhythm identity to each song section.
-- [ ] Repeat rhythms before adding variation.
-- [ ] Place rests mainly at phrase boundaries.
+- [x] Repeat rhythms before adding variation.
+- [x] Place rests mainly at phrase boundaries.
 - [ ] Avoid constant note activity in every layer.
 - [ ] Avoid every layer resting at the same time.
 - [ ] Give the bass a stable recurring pulse.
 - [ ] Let lead notes connect into short musical sentences.
 - [ ] Use longer notes near phrase endings.
 - [ ] Use shorter notes when building toward a climax.
-- [ ] Make section changes audible through rhythm changes.
+- [x] Make section changes audible through rhythm changes.
 - [ ] Quantize first, then apply controlled humanization.
+      The lead rhythm system now draws from shared measure and phrase pattern
+      libraries, repeats the same opening rhythm before A' varies it, keeps
+      phrase-end rests in the fourth and eighth measures, and gives the
+      variation section a measurably different lead rhythm than Section A.
 
 ## Humanization
 
