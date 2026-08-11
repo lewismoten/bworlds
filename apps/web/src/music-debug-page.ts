@@ -36,6 +36,12 @@ import {
 } from './music-debug-playback-variant.ts';
 import { resolveMusicDebugAudiblePlaybackRoles } from './music-debug-page-playback-roles.ts';
 import {
+  DEFAULT_MUSIC_DEBUG_TRACK_PLAYBACK_STATE,
+  toggleMusicDebugTrackMutedRole,
+  toggleMusicDebugTrackSoloRole,
+  type MusicDebugTrackPlaybackState,
+} from './music-debug-track-playback.ts';
+import {
   clampMusicDebugPreviewOffset,
   resolveMusicDebugDisplayedOffsetMs,
   resolveMusicDebugPlaybackOffsetMs,
@@ -160,6 +166,8 @@ let playbackFrameHandle: number | null = null;
 let percussionPlaybackState: MusicDebugPercussionPlaybackState =
   normalizeMusicDebugPercussionPlaybackState(null);
 let hiddenRoles: MusicDebugDisplayRole[] = [];
+let trackPlaybackState: MusicDebugTrackPlaybackState =
+  DEFAULT_MUSIC_DEBUG_TRACK_PLAYBACK_STATE;
 let timelineDragState: MusicDebugTimelinePointerDragState | null = null;
 let timelineDragOffsetMs: number | null = null;
 let suppressTimelineClick = false;
@@ -246,11 +254,26 @@ function resolveVisibleTimelineRoles(): MusicDebugDisplayRole[] {
 
 function buildTrackVisibilityButtonMarkup(role: MusicDebugDisplayRole): string {
   const hidden = hiddenRoles.includes(role);
+  const soloPressed = trackPlaybackState.soloRoles.includes(role);
+  const mutePressed = trackPlaybackState.mutedRoles.includes(role);
   const label = formatMusicDebugDisplayRoleLabel(role);
-  const icon = hidden
+  const visibilityIcon = hidden
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4 20 21" /><path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" /><path d="M9.3 5.4A10.9 10.9 0 0 1 12 5c5.5 0 9.3 4.7 10 7-.3 1-1.2 2.6-2.7 4.1" /><path d="M6.7 6.8C4.4 8.1 2.8 10.2 2 12c.7 2.3 4.5 7 10 7 1.6 0 3-.3 4.3-.8" /></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c.7-2.3 4.5-7 10-7s9.3 4.7 10 7c-.7 2.3-4.5 7-10 7S2.7 14.3 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>';
-  return `<button type="button" class="music-debug-track-visibility-button" data-role="${role}" aria-pressed="${hidden}" aria-label="${hidden ? `Show ${label}` : `Hide ${label}`}">${icon}<span>${label}</span></button>`;
+  const soloIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c-2.8 0-5.3 1.8-6.2 4.4L4 12l1.8 3.6A6.7 6.7 0 0 0 12 20a6.7 6.7 0 0 0 6.2-4.4L20 12l-1.8-3.6A6.7 6.7 0 0 0 12 4Z" /><path d="M10 10.8V8.5a2 2 0 1 1 4 0v2.3a2.5 2.5 0 1 1-4 0Z" /></svg>';
+  const muteIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c-2.8 0-5.3 1.8-6.2 4.4L4 12l1.8 3.6A6.7 6.7 0 0 0 12 20a6.7 6.7 0 0 0 6.2-4.4L20 12l-1.8-3.6A6.7 6.7 0 0 0 12 4Z" /><path d="m8 8 8 8" /><path d="m16 8-8 8" /></svg>';
+  return `
+    <div class="music-debug-track-control-row">
+      <span class="music-debug-track-control-label">${label}</span>
+      <div class="music-debug-track-control-actions">
+        <button type="button" class="music-debug-track-visibility-button" data-role="${role}" aria-pressed="${hidden}" aria-label="${hidden ? `Show ${label}` : `Hide ${label}`}">${visibilityIcon}<span>View</span></button>
+        <button type="button" class="music-debug-track-audio-button" data-role="${role}" data-track-playback-action="solo" aria-pressed="${soloPressed}" aria-label="${soloPressed ? `Clear solo for ${label}` : `Solo ${label}`}">${soloIcon}<span>Solo</span></button>
+        <button type="button" class="music-debug-track-audio-button" data-role="${role}" data-track-playback-action="mute" aria-pressed="${mutePressed}" aria-label="${mutePressed ? `Unmute ${label}` : `Mute ${label}`}">${muteIcon}<span>Mute</span></button>
+      </div>
+    </div>
+  `;
 }
 
 function renderTrackVisibilityControls(): void {
@@ -289,7 +312,7 @@ function resolveSelectedPlaybackRoles(
 ): ReturnType<typeof resolveMusicDebugPlaybackRoles> {
   return resolveMusicDebugAudiblePlaybackRoles({
     variant: normalizeMusicDebugPlaybackVariant(value),
-    hiddenRoles,
+    trackPlaybackState,
   });
 }
 
@@ -610,6 +633,7 @@ function applyPersistedPageState(): void {
     persistedState.percussionPlaybackState
   );
   hiddenRoles = [...persistedState.hiddenRoles];
+  trackPlaybackState = persistedState.trackPlaybackState;
   renderTrackVisibilityControls();
 }
 
@@ -626,6 +650,7 @@ function persistPageState(
     dryPlaybackEnabled: resolveSelectedDryPlaybackEnabled(),
     percussionPlaybackState,
     hiddenRoles,
+    trackPlaybackState,
     previewOffsetMs: offsetMs,
     shouldResume,
     scrollY: Math.max(0, Math.round(globalThis.scrollY ?? 0)),
@@ -851,9 +876,10 @@ timeline?.addEventListener('click', (event) => {
     boundsHeight: bounds.height,
   });
   if (trackLabelRole) {
-    hiddenRoles = hiddenRoles.includes(trackLabelRole)
-      ? hiddenRoles.filter((entry) => entry !== trackLabelRole)
-      : [...hiddenRoles, trackLabelRole];
+    trackPlaybackState = toggleMusicDebugTrackMutedRole(
+      trackPlaybackState,
+      trackLabelRole
+    );
     renderTrackVisibilityControls();
     restartPlaybackForCurrentState();
     renderPlaybackUi();
@@ -1008,13 +1034,28 @@ trackVisibilityRoot?.addEventListener('click', (event) => {
   const button = target.closest<HTMLButtonElement>(
     '.music-debug-track-visibility-button'
   );
-  const role = button?.dataset.role as MusicDebugDisplayRole | undefined;
-  if (!button || !role) {
+  const audioButton = target.closest<HTMLButtonElement>(
+    '.music-debug-track-audio-button'
+  );
+  const role = (button?.dataset.role ?? audioButton?.dataset.role) as
+    MusicDebugDisplayRole | undefined;
+  if (!role) {
     return;
   }
-  hiddenRoles = hiddenRoles.includes(role)
-    ? hiddenRoles.filter((entry) => entry !== role)
-    : [...hiddenRoles, role];
+  if (button) {
+    hiddenRoles = hiddenRoles.includes(role)
+      ? hiddenRoles.filter((entry) => entry !== role)
+      : [...hiddenRoles, role];
+  } else {
+    const action = audioButton?.dataset.trackPlaybackAction;
+    if (action !== 'solo' && action !== 'mute') {
+      return;
+    }
+    trackPlaybackState =
+      action === 'solo'
+        ? toggleMusicDebugTrackSoloRole(trackPlaybackState, role)
+        : toggleMusicDebugTrackMutedRole(trackPlaybackState, role);
+  }
   renderTrackVisibilityControls();
   restartPlaybackForCurrentState();
   renderPlaybackUi();

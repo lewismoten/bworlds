@@ -3,24 +3,30 @@ import { describe, expect, it } from 'vitest';
 import { resolveMusicDebugAudiblePlaybackRoles } from './music-debug-page-playback-roles.ts';
 
 describe('music debug page playback roles', () => {
-  it('removes hidden roles from the active playback selection', () => {
+  it('removes muted roles and honors solo roles in the active playback selection', () => {
     expect(
       resolveMusicDebugAudiblePlaybackRoles({
         variant: 'full',
-        hiddenRoles: ['harmony', 'percussion'],
+        trackPlaybackState: {
+          mutedRoles: ['harmony', 'percussion'],
+        },
       })
     ).toEqual(['bass', 'lead']);
     expect(
       resolveMusicDebugAudiblePlaybackRoles({
         variant: 'melody-only',
-        hiddenRoles: ['lead'],
+        trackPlaybackState: {
+          mutedRoles: ['lead'],
+        },
       })
     ).toEqual([]);
     expect(
       resolveMusicDebugAudiblePlaybackRoles({
         variant: 'harmony-and-bass',
-        hiddenRoles: ['lead', 'invalid' as never],
+        trackPlaybackState: {
+          soloRoles: ['harmony', 'lead'],
+        },
       })
-    ).toEqual(['bass', 'harmony']);
+    ).toEqual(['harmony']);
   });
 });

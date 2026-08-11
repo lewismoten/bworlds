@@ -85,6 +85,10 @@ describe('music debug page persistence', () => {
         mutedVoiceIds: ['snare-38'],
       },
       hiddenRoles: ['harmony', 'percussion'],
+      trackPlaybackState: {
+        soloRoles: ['lead'],
+        mutedRoles: ['bass'],
+      },
       previewOffsetMs: 9_000,
       shouldResume: true,
       scrollY: 420,
