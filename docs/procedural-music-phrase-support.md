@@ -8,6 +8,8 @@ Current responsibilities:
 
 - Extends bass and harmony durations enough to keep phrase support audible.
 - Holds cadence-measure bass roots longer than neutral-measure roots.
+- Pushes harmony notes down by octaves when phrase shaping would otherwise leave
+  them inside the same local register as the lead.
 - Inserts short harmony anchor notes into long lead rest windows when support
   would otherwise disappear entirely.
 - Thins later harmony attack clusters inside measures where the lead is busy,

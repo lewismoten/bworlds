@@ -1,3 +1,4 @@
+import { resolveProceduralMidiNoteFrequency } from './procedural-music-scale.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase-structure.ts';
 
@@ -16,6 +17,8 @@ const CADENCE_BASS_REMAINING_MEASURE_COVERAGE = {
   answer: 0.92,
 } as const;
 const LEAD_FOCUS_MEASURE_NOTE_THRESHOLD = 2;
+const HARMONY_LEAD_REGISTER_CLEARANCE_SEMITONES = 3;
+const HARMONY_REGISTER_FLOOR_MIDI = 45;
 
 export function shapeProceduralPhraseSupportNotes(
   notes: readonly ProceduralMusicNote[],
@@ -30,6 +33,11 @@ export function shapeProceduralPhraseSupportNotes(
   const phraseEndMs = options.phraseStartMs + options.phraseDurationMs;
 
   extendSupportDurationsWithinMeasures(shapedNotes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs,
+    measureDurationMs,
+  });
+  keepHarmonyBelowLeadCoreRegister(shapedNotes, {
     phraseStartMs: options.phraseStartMs,
     phraseEndMs,
     measureDurationMs,
@@ -229,6 +237,95 @@ function thinHarmonyDuringLeadFocusMeasures(
       };
     }
   }
+}
+
+function keepHarmonyBelowLeadCoreRegister(
+  notes: ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseEndMs: number;
+    measureDurationMs: number;
+  }
+): void {
+  const measureCount = Math.max(
+    1,
+    Math.round(
+      (options.phraseEndMs - options.phraseStartMs) / options.measureDurationMs
+    )
+  );
+
+  for (let measureIndex = 0; measureIndex < measureCount; measureIndex += 1) {
+    const measureStartMs =
+      options.phraseStartMs + measureIndex * options.measureDurationMs;
+    const measureEndMs = Math.min(
+      options.phraseEndMs,
+      measureStartMs + options.measureDurationMs
+    );
+    const leadMidis = notes
+      .filter(
+        (note) =>
+          note.role === 'lead' &&
+          note.startMs >= measureStartMs &&
+          note.startMs < measureEndMs
+      )
+      .map((note) => resolveNoteMidi(note.frequency));
+
+    if (leadMidis.length === 0) {
+      continue;
+    }
+
+    const minimumLeadMidi = Math.min(...leadMidis);
+    const harmonyCeilingMidi =
+      minimumLeadMidi - HARMONY_LEAD_REGISTER_CLEARANCE_SEMITONES;
+
+    for (let index = 0; index < notes.length; index += 1) {
+      const note = notes[index]!;
+      if (
+        note.role !== 'harmony' ||
+        note.startMs < measureStartMs ||
+        note.startMs >= measureEndMs
+      ) {
+        continue;
+      }
+
+      const shiftedMidi = resolveLowerHarmonyRegisterMidi(
+        resolveNoteMidi(note.frequency),
+        harmonyCeilingMidi
+      );
+      if (shiftedMidi === null) {
+        continue;
+      }
+
+      notes[index] = {
+        ...note,
+        frequency: resolveProceduralMidiNoteFrequency(shiftedMidi),
+      };
+    }
+  }
+}
+
+function resolveLowerHarmonyRegisterMidi(
+  currentMidi: number,
+  harmonyCeilingMidi: number
+): number | null {
+  if (currentMidi <= harmonyCeilingMidi) {
+    return null;
+  }
+
+  let candidateMidi = currentMidi;
+  while (candidateMidi > harmonyCeilingMidi) {
+    const nextCandidateMidi = candidateMidi - 12;
+    if (nextCandidateMidi < HARMONY_REGISTER_FLOOR_MIDI) {
+      break;
+    }
+    candidateMidi = nextCandidateMidi;
+  }
+
+  return candidateMidi === currentMidi ? null : candidateMidi;
+}
+
+function resolveNoteMidi(frequency: number): number {
+  return Math.round(69 + 12 * Math.log2(Math.max(frequency, 1) / 440));
 }
 
 function resolvePhraseMeasureCadence(

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { shapeProceduralPhraseSupportNotes } from './procedural-music-phrase-support.ts';
+import { resolveProceduralMidiNoteFrequency } from './procedural-music-scale.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 
 describe('procedural music phrase support', () => {
@@ -191,6 +192,72 @@ describe('procedural music phrase support', () => {
       .map((note) => note.startMs);
 
     expect(activeHarmonyStarts).toEqual([80, 80]);
+  });
+
+  it('drops overlapping harmony notes below the lead core register inside the same measure', () => {
+    const notes = shapeProceduralPhraseSupportNotes(
+      [
+        createNote({
+          role: 'lead',
+          startMs: 120,
+          durationMs: 120,
+          instrumentId: 'lead:0',
+          frequency: resolveProceduralMidiNoteFrequency(69),
+        }),
+        createNote({
+          role: 'lead',
+          startMs: 360,
+          durationMs: 120,
+          instrumentId: 'lead:1',
+          frequency: resolveProceduralMidiNoteFrequency(71),
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 80,
+          durationMs: 160,
+          instrumentId: 'harmony:already-low',
+          frequency: resolveProceduralMidiNoteFrequency(60),
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 80,
+          durationMs: 160,
+          instrumentId: 'harmony:too-high',
+          frequency: resolveProceduralMidiNoteFrequency(72),
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 520,
+          durationMs: 160,
+          instrumentId: 'harmony:also-too-high',
+          frequency: resolveProceduralMidiNoteFrequency(68),
+        }),
+      ],
+      {
+        phraseStartMs: 0,
+        phraseDurationMs: 8_000,
+      }
+    );
+
+    const lowHarmony = notes.find(
+      (note) => note.instrumentId === 'harmony:already-low'
+    );
+    const shiftedOctaveHarmony = notes.find(
+      (note) => note.instrumentId === 'harmony:too-high'
+    );
+    const shiftedClusterHarmony = notes.find(
+      (note) => note.instrumentId === 'harmony:also-too-high'
+    );
+
+    expect(Math.round(69 + 12 * Math.log2(lowHarmony!.frequency / 440))).toBe(
+      60
+    );
+    expect(
+      Math.round(69 + 12 * Math.log2(shiftedOctaveHarmony!.frequency / 440))
+    ).toBe(60);
+    expect(
+      Math.round(69 + 12 * Math.log2(shiftedClusterHarmony!.frequency / 440))
+    ).toBe(56);
   });
 });
 
