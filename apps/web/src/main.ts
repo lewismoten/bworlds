@@ -242,6 +242,7 @@ import {
   getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
+import { annotateTextViewportGridWithVisibleTileLods } from './text-viewport-lod.ts';
 import { createViewportHudView } from './status-view.ts';
 import {
   loadPersistedPageScrollY,
@@ -3623,10 +3624,13 @@ function render(): FrameLoopActivityLike {
     });
   } else if (state.viewMode === 'text') {
     if (!viewportText) return;
-    const grid = buildTextViewportGrid(state, {
-      columns: 29,
-      rows: 19,
-    });
+    const grid = annotateTextViewportGridWithVisibleTileLods(
+      buildTextViewportGrid(state, {
+        columns: 29,
+        rows: 19,
+      }),
+      renderer3d
+    );
     const textViewportSignature = getTextViewportSignature(grid);
     if (textViewportSignature !== uiRenderState.lastTextViewportSignature) {
       viewportText.innerHTML = buildTextViewportMarkup(grid);

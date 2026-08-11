@@ -33,6 +33,7 @@ export type TextViewportCell = {
   kind: string;
   worldX: number;
   worldY: number;
+  annotation?: string;
 };
 export type TextViewportGrid = {
   rows: TextViewportCell[][];

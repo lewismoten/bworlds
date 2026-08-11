@@ -152,6 +152,7 @@ describe('ui signature helpers', () => {
         [
           {
             glyph: '.',
+            annotation: 'F',
             color: '#84cc16',
             kind: 'plains',
             worldX: 0,
@@ -182,6 +183,7 @@ describe('ui signature helpers', () => {
 
     expect(getTextViewportSignature(grid)).toBe(getTextViewportSignature(grid));
     expect(buildTextViewportMarkup(grid)).toContain('viewport-text-cell');
+    expect(buildTextViewportMarkup(grid)).toContain('viewport-text-cell-label');
     expect(buildTextViewportMarkup(grid)).toContain('data-kind="river"');
   });
 

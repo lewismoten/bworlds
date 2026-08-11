@@ -45,6 +45,8 @@ For the player's current snapped tile, the web debug panel also exposes the requ
 
 The debug panel also includes a `Freeze LOD` toggle that stops new visible-tile LOD resync passes while it is active. That makes it easier to inspect a problematic tile without movement immediately retriggering another selection pass.
 
+The text viewport also shows the current rendered visible-tile LOD directly above each tile glyph when the renderer has visible-tile state for that coordinate. It uses compact `F` and `L` labels so LOD churn is visible without opening the debug summary.
+
 ## Checklist Coverage
 
 The current implementation already covers these `docs/todo/tile-lod.md` items:

@@ -429,10 +429,24 @@ button:hover {
 }
 
 .viewport-text-cell {
-  display: inline-block;
-  min-width: 0.72em;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 1.1em;
   text-align: center;
   text-shadow: 0 0 10px rgba(8, 16, 25, 0.75);
+}
+
+.viewport-text-cell-label {
+  font-size: 0.52em;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  opacity: 0.82;
+}
+
+.viewport-text-cell-glyph {
+  line-height: 1;
 }
 
 .viewport-3d,

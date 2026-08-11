@@ -195,7 +195,11 @@ export function getDetailLabels(details: EventDetail[]): string[] {
 
 export function getTextViewportSignature(grid: TextViewportGrid): string {
   return grid.rows
-    .map((row) => row.map((cell) => `${cell.glyph}${cell.color}`).join(''))
+    .map((row) =>
+      row
+        .map((cell) => `${cell.annotation ?? ''}${cell.glyph}${cell.color}`)
+        .join('')
+    )
     .join('|');
 }
 
@@ -206,7 +210,11 @@ export function buildTextViewportMarkup(grid: TextViewportGrid): string {
         `<div class="viewport-text-row">${row
           .map(
             (cell) =>
-              `<span class="viewport-text-cell" style="color:${cell.color}" data-kind="${cell.kind}">${cell.glyph}</span>`
+              `<span class="viewport-text-cell" style="color:${cell.color}" data-kind="${cell.kind}">${
+                cell.annotation
+                  ? `<span class="viewport-text-cell-label">${cell.annotation}</span>`
+                  : ''
+              }<span class="viewport-text-cell-glyph">${cell.glyph}</span></span>`
           )
           .join('')}</div>`
     )

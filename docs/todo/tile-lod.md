@@ -188,7 +188,7 @@ This is also partially due to performance issues which can be seen here, and add
 
 ## Debug Views
 
-- [ ] Show current LOD level above each debug tile.
+- [x] Show current LOD level above each debug tile.
 - [x] Show requested and rendered LOD separately.
 - [x] Show cached LOD levels for the selected tile.
 - [x] Show the last LOD failure reason.
