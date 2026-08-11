@@ -282,23 +282,33 @@ export function createTownTilePlugin(): RuntimePlugin {
       const descriptors = getTownDescriptors(tileX, tileY);
       const group = new three.Group();
       if (detailLevel === 'low') {
-        for (const descriptor of descriptors) {
-          const building = new three.Group();
-          building.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-          building.rotation.y = descriptor.rotation;
+        const lowBodyInstances = new three.InstancedMesh(
+          new three.BoxGeometry(1, 1, 1),
+          style.wallMaterial,
+          descriptors.length
+        );
+        lowBodyInstances.userData = {
+          ...(lowBodyInstances.userData ?? {}),
+          townInstancedPart: 'low-building-body',
+        };
+        const lowBodyMatrixScratch = new three.Matrix4();
 
-          const body = new three.Mesh(
-            new three.BoxGeometry(
+        descriptors.forEach((descriptor, index) => {
+          lowBodyInstances.setMatrixAt(
+            index,
+            writeTownRotatedInstancedScalePositionMatrix(
+              lowBodyMatrixScratch,
+              tileX + descriptor.x,
+              descriptor.height * 0.5,
+              tileY + descriptor.y,
               descriptor.width,
               descriptor.height,
-              descriptor.depth
-            ),
-            style.wallMaterial
+              descriptor.depth,
+              descriptor.rotation
+            )
           );
-          body.position.y = descriptor.height * 0.5;
-          building.add(body);
-          group.add(building);
-        }
+        });
+        group.add(lowBodyInstances);
         return group;
       }
 

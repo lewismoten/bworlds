@@ -268,6 +268,7 @@ describe('tile town', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
     const state = createTownState();
+    const descriptorCount = getTownBuildingCount(3, 7);
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -287,9 +288,14 @@ describe('tile town', () => {
     }) as FakeGroup;
 
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
-    expect(
-      lowModel.children.every((building) => building.children.length === 1)
-    ).toBe(true);
+    const lowBodyInstances = lowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.townInstancedPart === 'low-building-body'
+    ) as FakeInstancedMesh[];
+    expect(lowBodyInstances).toHaveLength(1);
+    expect(lowBodyInstances[0]?.count).toBe(descriptorCount);
+    expect(lowBodyInstances[0]?.matrices).toHaveLength(descriptorCount);
     expect(
       fullModel.children.some(
         (child) =>
