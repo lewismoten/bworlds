@@ -23,6 +23,12 @@ dedicated long-suite files that are only included by `npm run test:long` and
 Keep the normal `*.test.ts` files for behavior checks that should run during
 every `npm run check`.
 
+When a helper can be tested with a small structural fixture, keep that as the
+fast-path unit test and move the representative full-generation determinism
+check into a `*.long.test.ts` companion. The music snapshot signature tests now
+follow that split so normal checks do not rebuild the full procedural song just
+to verify string serialization behavior.
+
 When a long-running music or world-generation test needs representative
 snapshots, prefer module-level shared fixtures or named known-good seeds over
 rebuilding the same deterministic snapshots inside multiple assertions. That
