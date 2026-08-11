@@ -62,10 +62,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       drawbridges now collapse their repeated tower frames into one shared
       `InstancedMesh`, and low-detail town tiles now collapse their repeated
       distant building bodies into one shared `InstancedMesh`, and full-
-      detail sign tiles now collapse their repeated placard support bars and
-      trim edge caps into shared `InstancedMesh` sets, which removes small
-      clusters of redundant static child nodes from each visible landmark or
-      track tile.
+      detail sign tiles now collapse their repeated placard support bars,
+      trim edge caps, and arrow heads into shared `InstancedMesh` sets,
+      which removes small clusters of redundant static child nodes from each
+      visible landmark or track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
@@ -104,8 +104,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       emitting one mesh per frame, and low-detail town tiles now instance
       their repeated building bodies instead of emitting one mesh per distant
       building body, and full-detail sign tiles now instance their repeated
-      placard support bars and trim edge caps instead of emitting one mesh
-      per placard hardware piece.
+      placard support bars, trim edge caps, and arrow heads instead of
+      emitting one mesh per placard hardware piece.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

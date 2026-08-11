@@ -585,6 +585,7 @@ describe('tile sign', () => {
 
     const supportInstances: FakeInstancedMesh[] = [];
     const edgeCapInstances: FakeInstancedMesh[] = [];
+    const arrowHeadInstances: FakeInstancedMesh[] = [];
     model?.traverse((node) => {
       if (
         node instanceof FakeInstancedMesh &&
@@ -598,14 +599,23 @@ describe('tile sign', () => {
       ) {
         edgeCapInstances.push(node);
       }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.signInstancedPart === 'placard-arrow-head'
+      ) {
+        arrowHeadInstances.push(node);
+      }
     });
 
     expect(supportInstances).toHaveLength(1);
     expect(edgeCapInstances).toHaveLength(1);
+    expect(arrowHeadInstances).toHaveLength(1);
     expect(supportInstances[0]?.count).toBe(3);
     expect(edgeCapInstances[0]?.count).toBe(3);
+    expect(arrowHeadInstances[0]?.count).toBe(3);
     expect(supportInstances[0]?.matrices).toHaveLength(3);
     expect(edgeCapInstances[0]?.matrices).toHaveLength(3);
+    expect(arrowHeadInstances[0]?.matrices).toHaveLength(3);
   });
 
   it('builds a simpler low-detail sign silhouette without lantern or label sprites', () => {

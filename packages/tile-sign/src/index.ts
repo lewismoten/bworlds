@@ -281,17 +281,29 @@ export function createSignTilePlugin(): RuntimePlugin {
           ...(placardEdgeCapInstances.userData ?? {}),
           signInstancedPart: 'placard-edge-cap',
         };
+        const placardArrowHeadInstances = new three.InstancedMesh(
+          new three.ConeGeometry(1, 1, 3),
+          style.placardMaterial,
+          placards.length
+        );
+        placardArrowHeadInstances.userData = {
+          ...(placardArrowHeadInstances.userData ?? {}),
+          signInstancedPart: 'placard-arrow-head',
+        };
         const placardSupportMatrixScratch = new three.Matrix4();
         const placardEdgeCapMatrixScratch = new three.Matrix4();
+        const placardArrowHeadMatrixScratch = new three.Matrix4();
 
         placards.forEach((poi, index) => {
+          const mountOffsetX =
+            useSecondPost && index === 2 ? 0.18 + style.postThickness * 0.7 : 0;
           const mount =
             useSecondPost && index === 2
               ? createSecondaryPost(three, style)
               : primaryPost;
 
           if (useSecondPost && index === 2) {
-            mount.position.x = 0.18 + style.postThickness * 0.7;
+            mount.position.x = mountOffsetX;
             group.add(mount);
           }
 
@@ -300,15 +312,19 @@ export function createSignTilePlugin(): RuntimePlugin {
             style,
             poi,
             index,
+            mountOffsetX,
             placardSupportInstances,
             placardSupportMatrixScratch,
             placardEdgeCapInstances,
-            placardEdgeCapMatrixScratch
+            placardEdgeCapMatrixScratch,
+            placardArrowHeadInstances,
+            placardArrowHeadMatrixScratch
           );
           mount.add(signArm);
         });
         group.add(placardSupportInstances);
         group.add(placardEdgeCapInstances);
+        group.add(placardArrowHeadInstances);
 
         const lantern = createSignLantern(three, style);
         lantern.position.set(
@@ -470,10 +486,13 @@ function createDirectionalPlacard(
   style: SignStyle,
   poi: NearbyPoi,
   index: number,
+  mountOffsetX: number,
   supportInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
   supportMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>,
   edgeCapInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
-  edgeCapMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>
+  edgeCapMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>,
+  arrowHeadInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
+  arrowHeadMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>
 ) {
   const group = new three.Group();
   const width = style.placardWidth * (poi.name.length > 12 ? 1.15 : 1);
@@ -493,20 +512,11 @@ function createDirectionalPlacard(
   placard.position.x = width * 0.5 + armLength;
   group.add(placard);
 
-  const arrowHead = new three.Mesh(
-    new three.ConeGeometry(height * 0.46, height * 0.68, 3),
-    style.placardMaterial
-  );
-  arrowHead.rotation.z = -Math.PI * 0.5;
-  arrowHead.position.set(width + armLength + height * 0.24, 0, 0);
-  arrowHead.scale.set(1.05, 1, 1.35);
-  group.add(arrowHead);
-
   edgeCapInstances.setMatrixAt(
     index,
     writeSignRotatedScalePositionMatrix(
       edgeCapMatrixScratch,
-      width + armLength - depth * 0.2,
+      mountOffsetX + width + armLength - depth * 0.2,
       rowOffset,
       0,
       depth * 1.4,
@@ -520,12 +530,25 @@ function createDirectionalPlacard(
     index,
     writeSignRotatedScalePositionMatrix(
       supportMatrixScratch,
-      armLength * 0.5 + 0.03,
+      mountOffsetX + armLength * 0.5 + 0.03,
       rowOffset,
       0,
       armLength + 0.06,
       depth * 0.9,
       depth * 0.9,
+      -heading
+    )
+  );
+  arrowHeadInstances.setMatrixAt(
+    index,
+    writeSignYawedArrowHeadMatrix(
+      arrowHeadMatrixScratch,
+      mountOffsetX + width + armLength + height * 0.24,
+      rowOffset,
+      0,
+      height * 0.46 * 1.05,
+      height * 0.68,
+      height * 0.46 * 1.35,
       -heading
     )
   );
@@ -733,6 +756,38 @@ function writeSignRotatedScalePositionMatrix(
     y,
     -sinRotation * scaleX,
     0,
+    cosRotation * scaleZ,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
+}
+
+function writeSignYawedArrowHeadMatrix(
+  target: InstanceType<ThreeHostLike['Matrix4']>,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return target.set(
+    0,
+    cosRotation * scaleY,
+    sinRotation * scaleZ,
+    x,
+    -scaleX,
+    0,
+    0,
+    y,
+    0,
+    -sinRotation * scaleY,
     cosRotation * scaleZ,
     z,
     0,
