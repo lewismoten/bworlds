@@ -2,6 +2,16 @@
 
 Do not work on this file. These are just ideas for later.
 
+- See world map at different zoom levels
+- See temparature hotspots during the year
+- See cold/hot pressure fronts
+- See wind speeds/direction
+- See jet stream(s)
+- See animation of weather for a day/week
+- Setup hold/cold/dry/wet temperate zones
+- Setup weather affected by various zones, mountains, rivers, oceans, land
+- Map generation based on zones
+
 - Bridge-style simulation to travel between worlds in a space ship.
 - Mini-games that can be played separately, but still influence the world as a whole
   - Fishing
