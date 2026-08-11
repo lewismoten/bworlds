@@ -4663,40 +4663,62 @@ function createForestLandmarkMeshes(
     return;
   }
 
+  const stemInstances = new three.InstancedMesh(
+    new three.CylinderGeometry(0.03, 0.05, 0.18, 6),
+    style.mushroomStemMaterial,
+    landmark.memberCount
+  );
+  stemInstances.userData = {
+    ...(stemInstances.userData ?? {}),
+    [LANDMARK_KEY]: landmark.kind,
+    [LANDMARK_INSTANCED_PART_KEY]: 'mushroom-ring-stem',
+  };
+  const capInstances = new three.InstancedMesh(
+    new three.SphereGeometry(0.11, 7, 7),
+    style.mushroomCapMaterial,
+    landmark.memberCount
+  );
+  capInstances.userData = {
+    ...(capInstances.userData ?? {}),
+    [LANDMARK_KEY]: landmark.kind,
+    [LANDMARK_INSTANCED_PART_KEY]: 'mushroom-ring-cap',
+  };
+  const stemMatrixScratch = new three.Matrix4();
+  const capMatrixScratch = new three.Matrix4();
+
   for (let index = 0; index < landmark.memberCount; index += 1) {
     const angle =
       landmark.rotation + (index / landmark.memberCount) * Math.PI * 2;
     const x = tileX + landmark.x + Math.cos(angle) * landmark.ringRadius;
     const z = tileY + landmark.y + Math.sin(angle) * landmark.ringRadius;
-
-    const stem = new three.Mesh(
-      new three.CylinderGeometry(0.03, 0.05, 0.18, 6),
-      style.mushroomStemMaterial
+    stemInstances.setMatrixAt(
+      index,
+      writeLowDetailInstancedMatrix(
+        stemMatrixScratch,
+        x,
+        0.1,
+        z,
+        landmark.scale,
+        landmark.scale,
+        landmark.scale
+      )
     );
-    stem.position.set(x, 0.1, z);
-    stem.scale.setScalar(landmark.scale);
-    stem.userData = {
-      ...(stem.userData ?? {}),
-      [LANDMARK_KEY]: landmark.kind,
-    };
-    group.add(stem);
-
-    const cap = new three.Mesh(
-      new three.SphereGeometry(0.11, 7, 7),
-      style.mushroomCapMaterial
+    capInstances.setMatrixAt(
+      index,
+      writeLowDetailInstancedMatrix(
+        capMatrixScratch,
+        x,
+        0.18 * landmark.scale,
+        z,
+        1.2 * landmark.scale,
+        0.62 * landmark.scale,
+        1.2 * landmark.scale
+      )
     );
-    cap.position.set(x, 0.18 * landmark.scale, z);
-    cap.scale.set(
-      1.2 * landmark.scale,
-      0.62 * landmark.scale,
-      1.2 * landmark.scale
-    );
-    cap.userData = {
-      ...(cap.userData ?? {}),
-      [LANDMARK_KEY]: landmark.kind,
-    };
-    group.add(cap);
   }
+
+  group.add(stemInstances);
+  group.add(capInstances);
 }
 
 function getForestCarvingMarkers(carving: ForestCarvingDescriptor) {

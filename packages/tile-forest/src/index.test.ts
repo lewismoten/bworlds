@@ -2750,6 +2750,73 @@ describe('tile forest', () => {
     expect(standaloneStoneMeshes).toHaveLength(0);
   });
 
+  it('instances repeated mushroom-ring landmark stems and caps in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState();
+    let targetTile: {
+      x: number;
+      y: number;
+      landmark: NonNullable<ReturnType<typeof getForestLandmark>>;
+    } | null = null;
+
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const landmark = getForestLandmark(tileX, tileY);
+        if (landmark?.kind === 'mushroom-ring') {
+          targetTile = { x: tileX, y: tileY, landmark };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const stemInstances = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestLandmark === 'mushroom-ring' &&
+        node.userData?.forestLandmarkInstancedPart === 'mushroom-ring-stem'
+    ) as FakeInstancedMesh[];
+    const capInstances = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestLandmark === 'mushroom-ring' &&
+        node.userData?.forestLandmarkInstancedPart === 'mushroom-ring-cap'
+    ) as FakeInstancedMesh[];
+    const standaloneMushroomMeshes = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeMesh &&
+        node.userData?.forestLandmark === 'mushroom-ring'
+    );
+
+    expect(stemInstances).toHaveLength(1);
+    expect(capInstances).toHaveLength(1);
+    expect(stemInstances[0]?.count).toBe(targetTile!.landmark.memberCount);
+    expect(capInstances[0]?.count).toBe(targetTile!.landmark.memberCount);
+    expect(stemInstances[0]?.matrices).toHaveLength(
+      targetTile!.landmark.memberCount
+    );
+    expect(capInstances[0]?.matrices).toHaveLength(
+      targetTile!.landmark.memberCount
+    );
+    expect(
+      capInstances[0]?.matrices.some(
+        (matrix) => matrix.scale.x > matrix.scale.y
+      )
+    ).toBe(true);
+    expect(standaloneMushroomMeshes).toHaveLength(0);
+  });
+
   it('renders bushes only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
