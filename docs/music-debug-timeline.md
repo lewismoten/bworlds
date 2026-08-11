@@ -7,6 +7,8 @@ Current behavior:
 
 - Section labels stay on their own header row, with chord cues and cadence
   markers stacked underneath instead of sharing the same line.
+- Adaptive measure numbers and quarter-note subdivision guides now render from
+  the same measure timing data as the rest of the timeline.
 - The timeline header shows contiguous chord cues such as `Chord 1 major` and
   `Chord 5 minor` above the note lanes.
 - Planned question and answer cadence markers now appear on the timeline header

@@ -143,6 +143,10 @@ describe('music debug timeline', () => {
     expect(markup).toContain('class="music-debug-timeline-chord-cue"');
     expect(markup).toContain('>Chord 1 minor<');
     expect(markup).toContain('class="music-debug-timeline-cadence-marker"');
+    expect(markup).toContain('class="music-debug-timeline-measure-guide"');
+    expect(markup).toContain('class="music-debug-timeline-beat-guide"');
+    expect(markup).toContain('class="music-debug-timeline-measure-label"');
+    expect(markup).toContain('>M1<');
     expect(markup).toContain('>Q<');
     expect(markup).toContain('>A<');
     expect(markup).toContain('class="music-debug-timeline-playhead-chord"');

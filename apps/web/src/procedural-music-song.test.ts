@@ -795,7 +795,7 @@ describe('procedural music song', () => {
           12
       ).toBe(theme.rootMidiNote % 12);
     }
-  });
+  }, 3_000);
 
   it('shares the same song dna across ambient, battle, and boss arrangements', () => {
     const ambient = createProceduralMusicSong({

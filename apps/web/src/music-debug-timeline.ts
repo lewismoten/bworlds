@@ -20,10 +20,14 @@ import {
   resolveMusicDebugChordCues,
 } from './music-debug-chord-cues.ts';
 import { resolveMusicDebugCadenceMarkers } from './music-debug-cadence-markers.ts';
+import {
+  resolveMusicDebugBeatSubdivisionMarkers,
+  resolveMusicDebugMeasureMarkers,
+} from './music-debug-measure-guides.ts';
 
 const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
-const MUSIC_DEBUG_TIMELINE_TOP_PAD = 68;
+const MUSIC_DEBUG_TIMELINE_TOP_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_WIDTH = 2;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT = 8;
@@ -33,7 +37,8 @@ const MUSIC_DEBUG_TIMELINE_EXPORT_HEIGHT = 320;
 const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y = 16;
 const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 32;
 const MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y = 48;
-const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 60;
+const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 64;
+const MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y = 78;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -134,6 +139,8 @@ export function drawMusicDebugTimeline(
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
+  const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
+  const beatMarkers = resolveMusicDebugBeatSubdivisionMarkers(snapshot);
   const activeChordCue =
     typeof options.playheadOffsetMs === 'number'
       ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
@@ -145,6 +152,13 @@ export function drawMusicDebugTimeline(
 
   drawMusicDebugSectionBands(context, snapshot, layout, durationMs);
   drawMusicDebugActiveRegion(context, layout, durationMs, options.activeRegion);
+  drawMusicDebugMeasureGuides(
+    context,
+    layout,
+    durationMs,
+    measureMarkers,
+    beatMarkers
+  );
 
   context.strokeStyle = 'rgba(255,255,255,0.08)';
   context.lineWidth = 1;
@@ -206,6 +220,21 @@ export function drawMusicDebugTimeline(
       MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y
     );
   }
+  context.fillStyle = '#8fa4af';
+  for (const measure of measureMarkers) {
+    if (!measure.label) {
+      continue;
+    }
+    context.fillText(
+      `M${measure.label}`,
+      resolveMusicDebugTimelineXForOffset(
+        layout,
+        durationMs,
+        measure.centerOffsetMs
+      ),
+      MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y
+    );
+  }
   context.textAlign = 'start';
 
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
@@ -265,6 +294,8 @@ export function buildMusicDebugTimelineSvgMarkup(
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
   const cadenceMarkers = resolveMusicDebugCadenceMarkers(snapshot);
+  const measureMarkers = resolveMusicDebugMeasureMarkers(snapshot);
+  const beatMarkers = resolveMusicDebugBeatSubdivisionMarkers(snapshot);
   const activeChordCue =
     typeof options.playheadOffsetMs === 'number'
       ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
@@ -294,6 +325,12 @@ export function buildMusicDebugTimelineSvgMarkup(
         durationMs,
         height,
         options.activeRegion
+      )}
+      ${buildMusicDebugMeasureGuideSvgMarkup(
+        layout,
+        durationMs,
+        measureMarkers,
+        beatMarkers
       )}
       ${Array.from({ length: layout.roleOrder.length + 1 }, (_, index) => {
         const y = layout.topPad + layout.trackHeight * index;
@@ -346,6 +383,20 @@ export function buildMusicDebugTimelineSvgMarkup(
           )}" y="${MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y.toFixed(
             2
           )}" fill="${fill}" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${marker.shortLabel}</text>`;
+        })
+        .join('')}
+      ${measureMarkers
+        .map((measure) => {
+          if (!measure.label) {
+            return '';
+          }
+          return `<text class="music-debug-timeline-measure-label" x="${resolveMusicDebugTimelineXForOffset(
+            layout,
+            durationMs,
+            measure.centerOffsetMs
+          ).toFixed(2)}" y="${MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y.toFixed(
+            2
+          )}" fill="#8fa4af" font-family="Trebuchet MS, sans-serif" font-size="10" text-anchor="middle">M${measure.label}</text>`;
         })
         .join('')}
       ${noteBars
@@ -530,6 +581,40 @@ function drawMusicDebugSectionBands(
   }
 }
 
+function drawMusicDebugMeasureGuides(
+  context: CanvasRenderingContext2D,
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  measureMarkers: ReturnType<typeof resolveMusicDebugMeasureMarkers>,
+  beatMarkers: ReturnType<typeof resolveMusicDebugBeatSubdivisionMarkers>
+): void {
+  context.lineWidth = 1;
+  for (const beat of beatMarkers) {
+    const x = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      beat.offsetMs
+    );
+    context.strokeStyle = 'rgba(255,255,255,0.05)';
+    context.beginPath();
+    context.moveTo(x, layout.topPad);
+    context.lineTo(x, layout.height - layout.bottomPad);
+    context.stroke();
+  }
+  for (const measure of measureMarkers) {
+    const x = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      measure.startOffsetMs
+    );
+    context.strokeStyle = 'rgba(255,255,255,0.12)';
+    context.beginPath();
+    context.moveTo(x, layout.topPad - 6);
+    context.lineTo(x, layout.height - layout.bottomPad);
+    context.stroke();
+  }
+}
+
 function buildMusicDebugSectionBandSvgMarkup(
   snapshot: MusicDebugSnapshot,
   layout: MusicDebugTimelineLayout,
@@ -567,6 +652,45 @@ function buildMusicDebugSectionBandSvgMarkup(
       `;
     })
     .join('');
+}
+
+function buildMusicDebugMeasureGuideSvgMarkup(
+  layout: MusicDebugTimelineLayout,
+  durationMs: number,
+  measureMarkers: ReturnType<typeof resolveMusicDebugMeasureMarkers>,
+  beatMarkers: ReturnType<typeof resolveMusicDebugBeatSubdivisionMarkers>
+): string {
+  return `${beatMarkers
+    .map((beat) => {
+      const x = resolveMusicDebugTimelineXForOffset(
+        layout,
+        durationMs,
+        beat.offsetMs
+      );
+      return `<path class="music-debug-timeline-beat-guide" d="M${x.toFixed(
+        2
+      )} ${layout.topPad.toFixed(2)} V${(
+        layout.height - layout.bottomPad
+      ).toFixed(
+        2
+      )}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"></path>`;
+    })
+    .join('')}${measureMarkers
+    .map((measure) => {
+      const x = resolveMusicDebugTimelineXForOffset(
+        layout,
+        durationMs,
+        measure.startOffsetMs
+      );
+      return `<path class="music-debug-timeline-measure-guide" d="M${x.toFixed(
+        2
+      )} ${(layout.topPad - 6).toFixed(2)} V${(
+        layout.height - layout.bottomPad
+      ).toFixed(
+        2
+      )}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"></path>`;
+    })
+    .join('')}`;
 }
 
 function drawMusicDebugActiveRegion(

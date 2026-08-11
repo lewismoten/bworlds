@@ -79,9 +79,10 @@
 - [ ] Add whole-song and rolling-window timeline modes.
 - [ ] Keep a fixed playhead in rolling-window mode.
 - [ ] Add zoom for song, section, bar, and beat levels.
-- [ ] Show measure numbers and beat subdivisions.
+- [x] Show measure numbers and beat subdivisions.
 - [x] Show chord labels above the timeline.
 - [x] Show section labels and cadence markers.
+- [ ] Section labels should be less overwealming
 - [ ] Show note name and duration on hover.
 - [ ] Show drum voice name on percussion hover.
 - [ ] Add per-track eye icons to hide tracks.
