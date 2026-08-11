@@ -24,6 +24,7 @@ import {
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
+  Create3DModelProgress,
   RuntimePlugin,
   TileLike,
   ThreeHostLike,
@@ -229,108 +230,13 @@ export function createSignTilePlugin(): RuntimePlugin {
           return true;
         }
       ),
-      create3DModel({
-        three,
-        state,
-        tileX,
-        tileY,
-        detailLevel = 'full',
-      }: Create3DModelContext) {
-        const style = getRegionalSignStyle(three, tileX, tileY);
-        const group = new three.Group();
-        const nearbyPois = getNearbyPois(state, tileX, tileY);
-        const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
-        const useSecondPost =
-          placardCount > 2 &&
-          hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
-
-        if (detailLevel === 'low') {
-          addLowDetailSign(
-            group,
-            three,
-            style,
-            placardCount,
-            getLowDetailSignHeading(nearbyPois)
-          );
-          group.position.set(tileX, 0, tileY);
-          return group;
-        }
-
-        addSignPost(group, three, style, placardCount, 0);
-
-        const placards =
-          nearbyPois.length > 0
-            ? nearbyPois.slice(0, 3)
-            : [fallbackPlacard(tileX, tileY)];
-        const placardSupportInstances = new three.InstancedMesh(
-          new three.BoxGeometry(1, 1, 1),
-          style.postMaterial,
-          placards.length
+      create3DModel(context: Create3DModelContext) {
+        return runSignModelBuildToCompletion(
+          createSignModelProgressive(context)
         );
-        placardSupportInstances.userData = {
-          ...(placardSupportInstances.userData ?? {}),
-          signInstancedPart: 'placard-support',
-        };
-        const placardEdgeCapInstances = new three.InstancedMesh(
-          new three.BoxGeometry(1, 1, 1),
-          style.trimMaterial,
-          placards.length
-        );
-        placardEdgeCapInstances.userData = {
-          ...(placardEdgeCapInstances.userData ?? {}),
-          signInstancedPart: 'placard-edge-cap',
-        };
-        const placardArrowHeadInstances = new three.InstancedMesh(
-          new three.ConeGeometry(1, 1, 3),
-          style.placardMaterial,
-          placards.length
-        );
-        placardArrowHeadInstances.userData = {
-          ...(placardArrowHeadInstances.userData ?? {}),
-          signInstancedPart: 'placard-arrow-head',
-        };
-        const placardSupportMatrixScratch = new three.Matrix4();
-        const placardEdgeCapMatrixScratch = new three.Matrix4();
-        const placardArrowHeadMatrixScratch = new three.Matrix4();
-
-        placards.forEach((poi, index) => {
-          const mountOffsetX =
-            useSecondPost && index === 2 ? 0.18 + style.postThickness * 0.7 : 0;
-
-          if (useSecondPost && index === 2) {
-            addSecondaryPost(group, three, style, mountOffsetX);
-          }
-
-          addDirectionalPlacard(
-            group,
-            three,
-            style,
-            poi,
-            index,
-            mountOffsetX,
-            placardSupportInstances,
-            placardSupportMatrixScratch,
-            placardEdgeCapInstances,
-            placardEdgeCapMatrixScratch,
-            placardArrowHeadInstances,
-            placardArrowHeadMatrixScratch
-          );
-        });
-        group.add(placardSupportInstances);
-        group.add(placardEdgeCapInstances);
-        group.add(placardArrowHeadInstances);
-
-        addSignLantern(
-          group,
-          three,
-          style,
-          style.postThickness * (useSecondPost ? -0.8 : 0),
-          style.postHeight * 0.88,
-          style.postThickness * 1.2
-        );
-
-        group.position.set(tileX, 0, tileY);
-        return group;
+      },
+      create3DModelProgressive(context: Create3DModelContext) {
+        return createSignModelProgressive(context);
       },
       sync3DModel({ model, cycle }) {
         if (!model || typeof model !== 'object') {
@@ -343,6 +249,136 @@ export function createSignTilePlugin(): RuntimePlugin {
       },
     },
   ]);
+}
+
+function* createSignModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+  detailLevel = 'full',
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const style = getRegionalSignStyle(three, tileX, tileY);
+  const group = new three.Group();
+  const nearbyPois = getNearbyPois(state, tileX, tileY);
+  const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
+  const useSecondPost =
+    placardCount > 2 && hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
+
+  if (detailLevel === 'low') {
+    addLowDetailSign(
+      group,
+      three,
+      style,
+      placardCount,
+      getLowDetailSignHeading(nearbyPois)
+    );
+    group.position.set(tileX, 0, tileY);
+    return group;
+  }
+
+  const totalSteps = 3;
+  addSignPost(group, three, style, placardCount, 0);
+  group.position.set(tileX, 0, tileY);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'posts',
+  };
+
+  const placards =
+    nearbyPois.length > 0
+      ? nearbyPois.slice(0, 3)
+      : [fallbackPlacard(tileX, tileY)];
+  const placardSupportInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.postMaterial,
+    placards.length
+  );
+  placardSupportInstances.userData = {
+    ...(placardSupportInstances.userData ?? {}),
+    signInstancedPart: 'placard-support',
+  };
+  const placardEdgeCapInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.trimMaterial,
+    placards.length
+  );
+  placardEdgeCapInstances.userData = {
+    ...(placardEdgeCapInstances.userData ?? {}),
+    signInstancedPart: 'placard-edge-cap',
+  };
+  const placardArrowHeadInstances = new three.InstancedMesh(
+    new three.ConeGeometry(1, 1, 3),
+    style.placardMaterial,
+    placards.length
+  );
+  placardArrowHeadInstances.userData = {
+    ...(placardArrowHeadInstances.userData ?? {}),
+    signInstancedPart: 'placard-arrow-head',
+  };
+  const placardSupportMatrixScratch = new three.Matrix4();
+  const placardEdgeCapMatrixScratch = new three.Matrix4();
+  const placardArrowHeadMatrixScratch = new three.Matrix4();
+
+  placards.forEach((poi, index) => {
+    const mountOffsetX =
+      useSecondPost && index === 2 ? 0.18 + style.postThickness * 0.7 : 0;
+
+    if (useSecondPost && index === 2) {
+      addSecondaryPost(group, three, style, mountOffsetX);
+    }
+
+    addDirectionalPlacard(
+      group,
+      three,
+      style,
+      poi,
+      index,
+      mountOffsetX,
+      placardSupportInstances,
+      placardSupportMatrixScratch,
+      placardEdgeCapInstances,
+      placardEdgeCapMatrixScratch,
+      placardArrowHeadInstances,
+      placardArrowHeadMatrixScratch
+    );
+  });
+  group.add(placardSupportInstances);
+  group.add(placardEdgeCapInstances);
+  group.add(placardArrowHeadInstances);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'placards',
+  };
+
+  addSignLantern(
+    group,
+    three,
+    style,
+    style.postThickness * (useSecondPost ? -0.8 : 0),
+    style.postHeight * 0.88,
+    style.postThickness * 1.2
+  );
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'lantern',
+  };
+
+  return group;
+}
+
+function runSignModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function findNearestAnchor<

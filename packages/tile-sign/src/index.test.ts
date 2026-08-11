@@ -309,6 +309,16 @@ function createModelSignature(model: FakeGroup | undefined) {
   return signature;
 }
 
+function collectSignInstancedParts(model: FakeGroup | undefined) {
+  const parts: string[] = [];
+  model?.traverse((node) => {
+    if (typeof node.userData?.signInstancedPart === 'string') {
+      parts.push(node.userData.signInstancedPart);
+    }
+  });
+  return parts.sort();
+}
+
 describe('tile sign', () => {
   it('prefers placing signs beside crossroads', () => {
     const tile = classifier?.(
@@ -479,6 +489,82 @@ describe('tile sign', () => {
     ).toBeGreaterThan(1);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.75, 6);
     expect(pointLight?.visible).toBe(true);
+  });
+
+  it('builds the full-detail sign progressively before returning the final model', () => {
+    const build = signTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'posts',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'placards',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'lantern',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous sign build aligned with the progressive final model', () => {
+    const syncModel = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+    const progressiveBuild = signTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel)).toEqual(
+      createModelSignature(syncModel)
+    );
+    expect(collectSignInstancedParts(progressiveModel)).toEqual(
+      collectSignInstancedParts(syncModel)
+    );
   });
 
   it('places full-detail sign lantern parts directly under the sign root', () => {
