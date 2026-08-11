@@ -7,6 +7,33 @@ import {
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import { resolveProceduralScaleDegreeMidiNote } from './procedural-music-scale.ts';
 
+const PLAINS_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'plains',
+  contextType: 'overworld',
+  clusterX: 0,
+  clusterY: 0,
+});
+const FOREST_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+  clusterX: 4,
+  clusterY: -1,
+});
+const TOWN_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'town',
+  contextType: 'town',
+  clusterX: 3,
+  clusterY: -2,
+});
+const CAVE_BOSS_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'cave',
+  contextType: 'dungeon',
+  encounterMode: 'boss',
+  combatIntensity: 0.95,
+  clusterX: 2,
+  clusterY: 5,
+});
+
 describe('music debug note analysis', () => {
   it('classifies named chromatic embellishments and rejects unsupported leaps', () => {
     const notes: ProceduralMusicNote[] = [
@@ -220,32 +247,10 @@ describe('music debug note analysis', () => {
 
   it('keeps representative generated songs free of unresolved chromatic notes', () => {
     const snapshots = [
-      createMusicDebugSnapshot({
-        tileKind: 'plains',
-        contextType: 'overworld',
-        clusterX: 0,
-        clusterY: 0,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        clusterX: 4,
-        clusterY: -1,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'cave',
-        contextType: 'dungeon',
-        encounterMode: 'boss',
-        combatIntensity: 0.95,
-        clusterX: 2,
-        clusterY: 5,
-      }),
+      PLAINS_SNAPSHOT,
+      FOREST_SNAPSHOT,
+      TOWN_SNAPSHOT,
+      CAVE_BOSS_SNAPSHOT,
     ];
 
     expect(

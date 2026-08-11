@@ -8,14 +8,48 @@ import {
   formatMusicDebugTrackTimingSummary,
 } from './music-debug-track-stats.ts';
 
+const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
+const PLAINS_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'plains',
+  contextType: 'overworld',
+  clusterX: 0,
+  clusterY: 0,
+});
+const TOWN_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'town',
+  contextType: 'town',
+  clusterX: 3,
+  clusterY: -2,
+});
+const FOREST_TRACK_STATS_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+  clusterX: 3,
+  clusterY: -2,
+});
+const FOREST_VARIANT_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+  clusterX: 6,
+  clusterY: -4,
+});
+const SHORE_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'shore',
+  contextType: 'overworld',
+  clusterX: 8,
+  clusterY: -4,
+  dayProgress: 0.85,
+});
+const CAVE_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'cave',
+  contextType: 'dungeon',
+  clusterX: 7,
+  clusterY: 4,
+});
+
 describe('music debug track stats', () => {
   it('summarizes per-track ranges, leaps, and out-of-mode counts', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 6,
-      clusterY: -4,
-    });
+    const snapshot = FOREST_VARIANT_SNAPSHOT;
 
     const stats = createMusicDebugTrackStats({
       notes: snapshot.notes,
@@ -53,7 +87,7 @@ describe('music debug track stats', () => {
   });
 
   it('formats one summary line per track for the debug report', () => {
-    const snapshot = createMusicDebugSnapshot();
+    const snapshot = DEFAULT_SNAPSHOT;
 
     const summaryLines = formatMusicDebugTrackPitchSummary(snapshot.trackStats);
     const soundingLines = formatMusicDebugTrackSoundingSummary(
@@ -84,31 +118,10 @@ describe('music debug track stats', () => {
 
   it('keeps sampled lead leap averages controlled and octave jumps rare in generated songs', () => {
     const sampledLeadSnapshots = [
-      createMusicDebugSnapshot({
-        tileKind: 'plains',
-        contextType: 'overworld',
-        clusterX: 0,
-        clusterY: 0,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        clusterX: 3,
-        clusterY: -2,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'shore',
-        contextType: 'overworld',
-        clusterX: 8,
-        clusterY: -4,
-        dayProgress: 0.85,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      }),
+      PLAINS_SNAPSHOT,
+      FOREST_TRACK_STATS_SNAPSHOT,
+      SHORE_SNAPSHOT,
+      TOWN_SNAPSHOT,
     ];
     const sampledLeadStats = sampledLeadSnapshots.map(
       (snapshot) => snapshot.trackStats.lead
@@ -122,30 +135,10 @@ describe('music debug track stats', () => {
 
   it('keeps sampled bass motion bounded and inside the low register', () => {
     const sampledBassStats = [
-      createMusicDebugSnapshot({
-        tileKind: 'plains',
-        contextType: 'overworld',
-        clusterX: 0,
-        clusterY: 0,
-      }).trackStats.bass,
-      createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        clusterX: 3,
-        clusterY: -2,
-      }).trackStats.bass,
-      createMusicDebugSnapshot({
-        tileKind: 'cave',
-        contextType: 'dungeon',
-        clusterX: 7,
-        clusterY: 4,
-      }).trackStats.bass,
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      }).trackStats.bass,
+      PLAINS_SNAPSHOT.trackStats.bass,
+      FOREST_TRACK_STATS_SNAPSHOT.trackStats.bass,
+      CAVE_SNAPSHOT.trackStats.bass,
+      TOWN_SNAPSHOT.trackStats.bass,
     ];
 
     for (const bassStats of sampledBassStats) {
@@ -157,24 +150,9 @@ describe('music debug track stats', () => {
 
   it('keeps sampled bass notes below the harmony and lead centers', () => {
     const snapshots = [
-      createMusicDebugSnapshot({
-        tileKind: 'plains',
-        contextType: 'overworld',
-        clusterX: 0,
-        clusterY: 0,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        clusterX: 3,
-        clusterY: -2,
-      }),
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      }),
+      PLAINS_SNAPSHOT,
+      FOREST_TRACK_STATS_SNAPSHOT,
+      TOWN_SNAPSHOT,
     ];
 
     for (const snapshot of snapshots) {
