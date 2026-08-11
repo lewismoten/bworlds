@@ -111,4 +111,25 @@ describe('sound bank debug preview mode', () => {
     expect(note?.timbre.bodySettleMs).toBe(88);
     expect(note?.timbre.bodySustainLevel).toBe(0.64);
   });
+
+  it('applies live timbre overrides across preview notes', () => {
+    const note = resolveSoundBankDebugPreviewNoteRole(
+      CAVE_SNAPSHOT,
+      'lead',
+      8_000,
+      {
+        timbre: {
+          detuneCents: 12,
+          filterCutoffHz: 4_200,
+          filterQ: 1.9,
+          noiseMix: 0.22,
+        },
+      }
+    );
+
+    expect(note?.detuneCents).toBe(12);
+    expect(note?.timbre.filterCutoffHz).toBe(4_200);
+    expect(note?.timbre.filterQ).toBe(1.9);
+    expect(note?.timbre.noiseMix).toBe(0.22);
+  });
 });

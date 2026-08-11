@@ -46,6 +46,18 @@ import {
   type SoundBankDebugPreviewEnvelopeState,
 } from './sound-bank-debug-preview-envelope.ts';
 import {
+  applySoundBankDebugPreviewTimbreToInstrument,
+  applySoundBankDebugPreviewTimbreToNote,
+  formatSoundBankDebugDetuneCents,
+  formatSoundBankDebugFilterCutoffHz,
+  formatSoundBankDebugFilterQ,
+  formatSoundBankDebugNoiseMix,
+  normalizeSoundBankDebugPreviewTimbreState,
+  resolveSoundBankDebugPreviewTimbreDefaults,
+  type SoundBankDebugPreviewTimbreOverride,
+  type SoundBankDebugPreviewTimbreState,
+} from './sound-bank-debug-preview-timbre.ts';
+import {
   createSoundBankInstrumentRegistry,
   type SoundBankInstrumentRegistryEntry,
   type SoundBankInstrumentRegistration,
@@ -85,6 +97,7 @@ export type SoundBankDebugPercussionBrowserState = {
 };
 
 export type { SoundBankDebugPreviewEnvelopeState };
+export type { SoundBankDebugPreviewTimbreState };
 
 export type SoundBankDebugGeneralMidiBrowserSection = Readonly<{
   heading: string;
@@ -221,6 +234,7 @@ export function buildSoundBankDebugMarkup(
     generalMidiBrowserState?: Partial<SoundBankDebugGeneralMidiBrowserState>;
     percussionBrowserState?: Partial<SoundBankDebugPercussionBrowserState>;
     previewEnvelopeState?: SoundBankDebugPreviewEnvelopeState | null;
+    previewTimbreState?: SoundBankDebugPreviewTimbreState | null;
   } = {
     audioStatus: 'Audio idle',
   }
@@ -272,7 +286,8 @@ export function buildSoundBankDebugMarkup(
     snapshot,
     snapshot.instrumentRegistry.entries,
     generalMidiBrowserModel.selectedProgramNumber,
-    viewState.previewEnvelopeState ?? null
+    viewState.previewEnvelopeState ?? null,
+    viewState.previewTimbreState ?? null
   );
   const generalMidiBrowserMarkup = generalMidiBrowserModel.sections
     .map(
@@ -875,6 +890,7 @@ export function resolveSoundBankDebugPreviewNoteRole(
   options: {
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
+    timbre?: SoundBankDebugPreviewTimbreOverride | null;
   } = {}
 ) {
   const existingPreview = resolveMusicDebugInstrumentPreviewNote(
@@ -906,6 +922,7 @@ export function resolveSoundBankDebugPreviewPhraseRole(
   options: {
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
+    timbre?: SoundBankDebugPreviewTimbreOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   return resolveMusicDebugInstrumentPreviewPhraseNotes(
@@ -922,6 +939,7 @@ export function createSoundBankDebugPercussionRangeAuditionNotes(
   options: {
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
+    timbre?: SoundBankDebugPreviewTimbreOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
@@ -948,6 +966,7 @@ export function createSoundBankDebugStandardPercussionPatternNotes(
   options: {
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
+    timbre?: SoundBankDebugPreviewTimbreOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   const percussionBrowserState =
@@ -979,6 +998,7 @@ export function createSoundBankDebugQuietPercussionPatternNotes(
   options: {
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
+    timbre?: SoundBankDebugPreviewTimbreOverride | null;
   } = {}
 ): readonly ProceduralMusicNote[] {
   return createSoundBankDebugStandardPercussionPatternNotes(
@@ -1163,7 +1183,8 @@ function buildSelectedInstrumentDetailsMarkup(
   snapshot: SoundBankDebugSnapshot,
   registryEntries: readonly SoundBankInstrumentRegistryEntry[],
   selectedProgramNumber: number | null,
-  previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null
+  previewEnvelopeState: SoundBankDebugPreviewEnvelopeState | null,
+  previewTimbreState: SoundBankDebugPreviewTimbreState | null
 ): string {
   const selectedEntry =
     selectedProgramNumber === null
@@ -1190,7 +1211,10 @@ function buildSelectedInstrumentDetailsMarkup(
     runtimeInstrument === null
       ? null
       : applySoundBankDebugPreviewEnvelopeToInstrument(
-          runtimeInstrument,
+          applySoundBankDebugPreviewTimbreToInstrument(
+            runtimeInstrument,
+            previewTimbreState
+          ),
           previewEnvelopeState
         );
   const usesSamples = runtimeInstrument ? 'No' : 'Unknown';
@@ -1236,6 +1260,20 @@ function buildSelectedInstrumentDetailsMarkup(
   const filterType = effectiveInstrument
     ? effectiveInstrument.timbre.filterType
     : 'Unknown';
+  const detuneCents = effectiveInstrument
+    ? formatSoundBankDebugDetuneCents(effectiveInstrument.detuneCents)
+    : 'Unknown';
+  const filterQ = effectiveInstrument
+    ? formatSoundBankDebugFilterQ(effectiveInstrument.timbre.filterQ)
+    : 'Unknown';
+  const noiseMix = effectiveInstrument
+    ? formatSoundBankDebugNoiseMix(effectiveInstrument.timbre.noiseMix ?? 0)
+    : 'Unknown';
+  const filterCutoffHz = effectiveInstrument
+    ? `${formatSoundBankDebugFilterCutoffHz(
+        effectiveInstrument.timbre.filterCutoffHz
+      )} Hz`
+    : 'Unknown';
   const filterResponseCurveMarkup = effectiveInstrument
     ? buildSelectedInstrumentFilterResponseCurveMarkup(effectiveInstrument)
     : '<p class="sound-bank-debug-warning" role="status">Filter response preview unavailable for this patch source.</p>';
@@ -1243,6 +1281,12 @@ function buildSelectedInstrumentDetailsMarkup(
     ? buildSoundBankDebugPreviewEnvelopeControlsMarkup(
         effectiveInstrument,
         previewEnvelopeState
+      )
+    : '';
+  const previewTimbreControlsMarkup = effectiveInstrument
+    ? buildSoundBankDebugPreviewTimbreControlsMarkup(
+        effectiveInstrument,
+        previewTimbreState
       )
     : '';
 
@@ -1254,6 +1298,7 @@ function buildSelectedInstrumentDetailsMarkup(
       ${filterResponseCurveMarkup}
     </div>
     ${previewEnvelopeControlsMarkup}
+    ${previewTimbreControlsMarkup}
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
       <div><dt>GM Program</dt><dd>${selectedEntry.generalMidiProgramNumber}</dd></div>
@@ -1268,12 +1313,16 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Attack</dt><dd>${attackMs}</dd></div>
       <div><dt>Release</dt><dd>${releaseMs}</dd></div>
       <div><dt>Sustain</dt><dd>${sustainLevel}</dd></div>
+      <div><dt>Detune</dt><dd>${detuneCents} cents</dd></div>
       <div><dt>Primary Oscillator</dt><dd>${primaryOscillatorType}</dd></div>
       <div><dt>Primary Harmonics</dt><dd>${primaryHarmonicContent}</dd></div>
       <div><dt>Harmonic Oscillator</dt><dd>${harmonicOscillatorType}</dd></div>
       <div><dt>Harmonic Content</dt><dd>${harmonicOscillatorContent}</dd></div>
       <div><dt>Active Oscillator Count</dt><dd>${activeOscillatorCount}</dd></div>
       <div><dt>Filter Type</dt><dd>${filterType}</dd></div>
+      <div><dt>Filter Cutoff</dt><dd>${filterCutoffHz}</dd></div>
+      <div><dt>Filter Q</dt><dd>${filterQ}</dd></div>
+      <div><dt>Noise Mix</dt><dd>${noiseMix}</dd></div>
       <div><dt>Uses Samples</dt><dd>${usesSamples}</dd></div>
       <div><dt>Uses Synthesis</dt><dd>${usesSynthesis}</dd></div>
       <div><dt>Polyphony Limit</dt><dd>${polyphonyLimit}</dd></div>
@@ -1799,15 +1848,91 @@ function formatSoundBankDebugPreviewEnvelopeValue(
   return `${roundedValue}${suffix}`;
 }
 
+function buildSoundBankDebugPreviewTimbreControlsMarkup(
+  instrument: ProceduralInstrument,
+  previewTimbreState: SoundBankDebugPreviewTimbreState | null
+): string {
+  const previewTimbre = normalizeSoundBankDebugPreviewTimbreState(
+    previewTimbreState,
+    resolveSoundBankDebugPreviewTimbreDefaults(instrument)
+  );
+
+  return `
+    <section
+      class="sound-bank-debug-preview-envelope"
+      aria-label="Preview timbre controls"
+      data-preview-timbre-id="${instrument.id}"
+    >
+      <div class="sound-bank-debug-panel-head">
+        <div>
+          <p class="sound-bank-debug-panel-kicker">Live Tone Controls</p>
+          <h3>Filter, Noise, and Detune</h3>
+          <p>
+            Override the current patch timbre for debug playback without
+            changing the generated bank.
+          </p>
+        </div>
+      </div>
+      <div class="sound-bank-debug-grid sound-bank-debug-preview-envelope-grid">
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-timbre-detune',
+          outputId: 'sound-bank-debug-timbre-detune-value',
+          label: 'Detune',
+          value: previewTimbre.detuneCents,
+          min: -24,
+          max: 24,
+          step: 1,
+          suffix: 'c',
+        })}
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-timbre-filter-cutoff',
+          outputId: 'sound-bank-debug-timbre-filter-cutoff-value',
+          label: 'Filter Cutoff',
+          value: previewTimbre.filterCutoffHz,
+          min: 80,
+          max: 12000,
+          step: 20,
+          suffix: 'Hz',
+        })}
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-timbre-filter-q',
+          outputId: 'sound-bank-debug-timbre-filter-q-value',
+          label: 'Filter Q',
+          value: previewTimbre.filterQ,
+          min: 0.1,
+          max: 8,
+          step: 0.1,
+          suffix: '',
+        })}
+        ${buildSoundBankDebugPreviewEnvelopeSliderMarkup({
+          inputId: 'sound-bank-debug-timbre-noise-mix',
+          outputId: 'sound-bank-debug-timbre-noise-mix-value',
+          label: 'Noise Mix',
+          value: previewTimbre.noiseMix,
+          min: 0,
+          max: 0.4,
+          step: 0.01,
+          suffix: '',
+        })}
+      </div>
+    </section>
+  `;
+}
+
 function applySoundBankDebugPreviewOptions(
   note: ProceduralMusicNote,
   options: {
     dry?: boolean;
     envelope?: SoundBankDebugPreviewEnvelope | null;
+    timbre?: SoundBankDebugPreviewTimbreOverride | null;
   }
 ): ProceduralMusicNote {
-  const withEnvelope = applySoundBankDebugPreviewEnvelopeToNote(
+  const withTimbre = applySoundBankDebugPreviewTimbreToNote(
     note,
+    options.timbre
+  );
+  const withEnvelope = applySoundBankDebugPreviewEnvelopeToNote(
+    withTimbre,
     options.envelope
   );
   return applySoundBankDebugPreviewMode(withEnvelope, options);

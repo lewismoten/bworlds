@@ -97,6 +97,11 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('sound-bank-debug-envelope-decay');
     expect(normalizedMarkup).toContain('sound-bank-debug-envelope-sustain');
     expect(normalizedMarkup).toContain('sound-bank-debug-envelope-release');
+    expect(normalizedMarkup).toContain('Filter, Noise, and Detune');
+    expect(normalizedMarkup).toContain('sound-bank-debug-timbre-detune');
+    expect(normalizedMarkup).toContain('sound-bank-debug-timbre-filter-cutoff');
+    expect(normalizedMarkup).toContain('sound-bank-debug-timbre-filter-q');
+    expect(normalizedMarkup).toContain('sound-bank-debug-timbre-noise-mix');
     expect(normalizedMarkup).toContain('Standard');
     expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Kick<');
