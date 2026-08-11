@@ -1546,6 +1546,48 @@ describe('tile route', () => {
     );
   });
 
+  it('reuses bridge appearance materials across nearby bridge clusters in one region', () => {
+    const nearbyBridgeModels: FakeNode[] = [];
+
+    for (
+      let tileY = 0;
+      tileY < 12 && nearbyBridgeModels.length < 5;
+      tileY += 1
+    ) {
+      for (
+        let tileX = 0;
+        tileX < 12 && nearbyBridgeModels.length < 5;
+        tileX += 1
+      ) {
+        const state = createStandardBridgeState(tileX, tileY);
+        const model = bridgeTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: state as never,
+          tile: { kind: 'bridge' } as never,
+          tileX,
+          tileY,
+        }) as FakeNode | undefined;
+        if (collectMeshMaterials(model).size >= 4) {
+          nearbyBridgeModels.push(model!);
+        }
+      }
+    }
+
+    let highestSharedCount = 0;
+    for (let index = 1; index < nearbyBridgeModels.length; index += 1) {
+      highestSharedCount = Math.max(
+        highestSharedCount,
+        countSharedMaterialReferences(
+          nearbyBridgeModels[index - 1],
+          nearbyBridgeModels[index]
+        )
+      );
+    }
+
+    expect(nearbyBridgeModels.length).toBeGreaterThanOrEqual(2);
+    expect(highestSharedCount).toBeGreaterThanOrEqual(4);
+  });
+
   it('creates a boardable ship action from docks on a valid route', () => {
     const state = createRoutedDockModelState();
     const action = dockTile?.createWorldAction?.({

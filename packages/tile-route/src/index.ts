@@ -124,6 +124,10 @@ type BridgeTextureLayer = 'deck' | 'rail' | 'cover' | 'pillar';
 const bridgeStyleCache = createBoundedCache<string, BridgeStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
+const bridgeAppearanceCache = createBoundedCache<
+  string,
+  BridgeAppearanceBlueprint
+>(ROUTE_STYLE_CACHE_LIMIT);
 const bridgeClusterCache = createCoordinateCache<BridgeClusterInfo>();
 const dockStyleCache = createBoundedCache<string, DockStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
@@ -2996,33 +3000,6 @@ function getBridgeStyle(
           : type === 'metal'
             ? { deck: '#9b6b3d', rail: '#8e9aa7', trim: '#4b5563' }
             : { deck: '#8b5a2b', rail: '#6f4a28', trim: '#4a2f1b' };
-      const deckTexture = createBridgeTexture(
-        three,
-        palette.deck,
-        palette.trim,
-        type,
-        'deck',
-        tileX,
-        tileY
-      );
-      const railTexture = createBridgeTexture(
-        three,
-        palette.rail,
-        palette.trim,
-        type,
-        'rail',
-        tileX,
-        tileY
-      );
-      const coverTexture = createBridgeTexture(
-        three,
-        palette.deck,
-        palette.trim,
-        type === 'stone' ? 'roof-stone' : 'roof',
-        'cover',
-        tileX,
-        tileY
-      );
       const sharedStyle = {
         type,
         covered: covered && !drawbridge,
@@ -3035,48 +3012,99 @@ function getBridgeStyle(
       };
       return {
         ...sharedStyle,
-        ...createHostMaterialResolver((host: ThreeHostLike): BridgeStyle => {
-          const style = {
+        createMaterials(host: ThreeHostLike): BridgeStyle {
+          return {
             ...sharedStyle,
-            deckMaterial: new host.MeshStandardMaterial({
-              color: '#ffffff',
-              map: deckTexture,
-              roughness: 0.9,
-              metalness: type === 'metal' ? 0.28 : 0.04,
-            }),
-            railMaterial: new host.MeshStandardMaterial({
-              color: '#ffffff',
-              map: railTexture,
-              roughness: 0.86,
-              metalness: type === 'metal' ? 0.36 : 0.05,
-            }),
-            postMaterial: new host.MeshStandardMaterial({
-              color: palette.trim,
-              roughness: 0.88,
-              metalness: type === 'metal' ? 0.22 : 0.03,
-            }),
-            trimMaterial: new host.MeshStandardMaterial({
-              color: palette.trim,
-              roughness: 0.82,
-              metalness: type === 'metal' ? 0.34 : 0.04,
-            }),
-            coverMaterial: new host.MeshStandardMaterial({
-              color: '#ffffff',
-              map: coverTexture,
-              roughness: 0.9,
-              metalness: 0.03,
-            }),
-            pillarMaterial: new host.MeshStandardMaterial({
-              color: '#ffffff',
-              map: railTexture,
-              roughness: 0.92,
-              metalness: type === 'metal' ? 0.18 : 0.02,
-            }),
+            ...getBridgeAppearance(host, regionX, regionY, type, palette),
           };
-          return style;
-        }),
+        },
       };
     })
+    .createMaterials(three);
+}
+
+function getBridgeAppearance(
+  three: ThreeHostLike,
+  regionX: number,
+  regionY: number,
+  type: BridgeStyle['type'],
+  palette: {
+    deck: string;
+    rail: string;
+    trim: string;
+  }
+): BridgeAppearance {
+  const appearanceKey = `${regionX}:${regionY}:${type}`;
+
+  return bridgeAppearanceCache
+    .getOrCreate(appearanceKey, () =>
+      createHostMaterialResolver((host: ThreeHostLike): BridgeAppearance => {
+        const deckTexture = createBridgeTexture(
+          host,
+          palette.deck,
+          palette.trim,
+          type,
+          'deck',
+          regionX,
+          regionY
+        );
+        const railTexture = createBridgeTexture(
+          host,
+          palette.rail,
+          palette.trim,
+          type,
+          'rail',
+          regionX,
+          regionY
+        );
+        const coverTexture = createBridgeTexture(
+          host,
+          palette.deck,
+          palette.trim,
+          type === 'stone' ? 'roof-stone' : 'roof',
+          'cover',
+          regionX,
+          regionY
+        );
+
+        return {
+          deckMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: deckTexture,
+            roughness: 0.9,
+            metalness: type === 'metal' ? 0.28 : 0.04,
+          }),
+          railMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: railTexture,
+            roughness: 0.86,
+            metalness: type === 'metal' ? 0.36 : 0.05,
+          }),
+          postMaterial: new host.MeshStandardMaterial({
+            color: palette.trim,
+            roughness: 0.88,
+            metalness: type === 'metal' ? 0.22 : 0.03,
+          }),
+          trimMaterial: new host.MeshStandardMaterial({
+            color: palette.trim,
+            roughness: 0.82,
+            metalness: type === 'metal' ? 0.34 : 0.04,
+          }),
+          coverMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: coverTexture,
+            roughness: 0.9,
+            metalness: 0.03,
+          }),
+          pillarMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: railTexture,
+            roughness: 0.92,
+            metalness: type === 'metal' ? 0.18 : 0.02,
+          }),
+        };
+      })
+    )
     .createMaterials(three);
 }
 
@@ -3086,8 +3114,8 @@ function createBridgeTexture(
   accentColor: string,
   type: BridgeTextureType,
   layer: BridgeTextureLayer,
-  tileX: number,
-  tileY: number
+  patternX: number,
+  patternY: number
 ) {
   return createPaintedCanvasTexture(three, {
     width: 64,
@@ -3118,17 +3146,19 @@ function createBridgeTexture(
         }
         for (let index = 0; index < 24; index += 1) {
           const x = Math.floor(
-            hash2D(BRIDGE_RIVET_X_SEED, tileX, index + tileY) * canvas.width
+            hash2D(BRIDGE_RIVET_X_SEED, patternX, index + patternY) *
+              canvas.width
           );
           const y = Math.floor(
-            hash2D(BRIDGE_RIVET_Y_SEED, tileY, index + tileX) * canvas.height
+            hash2D(BRIDGE_RIVET_Y_SEED, patternY, index + patternX) *
+              canvas.height
           );
           context.fillStyle = 'rgba(255,255,255,0.34)';
           context.fillRect(x, y, 2, 2);
         }
       } else {
         for (let column = 0; column < canvas.width; column += 7) {
-          const shade = 70 + ((column * 5 + tileX * 3) % 36);
+          const shade = 70 + ((column * 5 + patternX * 3) % 36);
           context.fillStyle = `rgba(${shade}, ${Math.max(30, shade - 16)}, ${Math.max(18, shade - 28)}, 0.32)`;
           context.fillRect(column, 0, 3, canvas.height);
         }
@@ -3213,6 +3243,20 @@ interface BridgeStyleBlueprint extends Omit<
   | 'pillarMaterial'
 > {
   createMaterials(three: ThreeHostLike): BridgeStyle;
+}
+
+type BridgeAppearance = Pick<
+  BridgeStyle,
+  | 'deckMaterial'
+  | 'railMaterial'
+  | 'postMaterial'
+  | 'trimMaterial'
+  | 'coverMaterial'
+  | 'pillarMaterial'
+>;
+
+interface BridgeAppearanceBlueprint {
+  createMaterials(three: ThreeHostLike): BridgeAppearance;
 }
 
 interface DockClusterInfo {

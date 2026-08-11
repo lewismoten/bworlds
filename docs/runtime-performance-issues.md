@@ -12,6 +12,14 @@ play.
 Issue reports are throttled by stable issue hash for five seconds so repeated
 frame stalls or budget rejections do not thrash the local endpoint.
 
+Recent mitigation work:
+
+- `tile-route` bridge appearances now share textured material sets by bridge
+  region and style type instead of creating a fresh textured material bundle
+  for every bridge cluster. Bridge layout jitter still varies per bridge, but
+  nearby bridges no longer inflate scene-unique material counts just to change
+  local geometry.
+
 Captured issue reports currently include:
 
 - the issue timestamp, route, world seed, and world context
