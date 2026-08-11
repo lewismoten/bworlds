@@ -22,6 +22,7 @@ tile-local counts needed for snapshot triage:
 - `object3dCount`
 - `visibleMeshCount`
 - `materialCount`
+- `clonedMaterialCount`
 - `drawCallCount`
 - `staticMatrixAutoUpdateCount`
 
@@ -38,7 +39,8 @@ The renderer now exposes top-plugin summaries for:
 
 - visible tile Object3D counts
 - visible tile mesh counts
-- visible tile material counts
+- visible tile unique material counts
+- visible tile cloned material counts
 - visible tile draw calls
 - static matrix updates
 
@@ -48,6 +50,8 @@ The renderer now exposes top-plugin summaries for:
 - `meshSummary`
 - `materialTopPluginLabel`
 - `materialSummary`
+- `clonedMaterialTopPluginLabel`
+- `clonedMaterialSummary`
 - `drawCallTopPluginLabel`
 - `drawCallSummary`
 - `staticMatrixUpdateTopPluginLabel`
@@ -55,8 +59,9 @@ The renderer now exposes top-plugin summaries for:
 
 Those values flow into the web debug snapshot export and debug panel so the
 performance follow-up work can identify which visible tile plugins dominate
-scene graph size, mesh density, material churn, draw-call pressure, and which
-ones keep the largest number of static transforms on `matrixAutoUpdate = true`.
+scene graph size, mesh density, unique-material pressure, cloned-material
+pressure, draw-call pressure, and which ones keep the largest number of static
+transforms on `matrixAutoUpdate = true`.
 
 ## Tradeoff
 

@@ -85,6 +85,8 @@ describe('debug panel', () => {
       meshSummary: 'tile-forest:22, tile-town:7',
       materialTopPluginLabel: 'tile-forest',
       materialSummary: 'tile-forest:15, tile-town:5',
+      clonedMaterialTopPluginLabel: 'tile-forest',
+      clonedMaterialSummary: 'tile-forest:3, tile-town:1',
       staticMatrixUpdateTopPluginLabel: 'tile-forest',
       staticMatrixUpdateSummary: 'tile-forest:9, tile-town:6',
       lastLodFailureReason:
@@ -143,7 +145,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Draw Call Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Object Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Mesh Plugin');
-    expect(buildDebugMarkup(snapshot)).toContain('Material Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Unique Material Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Cloned Material Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Full Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Low Tile Build');

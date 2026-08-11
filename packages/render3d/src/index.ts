@@ -354,6 +354,8 @@ type Render3DController = {
     meshSummary: string;
     materialTopPluginLabel: string;
     materialSummary: string;
+    clonedMaterialTopPluginLabel: string;
+    clonedMaterialSummary: string;
     staticMatrixUpdateTopPluginLabel: string;
     staticMatrixUpdateSummary: string;
     object3dCount: number;
@@ -958,6 +960,7 @@ type DynamicTileNode = {
   visibleMeshCount: number;
   staticMatrixAutoUpdateCount?: number;
   materialCount: number;
+  clonedMaterialCount?: number;
   vertexCount: number;
   triangleCount: number;
   geometryBytes: number;
@@ -2255,6 +2258,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       staticMatrixAutoUpdateCount:
         finalSceneResourceStats.staticMatrixAutoUpdateCount,
       materialCount: finalSceneResourceStats.materialCount,
+      clonedMaterialCount: finalSceneResourceStats.clonedMaterialCount,
       vertexCount: finalSceneResourceStats.vertexCount,
       triangleCount: finalSceneResourceStats.triangleCount,
       geometryBytes: finalSceneResourceStats.geometryBytes,
@@ -2942,6 +2946,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const visibleTileMaterialStats = summarizeVisibleTileMaterialsByPlugin(
       visibleTileNodes.values()
     );
+    const visibleTileClonedMaterialStats =
+      summarizeVisibleTileClonedMaterialsByPlugin(visibleTileNodes.values());
     const visibleTileStaticMatrixUpdateStats =
       summarizeVisibleTileStaticMatrixUpdatesByPlugin(
         visibleTileNodes.values()
@@ -2998,6 +3004,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       meshSummary: visibleTileMeshStats.summary,
       materialTopPluginLabel: visibleTileMaterialStats.topLabel,
       materialSummary: visibleTileMaterialStats.summary,
+      clonedMaterialTopPluginLabel: visibleTileClonedMaterialStats.topLabel,
+      clonedMaterialSummary: visibleTileClonedMaterialStats.summary,
       staticMatrixUpdateTopPluginLabel:
         visibleTileStaticMatrixUpdateStats.topLabel,
       staticMatrixUpdateSummary: visibleTileStaticMatrixUpdateStats.summary,
@@ -5574,7 +5582,11 @@ export function summarizeVisibleTileStaticMatrixUpdatesByPlugin(
 function summarizeVisibleTileCountByPlugin<
   K extends keyof Pick<
     DynamicTileNode,
-    'object3dCount' | 'visibleMeshCount' | 'materialCount' | 'drawCallCount'
+    | 'object3dCount'
+    | 'visibleMeshCount'
+    | 'materialCount'
+    | 'clonedMaterialCount'
+    | 'drawCallCount'
   >,
 >(
   entries: Iterable<Pick<DynamicTileNode, 'tilePluginOwnerLabel' | K>>,
@@ -5650,6 +5662,19 @@ export function summarizeVisibleTileMaterialsByPlugin(
   summary: string;
 } {
   return summarizeVisibleTileCountByPlugin(entries, 'materialCount');
+}
+
+export function summarizeVisibleTileClonedMaterialsByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'clonedMaterialCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(entries, 'clonedMaterialCount');
 }
 
 export function summarizeVisibleTileDrawCallsByPlugin(

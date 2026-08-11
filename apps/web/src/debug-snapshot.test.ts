@@ -247,6 +247,8 @@ describe('debug snapshot', () => {
         meshSummary: 'tile-forest:22, tile-town:7',
         materialTopPluginLabel: 'tile-forest',
         materialSummary: 'tile-forest:15, tile-town:5',
+        clonedMaterialTopPluginLabel: 'tile-forest',
+        clonedMaterialSummary: 'tile-forest:3, tile-town:1',
         staticMatrixUpdateTopPluginLabel: 'tile-forest',
         staticMatrixUpdateSummary: 'tile-forest:9, tile-town:6',
         lastLodFailureReason:
@@ -568,6 +570,8 @@ describe('debug snapshot', () => {
       materialSummary: 'tile-forest:15, tile-town:5',
       sharedMaterialCount: 14,
       clonedMaterialCount: 3,
+      topClonedMaterialPlugin: 'tile-forest',
+      clonedMaterialSummary: 'tile-forest:3, tile-town:1',
       transparentMaterialCount: 6,
       alphaTestMaterialCount: 4,
       doubleSidedMaterialCount: 9,

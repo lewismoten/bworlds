@@ -216,6 +216,7 @@ import {
   shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileMaterialsByPlugin,
+  summarizeVisibleTileClonedMaterialsByPlugin,
   summarizeVisibleTileMeshesByPlugin,
   summarizeVisibleTileObjectsByPlugin,
   summarizeVisibleTileDrawCallsByPlugin,
@@ -4513,6 +4514,41 @@ describe('render3d visibility helpers', () => {
     });
 
     expect(summarizeVisibleTileMaterialsByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes visible tile cloned materials by plugin', () => {
+    expect(
+      summarizeVisibleTileClonedMaterialsByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          clonedMaterialCount: 4,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          clonedMaterialCount: 2,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          clonedMaterialCount: 3,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          clonedMaterialCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 9,
+      topCount: 7,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:7, tile-town:2',
+    });
+
+    expect(summarizeVisibleTileClonedMaterialsByPlugin([])).toEqual({
       totalCount: 0,
       topCount: 0,
       topLabel: '',

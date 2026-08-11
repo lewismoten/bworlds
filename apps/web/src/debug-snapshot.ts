@@ -366,6 +366,8 @@ export type DebugSnapshotExport = {
     materialSummary: string;
     sharedMaterialCount: number;
     clonedMaterialCount: number;
+    topClonedMaterialPlugin: string | null;
+    clonedMaterialSummary: string;
     transparentMaterialCount: number;
     alphaTestMaterialCount: number;
     doubleSidedMaterialCount: number;
@@ -556,6 +558,9 @@ export function buildDebugSnapshotExport(
       materialSummary: options.snapshot.materialSummary ?? '',
       sharedMaterialCount: options.snapshot.sharedMaterialCount ?? 0,
       clonedMaterialCount: options.snapshot.clonedMaterialCount ?? 0,
+      topClonedMaterialPlugin:
+        options.snapshot.clonedMaterialTopPluginLabel?.trim() || null,
+      clonedMaterialSummary: options.snapshot.clonedMaterialSummary ?? '',
       transparentMaterialCount: options.snapshot.transparentMaterialCount ?? 0,
       alphaTestMaterialCount: options.snapshot.alphaTestMaterialCount ?? 0,
       doubleSidedMaterialCount: options.snapshot.doubleSidedMaterialCount ?? 0,

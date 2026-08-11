@@ -55,6 +55,8 @@ export type DebugSnapshot = {
   meshSummary?: string;
   materialTopPluginLabel?: string;
   materialSummary?: string;
+  clonedMaterialTopPluginLabel?: string;
+  clonedMaterialSummary?: string;
   staticMatrixUpdateTopPluginLabel?: string;
   staticMatrixUpdateSummary?: string;
   lastLodFailureReason?: string;
@@ -252,6 +254,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.meshSummary ?? '',
     snapshot.materialTopPluginLabel ?? '',
     snapshot.materialSummary ?? '',
+    snapshot.clonedMaterialTopPluginLabel ?? '',
+    snapshot.clonedMaterialSummary ?? '',
     snapshot.staticMatrixUpdateTopPluginLabel ?? '',
     snapshot.staticMatrixUpdateSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
@@ -457,8 +461,10 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
-    <div><dt>Material Plugin</dt><dd>${snapshot.materialTopPluginLabel || 'None'}</dd></div>
-    <div><dt>Material Summary</dt><dd>${snapshot.materialSummary || 'None'}</dd></div>
+    <div><dt>Unique Material Plugin</dt><dd>${snapshot.materialTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Unique Material Summary</dt><dd>${snapshot.materialSummary || 'None'}</dd></div>
+    <div><dt>Cloned Material Plugin</dt><dd>${snapshot.clonedMaterialTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Cloned Material Summary</dt><dd>${snapshot.clonedMaterialSummary || 'None'}</dd></div>
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
     <div><dt>Tile Kinds</dt><dd>${snapshot.visibleTileKindSummary || 'None'}</dd></div>
     <div><dt>Geometry Count</dt><dd>${snapshot.geometryCount}</dd></div>
