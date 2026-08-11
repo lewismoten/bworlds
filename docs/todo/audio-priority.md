@@ -112,7 +112,7 @@
 - [x] Use inversions only when they improve voice movement.
 - [ ] Keep harmony below the lead's main register.
 - [x] Reduce harmony activity during important lead phrases.
-- [ ] Let bass sustain through more of each chord.
+- [x] Let bass sustain through more of each chord.
 - [x] Make bass rhythm repeat across related phrases.
 - [x] Add passing bass notes only between planned roots.
 - [x] Make cadences coordinate bass, harmony, and lead.
@@ -121,7 +121,8 @@
       tracks read harmony or bass, assigns exact per-measure boundaries, keeps
       every chord change on beat one, verifies detected harmony against planned
       progression windows, uses chord voicings that keep shared tones close and
-      avoid octave-sized jumps as the default motion, lowers harmony occupancy
+      avoid octave-sized jumps as the default motion, keeps bass and harmony
+      notes sustaining across most of each chord span, lowers harmony occupancy
       in lead-active sections, repeats a stable bass figure with root-first
       downbeats and passing tones between them, coordinates cadence targets
       across lead and bass, and rejects cadence notes that drift outside the
