@@ -15,6 +15,7 @@ describe('ambience debug page', () => {
     expect(markup).toContain('Play Ambience');
     expect(markup).toContain('Download Minute');
     expect(markup).toContain('Download WAV');
+    expect(markup).toContain('Minute export:');
     expect(markup).toContain('Sand Wind');
   });
 
@@ -38,5 +39,16 @@ describe('ambience debug page', () => {
       'glass-resonance',
       'arcane-hum',
     ]);
+  });
+
+  it('reports minute and cue wav export metrics before download', () => {
+    const snapshot = buildAmbienceDebugSnapshot('plains-day');
+    const markup = buildAmbienceDebugShellMarkup(snapshot);
+
+    expect(snapshot.minuteExportMetrics.durationLabel).toBe('60s');
+    expect(snapshot.minuteExportMetrics.byteLengthLabel).toBe('5.49 MB');
+    expect(snapshot.cues[0]?.exportMetrics.durationLabel).toMatch(/s$/);
+    expect(markup).toContain(snapshot.minuteExportMetrics.byteLengthLabel);
+    expect(markup).toContain(snapshot.cues[0]?.exportMetrics.byteLengthLabel);
   });
 });

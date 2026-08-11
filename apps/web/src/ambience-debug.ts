@@ -6,6 +6,10 @@ import { createProceduralSoundEffectGenerator } from './procedural-sound-effect-
 import { renderProceduralSoundToBufferData } from './procedural-sound-render.ts';
 import { buildSoundDebugWaveformMarkup } from './sound-debug-waveform.ts';
 import {
+  createWavExportMetrics,
+  type WavExportMetrics,
+} from './wav-export-metrics.ts';
+import {
   buildProceduralSoundRecipe,
   getSoundIdentityDescriptor,
 } from './sound-effects/recipe-library.ts';
@@ -24,6 +28,8 @@ import type {
 
 const AMBIENCE_DEBUG_SAMPLE_RATE = 48_000;
 const AMBIENCE_DEBUG_DURATION_MS = 60_000;
+const AMBIENCE_DEBUG_CUE_EXPORT_WARNING_BYTE_LIMIT = 256 * 1024;
+const AMBIENCE_DEBUG_MINUTE_EXPORT_WARNING_BYTE_LIMIT = 6 * 1024 * 1024;
 
 type AmbientDayPhase = 'dawn' | 'day' | 'dusk' | 'night';
 type AmbientSeason = 'spring' | 'summer' | 'autumn' | 'winter';
@@ -44,6 +50,7 @@ export type AmbienceDebugCue = {
   identityVariant: string;
   effect: ProceduralSoundEffect;
   samples: Float32Array;
+  exportMetrics: WavExportMetrics;
   cadenceMultiplier: number;
   volumeMultiplier: number;
   signature: string;
@@ -54,6 +61,7 @@ export type AmbienceDebugSnapshot = {
   cues: AmbienceDebugCue[];
   minuteMixSamples: Float32Array;
   sampleRate: number;
+  minuteExportMetrics: WavExportMetrics;
 };
 
 const generator = createProceduralSoundEffectGenerator();
@@ -149,6 +157,10 @@ export function buildAmbienceDebugSnapshot(
       seed: preset.seed + cueIndex * 97,
       recipe,
     });
+    const samples = renderProceduralSoundToBufferData(
+      effect,
+      AMBIENCE_DEBUG_SAMPLE_RATE
+    );
     const modifiers = resolveAmbientIdentityVariantModifiers({
       kind: preset.kind,
       dayPhase: preset.dayPhase,
@@ -159,21 +171,30 @@ export function buildAmbienceDebugSnapshot(
       id: `${preset.id}:${identityVariant}`,
       identityVariant,
       effect,
-      samples: renderProceduralSoundToBufferData(
-        effect,
-        AMBIENCE_DEBUG_SAMPLE_RATE
-      ),
+      samples,
+      exportMetrics: createWavExportMetrics({
+        sampleCount: samples.length,
+        sampleRate: AMBIENCE_DEBUG_SAMPLE_RATE,
+        warningByteLimit: AMBIENCE_DEBUG_CUE_EXPORT_WARNING_BYTE_LIMIT,
+      }),
       cadenceMultiplier: modifiers.cadenceMultiplier,
       volumeMultiplier: modifiers.volumeMultiplier,
       signature: getSoundIdentityDescriptor(effect.kind).signature,
     };
   });
 
+  const minuteMixSamples = buildAmbienceMinuteMix(cues);
+
   return {
     preset,
     cues,
-    minuteMixSamples: buildAmbienceMinuteMix(cues),
+    minuteMixSamples,
     sampleRate: AMBIENCE_DEBUG_SAMPLE_RATE,
+    minuteExportMetrics: createWavExportMetrics({
+      sampleCount: minuteMixSamples.length,
+      sampleRate: AMBIENCE_DEBUG_SAMPLE_RATE,
+      warningByteLimit: AMBIENCE_DEBUG_MINUTE_EXPORT_WARNING_BYTE_LIMIT,
+    }),
   };
 }
 
@@ -203,6 +224,14 @@ export function buildAmbienceDebugShellMarkup(
             <p class="ambience-debug-cue-variant">${cue.identityVariant}</p>
             <h3>${formatCueTitle(cue.identityVariant)}</h3>
             <p>${cue.signature}</p>
+            <p class="ambience-debug-export-metrics">
+              ${cue.exportMetrics.durationLabel} • ${cue.exportMetrics.byteLengthLabel}
+            </p>
+            ${
+              cue.exportMetrics.exceedsWarningLimit
+                ? `<p class="ambience-debug-export-warning" role="status">Cue export exceeds the quick-audition budget of ${cue.exportMetrics.warningByteLimitLabel}.</p>`
+                : ''
+            }
           </div>
           <div class="ambience-debug-cue-actions">
             <button type="button" data-cue-play="${cue.id}">Play Cue</button>
@@ -235,6 +264,15 @@ export function buildAmbienceDebugShellMarkup(
               <p class="ambience-debug-panel-meta">${snapshot.preset.kind} • ${snapshot.preset.dayPhase} • ${snapshot.preset.season}</p>
               <h2>${snapshot.preset.label}</h2>
               <p>${snapshot.preset.description}</p>
+              <p class="ambience-debug-export-metrics">
+                Minute export: ${snapshot.minuteExportMetrics.durationLabel} •
+                ${snapshot.minuteExportMetrics.byteLengthLabel}
+              </p>
+              ${
+                snapshot.minuteExportMetrics.exceedsWarningLimit
+                  ? `<p class="ambience-debug-export-warning" role="status">Minute export exceeds the target budget of ${snapshot.minuteExportMetrics.warningByteLimitLabel}.</p>`
+                  : ''
+              }
             </div>
             <div class="ambience-debug-actions">
               <button id="ambience-debug-play" type="button">Play Ambience</button>
