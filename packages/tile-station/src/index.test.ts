@@ -142,6 +142,83 @@ describe('tile station', () => {
     );
     expect(countSharedMaterialReferences(first, otherHost)).toBe(0);
   });
+
+  it('builds the station progressively before returning the final model', () => {
+    const plugin = createStationTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'station');
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'station' } as never,
+      tileX: 4,
+      tileY: 5,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'hall',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'roof-canopy',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'lamp',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous station build aligned with the progressive final model', () => {
+    const plugin = createStationTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'station');
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'station' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeNode | undefined;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'station' } as never,
+      tileX: 4,
+      tileY: 5,
+    });
+    let progressiveModel: FakeNode | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeNode | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel)).toEqual(
+      createModelSignature(syncModel)
+    );
+  });
 });
 
 function countSharedMaterialReferences(
@@ -173,4 +250,35 @@ function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
     }
   });
   return materials;
+}
+
+function createModelSignature(model: FakeNode | undefined) {
+  const signature: Array<Record<string, unknown>> = [];
+  model?.traverse((node) => {
+    signature.push({
+      type: node.constructor.name,
+      x: node.position.x,
+      y: node.position.y,
+      z: node.position.z,
+      rotationX: node.rotation.x,
+      rotationY: node.rotation.y,
+      rotationZ: node.rotation.z,
+      visible: node.visible,
+      childCount: node.children.length,
+      material:
+        node instanceof FakeMesh
+          ? Array.isArray(node.material)
+            ? node.material.map((material) => material.options)
+            : node.material?.options
+          : undefined,
+      light:
+        node instanceof FakePointLight
+          ? {
+              intensity: node.intensity,
+            }
+          : undefined,
+      userData: node.userData,
+    });
+  });
+  return signature;
 }

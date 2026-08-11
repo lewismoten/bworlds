@@ -19,9 +19,9 @@ Current groundwork:
   pass while still keeping `create3DModel()` aligned by exhausting the same
   generator synchronously.
 - `tile-dungeon`, `tile-cave`, `tile-town`, `tile-sign`,
-  `tile-observatory`, and `tile-tower` now follow the same pattern for their
-  heavier landmark builds, each yielding coarse structural phases before
-  returning the final Three.js object.
+  `tile-observatory`, `tile-tower`, and `tile-station` now follow the same
+  pattern for their heavier landmark builds, each yielding coarse structural
+  phases before returning the final Three.js object.
 
 This is the typed scheduler seam for the `errors.md` frame-stall work. The
 renderer now keeps one unfinished plugin build alive across frames and resumes

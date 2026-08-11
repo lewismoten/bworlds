@@ -13,6 +13,7 @@ import {
 } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   RuntimePlugin,
   ThreeMaterialLike,
 } from '@bworlds/plugin-api';
@@ -37,67 +38,13 @@ export function createStationTilePlugin(): RuntimePlugin {
       fillRect(context, x + 10, y + 8, 2, 3, '#2f241c');
       return true;
     }),
-    create3DModel({ three, tileX, tileY }: Create3DModelContext) {
-      const { wallMaterial, roofMaterial, trimMaterial, lampMaterial } =
-        getStationSharedMaterials(three);
-      const group = new three.Group();
-
-      const base = new three.Mesh(
-        getSharedBoxGeometry(three, 1.08, 0.18, 1.08),
-        wallMaterial
+    create3DModel(context: Create3DModelContext) {
+      return runStationModelBuildToCompletion(
+        createStationModelProgressive(context)
       );
-      base.position.set(tileX, 0.09, tileY);
-      group.add(base);
-
-      const hall = new three.Mesh(
-        getSharedBoxGeometry(three, 0.88, 0.6, 0.76),
-        wallMaterial
-      );
-      hall.position.set(tileX, 0.48, tileY + 0.06);
-      group.add(hall);
-
-      const roof = new three.Mesh(
-        getSharedConeGeometry(three, 0.74, 0.42, 4),
-        roofMaterial
-      );
-      roof.position.set(tileX, 0.96, tileY + 0.06);
-      roof.rotation.y = Math.PI * 0.25;
-      group.add(roof);
-
-      const canopy = new three.Mesh(
-        getSharedBoxGeometry(three, 0.96, 0.06, 0.28),
-        trimMaterial
-      );
-      canopy.position.set(tileX, 0.5, tileY - 0.44);
-      group.add(canopy);
-
-      const lamp = markPoiLightEmitter(
-        new three.Mesh(
-          getSharedSphereGeometry(three, 0.04, 6, 6),
-          lampMaterial
-        ),
-        {
-          kind: 'emissive-mesh',
-          dayIntensity: 0.02,
-          nightIntensity: 1.22,
-        }
-      );
-      lamp.position.set(tileX, 0.58, tileY - 0.36);
-      group.add(lamp);
-
-      const light = markPoiLightEmitter(
-        new three.PointLight('#f8c878', 0, 3.6, 1.8),
-        {
-          kind: 'point-light',
-          nightIntensity: 0.7,
-          visibleThreshold: 0.03,
-        }
-      );
-      light.position.set(tileX, 0.58, tileY - 0.36);
-      light.visible = false;
-      group.add(light);
-
-      return group;
+    },
+    create3DModelProgressive(context: Create3DModelContext) {
+      return createStationModelProgressive(context);
     },
     sync3DModel({ model, cycle }) {
       if (model && typeof model === 'object') {
@@ -108,6 +55,97 @@ export function createStationTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function* createStationModelProgressive({
+  three,
+  tileX,
+  tileY,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const { wallMaterial, roofMaterial, trimMaterial, lampMaterial } =
+    getStationSharedMaterials(three);
+  const group = new three.Group();
+  const totalSteps = 3;
+
+  const base = new three.Mesh(
+    getSharedBoxGeometry(three, 1.08, 0.18, 1.08),
+    wallMaterial
+  );
+  base.position.set(tileX, 0.09, tileY);
+  group.add(base);
+
+  const hall = new three.Mesh(
+    getSharedBoxGeometry(three, 0.88, 0.6, 0.76),
+    wallMaterial
+  );
+  hall.position.set(tileX, 0.48, tileY + 0.06);
+  group.add(hall);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'hall',
+  };
+
+  const roof = new three.Mesh(
+    getSharedConeGeometry(three, 0.74, 0.42, 4),
+    roofMaterial
+  );
+  roof.position.set(tileX, 0.96, tileY + 0.06);
+  roof.rotation.y = Math.PI * 0.25;
+  group.add(roof);
+
+  const canopy = new three.Mesh(
+    getSharedBoxGeometry(three, 0.96, 0.06, 0.28),
+    trimMaterial
+  );
+  canopy.position.set(tileX, 0.5, tileY - 0.44);
+  group.add(canopy);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'roof-canopy',
+  };
+
+  const lamp = markPoiLightEmitter(
+    new three.Mesh(getSharedSphereGeometry(three, 0.04, 6, 6), lampMaterial),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: 0.02,
+      nightIntensity: 1.22,
+    }
+  );
+  lamp.position.set(tileX, 0.58, tileY - 0.36);
+  group.add(lamp);
+
+  const light = markPoiLightEmitter(
+    new three.PointLight('#f8c878', 0, 3.6, 1.8),
+    {
+      kind: 'point-light',
+      nightIntensity: 0.7,
+      visibleThreshold: 0.03,
+    }
+  );
+  light.position.set(tileX, 0.58, tileY - 0.36);
+  light.visible = false;
+  group.add(light);
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'lamp',
+  };
+
+  return group;
+}
+
+function runStationModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function getStationSharedMaterials(three: Create3DModelContext['three']) {
