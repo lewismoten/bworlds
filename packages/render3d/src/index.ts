@@ -2977,7 +2977,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleTileNodes.values()
     );
     const visibleTileSceneUniqueMaterialStats =
-      summarizeVisibleTileOwnedUniqueMaterialsByPlugin(visibleTileNodes.values());
+      summarizeVisibleTileOwnedUniqueMaterialsByPlugin(
+        visibleTileNodes.values()
+      );
     const visibleTileClonedMaterialStats =
       summarizeVisibleTileClonedMaterialsByPlugin(visibleTileNodes.values());
     const visibleTileStaticMatrixUpdateStats =

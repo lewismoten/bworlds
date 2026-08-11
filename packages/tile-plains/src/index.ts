@@ -28,7 +28,12 @@ export function createPlainsTilePlugin(): RuntimePlugin {
       wallHeight: 0,
     },
     paint2D: createPlainsBackedTilePainter(),
-    create3DModel({ three, tileX, tileY, detailLevel = 'full' }: Create3DModelContext) {
+    create3DModel({
+      three,
+      tileX,
+      tileY,
+      detailLevel = 'full',
+    }: Create3DModelContext) {
       const mesh = new three.Mesh(
         getSharedPlainsGeometry(three, detailLevel),
         getSharedPlainsMaterial(three)

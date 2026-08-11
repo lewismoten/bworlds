@@ -3874,8 +3874,7 @@ function getTreeStyle(
         metalness: 0.01,
       }),
       meadowStemMaterial: sharedAccessoryStyle.meadowStemMaterial,
-      meadowFlowerWhiteMaterial:
-        sharedAccessoryStyle.meadowFlowerWhiteMaterial,
+      meadowFlowerWhiteMaterial: sharedAccessoryStyle.meadowFlowerWhiteMaterial,
       meadowFlowerYellowMaterial:
         sharedAccessoryStyle.meadowFlowerYellowMaterial,
       breadcrumbMaterial: new three.MeshStandardMaterial({

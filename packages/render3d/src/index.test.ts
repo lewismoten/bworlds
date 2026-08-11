@@ -4607,7 +4607,11 @@ describe('render3d visibility helpers', () => {
         {
           tilePluginOwnerLabel: 'tile-forest',
           node: createMockObject3D(undefined, [
-            createMockObject3D(sharedForestMaterial, [], createMockGeometry(12)),
+            createMockObject3D(
+              sharedForestMaterial,
+              [],
+              createMockGeometry(12)
+            ),
             createMockObject3D(sharedForestMaterial, [], createMockGeometry(8)),
           ]),
         },
@@ -4662,7 +4666,8 @@ describe('render3d visibility helpers', () => {
         {
           type: 'plugin-performance-warning',
           plugin: 'tile-water',
-          summary: 'materialCount 10 for meshCount 10 with sharedMaterialCount 0 suggests per-instance materials',
+          summary:
+            'materialCount 10 for meshCount 10 with sharedMaterialCount 0 suggests per-instance materials',
         },
       ])
     ).toEqual({

@@ -8,10 +8,7 @@ import {
   syncPoiLightEmitters,
 } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
-import {
-  createHostMaterialResolver,
-  pickThresholdColor,
-} from '@bworlds/procedural-style';
+import { createHostMaterialResolver } from '@bworlds/procedural-style';
 import {
   createRoadsideRouteProfile,
   createRouteTraversalProfile,

@@ -277,9 +277,9 @@ describe('tile forest', () => {
       }
     }
 
-    expect([...expectedMarkers].every((marker) => markerToMaterials.has(marker))).toBe(
-      true
-    );
+    expect(
+      [...expectedMarkers].every((marker) => markerToMaterials.has(marker))
+    ).toBe(true);
     expectedMarkers.forEach((marker) => {
       expect(markerToMaterials.get(marker)?.size).toBe(1);
     });

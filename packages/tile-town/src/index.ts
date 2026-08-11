@@ -16,7 +16,6 @@ import {
   createCoordinateValueResolver,
   createHostVariantMaterialResolver,
   createHostVariantValueResolver,
-  pickThresholdColor,
 } from '@bworlds/procedural-style';
 import { getTownProfile } from '@bworlds/town-support';
 import {
