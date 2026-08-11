@@ -121,6 +121,77 @@ describe('procedural music phrase support', () => {
       8_000
     );
   });
+
+  it('thins later harmony attack clusters inside lead-busy measures', () => {
+    const notes = shapeProceduralPhraseSupportNotes(
+      [
+        createNote({
+          role: 'lead',
+          startMs: 120,
+          durationMs: 120,
+          instrumentId: 'lead:0',
+          frequency: 440,
+        }),
+        createNote({
+          role: 'lead',
+          startMs: 360,
+          durationMs: 120,
+          instrumentId: 'lead:1',
+          frequency: 493.88,
+        }),
+        createNote({
+          role: 'lead',
+          startMs: 620,
+          durationMs: 120,
+          instrumentId: 'lead:2',
+          frequency: 523.25,
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 80,
+          durationMs: 160,
+          instrumentId: 'harmony:first-root',
+          frequency: 329.63,
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 80,
+          durationMs: 160,
+          instrumentId: 'harmony:first-third',
+          frequency: 392,
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 520,
+          durationMs: 160,
+          instrumentId: 'harmony:later-root',
+          frequency: 349.23,
+        }),
+        createNote({
+          role: 'harmony',
+          startMs: 520,
+          durationMs: 160,
+          instrumentId: 'harmony:later-third',
+          frequency: 415.3,
+        }),
+      ],
+      {
+        phraseStartMs: 0,
+        phraseDurationMs: 8_000,
+      }
+    );
+
+    const activeHarmonyStarts = notes
+      .filter(
+        (note) =>
+          note.role === 'harmony' &&
+          note.durationMs > 0 &&
+          !note.instrumentId.includes(':anchor-')
+      )
+      .map((note) => note.startMs);
+
+    expect(activeHarmonyStarts).toEqual([80, 80]);
+  });
 });
 
 function createNote(overrides: {

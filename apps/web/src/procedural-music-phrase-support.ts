@@ -15,6 +15,7 @@ const CADENCE_BASS_REMAINING_MEASURE_COVERAGE = {
   question: 0.72,
   answer: 0.92,
 } as const;
+const LEAD_FOCUS_MEASURE_NOTE_THRESHOLD = 2;
 
 export function shapeProceduralPhraseSupportNotes(
   notes: readonly ProceduralMusicNote[],
@@ -29,6 +30,11 @@ export function shapeProceduralPhraseSupportNotes(
   const phraseEndMs = options.phraseStartMs + options.phraseDurationMs;
 
   extendSupportDurationsWithinMeasures(shapedNotes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs,
+    measureDurationMs,
+  });
+  thinHarmonyDuringLeadFocusMeasures(shapedNotes, {
     phraseStartMs: options.phraseStartMs,
     phraseEndMs,
     measureDurationMs,
@@ -153,6 +159,76 @@ function resolveDesiredSupportEndMs(options: {
   );
 
   return Math.max(desiredEndMs, cadenceEndMs);
+}
+
+function thinHarmonyDuringLeadFocusMeasures(
+  notes: ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseEndMs: number;
+    measureDurationMs: number;
+  }
+): void {
+  const measureCount = Math.max(
+    1,
+    Math.round(
+      (options.phraseEndMs - options.phraseStartMs) / options.measureDurationMs
+    )
+  );
+
+  for (let measureIndex = 0; measureIndex < measureCount; measureIndex += 1) {
+    const measureStartMs =
+      options.phraseStartMs + measureIndex * options.measureDurationMs;
+    const measureEndMs = Math.min(
+      options.phraseEndMs,
+      measureStartMs + options.measureDurationMs
+    );
+    const leadNotes = notes.filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= measureStartMs &&
+        note.startMs < measureEndMs
+    );
+
+    if (leadNotes.length < LEAD_FOCUS_MEASURE_NOTE_THRESHOLD) {
+      continue;
+    }
+
+    const harmonyClusterStarts = [
+      ...new Set(
+        notes
+          .filter(
+            (note) =>
+              note.role === 'harmony' &&
+              note.startMs >= measureStartMs &&
+              note.startMs < measureEndMs
+          )
+          .map((note) => note.startMs)
+      ),
+    ].sort((left, right) => left - right);
+
+    if (harmonyClusterStarts.length <= 1) {
+      continue;
+    }
+
+    const protectedClusterStartMs = harmonyClusterStarts[0]!;
+    for (let index = 0; index < notes.length; index += 1) {
+      const note = notes[index]!;
+      if (
+        note.role !== 'harmony' ||
+        note.startMs < measureStartMs ||
+        note.startMs >= measureEndMs ||
+        note.startMs === protectedClusterStartMs
+      ) {
+        continue;
+      }
+
+      notes[index] = {
+        ...note,
+        durationMs: 0,
+      };
+    }
+  }
 }
 
 function resolvePhraseMeasureCadence(
