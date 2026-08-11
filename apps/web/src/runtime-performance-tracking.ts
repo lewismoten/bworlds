@@ -1,3 +1,5 @@
+import type { DebugSnapshot } from './debug-panel.ts';
+
 const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
   initialWorldGenerationMs: 4_000,
   visibleTileGenerationMs: 16,
@@ -22,6 +24,7 @@ export type RuntimePerformanceTrackingPreferences = {
 export type RuntimePerformanceSnapshotTrigger =
   | 'startup'
   | 'region-change'
+  | 'runtime-issue'
   | 'song-generated'
   | 'midi-export'
   | 'wav-export'
@@ -61,6 +64,9 @@ export type RuntimePerformanceSnapshot = {
   };
   violations: string[];
 };
+
+export const RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH =
+  '/api/runtime-performance-snapshots';
 
 type RuntimePerformanceSnapshotBuildOptions = {
   createdAt?: Date;
@@ -122,6 +128,32 @@ export function buildRuntimePerformanceSnapshot(
     limits,
     metrics,
     violations: collectRuntimePerformanceViolations(metrics, limits),
+  };
+}
+
+export function buildRuntimePerformanceSnapshotMetricsFromDebugSnapshot(
+  debugSnapshot: DebugSnapshot,
+  options: {
+    initialWorldGenerationMs?: number | null;
+    memoryAfterRegionChangeMb?: number | null;
+  } = {}
+): RuntimePerformanceSnapshot['metrics'] {
+  return {
+    initialWorldGenerationMs: options.initialWorldGenerationMs ?? null,
+    visibleTileGeneration: {
+      averageMs: debugSnapshot.averageTileBuildMs,
+      maxMs: debugSnapshot.maxTileBuildMs,
+      buildsPerSecond: debugSnapshot.tileBuildsPerSecond,
+      pendingTileCount: debugSnapshot.pendingTileCount,
+    },
+    maximumFrameMs: debugSnapshot.worstRecentFrameMs,
+    memoryAfterRegionChangeMb: options.memoryAfterRegionChangeMb ?? null,
+    activeThreeObjectCount: debugSnapshot.object3dCount,
+    drawCalls: debugSnapshot.drawCalls,
+    audioNodeCount: debugSnapshot.activeAudioSourceCount,
+    songGenerationMs: null,
+    midiExportMs: null,
+    wavExportMs: null,
   };
 }
 
@@ -229,7 +261,7 @@ export async function postRuntimePerformanceSnapshot(
 
   try {
     const response = await fetchImpl(
-      options.endpoint ?? '/api/runtime-performance-snapshots',
+      options.endpoint ?? RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH,
       {
         method: 'POST',
         headers: {

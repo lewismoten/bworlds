@@ -7,7 +7,13 @@ const DEFAULT_RUNTIME_PERFORMANCE_SNAPSHOT_DIR = path.resolve(
   '..',
   '.runtime-performance-snapshots'
 );
+const DEFAULT_RUNTIME_PERFORMANCE_ISSUE_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '.runtime-performance-issues'
+);
 const MAX_RUNTIME_PERFORMANCE_SNAPSHOTS = 10;
+const MAX_RUNTIME_PERFORMANCE_ISSUES = 25;
 
 function ensureSnapshotDirectory(snapshotDir) {
   fs.mkdirSync(snapshotDir, { recursive: true });
@@ -78,6 +84,37 @@ export function readRecentRuntimePerformanceSnapshots(options = {}) {
   const snapshotDir =
     options.snapshotDir ?? DEFAULT_RUNTIME_PERFORMANCE_SNAPSHOT_DIR;
   const limit = options.limit ?? MAX_RUNTIME_PERFORMANCE_SNAPSHOTS;
+  return listSnapshotEntries(snapshotDir)
+    .slice(0, limit)
+    .map((entry) => JSON.parse(fs.readFileSync(entry.absolutePath, 'utf8')));
+}
+
+export function formatRuntimePerformanceIssueFileName(issue) {
+  const timestamp = issue.createdAt.replace(/[:.]/g, '-');
+  const source = sanitizeSnapshotSegment(issue.source ?? 'runtime');
+  const issueHash = sanitizeSnapshotSegment(issue.issueHash ?? 'issue');
+  return `${timestamp}-${source}-${issueHash}.json`;
+}
+
+export function saveRuntimePerformanceIssue(issue, options = {}) {
+  const snapshotDir =
+    options.snapshotDir ?? DEFAULT_RUNTIME_PERFORMANCE_ISSUE_DIR;
+  const maxSnapshots = options.maxSnapshots ?? MAX_RUNTIME_PERFORMANCE_ISSUES;
+  ensureSnapshotDirectory(snapshotDir);
+  const fileName = formatRuntimePerformanceIssueFileName(issue);
+  fs.writeFileSync(
+    getSnapshotFilePath(snapshotDir, fileName),
+    `${JSON.stringify(issue, null, 2)}\n`,
+    'utf8'
+  );
+  trimSnapshots(snapshotDir, maxSnapshots);
+  return fileName;
+}
+
+export function readRecentRuntimePerformanceIssues(options = {}) {
+  const snapshotDir =
+    options.snapshotDir ?? DEFAULT_RUNTIME_PERFORMANCE_ISSUE_DIR;
+  const limit = options.limit ?? MAX_RUNTIME_PERFORMANCE_ISSUES;
   return listSnapshotEntries(snapshotDir)
     .slice(0, limit)
     .map((entry) => JSON.parse(fs.readFileSync(entry.absolutePath, 'utf8')));

@@ -78,13 +78,6 @@ import {
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
-import {
-  buildRuntimePerformanceSnapshot,
-  normalizeRuntimePerformanceTrackingPreferences,
-  postRuntimePerformanceSnapshot,
-  type RuntimePerformanceSnapshot,
-  type RuntimePerformanceSnapshotTrigger,
-} from './runtime-performance-tracking.ts';
 import { installDeferredClientErrorSnapshotReporter } from './client-error-snapshot-loader.ts';
 import { createTeleportPin, normalizeTeleportPins } from './teleport-pins.ts';
 import {
@@ -1393,11 +1386,21 @@ const audioPreferenceState = {
   ...normalizeAudioPreferences(savedSession ?? DEFAULT_AUDIO_PREFERENCES),
 };
 const runtimePerformanceTrackingState = {
-  ...normalizeRuntimePerformanceTrackingPreferences(savedSession),
+  enabled: savedSession?.runtimePerformanceTrackingEnabled ?? true,
   initialWorldGenerationMs,
   startupReported: false,
   lastReportedContextId: null as string | null,
+  lastIssueSampleNowMs: null as number | null,
 };
+type RuntimePerformanceSnapshotTrigger = 'startup' | 'region-change';
+const RUNTIME_PERFORMANCE_ISSUE_SAMPLE_INTERVAL_MS = 2_000;
+let runtimePerformanceIssueReporterPromise: Promise<
+  (
+    issue:
+      | import('./runtime-performance-issue.ts').RuntimePerformanceIssueReport
+      | null
+  ) => Promise<boolean>
+> | null = null;
 installDeferredClientErrorSnapshotReporter({
   tracking: () => runtimePerformanceTrackingState,
   eventTarget: window,
@@ -1950,22 +1953,84 @@ function toggleRuntimePerformanceTrackingSetting(): void {
 function reportRuntimePerformanceSnapshot(
   trigger: RuntimePerformanceSnapshotTrigger,
   spatial: ReturnType<typeof getPlayerSpatialSummary>,
-  metrics: Partial<RuntimePerformanceSnapshot['metrics']> = {}
+  metrics: Record<string, number | null | object> = {}
 ): void {
   if (!runtimePerformanceTrackingState.enabled) {
     return;
   }
 
-  const debugSnapshot = collectCurrentDebugSnapshot(
-    performance.now(),
-    spatial,
-    {
-      recordDiagnostics: false,
-    }
-  );
-  const snapshot = buildRuntimePerformanceSnapshot({
+  void (async () => {
+    const runtimePerformanceTracking =
+      await import('./runtime-performance-tracking.ts');
+    const debugSnapshot = collectCurrentDebugSnapshot(
+      performance.now(),
+      spatial,
+      {
+        recordDiagnostics: false,
+      }
+    );
+    const snapshot = runtimePerformanceTracking.buildRuntimePerformanceSnapshot(
+      {
+        source: 'game',
+        trigger,
+        route: window.location.pathname || '/',
+        worldSeed: currentWorldSeed,
+        context: {
+          id: spatial.context.id,
+          label: spatial.context.label,
+          depth: spatial.context.depth,
+        },
+        metrics: {
+          ...runtimePerformanceTracking.buildRuntimePerformanceSnapshotMetricsFromDebugSnapshot(
+            debugSnapshot,
+            {
+              initialWorldGenerationMs:
+                trigger === 'startup'
+                  ? runtimePerformanceTrackingState.initialWorldGenerationMs
+                  : null,
+              memoryAfterRegionChangeMb:
+                trigger === 'region-change' ? debugSnapshot.heapUsedMb : null,
+            }
+          ),
+          ...metrics,
+        },
+      }
+    );
+
+    await runtimePerformanceTracking.postRuntimePerformanceSnapshot(snapshot);
+  })();
+}
+
+function maybeReportRuntimePerformanceIssue(
+  nowMs: number,
+  spatial: ReturnType<typeof getPlayerSpatialSummary>
+): void {
+  if (!runtimePerformanceTrackingState.enabled) {
+    return;
+  }
+  if (
+    runtimePerformanceTrackingState.lastIssueSampleNowMs !== null &&
+    nowMs - runtimePerformanceTrackingState.lastIssueSampleNowMs <
+      RUNTIME_PERFORMANCE_ISSUE_SAMPLE_INTERVAL_MS
+  ) {
+    return;
+  }
+  runtimePerformanceTrackingState.lastIssueSampleNowMs = nowMs;
+
+  const debugSnapshot = collectCurrentDebugSnapshot(nowMs, spatial, {
+    recordDiagnostics: false,
+  });
+  void reportRuntimePerformanceIssue(debugSnapshot, spatial);
+}
+
+async function reportRuntimePerformanceIssue(
+  debugSnapshot: ReturnType<typeof collectCurrentDebugSnapshot>,
+  spatial: ReturnType<typeof getPlayerSpatialSummary>
+): Promise<void> {
+  const issueModule = await import('./runtime-performance-issue.ts');
+  const issue = issueModule.buildRuntimePerformanceIssueReport({
+    createdAt: new Date(),
     source: 'game',
-    trigger,
     route: window.location.pathname || '/',
     worldSeed: currentWorldSeed,
     context: {
@@ -1973,28 +2038,15 @@ function reportRuntimePerformanceSnapshot(
       label: spatial.context.label,
       depth: spatial.context.depth,
     },
-    metrics: {
-      initialWorldGenerationMs:
-        trigger === 'startup'
-          ? runtimePerformanceTrackingState.initialWorldGenerationMs
-          : null,
-      visibleTileGeneration: {
-        averageMs: debugSnapshot.averageTileBuildMs,
-        maxMs: debugSnapshot.maxTileBuildMs,
-        buildsPerSecond: debugSnapshot.tileBuildsPerSecond,
-        pendingTileCount: debugSnapshot.pendingTileCount,
-      },
-      maximumFrameMs: debugSnapshot.worstRecentFrameMs,
-      memoryAfterRegionChangeMb:
-        trigger === 'region-change' ? debugSnapshot.heapUsedMb : null,
-      activeThreeObjectCount: debugSnapshot.object3dCount,
-      drawCalls: debugSnapshot.drawCalls,
-      audioNodeCount: debugSnapshot.activeAudioSourceCount,
-      ...metrics,
-    },
+    debugSnapshot,
   });
-
-  void postRuntimePerformanceSnapshot(snapshot);
+  if (!runtimePerformanceIssueReporterPromise) {
+    runtimePerformanceIssueReporterPromise = Promise.resolve(
+      issueModule.createRuntimePerformanceIssueReporter()
+    );
+  }
+  const reporter = await runtimePerformanceIssueReporterPromise;
+  await reporter(issue);
 }
 
 function updateCelestialEventModeUi(): void {
@@ -3906,6 +3958,7 @@ function render(): FrameLoopActivityLike {
       uiRenderState.lastDebugSignature = debugSignature;
     }
   }
+  maybeReportRuntimePerformanceIssue(nowMs, spatial);
   if (!runtimePerformanceTrackingState.startupReported) {
     reportRuntimePerformanceSnapshot('startup', spatial);
     runtimePerformanceTrackingState.startupReported = true;

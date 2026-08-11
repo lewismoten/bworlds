@@ -7,12 +7,16 @@ import {
   saveClientErrorSnapshot,
 } from './client-error-snapshot-store.mjs';
 import {
+  readRecentRuntimePerformanceIssues,
   readRecentRuntimePerformanceSnapshots,
+  saveRuntimePerformanceIssue,
   saveRuntimePerformanceSnapshot,
 } from './runtime-performance-snapshot-store.mjs';
 import { CLIENT_ERROR_SNAPSHOT_API_PATH } from './src/client-error-snapshot.ts';
 import { resolveDebugRouteRedirect } from './src/debug-route-aliases.ts';
 import { resolveRootEntryHtmlPath } from './src/root-entry-route.ts';
+import { RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH } from './src/runtime-performance-tracking.ts';
+import { RUNTIME_PERFORMANCE_ISSUE_API_PATH } from './src/runtime-performance-issue.ts';
 import { buildWorkspaceAliases } from './vite.workspace.ts';
 
 const APP_DIR = fileURLToPath(new URL('.', import.meta.url));
@@ -44,9 +48,6 @@ type RuntimeSnapshotRequest = IncomingMessage & {
 };
 
 type RuntimeSnapshotResponse = ServerResponse<IncomingMessage>;
-
-const RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH =
-  '/api/runtime-performance-snapshots';
 
 function createDebugRouteRedirectPlugin(): Plugin {
   const redirect = (
@@ -312,11 +313,101 @@ function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
   };
 }
 
+function createRuntimePerformanceIssueApiPlugin(): Plugin {
+  const middleware = async (
+    req: RuntimeSnapshotRequest,
+    res: RuntimeSnapshotResponse,
+    next: () => void
+  ) => {
+    const requestUrl = req.url ? new URL(req.url, 'http://localhost') : null;
+    if (!requestUrl) {
+      next();
+      return;
+    }
+
+    if (requestUrl.pathname !== RUNTIME_PERFORMANCE_ISSUE_API_PATH) {
+      next();
+      return;
+    }
+
+    if (req.method === 'GET') {
+      const limitParam = Number(requestUrl.searchParams.get('limit') ?? '10');
+      const limit = Number.isFinite(limitParam)
+        ? Math.max(1, Math.min(25, Math.floor(limitParam)))
+        : 10;
+      sendJson(res, 200, {
+        issues: readRecentRuntimePerformanceIssues({ limit }),
+      });
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.statusCode = 405;
+      res.setHeader('Allow', 'GET, POST');
+      res.end();
+      return;
+    }
+
+    try {
+      const issue = await readJsonBody(req);
+      if (
+        !issue ||
+        typeof issue !== 'object' ||
+        !('schemaVersion' in issue) ||
+        !('createdAt' in issue) ||
+        !('issueHash' in issue)
+      ) {
+        sendJson(res, 400, {
+          error: 'Expected a runtime performance issue JSON payload.',
+        });
+        return;
+      }
+
+      const fileName = saveRuntimePerformanceIssue(issue);
+      sendJson(res, 201, {
+        fileName,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown issue error.';
+      const snapshotDirError =
+        error instanceof Error &&
+        (error.message.includes('ENOENT') || error.message.includes('EACCES'));
+      sendJson(res, snapshotDirError ? 500 : 400, {
+        error: message,
+      });
+    }
+  };
+
+  return {
+    name: 'runtime-performance-issue-api',
+    configureServer(server: DebugRouteMiddlewareContainer) {
+      server.middlewares.use((req, res, next) => {
+        void middleware(
+          req as RuntimeSnapshotRequest,
+          res as RuntimeSnapshotResponse,
+          next
+        );
+      });
+    },
+    configurePreviewServer(server: DebugRouteMiddlewareContainer) {
+      server.middlewares.use((req, res, next) => {
+        void middleware(
+          req as RuntimeSnapshotRequest,
+          res as RuntimeSnapshotResponse,
+          next
+        );
+      });
+    },
+  };
+}
+
 export default defineConfig({
   appType: 'mpa',
   plugins: [
     createClientErrorSnapshotApiPlugin(),
     createRuntimePerformanceSnapshotApiPlugin(),
+    createRuntimePerformanceIssueApiPlugin(),
     createDebugRouteRedirectPlugin(),
   ],
   build: {
