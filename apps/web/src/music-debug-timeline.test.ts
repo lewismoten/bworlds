@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { resolveMusicDebugCadenceMarkers } from './music-debug-cadence-markers.ts';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugPitchClassLabel } from './music-debug-pitch-class.ts';
 import {
@@ -255,6 +256,64 @@ describe('music debug timeline', () => {
         role: 'percussion',
         hoverLabel: 'Percussion Crash',
         hoverDurationLabel: '180 ms',
+      })
+    );
+  });
+
+  it('resolves cadence marker details when hovering question and answer labels', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'forest',
+      contextType: 'overworld',
+      clusterX: 4,
+      clusterY: -1,
+    });
+    const layout = resolveMusicDebugTimelineLayout(960, 320);
+    const [questionMarker, answerMarker] =
+      resolveMusicDebugCadenceMarkers(snapshot);
+
+    const questionHoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot,
+      canvas: { width: 960, height: 320 },
+      clientX: resolveMusicDebugTimelineXForOffset(
+        layout,
+        snapshot.durationMs,
+        questionMarker!.offsetMs
+      ),
+      clientY: 48,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+    const answerHoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot,
+      canvas: { width: 960, height: 320 },
+      clientX: resolveMusicDebugTimelineXForOffset(
+        layout,
+        snapshot.durationMs,
+        answerMarker!.offsetMs
+      ),
+      clientY: 48,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(questionHoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: questionMarker!.label,
+        hoverDurationLabel: 'Phrase 1 • Q cadence',
+      })
+    );
+    expect(answerHoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: answerMarker!.label,
+        hoverDurationLabel: 'Phrase 1 • A cadence',
       })
     );
   });

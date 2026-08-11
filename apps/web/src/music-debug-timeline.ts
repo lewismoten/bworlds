@@ -22,7 +22,10 @@ import {
   resolveMusicDebugChordCueAtOffset,
   resolveMusicDebugChordCues,
 } from './music-debug-chord-cues.ts';
-import { resolveMusicDebugCadenceMarkers } from './music-debug-cadence-markers.ts';
+import {
+  type MusicDebugCadenceMarker,
+  resolveMusicDebugCadenceMarkers,
+} from './music-debug-cadence-markers.ts';
 import {
   resolveMusicDebugBeatSubdivisionMarkers,
   resolveMusicDebugMeasureMarkers,
@@ -62,8 +65,8 @@ export type MusicDebugTimelineNoteBar = {
 };
 
 export type MusicDebugTimelineHoverDetail = {
-  noteIndex: number;
-  role: ProceduralMusicNote['role'];
+  noteIndex: number | null;
+  role: ProceduralMusicNote['role'] | null;
   hoverLabel: string;
   hoverDurationLabel: string;
   x: number;
@@ -173,9 +176,23 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
     ((options.clientY - options.boundsTop) /
       Math.max(1, options.boundsHeight)) *
     options.canvas.height;
+  const cadenceMarkers = resolveMusicDebugCadenceMarkers(options.snapshot);
   const noteBars = resolveMusicDebugTimelineNoteBars(options.snapshot, layout, {
     visibleRoles: options.visibleRoles,
   });
+
+  for (const marker of cadenceMarkers) {
+    const hoverDetail = resolveMusicDebugTimelineCadenceMarkerHoverDetail({
+      layout,
+      durationMs: options.snapshot.durationMs,
+      canvasX,
+      canvasY,
+      marker,
+    });
+    if (hoverDetail) {
+      return hoverDetail;
+    }
+  }
 
   for (let index = noteBars.length - 1; index >= 0; index -= 1) {
     const noteBar = noteBars[index]!;
@@ -199,6 +216,42 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
   }
 
   return null;
+}
+
+function resolveMusicDebugTimelineCadenceMarkerHoverDetail(options: {
+  layout: MusicDebugTimelineLayout;
+  durationMs: number;
+  canvasX: number;
+  canvasY: number;
+  marker: MusicDebugCadenceMarker;
+}): MusicDebugTimelineHoverDetail | null {
+  const markerX = resolveMusicDebugTimelineXForOffset(
+    options.layout,
+    options.durationMs,
+    options.marker.offsetMs
+  );
+  const hoverWidth = 18;
+  const hoverHeight = 16;
+  const hoverX = markerX - hoverWidth * 0.5;
+  const hoverY = MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y - 11;
+  if (
+    options.canvasX < hoverX ||
+    options.canvasX > hoverX + hoverWidth ||
+    options.canvasY < hoverY ||
+    options.canvasY > hoverY + hoverHeight
+  ) {
+    return null;
+  }
+  return {
+    noteIndex: null,
+    role: null,
+    hoverLabel: options.marker.label,
+    hoverDurationLabel: `Phrase ${options.marker.phraseIndex + 1} • ${options.marker.shortLabel} cadence`,
+    x: hoverX,
+    y: hoverY,
+    width: hoverWidth,
+    height: hoverHeight,
+  };
 }
 
 export function resolveMusicDebugTimelineChordLabels(
