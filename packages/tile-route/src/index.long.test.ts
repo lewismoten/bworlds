@@ -1455,6 +1455,53 @@ describe('tile route', () => {
     );
   });
 
+  it('reuses bounded road materials across different regions', () => {
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentContext() {
+        return { id: 'overworld', depth: 0, type: 'overworld' as const };
+      },
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition(kind: string) {
+        return {
+          name: kind,
+          color: '#000000',
+          miniColor: '#111111',
+          walkable: true,
+          wallHeight: 0,
+        };
+      },
+    };
+    const models: FakeNode[] = [];
+
+    for (let regionY = 0; regionY < 8; regionY += 1) {
+      for (let regionX = 0; regionX < 8; regionX += 1) {
+        const model = roadTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: state as never,
+          tile: { kind: 'road' } as never,
+          tileX: regionX * 20,
+          tileY: regionY * 20,
+        }) as FakeNode | undefined;
+        if (model) {
+          models.push(model);
+        }
+      }
+    }
+
+    let highestSharedCount = 0;
+    for (let index = 1; index < models.length; index += 1) {
+      highestSharedCount = Math.max(
+        highestSharedCount,
+        countSharedMaterialReferences(models[index - 1], models[index])
+      );
+    }
+
+    expect(highestSharedCount).toBeGreaterThanOrEqual(2);
+  });
+
   it('reuses shared dock materials across repeated dock model builds', () => {
     const state = createDockModelState();
     const first = dockTile?.create3DModel?.({

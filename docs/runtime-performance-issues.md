@@ -32,6 +32,10 @@ Recent mitigation work:
   matching beam and pane color combinations now reuse one shared emissive
   material bundle instead of recreating identical lighthouse appearance
   materials for every region.
+- `tile-route` road surfaces now resolve through bounded shared painted style
+  variants instead of painting a fresh road and shoulder texture pair for every
+  road region. Road layout still varies by tile, but repeated footpath/cobble/
+  brick style combinations now reuse the same material bundle across regions.
 
 Captured issue reports currently include:
 

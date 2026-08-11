@@ -15,7 +15,6 @@ import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createHostMaterialResolver,
-  createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -234,75 +233,6 @@ const ROAD_DIRECTIONS: RoadConnection[] = [
     inwardZ: -0.22,
   },
 ];
-const resolveRoadStyle = createRegionalMaterialResolver(
-  roadStyleCache,
-  ROAD_REGION_SIZE,
-  ({ regionX, regionY }) => {
-    const tier = Math.floor(hash2D(ROAD_TIER_SEED, regionX, regionY) * 3);
-    const styleType = ['footpath', 'cobble', 'brick'] as const;
-    const roadStyleType = styleType[tier] ?? 'brick';
-    const palette =
-      roadStyleType === 'brick'
-        ? { road: '#a14d34', shoulder: '#6b5d48', accent: '#7a2f1d' }
-        : roadStyleType === 'cobble'
-          ? { road: '#8f8578', shoulder: '#6e7a68', accent: '#5f5b56' }
-          : {
-              road: '#8d6a42',
-              shoulder: pickThresholdColor(
-                hash2D(ROAD_FOOTPATH_SHOULDER_SEED, regionX, regionY),
-                0.5,
-                '#5f7a4d',
-                '#62724a'
-              ),
-              accent: '#5a4025',
-            };
-
-    return createHostMaterialResolver((three: ThreeHostLike): RoadStyle => {
-      const roadTexture = createRoadTexture(
-        three,
-        palette.road,
-        palette.accent,
-        roadStyleType,
-        regionX,
-        regionY
-      );
-      const shoulderTexture = createRoadShoulderTexture(
-        three,
-        palette.shoulder,
-        palette.road,
-        regionX,
-        regionY
-      );
-
-      const style = {
-        roadWidth: roadStyleType === 'footpath' ? 0.24 : 0.3,
-        shoulderWidth: roadStyleType === 'footpath' ? 0.36 : 0.42,
-        roadMaterial: new three.MeshStandardMaterial({
-          color: '#ffffff',
-          map: roadTexture,
-          roughness: 0.95,
-          metalness: roadStyleType === 'cobble' ? 0.04 : 0.02,
-          polygonOffset: true,
-          polygonOffsetFactor: -2,
-          polygonOffsetUnits: -2,
-          side: three.DoubleSide,
-        }),
-        shoulderMaterial: new three.MeshStandardMaterial({
-          color: '#ffffff',
-          map: shoulderTexture,
-          roughness: 0.98,
-          metalness: 0.01,
-          polygonOffset: true,
-          polygonOffsetFactor: -1,
-          polygonOffsetUnits: -1,
-          side: three.DoubleSide,
-        }),
-      };
-      return style;
-    });
-  }
-);
-
 export function createRouteTilePlugin(): RuntimePlugin {
   return createTilePlugin('tile-route', [
     {
@@ -1352,7 +1282,120 @@ function getRoadStyle(
   tileX: number,
   tileY: number
 ): RoadStyle {
-  return resolveRoadStyle(three, tileX, tileY);
+  const regionX = Math.floor(tileX / ROAD_REGION_SIZE);
+  const regionY = Math.floor(tileY / ROAD_REGION_SIZE);
+  const variant = getRoadStyleVariant(regionX, regionY);
+
+  return roadStyleCache
+    .getOrCreate(variant.key, () =>
+      createHostMaterialResolver((host: ThreeHostLike): RoadStyle => {
+        const roadTexture = createRoadTexture(
+          host,
+          variant.palette.road,
+          variant.palette.accent,
+          variant.roadStyleType,
+          variant.patternX,
+          variant.patternY
+        );
+        const shoulderTexture = createRoadShoulderTexture(
+          host,
+          variant.palette.shoulder,
+          variant.palette.road,
+          variant.patternX,
+          variant.patternY
+        );
+
+        return {
+          roadWidth: variant.roadStyleType === 'footpath' ? 0.24 : 0.3,
+          shoulderWidth: variant.roadStyleType === 'footpath' ? 0.36 : 0.42,
+          roadMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: roadTexture,
+            roughness: 0.95,
+            metalness: variant.roadStyleType === 'cobble' ? 0.04 : 0.02,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
+            side: host.DoubleSide,
+          }),
+          shoulderMaterial: new host.MeshStandardMaterial({
+            color: '#ffffff',
+            map: shoulderTexture,
+            roughness: 0.98,
+            metalness: 0.01,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
+            side: host.DoubleSide,
+          }),
+        };
+      })
+    )
+    .createMaterials(three);
+}
+
+function getRoadStyleVariant(
+  regionX: number,
+  regionY: number
+): {
+  key: string;
+  roadStyleType: RoadStyleType;
+  palette: {
+    road: string;
+    shoulder: string;
+    accent: string;
+  };
+  patternX: number;
+  patternY: number;
+} {
+  const tier = Math.floor(hash2D(ROAD_TIER_SEED, regionX, regionY) * 3);
+  const styleType = ['footpath', 'cobble', 'brick'] as const;
+  const roadStyleType = styleType[tier] ?? 'brick';
+  const shoulderVariant =
+    roadStyleType === 'footpath'
+      ? pickThresholdColor(
+          hash2D(ROAD_FOOTPATH_SHOULDER_SEED, regionX, regionY),
+          0.5,
+          '#5f7a4d',
+          '#62724a'
+        )
+      : roadStyleType === 'brick'
+        ? '#6b5d48'
+        : '#6e7a68';
+  const palette =
+    roadStyleType === 'brick'
+      ? { road: '#a14d34', shoulder: '#6b5d48', accent: '#7a2f1d' }
+      : roadStyleType === 'cobble'
+        ? { road: '#8f8578', shoulder: '#6e7a68', accent: '#5f5b56' }
+        : {
+            road: '#8d6a42',
+            shoulder: shoulderVariant,
+            accent: '#5a4025',
+          };
+  const patternX =
+    roadStyleType === 'brick'
+      ? 0
+      : roadStyleType === 'cobble'
+        ? 1
+        : shoulderVariant === '#5f7a4d'
+          ? 2
+          : 3;
+  const patternY =
+    roadStyleType === 'brick'
+      ? 0
+      : roadStyleType === 'cobble'
+        ? 1
+        : shoulderVariant === '#5f7a4d'
+          ? 2
+          : 3;
+
+  return {
+    key: `${roadStyleType}:${shoulderVariant}`,
+    roadStyleType,
+    palette,
+    patternX,
+    patternY,
+  };
 }
 
 function createRoadTexture(
