@@ -20,6 +20,7 @@ import {
   recordPerformanceHistorySample,
   recordRendererChurnSample,
   resolvePerformanceTier,
+  resolvePerformanceTierFromBudgetStatuses,
 } from './debug-panel.ts';
 
 describe('debug panel', () => {
@@ -776,6 +777,15 @@ describe('debug panel', () => {
     expect(resolvePerformanceTier(16.7)).toBe('healthy');
     expect(resolvePerformanceTier(24)).toBe('reduced');
     expect(resolvePerformanceTier(40)).toBe('critical');
+    expect(
+      resolvePerformanceTierFromBudgetStatuses(['ok', 'warning'], 'healthy')
+    ).toBe('reduced');
+    expect(
+      resolvePerformanceTierFromBudgetStatuses(['ok', 'critical'], 'healthy')
+    ).toBe('critical');
+    expect(resolvePerformanceTierFromBudgetStatuses(['ok'], 'reduced')).toBe(
+      'reduced'
+    );
     expect(formatPerformanceTierLabel('healthy')).toBe('Healthy');
     expect(formatPerformanceTierLabel('reduced')).toBe('Reduced');
     expect(formatPerformanceTierLabel('critical')).toBe('Critical');

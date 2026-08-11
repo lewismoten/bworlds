@@ -9,8 +9,8 @@
 - [x] Do not report every percentile from one frame sample.
 - [x] Record a longer frame history before exporting snapshots.
 - [x] Explain why 59 FPS reports a 33.3 ms average frame.
-- [ ] Do not report performance as healthy with critical limits.
-- [ ] Derive performance tier from all active budget limits.
+- [x] Do not report performance as healthy with critical limits.
+- [x] Derive performance tier from all active budget limits.
 - [ ] Validate soft and hard threshold ordering by metric type.
 - [ ] Document whether higher or lower values are better.
 - [ ] Add tests for inverted lower-is-worse limits.

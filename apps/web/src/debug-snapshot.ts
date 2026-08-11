@@ -1,4 +1,8 @@
-import type { DebugSnapshot, PerformanceHistorySample } from './debug-panel.ts';
+import {
+  resolvePerformanceTierFromBudgetStatuses,
+  type DebugSnapshot,
+  type PerformanceHistorySample,
+} from './debug-panel.ts';
 import type { GraphicsCapabilitiesSummary } from './graphics-capabilities.ts';
 import type { LodThresholdSummary } from '@bworlds/render3d';
 
@@ -469,7 +473,16 @@ export function buildDebugSnapshotExport(
       p99FrameMs: percentileFrameMs.p99,
       worstRecentFrameMs: options.snapshot.worstRecentFrameMs,
       targetFrameMs: 1000 / options.snapshot.targetFps,
-      performanceTier: options.snapshot.performanceTier,
+      performanceTier: resolvePerformanceTierFromBudgetStatuses(
+        [
+          resourceBudgetSnapshot.limits.frameMs.status,
+          resourceBudgetSnapshot.limits.visibilityRadius.status,
+          resourceBudgetSnapshot.limits.pendingBuildBudgetMs.status,
+          resourceBudgetSnapshot.limits.pendingBuildTiles.status,
+          resourceBudgetSnapshot.limits.estimatedGpuMemoryBytes.status,
+        ],
+        options.snapshot.performanceTier
+      ),
       framesOver16_7Ms: countFramesOver(frameSamples, 16.7),
       framesOver33_3Ms: countFramesOver(frameSamples, 33.3),
       framesOver50Ms: countFramesOver(frameSamples, 50),

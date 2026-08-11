@@ -130,6 +130,7 @@ import {
   getUnloadedRegionWarnings,
   getWorkQueueWarnings,
   resolvePerformanceTier,
+  resolvePerformanceTierFromBudgetStatuses,
   recordHeapUsageSample,
   recordMaterialGrowthSample,
   recordPerformanceHistorySample,
@@ -2292,6 +2293,8 @@ function collectCurrentDebugSnapshot(
   const performanceStats = performance as PerformanceWithMemory;
   const devicePixelRatio = window.devicePixelRatio || 1;
   const appliedRenderPixelRatio = Math.min(devicePixelRatio, 2);
+  const renderBudgetCaps = getRenderBudgetCaps(renderBudgetState);
+  const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
 
   if (options.recordDiagnostics) {
     recordMaterialGrowthSample(debugResourceTrendState.materialSamples, {
@@ -2327,7 +2330,36 @@ function collectCurrentDebugSnapshot(
     frameMs: renderBudgetState.currentFrameMs,
     worstRecentFrameMs: renderBudgetState.worstRecentFrameMs,
     targetFps: renderBudgetState.targetFps,
-    performanceTier: resolvePerformanceTier(renderBudgetState.smoothedFrameMs),
+    performanceTier: resolvePerformanceTierFromBudgetStatuses(
+      [
+        getIncreasingLimitStatus(
+          renderBudgetState.smoothedFrameMs,
+          renderBudgetCaps.frameMs.soft,
+          renderBudgetCaps.frameMs.hard
+        ),
+        getDecreasingLimitStatus(
+          renderBudgetState.visibilityRadius,
+          renderBudgetCaps.visibilityRadius.full,
+          renderBudgetCaps.visibilityRadius.minimum
+        ),
+        getDecreasingLimitStatus(
+          pendingWorldBuildBudget.pendingBuildBudgetMs,
+          renderBudgetCaps.pendingBuildBudgetMs.maximum,
+          renderBudgetCaps.pendingBuildBudgetMs.minimum
+        ),
+        getDecreasingLimitStatus(
+          pendingWorldBuildBudget.maxPendingBuildTiles,
+          renderBudgetCaps.pendingBuildTiles.soft,
+          renderBudgetCaps.pendingBuildTiles.hard
+        ),
+        getIncreasingLimitStatus(
+          renderBudgetState.estimatedGpuMemoryBytes,
+          renderBudgetCaps.estimatedGpuMemoryBytes.soft,
+          renderBudgetCaps.estimatedGpuMemoryBytes.hard
+        ),
+      ],
+      resolvePerformanceTier(renderBudgetState.smoothedFrameMs)
+    ),
     renderQualityLevel: formatRenderQualityLevel(
       getRenderQualityLevel(renderBudgetState)
     ),
@@ -2580,6 +2612,34 @@ function collectCurrentDebugSnapshot(
 
   debugSnapshotState.latestSnapshot = { ...debugSnapshot };
   return debugSnapshot;
+}
+
+function getIncreasingLimitStatus(
+  current: number,
+  softLimit: number,
+  hardLimit: number
+): 'ok' | 'warning' | 'critical' {
+  if (current >= hardLimit) {
+    return 'critical';
+  }
+  if (current >= softLimit) {
+    return 'warning';
+  }
+  return 'ok';
+}
+
+function getDecreasingLimitStatus(
+  current: number,
+  fullValue: number,
+  hardLimit: number
+): 'ok' | 'warning' | 'critical' {
+  if (current <= hardLimit) {
+    return 'critical';
+  }
+  if (current < fullValue) {
+    return 'warning';
+  }
+  return 'ok';
 }
 
 function downloadCurrentDebugSnapshot(): void {

@@ -184,6 +184,8 @@ export type PerformanceHistorySample = {
   generationQueueSize: number;
 };
 
+export type PerformanceBudgetLimitStatus = 'ok' | 'warning' | 'critical';
+
 export function normalizeWorldSeed(
   seed: string | undefined,
   fallback: string
@@ -308,6 +310,25 @@ export function resolvePerformanceTier(
     return 'critical';
   }
   if (frameMs >= 1000 / 42) {
+    return 'reduced';
+  }
+  return 'healthy';
+}
+
+export function resolvePerformanceTierFromBudgetStatuses(
+  statuses: PerformanceBudgetLimitStatus[],
+  fallbackTier: DebugSnapshot['performanceTier'] = 'healthy'
+): DebugSnapshot['performanceTier'] {
+  if (
+    fallbackTier === 'critical' ||
+    statuses.some((status) => status === 'critical')
+  ) {
+    return 'critical';
+  }
+  if (
+    fallbackTier === 'reduced' ||
+    statuses.some((status) => status === 'warning')
+  ) {
     return 'reduced';
   }
   return 'healthy';
