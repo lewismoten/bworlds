@@ -51,7 +51,7 @@ export function stateLeadMotifInFirstASection(options: {
   applyLeadMotifPhraseStatements(updatedNotes, options);
   applyLeadMotifVariationInAprimeSection(updatedNotes, options);
   applyLeadMotifFragmentsInLaterSections(updatedNotes, options);
-  applyLeadMotifReturnNearEnding(updatedNotes, options);
+  applyLeadMotifReturnsNearEnding(updatedNotes, options);
   updatedNotes.sort((left, right) => {
     if (left.startMs !== right.startMs) {
       return left.startMs - right.startMs;
@@ -288,7 +288,7 @@ function applyLeadMotifFragmentsInLaterSections(
   }
 }
 
-function applyLeadMotifReturnNearEnding(
+function applyLeadMotifReturnsNearEnding(
   notes: ProceduralMusicNote[],
   options: {
     sections: readonly ProceduralMusicSongSection[];
@@ -297,18 +297,23 @@ function applyLeadMotifReturnNearEnding(
     theme: ProceduralMusicSongMotifTheme;
   }
 ): void {
-  const returnSection =
-    options.sections.find((section) => section.id === 'return') ??
-    options.sections.find((section) => section.id === 'outro');
-  if (!returnSection || options.leadMotif.length === 0) {
+  if (options.leadMotif.length === 0) {
     return;
   }
 
-  applyMotifToPhraseWindow(notes, {
-    ...resolveSongSectionPhraseWindow(returnSection, options.songStartMs, 0),
-    leadMotif: options.leadMotif,
-    theme: options.theme,
-  });
+  for (const sectionId of ['return', 'outro'] as const) {
+    const section = options.sections.find(
+      (candidate) => candidate.id === sectionId
+    );
+    if (!section) {
+      continue;
+    }
+    applyMotifToPhraseWindow(notes, {
+      ...resolveSongSectionPhraseWindow(section, options.songStartMs, 0),
+      leadMotif: options.leadMotif,
+      theme: options.theme,
+    });
+  }
 }
 
 function applyMotifToPhraseWindow(

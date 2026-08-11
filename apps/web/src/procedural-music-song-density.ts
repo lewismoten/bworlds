@@ -149,7 +149,10 @@ function pruneMeasureRoleNotes(
   ) {
     keepSet.add(noteIndexes[protectedIndex]!);
   }
-  if (options.protectPhraseBoundary || options.maxNoteCount > 1) {
+  if (
+    options.protectPhraseBoundary ||
+    (options.maxNoteCount > 1 && keepSet.size < options.maxNoteCount)
+  ) {
     keepSet.add(noteIndexes[noteIndexes.length - 1]!);
   }
 
@@ -268,6 +271,9 @@ function resolveProtectedLeadingNoteCount(
     measureIndex < 2
   ) {
     return 2;
+  }
+  if (role === 'lead' && sectionId === 'outro' && measureIndex === 0) {
+    return 4;
   }
   return 0;
 }

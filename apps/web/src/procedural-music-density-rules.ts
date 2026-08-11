@@ -58,7 +58,7 @@ const SECTION_MEASURE_DENSITY_TARGETS: Partial<
   },
   outro: {
     harmony: [3, 2, 2, 2, 2, 1, 1, 1],
-    lead: [3, 3, 2, 2, 2, 2, 1, 1],
+    lead: [4, 3, 2, 2, 2, 2, 1, 1],
     percussion: [0, 0, 0, 0, 0, 0, 0, 0],
   },
 };

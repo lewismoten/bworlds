@@ -207,4 +207,29 @@ describe('procedural music song structure motifs', () => {
       expect(closing!.endRatio).toBeLessThan(1);
     }
   });
+
+  it('reuses the opening motif pitches again in both Return and Outro', () => {
+    const song = REPRESENTATIVE_PLAINS_EXPLORATION_SONG;
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionReturn = song.sections.find(
+      (section) => section.id === 'return'
+    )!;
+    const sectionOutro = song.sections.find(
+      (section) => section.id === 'outro'
+    )!;
+    const openingPhraseA = collectLeadPhraseOpening(song, sectionA, 0);
+    const openingPhraseReturn = collectLeadPhraseOpening(
+      song,
+      sectionReturn,
+      0
+    );
+    const openingPhraseOutro = collectLeadPhraseOpening(song, sectionOutro, 0);
+
+    expect(openingPhraseReturn.map((note) => note.midiNote)).toEqual(
+      openingPhraseA.map((note) => note.midiNote)
+    );
+    expect(openingPhraseOutro.map((note) => note.midiNote)).toEqual(
+      openingPhraseA.map((note) => note.midiNote)
+    );
+  });
 });

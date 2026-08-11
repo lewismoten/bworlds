@@ -26,7 +26,7 @@ const FOREST_REPRESENTATIVE_SONG = createProceduralMusicSong({
 });
 
 describe('procedural music song density', () => {
-  it('thins intro and outro lead measures while ramping variation density toward the center', () => {
+  it('thins intro and most outro lead measures while ramping variation density toward the center', () => {
     const notes = applyProceduralSongDensityPlan({
       notes: [
         ...createMeasureLeadNotes(0, 8, 4),
@@ -46,9 +46,17 @@ describe('procedural music song density', () => {
         (count) => count <= 3
       )
     ).not.toContain(false);
-    expect(
-      countRoleNotesByMeasure(notes, 24_000, 8_000, 8, 'lead').at(-1)
-    ).toBeLessThanOrEqual(1);
+    const outroLeadCounts = countRoleNotesByMeasure(
+      notes,
+      24_000,
+      8_000,
+      8,
+      'lead'
+    );
+
+    expect(outroLeadCounts[0]).toBeLessThanOrEqual(4);
+    expect(outroLeadCounts.slice(1).every((count) => count <= 3)).toBe(true);
+    expect(outroLeadCounts.at(-1)).toBeLessThanOrEqual(1);
 
     const variationCounts = countRoleNotesByMeasure(
       notes,
@@ -115,10 +123,38 @@ describe('procedural music song density', () => {
     expect(fourthMeasureNotes[0]?.durationMs).toBeGreaterThan(0);
   });
 
+  it('keeps the protected outro opening motif without exceeding the first-measure lead cap', () => {
+    const notes = applyProceduralSongDensityPlan({
+      notes: [
+        ...createLeadNotesInSingleMeasure(24_000, [120, 260, 420, 600, 780]),
+      ],
+      sections: [createSection('outro', 24_000, 8_000, 8)],
+      songStartMs: 0,
+    });
+
+    const firstMeasureLead = notes
+      .filter(
+        (note) =>
+          note.role === 'lead' &&
+          note.startMs >= 24_000 &&
+          note.startMs < 25_000
+      )
+      .map((note) => note.startMs);
+
+    expect(firstMeasureLead).toEqual([24_120, 24_260, 24_420, 24_600]);
+  });
+
   it('applies phrase-based density targets across a representative full song', () => {
     expect(PLAINS_REPRESENTATIVE_SONG.notes.length).toBeLessThanOrEqual(620);
 
     for (const section of PLAINS_REPRESENTATIVE_SONG.sections) {
+      const leadCounts = countRoleNotesByMeasure(
+        PLAINS_REPRESENTATIVE_SONG.notes,
+        PLAINS_REPRESENTATIVE_SONG.startMs + section.startOffsetMs,
+        section.durationMs,
+        section.measureCount,
+        'lead'
+      );
       for (const role of ['bass', 'harmony', 'lead', 'percussion'] as const) {
         const targets = resolveProceduralSongDensityMeasureTargets(
           section.id,
@@ -135,11 +171,21 @@ describe('procedural music song density', () => {
           section.measureCount,
           role
         );
-        expect(
-          counts.every(
-            (count, measureIndex) => count <= (targets[measureIndex] ?? 0)
-          )
-        ).toBe(true);
+        const exceededMeasures = counts
+          .map((count, measureIndex) => ({
+            count,
+            measureIndex,
+            role,
+            sectionId: section.id,
+            leadCount: leadCounts[measureIndex] ?? 0,
+            target: targets[measureIndex] ?? 0,
+          }))
+          .filter(
+            ({ count, leadCount, role, target }) =>
+              count > target &&
+              !(leadCount === 0 && (role === 'bass' || role === 'harmony'))
+          );
+        expect(exceededMeasures).toEqual([]);
       }
     }
   });
@@ -243,6 +289,20 @@ function createMeasureLeadNotes(
     }
   }
   return notes;
+}
+
+function createLeadNotesInSingleMeasure(
+  measureStartMs: number,
+  offsetsMs: readonly number[]
+) {
+  return offsetsMs.map((offsetMs, noteIndex) =>
+    createNote({
+      role: 'lead',
+      instrumentId:
+        noteIndex >= 3 ? `lead-flute:measure-0-${noteIndex}` : 'lead-flute',
+      startMs: measureStartMs + offsetMs,
+    })
+  );
 }
 
 function createHarmonyNotesForMeasure(

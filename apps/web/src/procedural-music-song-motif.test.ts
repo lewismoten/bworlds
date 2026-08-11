@@ -423,7 +423,7 @@ describe('procedural music song motif', () => {
     ]);
   });
 
-  it('uses motif fragments in B and Variation, then returns to the original motif near the ending', () => {
+  it('uses motif fragments in B and Variation, then returns to the original motif in both Return and Outro', () => {
     const notes: ProceduralMusicNote[] = [
       createLeadNote(40_100, 392),
       createLeadNote(41_100, 440),
@@ -437,6 +437,10 @@ describe('procedural music song motif', () => {
       createLeadNote(73_100, 440),
       createLeadNote(74_100, 493.883),
       createLeadNote(75_100, 440),
+      createLeadNote(80_100, 392),
+      createLeadNote(81_100, 440),
+      createLeadNote(82_100, 493.883),
+      createLeadNote(83_100, 440),
     ];
     const sections: ProceduralMusicSongSection[] = [
       createSection('intro', 0, 8_000, 8),
@@ -465,6 +469,11 @@ describe('procedural music song motif', () => {
         startMeasure: 73,
         endMeasure: 80,
       },
+      {
+        ...createSection('outro', 80_000, 8_000, 8),
+        startMeasure: 81,
+        endMeasure: 88,
+      },
     ];
     const theme = {
       rootHz: 196,
@@ -490,10 +499,15 @@ describe('procedural music song motif', () => {
       0,
       4
     );
+    const outroLead = collectSectionLeadMidi(updated, 80_000, 88_000).slice(
+      0,
+      4
+    );
 
     expect(bLead).toEqual([67, 71, 74]);
     expect(variationLead).toEqual([71, 74, 71]);
     expect(returnLead).toEqual([67, 71, 74, 71]);
+    expect(outroLead).toEqual([67, 71, 74, 71]);
   });
 });
 
