@@ -1,4 +1,5 @@
 import {
+  resolvePerformanceTierForRenderQuality,
   resolvePerformanceTierFromBudgetStatuses,
   type DebugSnapshot,
   type PerformanceHistorySample,
@@ -491,15 +492,18 @@ export function buildDebugSnapshotExport(
       p99FrameMs: percentileFrameMs.p99,
       worstRecentFrameMs: options.snapshot.worstRecentFrameMs,
       targetFrameMs: 1000 / options.snapshot.targetFps,
-      performanceTier: resolvePerformanceTierFromBudgetStatuses(
-        [
-          resourceBudgetSnapshot.limits.frameMs.status,
-          resourceBudgetSnapshot.limits.visibilityRadius.status,
-          resourceBudgetSnapshot.limits.pendingBuildBudgetMs.status,
-          resourceBudgetSnapshot.limits.pendingBuildTiles.status,
-          resourceBudgetSnapshot.limits.estimatedGpuMemoryBytes.status,
-        ],
-        options.snapshot.performanceTier
+      performanceTier: resolvePerformanceTierForRenderQuality(
+        resolvePerformanceTierFromBudgetStatuses(
+          [
+            resourceBudgetSnapshot.limits.frameMs.status,
+            resourceBudgetSnapshot.limits.visibilityRadius.status,
+            resourceBudgetSnapshot.limits.pendingBuildBudgetMs.status,
+            resourceBudgetSnapshot.limits.pendingBuildTiles.status,
+            resourceBudgetSnapshot.limits.estimatedGpuMemoryBytes.status,
+          ],
+          options.snapshot.performanceTier
+        ),
+        options.snapshot.renderQualityLevel
       ),
       framesOver16_7Ms: countFramesOver(frameSamples, 16.7),
       framesOver33_3Ms: countFramesOver(frameSamples, 33.3),
@@ -530,8 +534,7 @@ export function buildDebugSnapshotExport(
       renderedInstanceSummary: options.snapshot.renderedInstanceSummary ?? '',
       topInstancingWarningPlugin:
         options.snapshot.instancingWarningTopPluginLabel?.trim() || null,
-      instancingWarningSummary:
-        options.snapshot.instancingWarningSummary ?? '',
+      instancingWarningSummary: options.snapshot.instancingWarningSummary ?? '',
       visibleMeshCount: options.snapshot.visibleMeshCount,
     },
     sceneGraph: {
@@ -586,8 +589,7 @@ export function buildDebugSnapshotExport(
       uniqueMaterialCount: options.snapshot.materialCount,
       topInstancingWarningPlugin:
         options.snapshot.instancingWarningTopPluginLabel?.trim() || null,
-      instancingWarningSummary:
-        options.snapshot.instancingWarningSummary ?? '',
+      instancingWarningSummary: options.snapshot.instancingWarningSummary ?? '',
       topMaterialPlugin:
         options.snapshot.materialTopPluginLabel?.trim() || null,
       materialSummary: options.snapshot.materialSummary ?? '',

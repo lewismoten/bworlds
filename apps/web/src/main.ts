@@ -130,6 +130,7 @@ import {
   getUnloadedRegionWarnings,
   getWorkQueueWarnings,
   resolvePerformanceTier,
+  resolvePerformanceTierForRenderQuality,
   resolvePerformanceTierFromBudgetStatuses,
   recordHeapUsageSample,
   recordMaterialGrowthSample,
@@ -2355,35 +2356,38 @@ function collectCurrentDebugSnapshot(
     frameMs: renderBudgetState.currentFrameMs,
     worstRecentFrameMs: renderBudgetState.worstRecentFrameMs,
     targetFps: renderBudgetState.targetFps,
-    performanceTier: resolvePerformanceTierFromBudgetStatuses(
-      [
-        getIncreasingLimitStatus(
-          renderBudgetState.smoothedFrameMs,
-          renderBudgetCaps.frameMs.soft,
-          renderBudgetCaps.frameMs.hard
-        ),
-        getDecreasingLimitStatus(
-          renderBudgetState.visibilityRadius,
-          renderBudgetCaps.visibilityRadius.full,
-          renderBudgetCaps.visibilityRadius.minimum
-        ),
-        getDecreasingLimitStatus(
-          pendingWorldBuildBudget.pendingBuildBudgetMs,
-          renderBudgetCaps.pendingBuildBudgetMs.soft,
-          renderBudgetCaps.pendingBuildBudgetMs.minimum
-        ),
-        getDecreasingLimitStatus(
-          pendingWorldBuildBudget.maxPendingBuildTiles,
-          renderBudgetCaps.pendingBuildTiles.soft,
-          renderBudgetCaps.pendingBuildTiles.hard
-        ),
-        getIncreasingLimitStatus(
-          renderBudgetState.estimatedGpuMemoryBytes,
-          renderBudgetCaps.estimatedGpuMemoryBytes.soft,
-          renderBudgetCaps.estimatedGpuMemoryBytes.hard
-        ),
-      ],
-      resolvePerformanceTier(renderBudgetState.smoothedFrameMs)
+    performanceTier: resolvePerformanceTierForRenderQuality(
+      resolvePerformanceTierFromBudgetStatuses(
+        [
+          getIncreasingLimitStatus(
+            renderBudgetState.smoothedFrameMs,
+            renderBudgetCaps.frameMs.soft,
+            renderBudgetCaps.frameMs.hard
+          ),
+          getDecreasingLimitStatus(
+            renderBudgetState.visibilityRadius,
+            renderBudgetCaps.visibilityRadius.full,
+            renderBudgetCaps.visibilityRadius.minimum
+          ),
+          getDecreasingLimitStatus(
+            pendingWorldBuildBudget.pendingBuildBudgetMs,
+            renderBudgetCaps.pendingBuildBudgetMs.soft,
+            renderBudgetCaps.pendingBuildBudgetMs.minimum
+          ),
+          getDecreasingLimitStatus(
+            pendingWorldBuildBudget.maxPendingBuildTiles,
+            renderBudgetCaps.pendingBuildTiles.soft,
+            renderBudgetCaps.pendingBuildTiles.hard
+          ),
+          getIncreasingLimitStatus(
+            renderBudgetState.estimatedGpuMemoryBytes,
+            renderBudgetCaps.estimatedGpuMemoryBytes.soft,
+            renderBudgetCaps.estimatedGpuMemoryBytes.hard
+          ),
+        ],
+        resolvePerformanceTier(renderBudgetState.smoothedFrameMs)
+      ),
+      renderQualityLevel
     ),
     renderQualityLevel,
     renderQualityLimiters: renderQualityLimiters.join(', '),

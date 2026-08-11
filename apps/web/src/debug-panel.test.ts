@@ -20,6 +20,7 @@ import {
   recordPerformanceHistorySample,
   recordRendererChurnSample,
   resolvePerformanceTier,
+  resolvePerformanceTierForRenderQuality,
   resolvePerformanceTierFromBudgetStatuses,
 } from './debug-panel.ts';
 
@@ -798,6 +799,15 @@ describe('debug panel', () => {
     ).toBe('critical');
     expect(resolvePerformanceTierFromBudgetStatuses(['ok'], 'reduced')).toBe(
       'reduced'
+    );
+    expect(resolvePerformanceTierForRenderQuality('healthy', 'Reduced')).toBe(
+      'reduced'
+    );
+    expect(resolvePerformanceTierForRenderQuality('healthy', 'Full')).toBe(
+      'healthy'
+    );
+    expect(resolvePerformanceTierForRenderQuality('critical', 'Reduced')).toBe(
+      'critical'
     );
     expect(formatPerformanceTierLabel('healthy')).toBe('Healthy');
     expect(formatPerformanceTierLabel('reduced')).toBe('Reduced');

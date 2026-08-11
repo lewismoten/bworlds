@@ -370,6 +370,17 @@ export function resolvePerformanceTierFromBudgetStatuses(
   return 'healthy';
 }
 
+export function resolvePerformanceTierForRenderQuality(
+  performanceTier: DebugSnapshot['performanceTier'],
+  renderQualityLevel: string | undefined
+): DebugSnapshot['performanceTier'] {
+  const normalizedLevel = renderQualityLevel?.trim().toLowerCase();
+  if (!normalizedLevel || normalizedLevel === 'full') {
+    return performanceTier;
+  }
+  return performanceTier === 'healthy' ? 'reduced' : performanceTier;
+}
+
 export function formatPerformanceTierLabel(
   performanceTier: DebugSnapshot['performanceTier']
 ): string {
