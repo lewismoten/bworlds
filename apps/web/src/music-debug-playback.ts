@@ -13,6 +13,7 @@ export type MusicDebugPlaybackAdapter = {
     region?: MusicDebugPlaybackRegion | null,
     options?: {
       roles?: readonly MusicDebugPlaybackRole[];
+      percussionVoiceIds?: readonly string[] | null;
       dry?: boolean;
     }
   ): number | void;
@@ -27,6 +28,7 @@ export type MusicDebugPlaybackController = {
       loop?: boolean;
       startOffsetMs?: number;
       roles?: readonly MusicDebugPlaybackRole[];
+      percussionVoiceIds?: readonly string[] | null;
       dry?: boolean;
     }
   ): void;
@@ -37,6 +39,7 @@ export type MusicDebugPlaybackController = {
       loop?: boolean;
       startOffsetMs?: number;
       roles?: readonly MusicDebugPlaybackRole[];
+      percussionVoiceIds?: readonly string[] | null;
       dry?: boolean;
     }
   ): void;
@@ -93,6 +96,7 @@ export function createMusicDebugPlaybackController(options: {
     region?: MusicDebugPlaybackRegion | null;
     repeatRegion?: MusicDebugPlaybackRegion | null;
     roles?: readonly MusicDebugPlaybackRole[];
+    percussionVoiceIds?: readonly string[] | null;
     dry?: boolean;
   }): void {
     const durationMs = resolveMusicDebugPlaybackDurationMs(
@@ -111,6 +115,7 @@ export function createMusicDebugPlaybackController(options: {
           options.snapshot,
           options.repeatRegion,
           options.roles,
+          options.percussionVoiceIds,
           options.dry
         );
         schedulePlaybackStop({
@@ -118,6 +123,7 @@ export function createMusicDebugPlaybackController(options: {
           region: options.repeatRegion,
           repeatRegion: options.repeatRegion,
           roles: options.roles,
+          percussionVoiceIds: options.percussionVoiceIds,
           dry: options.dry,
         });
         return;
@@ -131,11 +137,16 @@ export function createMusicDebugPlaybackController(options: {
     snapshot: MusicDebugSnapshot,
     region?: MusicDebugPlaybackRegion | null,
     roles?: readonly MusicDebugPlaybackRole[],
+    percussionVoiceIds?: readonly string[] | null,
     dry = false
   ): void {
     const startedAtMs =
-      (roles || dry
-        ? options.playback.play(snapshot, region, { roles, dry })
+      (roles || percussionVoiceIds || dry
+        ? options.playback.play(snapshot, region, {
+            roles,
+            percussionVoiceIds,
+            dry,
+          })
         : options.playback.play(snapshot, region)) ?? now() + playbackLeadMs;
     options.onPlaybackCycle?.({
       snapshot,
@@ -150,6 +161,7 @@ export function createMusicDebugPlaybackController(options: {
       loop?: boolean;
       startOffsetMs?: number;
       roles?: readonly MusicDebugPlaybackRole[];
+      percussionVoiceIds?: readonly string[] | null;
       dry?: boolean;
     }
   ): void {
@@ -190,6 +202,7 @@ export function createMusicDebugPlaybackController(options: {
       snapshot,
       introRegion,
       startOptions?.roles,
+      startOptions?.percussionVoiceIds,
       startOptions?.dry === true
     );
     setPlaying(true);
@@ -198,6 +211,7 @@ export function createMusicDebugPlaybackController(options: {
       region: introRegion,
       repeatRegion: loopEnabled ? loopRegion : null,
       roles: startOptions?.roles,
+      percussionVoiceIds: startOptions?.percussionVoiceIds,
       dry: startOptions?.dry === true,
     });
   }

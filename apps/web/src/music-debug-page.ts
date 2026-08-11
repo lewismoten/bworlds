@@ -55,6 +55,13 @@ import {
   drawMusicDebugTimeline,
   resolveMusicDebugTimelineSeekOffset,
 } from './music-debug-timeline.ts';
+import {
+  normalizeMusicDebugPercussionPlaybackState,
+  resolveMusicDebugPercussionVoiceIdsForPlayback,
+  toggleMusicDebugPercussionMutedVoice,
+  toggleMusicDebugPercussionSoloVoice,
+  type MusicDebugPercussionPlaybackState,
+} from './music-debug-percussion-playback.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
 const pageLifecycleAbortController =
@@ -127,6 +134,8 @@ const runtimePerformanceTrackingPreferences =
 let previewOffsetMs = 0;
 let playbackVisualState: MusicDebugPlaybackVisualState | null = null;
 let playbackFrameHandle: number | null = null;
+let percussionPlaybackState: MusicDebugPercussionPlaybackState =
+  normalizeMusicDebugPercussionPlaybackState(null);
 const pagePersistence = createMusicDebugPagePersistenceController({
   storage: globalThis.localStorage ?? null,
   hmr: import.meta.hot,
@@ -234,6 +243,29 @@ function resolveSelectedDryPlaybackEnabled(
   return checked === true;
 }
 
+function resolveSelectedPercussionVoiceIds(
+  snapshot = resolveCurrentSnapshot()
+): readonly string[] | null {
+  if (!snapshot) {
+    return null;
+  }
+  return resolveMusicDebugPercussionVoiceIdsForPlayback(
+    snapshot,
+    percussionPlaybackState
+  );
+}
+
+function renderSummary(
+  snapshot: ReturnType<typeof resolveCurrentSnapshot>
+): void {
+  if (!summary || !snapshot) {
+    return;
+  }
+  summary.innerHTML = buildMusicDebugSummaryMarkup(snapshot, {
+    percussionPlaybackState,
+  });
+}
+
 function stopPlaybackFrameLoop(): void {
   if (playbackFrameHandle === null) {
     return;
@@ -285,6 +317,7 @@ function seekToOffset(nextOffsetMs: number): void {
         loopEnabled: loopInput?.checked === true,
       }),
       roles: resolveSelectedPlaybackRoles(),
+      percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
       dry: resolveSelectedDryPlaybackEnabled(),
     });
     persistPageState(true);
@@ -305,9 +338,7 @@ const pageState = createMusicDebugPageState({
     return snapshot;
   },
   onSnapshot(nextSnapshot) {
-    if (summary) {
-      summary.innerHTML = buildMusicDebugSummaryMarkup(nextSnapshot);
-    }
+    renderSummary(nextSnapshot);
     if (playbackController.isPlaying()) {
       playbackController.start(nextSnapshot, {
         ...resolveMusicDebugLivePlaybackIntent({
@@ -318,6 +349,7 @@ const pageState = createMusicDebugPageState({
           nowMs: performance.now(),
         }),
         roles: resolveSelectedPlaybackRoles(),
+        percussionVoiceIds: resolveSelectedPercussionVoiceIds(nextSnapshot),
         dry: resolveSelectedDryPlaybackEnabled(),
       });
       return;
@@ -485,6 +517,9 @@ function applyPersistedPageState(): void {
   if (playbackDryInput) {
     playbackDryInput.checked = persistedState.dryPlaybackEnabled;
   }
+  percussionPlaybackState = normalizeMusicDebugPercussionPlaybackState(
+    persistedState.percussionPlaybackState
+  );
 }
 
 function persistPageState(
@@ -498,6 +533,7 @@ function persistPageState(
       playbackVariantSelect?.value
     ),
     dryPlaybackEnabled: resolveSelectedDryPlaybackEnabled(),
+    percussionPlaybackState,
     previewOffsetMs: offsetMs,
     shouldResume,
     scrollY: Math.max(0, Math.round(globalThis.scrollY ?? 0)),
@@ -537,6 +573,7 @@ playButton?.addEventListener('click', () => {
       loopEnabled: loopInput?.checked === true,
     }),
     roles: resolveSelectedPlaybackRoles(),
+    percussionVoiceIds: resolveSelectedPercussionVoiceIds(currentSnapshot),
     dry: resolveSelectedDryPlaybackEnabled(),
   });
 });
@@ -585,6 +622,45 @@ summary?.addEventListener('click', (event) => {
   if (!(target instanceof HTMLButtonElement)) {
     return;
   }
+  const percussionAction = target.dataset.percussionPlaybackAction;
+  const percussionVoiceId = target.dataset.percussionVoiceId;
+  if (
+    percussionAction &&
+    percussionVoiceId &&
+    (percussionAction === 'solo' || percussionAction === 'mute')
+  ) {
+    percussionPlaybackState =
+      percussionAction === 'solo'
+        ? toggleMusicDebugPercussionSoloVoice(
+            percussionPlaybackState,
+            percussionVoiceId
+          )
+        : toggleMusicDebugPercussionMutedVoice(
+            percussionPlaybackState,
+            percussionVoiceId
+          );
+    const snapshot = pageState.refreshNow();
+    renderSummary(snapshot);
+    if (playbackController.isPlaying()) {
+      playbackController.start(snapshot, {
+        ...resolveMusicDebugLivePlaybackIntent({
+          snapshot,
+          playback: playbackVisualState,
+          previewOffsetMs,
+          loopEnabled: loopInput?.checked === true,
+          nowMs: performance.now(),
+        }),
+        roles: resolveSelectedPlaybackRoles(),
+        percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
+        dry: resolveSelectedDryPlaybackEnabled(),
+      });
+    }
+    persistPageState(
+      playbackController.isPlaying(),
+      resolveDisplayedOffsetMs()
+    );
+    return;
+  }
   const previewTarget = normalizeInstrumentPreviewTarget(
     target.dataset.previewId
   );
@@ -630,6 +706,7 @@ playbackVariantSelect?.addEventListener('change', () => {
         nowMs: performance.now(),
       }),
       roles: resolveSelectedPlaybackRoles(),
+      percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
       dry: resolveSelectedDryPlaybackEnabled(),
     });
     persistPageState(true, resolveDisplayedOffsetMs());
@@ -650,6 +727,7 @@ playbackDryInput?.addEventListener('change', () => {
         nowMs: performance.now(),
       }),
       roles: resolveSelectedPlaybackRoles(),
+      percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
       dry: resolveSelectedDryPlaybackEnabled(),
     });
     persistPageState(true, resolveDisplayedOffsetMs());
@@ -686,6 +764,7 @@ scheduleAfterPaint(() => {
         loopEnabled: loopInput?.checked === true,
       }),
       roles: resolveSelectedPlaybackRoles(persistedState.playbackVariant),
+      percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
       dry: resolveSelectedDryPlaybackEnabled(persistedState.dryPlaybackEnabled),
     });
   }

@@ -257,6 +257,9 @@ describe('music debug', () => {
       markup.indexOf('id="music-debug-summary"')
     );
     expect(summary).toContain('Scheduled Notes');
+    expect(summary).toContain('Percussion Voice Playback');
+    expect(summary).toContain('data-percussion-playback-action="solo"');
+    expect(summary).toContain('data-percussion-playback-action="mute"');
     expect(summary).toContain('Song Length');
     expect(summary).toContain('Root MIDI');
     expect(summary).toContain('Measures');
@@ -672,6 +675,60 @@ describe('music debug', () => {
     expect(play.mock.calls.length).toBeGreaterThan(0);
     expect(new Set(play.mock.calls.map(([note]) => note.role))).toEqual(
       new Set(['bass', 'harmony'])
+    );
+  });
+
+  it('can solo a selected percussion voice without dropping non-percussion roles', () => {
+    const snapshot = createMusicDebugSnapshot(
+      {
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 2,
+        clusterY: -1,
+      },
+      2_000
+    );
+    const selectedPercussionVoiceId = snapshot.notes
+      .find(
+        (note) =>
+          note.role === 'percussion' &&
+          note.instrumentId.includes(':perc-kick-35:')
+      )
+      ?.instrumentId.match(/:perc-([a-z-]+-\d+):/)?.[1];
+    const play = vi.fn();
+    const playback = createMusicDebugSongPlayback(
+      {
+        resume: vi.fn(),
+        play,
+        stopAll: vi.fn(),
+      },
+      {
+        now: () => 1_000,
+        scheduleAheadMs: 12,
+        scheduleWindowMs: snapshot.durationMs + 1_000,
+      }
+    );
+
+    expect(selectedPercussionVoiceId).toBeTruthy();
+
+    playback.play(snapshot, null, {
+      percussionVoiceIds: [selectedPercussionVoiceId!],
+    });
+
+    const scheduledRoles = new Set(play.mock.calls.map(([note]) => note.role));
+    const scheduledPercussionVoiceIds = new Set(
+      play.mock.calls
+        .filter(([note]) => note.role === 'percussion')
+        .map(
+          ([note]) => note.instrumentId.match(/:perc-([a-z-]+-\d+):/)?.[1] ?? ''
+        )
+    );
+
+    expect(scheduledRoles.has('lead')).toBe(true);
+    expect(scheduledRoles.has('harmony')).toBe(true);
+    expect(scheduledRoles.has('bass')).toBe(true);
+    expect(scheduledPercussionVoiceIds).toEqual(
+      new Set([selectedPercussionVoiceId])
     );
   });
 

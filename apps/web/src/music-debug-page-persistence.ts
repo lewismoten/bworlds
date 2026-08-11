@@ -12,6 +12,10 @@ import {
   normalizeMusicDebugPlaybackVariant,
   type MusicDebugPlaybackVariant,
 } from './music-debug-playback-variant.ts';
+import {
+  normalizeMusicDebugPercussionPlaybackState,
+  type MusicDebugPercussionPlaybackState,
+} from './music-debug-percussion-playback.ts';
 export { resolveMusicDebugPlaybackResumeOffset } from './music-debug-playback-offset.ts';
 
 const MUSIC_DEBUG_PAGE_STORAGE_KEY = 'bworlds:music-debug-page';
@@ -21,6 +25,7 @@ export type MusicDebugPagePersistenceState = {
   loopEnabled: boolean;
   playbackVariant: MusicDebugPlaybackVariant;
   dryPlaybackEnabled: boolean;
+  percussionPlaybackState: MusicDebugPercussionPlaybackState;
   previewOffsetMs: number;
   shouldResume: boolean;
   scrollY: number;
@@ -110,6 +115,9 @@ export function normalizeMusicDebugPagePersistenceState(
     loopEnabled: value?.loopEnabled === true,
     playbackVariant: normalizeMusicDebugPlaybackVariant(value?.playbackVariant),
     dryPlaybackEnabled: value?.dryPlaybackEnabled === true,
+    percussionPlaybackState: normalizeMusicDebugPercussionPlaybackState(
+      value?.percussionPlaybackState
+    ),
     previewOffsetMs: Math.max(0, Math.round(value?.previewOffsetMs ?? 0)),
     shouldResume: value?.shouldResume === true,
     scrollY: Math.max(0, Math.round(value?.scrollY ?? 0)),

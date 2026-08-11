@@ -140,6 +140,12 @@ import {
   validateMusicDebugSongDna,
   type MusicDebugSongDnaValidation,
 } from './music-debug-song-dna-validation.ts';
+import {
+  buildMusicDebugPercussionPlaybackControlsMarkup,
+  normalizeMusicDebugPercussionPlaybackState,
+  resolveMusicDebugPercussionVoiceId,
+  type MusicDebugPercussionPlaybackState,
+} from './music-debug-percussion-playback.ts';
 
 export type MusicDebugTileKind =
   | 'plains'
@@ -248,6 +254,7 @@ export type MusicDebugSongPlayback = {
     region?: MusicDebugPlaybackRegion | null,
     options?: {
       roles?: readonly MusicDebugPlaybackRole[];
+      percussionVoiceIds?: readonly string[] | null;
       dry?: boolean;
     }
   ): number | void;
@@ -878,8 +885,14 @@ export function buildMusicDebugPendingSummaryMarkup(): string {
 }
 
 export function buildMusicDebugSummaryMarkup(
-  snapshot: MusicDebugSnapshot
+  snapshot: MusicDebugSnapshot,
+  options: {
+    percussionPlaybackState?: MusicDebugPercussionPlaybackState | null;
+  } = {}
 ): string {
+  const percussionPlaybackState = normalizeMusicDebugPercussionPlaybackState(
+    options.percussionPlaybackState
+  );
   return `
     <div class="music-debug-summary-grid">
       <div><dt>Theme</dt><dd>${snapshot.theme.id}</dd></div>
@@ -973,6 +986,10 @@ export function buildMusicDebugSummaryMarkup(
     <div class="music-debug-role-counts">
       <span>Percussion Check ${formatMusicDebugPercussionValidationSummary(snapshot.percussionValidation)}</span>
     </div>
+    ${buildMusicDebugPercussionPlaybackControlsMarkup(
+      snapshot,
+      percussionPlaybackState
+    )}
     ${buildMusicDebugPercussionSubstitutionPanelMarkup(snapshot.notes)}
     <div class="music-debug-role-counts">
       <span>Drum Counts ${formatMusicDebugPercussionVoiceCounts(snapshot.notes)}</span>
@@ -1326,6 +1343,9 @@ export function createMusicDebugSongPlayback(
       const allowedRoles = playbackOptions?.roles
         ? new Set(playbackOptions.roles)
         : null;
+      const allowedPercussionVoiceIds = playbackOptions?.percussionVoiceIds
+        ? new Set(playbackOptions.percussionVoiceIds)
+        : null;
       const dry = playbackOptions?.dry === true;
       playbackGeneration += 1;
       clearScheduledBatch();
@@ -1351,6 +1371,15 @@ export function createMusicDebugSongPlayback(
           }
           noteIndex += 1;
           if (allowedRoles && !allowedRoles.has(note.role)) {
+            continue;
+          }
+          if (
+            note.role === 'percussion' &&
+            allowedPercussionVoiceIds &&
+            !allowedPercussionVoiceIds.has(
+              resolveMusicDebugPercussionVoiceId(note.instrumentId) ?? ''
+            )
+          ) {
             continue;
           }
           const scheduledStartMs = playbackStartMs + (note.startMs - offsetMs);

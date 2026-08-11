@@ -156,8 +156,12 @@
 
 ## Debugging Workflow
 
-- [ ] Add solo controls for every drum voice.
-- [ ] Add mute controls for every drum voice.
+- [x] Add solo controls for every drum voice.
+- [x] Add mute controls for every drum voice.
+      The music debug page now persists per-voice solo/mute state, renders
+      dedicated controls for each resolved percussion voice, and applies the
+      filter immediately to live playback without dropping the non-percussion
+      layers from the selected playback variant.
 - [ ] Add a drum-kit audition pattern.
 - [x] Add a melody-only playback option.
 - [x] Add a bass-and-harmony playback option.
