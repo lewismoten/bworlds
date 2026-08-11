@@ -3,6 +3,10 @@ import {
   SOUND_DEBUG_PRESETS,
   type SoundDebugSnapshot,
 } from './sound-debug-presets.ts';
+import {
+  createSoundDebugWavExportMetrics,
+  type SoundDebugExportMetrics,
+} from './sound-debug-export-metrics.ts';
 import { buildSoundDebugWaveformMarkup } from './sound-debug-waveform.ts';
 import { renderProceduralSoundToBufferData } from './procedural-sound-render.ts';
 
@@ -11,6 +15,7 @@ const SOUND_DEBUG_SAMPLE_RATE = 48_000;
 export type SoundDebugRenderableSnapshot = SoundDebugSnapshot & {
   sampleRate: number;
   samples: Float32Array;
+  exportMetrics: SoundDebugExportMetrics;
 };
 
 export function createSoundDebugRenderableSnapshot(
@@ -21,13 +26,20 @@ export function createSoundDebugRenderableSnapshot(
     throw new Error(`Sound preset "${snapshot.preset.id}" is not renderable.`);
   }
 
+  const sampleRate = SOUND_DEBUG_SAMPLE_RATE;
+  const samples = renderProceduralSoundToBufferData(
+    snapshot.effect,
+    sampleRate
+  );
+
   return {
     ...snapshot,
-    sampleRate: SOUND_DEBUG_SAMPLE_RATE,
-    samples: renderProceduralSoundToBufferData(
-      snapshot.effect,
-      SOUND_DEBUG_SAMPLE_RATE
-    ),
+    sampleRate,
+    samples,
+    exportMetrics: createSoundDebugWavExportMetrics({
+      sampleCount: samples.length,
+      sampleRate,
+    }),
   };
 }
 
@@ -49,6 +61,14 @@ export function buildSoundDebugShellMarkup(
       </button>
     `;
   }).join('');
+  const exportWarning = snapshot.exportMetrics.exceedsWarningLimit
+    ? `
+      <p class="sound-debug-export-warning" role="status">
+        Preview export size ${snapshot.exportMetrics.byteLengthLabel} exceeds the
+        quick-audition target of ${snapshot.exportMetrics.warningByteLimitLabel}.
+      </p>
+    `
+    : '';
 
   return `
     <main class="sound-debug-shell">
@@ -78,6 +98,7 @@ export function buildSoundDebugShellMarkup(
               <button id="sound-debug-download" type="button">Download WAV</button>
             </div>
           </div>
+          ${exportWarning}
           <section class="sound-debug-waveform" aria-label="Waveform preview">
             ${buildSoundDebugWaveformMarkup(snapshot.samples)}
           </section>
@@ -88,7 +109,8 @@ export function buildSoundDebugShellMarkup(
             <div><dt>Family</dt><dd>${snapshot.details.family}</dd></div>
             <div><dt>Recipe</dt><dd>${snapshot.details.recipeId}</dd></div>
             <div><dt>Waveform</dt><dd>${snapshot.effect.waveform}</dd></div>
-            <div><dt>Duration</dt><dd>${snapshot.effect.durationMs}ms</dd></div>
+            <div><dt>Preview Duration</dt><dd>${snapshot.exportMetrics.durationLabel}</dd></div>
+            <div><dt>Preview WAV Size</dt><dd>${snapshot.exportMetrics.byteLengthLabel}</dd></div>
             <div><dt>Layers</dt><dd>${snapshot.effect.layers?.length ?? 0}</dd></div>
             <div class="sound-debug-details-wide"><dt>Identity</dt><dd>${snapshot.details.signature}</dd></div>
           </dl>
