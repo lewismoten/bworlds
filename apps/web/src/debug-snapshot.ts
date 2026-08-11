@@ -373,6 +373,8 @@ export type DebugSnapshotExport = {
     uniqueMaterialCount: number;
     topMaterialPlugin: string | null;
     materialSummary: string;
+    topSceneUniqueMaterialPlugin: string | null;
+    sceneUniqueMaterialSummary: string;
     sharedMaterialCount: number;
     clonedMaterialCount: number;
     topClonedMaterialPlugin: string | null;
@@ -577,6 +579,10 @@ export function buildDebugSnapshotExport(
       topMaterialPlugin:
         options.snapshot.materialTopPluginLabel?.trim() || null,
       materialSummary: options.snapshot.materialSummary ?? '',
+      topSceneUniqueMaterialPlugin:
+        options.snapshot.sceneUniqueMaterialTopPluginLabel?.trim() || null,
+      sceneUniqueMaterialSummary:
+        options.snapshot.sceneUniqueMaterialSummary ?? '',
       sharedMaterialCount: options.snapshot.sharedMaterialCount ?? 0,
       clonedMaterialCount: options.snapshot.clonedMaterialCount ?? 0,
       topClonedMaterialPlugin:

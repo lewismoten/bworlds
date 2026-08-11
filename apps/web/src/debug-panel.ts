@@ -60,6 +60,8 @@ export type DebugSnapshot = {
   renderedInstanceSummary?: string;
   materialTopPluginLabel?: string;
   materialSummary?: string;
+  sceneUniqueMaterialTopPluginLabel?: string;
+  sceneUniqueMaterialSummary?: string;
   clonedMaterialTopPluginLabel?: string;
   clonedMaterialSummary?: string;
   staticMatrixUpdateTopPluginLabel?: string;
@@ -273,6 +275,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.renderedInstanceSummary ?? '',
     snapshot.materialTopPluginLabel ?? '',
     snapshot.materialSummary ?? '',
+    snapshot.sceneUniqueMaterialTopPluginLabel ?? '',
+    snapshot.sceneUniqueMaterialSummary ?? '',
     snapshot.clonedMaterialTopPluginLabel ?? '',
     snapshot.clonedMaterialSummary ?? '',
     snapshot.staticMatrixUpdateTopPluginLabel ?? '',
@@ -500,6 +504,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
     <div><dt>Unique Material Plugin</dt><dd>${snapshot.materialTopPluginLabel || 'None'}</dd></div>
     <div><dt>Unique Material Summary</dt><dd>${snapshot.materialSummary || 'None'}</dd></div>
+    <div><dt>Scene Material Plugin</dt><dd>${snapshot.sceneUniqueMaterialTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Scene Material Summary</dt><dd>${snapshot.sceneUniqueMaterialSummary || 'None'}</dd></div>
     <div><dt>Cloned Material Plugin</dt><dd>${snapshot.clonedMaterialTopPluginLabel || 'None'}</dd></div>
     <div><dt>Cloned Material Summary</dt><dd>${snapshot.clonedMaterialSummary || 'None'}</dd></div>
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>

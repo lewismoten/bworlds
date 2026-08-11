@@ -76,6 +76,8 @@ function createDebugSnapshot(
     renderedInstanceSummary: 'tile-forest renders 66 instances.',
     materialTopPluginLabel: 'tile-water',
     materialSummary: 'tile-water dominates materials.',
+    sceneUniqueMaterialTopPluginLabel: 'tile-route',
+    sceneUniqueMaterialSummary: 'tile-route owns 9 scene-unique materials.',
     staticMatrixUpdateTopPluginLabel: 'tile-sign',
     staticMatrixUpdateSummary: 'tile-sign keeps static matrices hot.',
     lastLodFailureReason: 'Upgrade budget exhausted.',
@@ -244,7 +246,7 @@ describe('runtime performance tracking', () => {
       'Visible tile generation 22.0 ms exceeded 16.0 ms.'
     );
     expect(issue?.pluginHotspots.rejectedModels).toBe('tile-plains');
-    expect(issue?.pluginHotspots.materials).toBe('tile-water');
+    expect(issue?.pluginHotspots.materials).toBe('tile-route');
     expect(issue?.pluginHotspots.instancedMeshes).toBe('tile-forest');
     expect(issue?.pluginHotspots.renderedInstances).toBe('tile-forest');
     expect(issue?.renderState.renderQualityLimiters).toEqual([
@@ -277,7 +279,10 @@ describe('runtime performance tracking', () => {
       'Top rendered-instance plugins: tile-forest renders 66 instances.'
     );
     expect(issue?.reasons).toContain(
-      'Top unique-material plugins: tile-water dominates materials.'
+      'Top per-tile material plugins: tile-water dominates materials.'
+    );
+    expect(issue?.reasons).toContain(
+      'Top scene-unique-material plugins: tile-route owns 9 scene-unique materials.'
     );
     expect(issue?.reasons).toContain(
       'Top static-matrix-update plugins: tile-sign keeps static matrices hot.'

@@ -144,7 +144,9 @@ export function buildRuntimePerformanceIssueReport(
         options.debugSnapshot.instancedMeshTopPluginLabel?.trim() || null,
       renderedInstances:
         options.debugSnapshot.renderedInstanceTopPluginLabel?.trim() || null,
-      materials: options.debugSnapshot.materialTopPluginLabel?.trim() || null,
+      materials:
+        options.debugSnapshot.sceneUniqueMaterialTopPluginLabel?.trim() ||
+        null,
       drawCalls: options.debugSnapshot.drawCallTopPluginLabel?.trim() || null,
       objects: options.debugSnapshot.objectTopPluginLabel?.trim() || null,
       meshes: options.debugSnapshot.meshTopPluginLabel?.trim() || null,
@@ -263,8 +265,12 @@ function describeRuntimePerformanceHotspots(
       debugSnapshot.renderedInstanceSummary
     ),
     formatRuntimePerformanceHotspot(
-      'Top unique-material plugins',
+      'Top per-tile material plugins',
       debugSnapshot.materialSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top scene-unique-material plugins',
+      debugSnapshot.sceneUniqueMaterialSummary
     ),
     formatRuntimePerformanceHotspot(
       'Top cloned-material plugins',

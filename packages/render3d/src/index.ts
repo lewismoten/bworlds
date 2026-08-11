@@ -359,6 +359,8 @@ type Render3DController = {
     renderedInstanceSummary: string;
     materialTopPluginLabel: string;
     materialSummary: string;
+    sceneUniqueMaterialTopPluginLabel: string;
+    sceneUniqueMaterialSummary: string;
     clonedMaterialTopPluginLabel: string;
     clonedMaterialSummary: string;
     staticMatrixUpdateTopPluginLabel: string;
@@ -2970,6 +2972,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const visibleTileMaterialStats = summarizeVisibleTileMaterialsByPlugin(
       visibleTileNodes.values()
     );
+    const visibleTileSceneUniqueMaterialStats =
+      summarizeVisibleTileOwnedUniqueMaterialsByPlugin(visibleTileNodes.values());
     const visibleTileClonedMaterialStats =
       summarizeVisibleTileClonedMaterialsByPlugin(visibleTileNodes.values());
     const visibleTileStaticMatrixUpdateStats =
@@ -3032,6 +3036,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderedInstanceSummary: visibleTileRenderedInstanceStats.summary,
       materialTopPluginLabel: visibleTileMaterialStats.topLabel,
       materialSummary: visibleTileMaterialStats.summary,
+      sceneUniqueMaterialTopPluginLabel:
+        visibleTileSceneUniqueMaterialStats.topLabel,
+      sceneUniqueMaterialSummary: visibleTileSceneUniqueMaterialStats.summary,
       clonedMaterialTopPluginLabel: visibleTileClonedMaterialStats.topLabel,
       clonedMaterialSummary: visibleTileClonedMaterialStats.summary,
       staticMatrixUpdateTopPluginLabel:
@@ -5734,6 +5741,49 @@ export function summarizeVisibleTileMaterialsByPlugin(
   summary: string;
 } {
   return summarizeVisibleTileCountByPlugin(entries, 'materialCount');
+}
+
+export function summarizeVisibleTileOwnedUniqueMaterialsByPlugin(
+  entries: Iterable<Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'node'>>
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  const materialOwners = new Map<THREE.Material, string>();
+  for (const entry of entries) {
+    const label = entry.tilePluginOwnerLabel?.trim() || 'unknown';
+    entry.node.traverse((child) => {
+      const renderable = child as THREE.Object3D & {
+        material?: THREE.Material | THREE.Material[];
+      };
+      for (const material of getObjectMaterials(renderable)) {
+        if (!materialOwners.has(material)) {
+          materialOwners.set(material, label);
+        }
+      }
+    });
+  }
+  if (materialOwners.size === 0) {
+    return {
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    };
+  }
+  const counts = new Map<string, number>();
+  for (const owner of materialOwners.values()) {
+    counts.set(owner, (counts.get(owner) ?? 0) + 1);
+  }
+  const labeledSummary = summarizeSortedCountMapWithTopLabel(counts);
+  return {
+    totalCount: materialOwners.size,
+    topCount: labeledSummary.topCount,
+    topLabel: labeledSummary.topLabel,
+    summary: labeledSummary.summary,
+  };
 }
 
 export function summarizeVisibleTileClonedMaterialsByPlugin(

@@ -219,6 +219,7 @@ import {
   summarizeVisibleTileClonedMaterialsByPlugin,
   summarizeVisibleTileInstancedMeshesByPlugin,
   summarizeVisibleTileMeshesByPlugin,
+  summarizeVisibleTileOwnedUniqueMaterialsByPlugin,
   summarizeVisibleTileObjectsByPlugin,
   summarizeVisibleTileDrawCallsByPlugin,
   summarizeVisibleTileRenderedInstancesByPlugin,
@@ -4589,6 +4590,46 @@ describe('render3d visibility helpers', () => {
     });
 
     expect(summarizeVisibleTileMaterialsByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes scene-unique visible tile materials by plugin owner', () => {
+    const sharedForestMaterial = createMockMaterial();
+    const sharedTownMaterial = createMockMaterial();
+
+    expect(
+      summarizeVisibleTileOwnedUniqueMaterialsByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          node: createMockObject3D(undefined, [
+            createMockObject3D(sharedForestMaterial, [], createMockGeometry(12)),
+            createMockObject3D(sharedForestMaterial, [], createMockGeometry(8)),
+          ]),
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          node: createMockObject3D(undefined, [
+            createMockObject3D(sharedTownMaterial, [], createMockGeometry(10)),
+            createMockObject3D(
+              [sharedTownMaterial, createMockMaterial()],
+              [],
+              createMockGeometry(6)
+            ),
+          ]),
+        },
+      ])
+    ).toEqual({
+      totalCount: 3,
+      topCount: 2,
+      topLabel: 'tile-town',
+      summary: 'tile-town:2, tile-forest:1',
+    });
+
+    expect(summarizeVisibleTileOwnedUniqueMaterialsByPlugin([])).toEqual({
       totalCount: 0,
       topCount: 0,
       topLabel: '',

@@ -21,6 +21,7 @@
 - [ ] Investigate why the scene has 467 unique materials.
 - [x] Find which plugins create the most materials.
 - [x] Report unique material count by plugin.
+- [x] Report scene-unique material owners by plugin.
 - [x] Report cloned material count by plugin.
 - [ ] Reuse shared materials instead of cloning them.
 - [ ] Cache materials by their effective property values.

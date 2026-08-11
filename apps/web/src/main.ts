@@ -2444,6 +2444,9 @@ function collectCurrentDebugSnapshot(
     renderedInstanceSummary: rendererStats.renderedInstanceSummary,
     materialTopPluginLabel: rendererStats.materialTopPluginLabel,
     materialSummary: rendererStats.materialSummary,
+    sceneUniqueMaterialTopPluginLabel:
+      rendererStats.sceneUniqueMaterialTopPluginLabel,
+    sceneUniqueMaterialSummary: rendererStats.sceneUniqueMaterialSummary,
     clonedMaterialTopPluginLabel: rendererStats.clonedMaterialTopPluginLabel,
     clonedMaterialSummary: rendererStats.clonedMaterialSummary,
     staticMatrixUpdateTopPluginLabel:

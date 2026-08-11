@@ -89,6 +89,8 @@ describe('debug panel', () => {
       renderedInstanceSummary: 'tile-forest:248, tile-town:32',
       materialTopPluginLabel: 'tile-forest',
       materialSummary: 'tile-forest:15, tile-town:5',
+      sceneUniqueMaterialTopPluginLabel: 'tile-water',
+      sceneUniqueMaterialSummary: 'tile-water:21, tile-forest:18',
       clonedMaterialTopPluginLabel: 'tile-forest',
       clonedMaterialSummary: 'tile-forest:3, tile-town:1',
       staticMatrixUpdateTopPluginLabel: 'tile-forest',
