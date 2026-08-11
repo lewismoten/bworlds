@@ -40,6 +40,15 @@ export function formatClientErrorSnapshotFileName(snapshot) {
   return `${snapshot.messageHash}.json`;
 }
 
+export function resolveClientErrorSnapshotFileName(snapshotId) {
+  if (typeof snapshotId !== 'string' || snapshotId.trim().length === 0) {
+    throw new Error('Expected a non-empty client error snapshot id.');
+  }
+
+  const normalized = snapshotId.trim();
+  return normalized.endsWith('.json') ? normalized : `${normalized}.json`;
+}
+
 export function saveClientErrorSnapshot(snapshot, options = {}) {
   const snapshotDir = options.snapshotDir ?? DEFAULT_CLIENT_ERROR_SNAPSHOT_DIR;
   ensureSnapshotDirectory(snapshotDir);
@@ -61,4 +70,25 @@ export function readRecentClientErrorSnapshots(options = {}) {
   return listSnapshotEntries(snapshotDir)
     .slice(0, limit)
     .map((entry) => JSON.parse(fs.readFileSync(entry.absolutePath, 'utf8')));
+}
+
+export function removeClientErrorSnapshot(snapshotId, options = {}) {
+  const snapshotDir = options.snapshotDir ?? DEFAULT_CLIENT_ERROR_SNAPSHOT_DIR;
+  const fileName = resolveClientErrorSnapshotFileName(snapshotId);
+  const absolutePath = getSnapshotFilePath(snapshotDir, fileName);
+  if (!fs.existsSync(absolutePath)) {
+    return false;
+  }
+
+  fs.rmSync(absolutePath, { force: true });
+  return true;
+}
+
+export function clearClientErrorSnapshots(options = {}) {
+  const snapshotDir = options.snapshotDir ?? DEFAULT_CLIENT_ERROR_SNAPSHOT_DIR;
+  const entries = listSnapshotEntries(snapshotDir);
+  for (const entry of entries) {
+    fs.rmSync(entry.absolutePath, { force: true });
+  }
+  return entries.length;
 }

@@ -24,6 +24,13 @@ The Vite dev server now exposes `/api/client-error-snapshots`:
 - `POST` saves or replaces one snapshot file
 - `GET` lists the most recent saved snapshots first
 
+Local cleanup commands:
+
+- `npm run client-error-snapshots:remove -- <message-hash-or-file-name>`
+  removes one saved snapshot
+- `npm run client-error-snapshots:clear`
+  removes every saved client error snapshot
+
 Tests:
 
 - [client-error-snapshot.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/client-error-snapshot.test.ts:1)
@@ -31,7 +38,9 @@ Tests:
   `console.error` capture, and loop prevention.
 - [client-error-snapshot-store.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/client-error-snapshot-store.test.ts:1)
   covers stable file naming, duplicate-message overwrite behavior, and newest-
-  first listing.
+  first listing plus one-shot and full-directory cleanup helpers.
+- [client-error-snapshot-cleanup.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/client-error-snapshot-cleanup.test.ts:1)
+  covers the cleanup command argument parsing and exit behavior.
 - [client-error-snapshot-latest.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/client-error-snapshot-latest.test.ts:1)
   fails when saved snapshots still exist locally and prints the timestamps,
   messages, and stacks that must be cleared after the underlying errors are

@@ -23,6 +23,10 @@ describe('package scripts', () => {
       'test:watch': 'BWORLDS_VITEST_SUITE_MODE=fast vitest',
       'test:watch:all': 'BWORLDS_VITEST_SUITE_MODE=all vitest',
       'test:watch:long': 'BWORLDS_VITEST_SUITE_MODE=long vitest',
+      'client-error-snapshots:remove':
+        'node ./scripts/client-error-snapshot-cleanup.mjs remove',
+      'client-error-snapshots:clear':
+        'node ./scripts/client-error-snapshot-cleanup.mjs clear',
     });
   });
 });

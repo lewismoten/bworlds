@@ -4,8 +4,11 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  clearClientErrorSnapshots,
   formatClientErrorSnapshotFileName,
   readRecentClientErrorSnapshots,
+  removeClientErrorSnapshot,
+  resolveClientErrorSnapshotFileName,
   saveClientErrorSnapshot,
 } from '../client-error-snapshot-store.mjs';
 
@@ -24,6 +27,15 @@ describe('client error snapshot store', () => {
         messageHash: 'deadbeef',
       })
     ).toBe('deadbeef.json');
+  });
+
+  it('normalizes cleanup ids into snapshot file names', () => {
+    expect(resolveClientErrorSnapshotFileName('deadbeef')).toBe(
+      'deadbeef.json'
+    );
+    expect(resolveClientErrorSnapshotFileName('deadbeef.json')).toBe(
+      'deadbeef.json'
+    );
   });
 
   it('reuses one file for duplicate messages and updates the stored timestamp', async () => {
@@ -114,5 +126,90 @@ describe('client error snapshot store', () => {
         limit: 10,
       }).map((snapshot) => snapshot.message)
     ).toEqual(['Newer', 'Older']);
+  });
+
+  it('removes one client error snapshot by hash or file name', () => {
+    const snapshotDir = mkdtempSync(
+      path.join(os.tmpdir(), 'bworlds-client-error-snapshots-')
+    );
+    tempDirs.push(snapshotDir);
+
+    saveClientErrorSnapshot(
+      {
+        schemaVersion: 1,
+        createdAt: '2026-08-11T12:00:00.000Z',
+        message: 'Older',
+        stack: null,
+        source: 'console.error',
+        pageUrl: 'https://example.com/play',
+        details: null,
+        messageHash: 'older',
+      },
+      { snapshotDir }
+    );
+    saveClientErrorSnapshot(
+      {
+        schemaVersion: 1,
+        createdAt: '2026-08-11T12:00:05.000Z',
+        message: 'Newer',
+        stack: null,
+        source: 'unhandledrejection',
+        pageUrl: 'https://example.com/play',
+        details: null,
+        messageHash: 'newer',
+      },
+      { snapshotDir }
+    );
+
+    expect(removeClientErrorSnapshot('older', { snapshotDir })).toBe(true);
+    expect(removeClientErrorSnapshot('missing', { snapshotDir })).toBe(false);
+    expect(
+      readRecentClientErrorSnapshots({
+        snapshotDir,
+        limit: 10,
+      }).map((snapshot) => snapshot.message)
+    ).toEqual(['Newer']);
+  });
+
+  it('clears all saved client error snapshots', () => {
+    const snapshotDir = mkdtempSync(
+      path.join(os.tmpdir(), 'bworlds-client-error-snapshots-')
+    );
+    tempDirs.push(snapshotDir);
+
+    saveClientErrorSnapshot(
+      {
+        schemaVersion: 1,
+        createdAt: '2026-08-11T12:00:00.000Z',
+        message: 'Older',
+        stack: null,
+        source: 'console.error',
+        pageUrl: 'https://example.com/play',
+        details: null,
+        messageHash: 'older',
+      },
+      { snapshotDir }
+    );
+    saveClientErrorSnapshot(
+      {
+        schemaVersion: 1,
+        createdAt: '2026-08-11T12:00:05.000Z',
+        message: 'Newer',
+        stack: null,
+        source: 'unhandledrejection',
+        pageUrl: 'https://example.com/play',
+        details: null,
+        messageHash: 'newer',
+      },
+      { snapshotDir }
+    );
+
+    expect(clearClientErrorSnapshots({ snapshotDir })).toBe(2);
+    expect(
+      readRecentClientErrorSnapshots({
+        snapshotDir,
+        limit: 10,
+      })
+    ).toEqual([]);
   });
 });

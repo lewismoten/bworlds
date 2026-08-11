@@ -37,7 +37,7 @@
 - [x] Test different messages create different files.
 - [x] Test duplicate errors update the stored timestamp.
 - [x] Test reporting failures do not create loops.
-- [ ] Add a command to remove one error snapshot.
-- [ ] Add a command to clear all resolved snapshots.
+- [x] Add a command to remove one error snapshot.
+- [x] Add a command to clear all resolved snapshots.
 - [x] Document that snapshots require tracking to be enabled.
 - [x] Document that snapshots are local and never committed.
