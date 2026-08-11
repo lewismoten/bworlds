@@ -70,6 +70,7 @@ export type DebugSnapshot = {
   staticMatrixUpdateSummary?: string;
   latestQualityChangeLimiter?: string;
   latestQualityChangeSummary?: string;
+  reducedQualityDurationSec?: number;
   lastLodFailureReason?: string;
   lastFallbackReason?: string;
   currentTilePlugin?: string;
@@ -225,6 +226,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.performanceTier,
     snapshot.renderQualityLevel,
     snapshot.renderQualityLimiters,
+    (snapshot.reducedQualityDurationSec ?? 0).toFixed(1),
     snapshot.playerLevel,
     snapshot.visibilityRadius,
     snapshot.drawCalls,
@@ -640,6 +642,31 @@ export function recordPerformanceHistorySample(
   });
 }
 
+export function getReducedQualityDurationSec(
+  samples: PerformanceHistorySample[],
+  sample: Pick<PerformanceHistorySample, 'nowMs' | 'renderQualityLevel'>
+): number {
+  if (isFullRenderQualityLevel(sample.renderQualityLevel)) {
+    return 0;
+  }
+
+  const reducedTailSamples = [...samples, sample];
+  let reducedStartMs = sample.nowMs;
+
+  for (let index = reducedTailSamples.length - 1; index >= 0; index -= 1) {
+    const currentSample = reducedTailSamples[index];
+    if (!currentSample) {
+      continue;
+    }
+    if (isFullRenderQualityLevel(currentSample.renderQualityLevel)) {
+      break;
+    }
+    reducedStartMs = currentSample.nowMs;
+  }
+
+  return roundTenths(Math.max(0, sample.nowMs - reducedStartMs) / 1000);
+}
+
 export function getMaterialGrowthWarning(
   samples: MaterialGrowthSample[],
   {
@@ -686,6 +713,17 @@ export function getMaterialGrowthWarning(
   }
 
   return `Material count keeps climbing while moving (${firstSample.materialCount} -> ${lastSample.materialCount}).`;
+}
+
+function isFullRenderQualityLevel(
+  renderQualityLevel: string | undefined
+): boolean {
+  return renderQualityLevel?.trim().toLowerCase() === 'full';
+}
+
+function roundTenths(value: number): number {
+  const rounded = Math.round(value * 10) / 10;
+  return Object.is(rounded, -0) ? 0 : rounded;
 }
 
 export function getSceneBudgetWarnings(

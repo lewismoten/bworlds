@@ -119,6 +119,7 @@ import { advanceHeadBobState, DEFAULT_HEAD_BOB_STATE } from './head-bob.ts';
 import {
   buildDebugMarkup,
   type DebugSnapshot,
+  getReducedQualityDurationSec,
   getHeapGrowthWarning,
   getIdleAllocationWarning,
   getMaterialGrowthWarning,
@@ -2593,6 +2594,13 @@ function collectCurrentDebugSnapshot(
   debugSnapshot.latestQualityChangeSummary = latestGraphicsQualityChangeEvent
     ? formatGraphicsQualityChangeSummary(latestGraphicsQualityChangeEvent)
     : undefined;
+  debugSnapshot.reducedQualityDurationSec = getReducedQualityDurationSec(
+    debugResourceTrendState.performanceSamples,
+    {
+      nowMs,
+      renderQualityLevel: debugSnapshot.renderQualityLevel,
+    }
+  );
   debugSnapshot.currentTilePlugin = currentTileDebugInfo?.plugin ?? undefined;
   debugSnapshot.currentTileRequestedDetailLevel =
     currentTileDebugInfo?.requestedDetailLevel ?? undefined;

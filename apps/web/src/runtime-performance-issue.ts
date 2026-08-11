@@ -31,6 +31,7 @@ export type RuntimePerformanceIssueReport = {
   renderState: {
     performanceTier: DebugSnapshot['performanceTier'];
     renderQualityLevel: string;
+    reducedQualityDurationSec: number;
     renderQualityLimiters: string[];
     renderQualityLimiterDetails: string[];
     visibilityRadiusDetail: string | null;
@@ -126,6 +127,8 @@ export function buildRuntimePerformanceIssueReport(
     renderState: {
       performanceTier: options.debugSnapshot.performanceTier,
       renderQualityLevel: options.debugSnapshot.renderQualityLevel,
+      reducedQualityDurationSec:
+        options.debugSnapshot.reducedQualityDurationSec ?? 0,
       renderQualityLimiters: splitRuntimePerformanceLimiters(
         options.debugSnapshot.renderQualityLimiters
       ),
@@ -193,6 +196,12 @@ function collectRuntimePerformanceIssueReasons(
     reasons.push(
       `Performance tier is ${debugSnapshot.performanceTier} at ${debugSnapshot.worstRecentFrameMs.toFixed(1)} ms worst recent frame time.`
     );
+  }
+
+  const reducedQualityDurationDetail =
+    describeReducedQualityDuration(debugSnapshot);
+  if (reducedQualityDurationDetail) {
+    reasons.push(reducedQualityDurationDetail);
   }
 
   const limiters = splitRuntimePerformanceLimiters(
@@ -605,6 +614,21 @@ function describeVisibilityRadiusReduction(
     );
   }
   return segments.join(' ');
+}
+
+function describeReducedQualityDuration(
+  debugSnapshot: DebugSnapshot
+): string | null {
+  if (debugSnapshot.renderQualityLevel.trim().toLowerCase() === 'full') {
+    return null;
+  }
+
+  const durationSec = debugSnapshot.reducedQualityDurationSec ?? 0;
+  if (durationSec <= 0) {
+    return null;
+  }
+
+  return `Reduced graphics quality has persisted for ${durationSec.toFixed(1)} seconds.`;
 }
 
 function limiterValueLabel(

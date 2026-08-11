@@ -6,6 +6,7 @@ import {
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
+  getReducedQualityDurationSec,
   getRenderBudgetViolationWarnings,
   getSceneBudgetWarnings,
   getSynchronousTileBuildWarnings,
@@ -537,6 +538,90 @@ describe('debug panel', () => {
         generationQueueSize: 8,
       }),
     ]);
+  });
+
+  it('tracks the current reduced-quality streak from the performance history tail', () => {
+    const samples = [
+      {
+        nowMs: 1_000,
+        fps: 60,
+        frameMs: 16.7,
+        targetFps: 60 as const,
+        visibilityRadius: 18,
+        renderQualityLevel: 'Full',
+        drawCalls: 100,
+        triangles: 2_000,
+        objectCount: 300,
+        materialCount: 20,
+        geometryCount: 40,
+        heapUsedMb: 48,
+        tileBuildsPerSecond: 12,
+        lodReplacementsPerSecond: 2,
+        visibleTileCount: 120,
+        visibleTreeCount: 32,
+        activeLightCount: 4,
+        generationQueueSize: 3,
+      },
+      {
+        nowMs: 7_500,
+        fps: 44,
+        frameMs: 22.7,
+        targetFps: 30 as const,
+        visibilityRadius: 14,
+        renderQualityLevel: 'Reduced',
+        drawCalls: 140,
+        triangles: 2_400,
+        objectCount: 330,
+        materialCount: 24,
+        geometryCount: 44,
+        heapUsedMb: 52,
+        tileBuildsPerSecond: 8,
+        lodReplacementsPerSecond: 4,
+        visibleTileCount: 110,
+        visibleTreeCount: 24,
+        activeLightCount: 6,
+        generationQueueSize: 6,
+      },
+      {
+        nowMs: 9_000,
+        fps: 42,
+        frameMs: 23.8,
+        targetFps: 30 as const,
+        visibilityRadius: 10,
+        renderQualityLevel: 'Minimal',
+        drawCalls: 152,
+        triangles: 2_600,
+        objectCount: 340,
+        materialCount: 26,
+        geometryCount: 46,
+        heapUsedMb: 53,
+        tileBuildsPerSecond: 7,
+        lodReplacementsPerSecond: 5,
+        visibleTileCount: 108,
+        visibleTreeCount: 22,
+        activeLightCount: 6,
+        generationQueueSize: 7,
+      },
+    ];
+
+    expect(
+      getReducedQualityDurationSec(samples, {
+        nowMs: 10_000,
+        renderQualityLevel: 'Reduced',
+      })
+    ).toBe(2.5);
+    expect(
+      getReducedQualityDurationSec(samples, {
+        nowMs: 10_000,
+        renderQualityLevel: 'Full',
+      })
+    ).toBe(0);
+    expect(
+      getReducedQualityDurationSec(samples.slice(0, 1), {
+        nowMs: 10_000,
+        renderQualityLevel: 'Reduced',
+      })
+    ).toBe(0);
   });
 
   it('avoids idle allocation warnings when the player is moving or heap growth is too small', () => {

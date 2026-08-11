@@ -87,7 +87,7 @@
 - [x] Show materials as critical in the summary.
 - [x] Show visibility radius reduction as a consequence.
 - [x] Avoid calling the tier healthy while quality is reduced.
-- [ ] Track how long the renderer remains in reduced quality.
+- [x] Track how long the renderer remains in reduced quality.
 - [ ] Track recovery back to full quality.
 - [ ] Add hysteresis before restoring full graphics quality.
 

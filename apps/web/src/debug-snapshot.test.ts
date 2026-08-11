@@ -202,6 +202,7 @@ describe('debug snapshot', () => {
         performanceTier: 'reduced',
         renderQualityLevel: 'Reduced',
         renderQualityLimiters: 'Target FPS reduced to 30',
+        reducedQualityDurationSec: 1.3,
         playerLevel: 5,
         visibilityRadius: 14,
         drawCalls: 420,
@@ -730,6 +731,7 @@ describe('debug snapshot', () => {
     expect(result.resourceBudget).toEqual({
       currentUtilizationPct: 62.7,
       highestUtilizationPctObserved: 62.7,
+      currentReducedQualityDurationSec: 1.3,
       qualityReductionCauses: ['Target FPS reduced to 30'],
       pluginRequestsRejectedDueToBudget: [
         {

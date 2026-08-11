@@ -23,6 +23,7 @@ function createDebugSnapshot(
     performanceTier: 'critical',
     renderQualityLevel: 'reduced',
     renderQualityLimiters: 'frame time, materials',
+    reducedQualityDurationSec: 2.5,
     latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
     latestQualityChangeSummary:
       'Target FPS 60 -> 30, visibility radius 18.0 -> 14.0, quality Full -> Reduced, limiters: Scene materials exceeded the hard cap',
@@ -257,6 +258,7 @@ describe('runtime performance tracking', () => {
       'frame time',
       'materials',
     ]);
+    expect(issue?.renderState.reducedQualityDurationSec).toBe(2.5);
     expect(issue?.renderState.renderQualityLimiterDetails).toEqual([
       'frame time',
       'materials',
@@ -278,6 +280,9 @@ describe('runtime performance tracking', () => {
     );
     expect(issue?.reasons).toContain(
       'Visibility radius is currently reduced to 6 from full 18. Weather currently caps draw distance at 6. Weather is pushing draw distance below the minimum-quality radius 10.'
+    );
+    expect(issue?.reasons).toContain(
+      'Reduced graphics quality has persisted for 2.5 seconds.'
     );
     expect(issue?.reasons).toContain(
       'Top draw-call plugins: tile-forest dominates draw calls.'
@@ -361,6 +366,7 @@ describe('runtime performance tracking', () => {
         worstRecentFrameMs: 16,
         performanceTier: 'healthy',
         renderQualityLevel: 'full',
+        reducedQualityDurationSec: 0,
         renderQualityLimiters: '',
         drawCalls: 600,
         object3dCount: 1200,

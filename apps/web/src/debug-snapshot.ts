@@ -326,6 +326,7 @@ export type DebugSnapshotExport = {
   resourceBudget: {
     currentUtilizationPct: number;
     highestUtilizationPctObserved: number;
+    currentReducedQualityDurationSec: number;
     qualityReductionCauses: string[];
     pluginRequestsRejectedDueToBudget: Array<{
       plugin: string;
@@ -836,6 +837,9 @@ function buildResourceBudgetSnapshot(
           options.performanceBudget.caps.estimatedGpuMemoryBytes.hard
         )
       )
+    ),
+    currentReducedQualityDurationSec: roundTenths(
+      options.snapshot.reducedQualityDurationSec ?? 0
     ),
     qualityReductionCauses: parseQualityLimiterList(
       options.graphicsQuality.limiters
