@@ -15,11 +15,13 @@ import type {
   Create3DModelContext,
   RuntimePlugin,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeObject3DLike,
   WorldStateLike,
 } from '@bworlds/plugin-api';
 
 const SHIP_VARIANT_KEY = 'shipPoiVariant';
+const SHIP_INSTANCED_PART_KEY = 'shipInstancedPart';
 const SHIP_POI_VARIANT_SEED = registerHashLabel('ship-poi-variant');
 const SHIP_FACING_LABELS = CARDINAL_DIRECTIONS.map((direction) =>
   registerHashLabel(`ship-facing:${direction.label}`)
@@ -292,33 +294,105 @@ function addTallShipRigging(
   sailMaterial: ShipMaterialLike,
   trimMaterial: ShipMaterialLike
 ) {
-  for (const mastZ of [-0.12, 0.24]) {
-    const mast = new three.Mesh(
-      new three.BoxGeometry(0.05, mastZ < 0 ? 0.95 : 0.72, 0.05),
-      mastMaterial
-    );
-    mast.position.set(0, mastZ < 0 ? 0.72 : 0.58, mastZ);
-    group.add(mast);
+  const rigDescriptors = [
+    {
+      z: -0.12,
+      mastHeight: 0.95,
+      mastY: 0.72,
+      yardWidth: 0.58,
+      yardY: 0.86,
+      sailWidth: 0.46,
+      sailHeight: 0.34,
+      sailX: 0.02,
+      sailY: 0.74,
+    },
+    {
+      z: 0.24,
+      mastHeight: 0.72,
+      mastY: 0.58,
+      yardWidth: 0.42,
+      yardY: 0.68,
+      sailWidth: 0.3,
+      sailHeight: 0.26,
+      sailX: 0.02,
+      sailY: 0.58,
+    },
+  ] as const;
+  const mastInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    mastMaterial,
+    rigDescriptors.length
+  );
+  mastInstances.userData = {
+    ...(mastInstances.userData ?? {}),
+    [SHIP_INSTANCED_PART_KEY]: 'mast',
+  };
+  const yardInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    trimMaterial,
+    rigDescriptors.length
+  );
+  yardInstances.userData = {
+    ...(yardInstances.userData ?? {}),
+    [SHIP_INSTANCED_PART_KEY]: 'yard',
+  };
+  const sailInstances = new three.InstancedMesh(
+    new three.PlaneGeometry(1, 1),
+    sailMaterial,
+    rigDescriptors.length
+  );
+  sailInstances.userData = {
+    ...(sailInstances.userData ?? {}),
+    [SHIP_INSTANCED_PART_KEY]: 'sail',
+    shipSail: true,
+  };
+  sailInstances.rotation.y = Math.PI / 2;
+  const mastMatrixScratch = new three.Matrix4();
+  const yardMatrixScratch = new three.Matrix4();
+  const sailMatrixScratch = new three.Matrix4();
 
-    const yard = new three.Mesh(
-      new three.BoxGeometry(mastZ < 0 ? 0.58 : 0.42, 0.03, 0.03),
-      trimMaterial
+  rigDescriptors.forEach((descriptor, index) => {
+    mastInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        mastMatrixScratch,
+        0,
+        descriptor.mastY,
+        descriptor.z,
+        0.05,
+        descriptor.mastHeight,
+        0.05
+      )
     );
-    yard.position.set(0, mastZ < 0 ? 0.86 : 0.68, mastZ);
-    group.add(yard);
+    yardInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        yardMatrixScratch,
+        0,
+        descriptor.yardY,
+        descriptor.z,
+        descriptor.yardWidth,
+        0.03,
+        0.03
+      )
+    );
+    sailInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        sailMatrixScratch,
+        descriptor.sailX,
+        descriptor.sailY,
+        descriptor.z,
+        descriptor.sailWidth,
+        descriptor.sailHeight,
+        1
+      )
+    );
+  });
 
-    const sail = new three.Mesh(
-      new three.PlaneGeometry(mastZ < 0 ? 0.46 : 0.3, mastZ < 0 ? 0.34 : 0.26),
-      sailMaterial
-    );
-    sail.position.set(0.02, mastZ < 0 ? 0.74 : 0.58, mastZ);
-    sail.userData = {
-      ...(sail.userData ?? {}),
-      shipSail: true,
-    };
-    sail.rotation.y = Math.PI / 2;
-    group.add(sail);
-  }
+  group.add(mastInstances);
+  group.add(yardInstances);
+  group.add(sailInstances);
 }
 
 function addBrokenShipDetails(
@@ -355,6 +429,18 @@ function addBrokenShipDetails(
     ...((debris as ShipNodeLike).userData ?? {}),
     shipBrokenHull: true,
   };
+}
+
+function writeInstancedScalePositionMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return target.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
 
 function syncShipSails(

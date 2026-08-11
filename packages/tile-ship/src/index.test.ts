@@ -46,6 +46,27 @@ class FakeNode {
 }
 
 class FakeGroup extends FakeNode {}
+class FakeMatrix4 {
+  position = { x: 0, y: 0, z: 0 };
+  scale = { x: 1, y: 1, z: 1 };
+
+  makeScale(x: number, y: number, z: number) {
+    this.scale = { x, y, z };
+    return this;
+  }
+
+  setPosition(x: number, y: number, z: number) {
+    this.position = { x, y, z };
+    return this;
+  }
+
+  clone() {
+    const next = new FakeMatrix4();
+    next.position = { ...this.position };
+    next.scale = { ...this.scale };
+    return next;
+  }
+}
 
 class FakeMesh extends FakeNode {
   constructor(
@@ -53,6 +74,22 @@ class FakeMesh extends FakeNode {
     public material?: FakeMaterial | FakeMaterial[]
   ) {
     super();
+  }
+}
+
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[],
+    public count = 0
+  ) {
+    super();
+  }
+
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
   }
 }
 
@@ -75,6 +112,8 @@ class FakePointLight extends FakeNode {
 
 const fakeThree = {
   Group: FakeGroup,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   Mesh: FakeMesh,
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
@@ -189,6 +228,78 @@ describe('tile ship', () => {
     expect(sawLantern).toBe(true);
   });
 
+  it('instances repeated tall-ship rigging parts instead of emitting one mesh per mast, yard, and sail', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    let targetTile: { x: number; y: number } | null = null;
+
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const model = tile?.create3DModel?.({
+          three: fakeThree as never,
+          state: createShipState(),
+          tile: { kind: 'ship' } as never,
+          tileX,
+          tileY,
+        }) as FakeNode | undefined;
+        if (model?.userData?.shipPoiVariant === 'tall-ship') {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: { kind: 'ship' } as never,
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+    }) as FakeNode | undefined;
+
+    const mastInstances: FakeInstancedMesh[] = [];
+    const yardInstances: FakeInstancedMesh[] = [];
+    const sailInstances: FakeInstancedMesh[] = [];
+    model?.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.shipInstancedPart === 'mast'
+      ) {
+        mastInstances.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.shipInstancedPart === 'yard'
+      ) {
+        yardInstances.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.shipInstancedPart === 'sail'
+      ) {
+        sailInstances.push(node);
+      }
+    });
+
+    expect(mastInstances).toHaveLength(1);
+    expect(yardInstances).toHaveLength(1);
+    expect(sailInstances).toHaveLength(1);
+    expect(mastInstances[0]?.count).toBe(2);
+    expect(yardInstances[0]?.count).toBe(2);
+    expect(sailInstances[0]?.count).toBe(2);
+    expect(mastInstances[0]?.matrices).toHaveLength(2);
+    expect(yardInstances[0]?.matrices).toHaveLength(2);
+    expect(sailInstances[0]?.matrices).toHaveLength(2);
+    expect(
+      mastInstances[0]?.matrices.some((matrix) => matrix.scale.y > 0.8)
+    ).toBe(true);
+    expect(
+      sailInstances[0]?.matrices.some((matrix) => matrix.scale.x > 0.4)
+    ).toBe(true);
+  });
+
   it('keeps ship model signatures stable after repeated model churn', () => {
     const plugin = createShipTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
@@ -253,7 +364,7 @@ function countSharedMaterialReferences(
 function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root?.traverse((node) => {
-    if (node instanceof FakeMesh) {
+    if (node instanceof FakeMesh || node instanceof FakeInstancedMesh) {
       if (Array.isArray(node.material)) {
         node.material.forEach((material) => materials.add(material));
       } else if (node.material) {

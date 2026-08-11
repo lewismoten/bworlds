@@ -31,7 +31,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       tiles now collapse their repeated stems and caps into two `InstancedMesh`
       nodes, and full-detail dungeons now collapse their repeated tower bodies,
       caps, and gate posts into instanced sets, and `tile-ruins` now collapses
-      its repeated rubble fragments into one `InstancedMesh`, and
+      its repeated rubble fragments into one `InstancedMesh`, tall ships now
+      collapse their repeated masts, yards, and sails into instanced sets, and
       `tile-lighthouse` now collapses its repeated lantern-room frame posts,
       balcony rail posts, and four lantern-room panes into instanced sets, and
       full-detail forest stone-ring landmarks now collapse their repeated
@@ -45,10 +46,11 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       and full-detail cave mouths now instance their repeated entrance
       boulders, and full-detail dungeons now instance their repeated tower
       bodies, caps, and gate posts instead of emitting one mesh per repeated
-      prop, lighthouse lantern-room panes now instance their repeated
-      decorative glass planes instead of emitting one mesh per pane, and
-      full-detail forest stone-ring landmarks now instance their repeated
-      stones instead of emitting one mesh per rock.
+      prop, tall ships now instance their repeated rigging parts instead of
+      emitting one mesh per mast, yard, or sail, lighthouse lantern-room panes
+      now instance their repeated decorative glass planes instead of emitting
+      one mesh per pane, and full-detail forest stone-ring landmarks now
+      instance their repeated stones instead of emitting one mesh per rock.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.
