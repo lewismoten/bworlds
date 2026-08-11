@@ -32,7 +32,11 @@ Always run tests to make sure all tests pass
         ribbons instead of building the whole river mesh set in one frame, and
         `tile-route` now exposes `create3DModelProgressive(...)` for dock tiles
         so the renderer can resume after the deck-and-pile pass, boat pass, and
-        route-sign pass instead of building the full dock crossing in one frame.
+        route-sign pass instead of building the full dock crossing in one frame,
+        and `tile-town` now splits its full-detail building population into a
+        third resumable batch so later structures no longer share one large
+        follow-up population pass before town signage, banners, and night-light
+        work runs.
 - [ ] Reduce unique materials and shader program variants.
       Progress: `tile-forest` now scopes its tree-family style material cache
       per Three host instead of sharing one process-wide material/texture

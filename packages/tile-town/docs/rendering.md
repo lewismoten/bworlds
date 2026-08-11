@@ -7,6 +7,7 @@ Current progressive phases:
 
 - `buildings-primary`
 - `buildings-secondary`
+- `buildings-tertiary`
 - `sign`
 - `banners`
 - `night-lights`

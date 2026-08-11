@@ -31,8 +31,10 @@ Current groundwork:
   `landmarks-and-floor` phases so meadow flowers, birds, spiders, trail props,
   and floor clutter no longer share one large scheduler step.
 - `tile-town` now splits its full-detail building population into two
-  resumable batches before signage, banners, and light passes, so one large
-  structure loop does not dominate the first progressive step.
+  resumable batches before signage, banners, and light passes, and now splits
+  the remaining building population into a third resumable batch so one large
+  structure loop does not dominate the first progressive step or the follow-up
+  population pass.
 - `tile-dungeon` now splits tower population and gate assembly into separate
   resumable steps, which gives the renderer another frame boundary before the
   beacon and banner passes.

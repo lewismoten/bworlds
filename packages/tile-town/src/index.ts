@@ -350,10 +350,25 @@ function* createTownModelProgressive({
     0,
     firstBuildingBatchCount
   );
-  const secondaryBuildingDescriptors = descriptors.slice(
+  const remainingBuildingDescriptors = descriptors.slice(
     firstBuildingBatchCount
   );
-  const totalSteps = secondaryBuildingDescriptors.length > 0 ? 5 : 4;
+  const secondBuildingBatchCount = Math.ceil(
+    remainingBuildingDescriptors.length / 2
+  );
+  const secondaryBuildingDescriptors = remainingBuildingDescriptors.slice(
+    0,
+    secondBuildingBatchCount
+  );
+  const tertiaryBuildingDescriptors = remainingBuildingDescriptors.slice(
+    secondBuildingBatchCount
+  );
+  const totalSteps =
+    tertiaryBuildingDescriptors.length > 0
+      ? 6
+      : secondaryBuildingDescriptors.length > 0
+        ? 5
+        : 4;
   const bodyInstances = new three.InstancedMesh(
     new three.BoxGeometry(1, 1, 1),
     style.wallMaterial,
@@ -465,7 +480,37 @@ function* createTownModelProgressive({
     };
   }
 
-  const postBuildingBaseStep = secondaryBuildingDescriptors.length > 0 ? 2 : 1;
+  if (tertiaryBuildingDescriptors.length > 0) {
+    nextWindowInstanceIndex = populateTownBuildingInstances({
+      descriptors: tertiaryBuildingDescriptors,
+      startIndex:
+        primaryBuildingDescriptors.length + secondaryBuildingDescriptors.length,
+      startWindowIndex: nextWindowInstanceIndex,
+      tileX,
+      tileY,
+      bodyInstances,
+      roofInstances,
+      doorInstances,
+      windowInstances,
+      bodyMatrixScratch,
+      roofMatrixScratch,
+      doorMatrixScratch,
+      windowMatrixScratch,
+    });
+    void nextWindowInstanceIndex;
+    yield {
+      completedSteps: 3,
+      totalSteps,
+      label: 'buildings-tertiary',
+    };
+  }
+
+  const postBuildingBaseStep =
+    tertiaryBuildingDescriptors.length > 0
+      ? 3
+      : secondaryBuildingDescriptors.length > 0
+        ? 2
+        : 1;
 
   if (tile.poi?.name) {
     addTownNameSign(group, three, tile.poi.name, tileX, tileY, style);
