@@ -85,7 +85,7 @@
 
 - [x] Build each melody from two or more related phrases.
 - [x] Give every phrase a clear opening gesture.
-- [ ] Give every phrase a clear closing gesture.
+- [x] Give every phrase a clear closing gesture.
 - [ ] Make motif notes more prominent than filler notes.
 - [x] Repeat the motif before introducing a variation.
 - [x] Change only one motif feature in each variation.
@@ -98,9 +98,10 @@
       Regression coverage now proves the melody opens with a repeated Section A
       phrase before A' introduces a pitch-only variation, keeps phrase peaks
       near the planned climax checkpoint, reserves the highest resolved note
-      for one unique climax near that checkpoint, descends gradually after the
-      climax, resolves answer cadences onto stable chord tones, and lands the
-      final outro phrase on tonic.
+      for one unique climax near that checkpoint, closes repeated and varied
+      phrases with a late cadence note before the planned boundary rest,
+      descends gradually after the climax, resolves answer cadences onto stable
+      chord tones, and lands the final outro phrase on tonic.
 
 ## Harmony and Bass
 

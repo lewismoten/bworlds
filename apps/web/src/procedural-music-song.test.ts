@@ -420,6 +420,34 @@ describe('procedural music song', () => {
     expect(variationRhythm).not.toEqual(sectionARhythm);
   });
 
+  it('ends repeated and varied lead phrases with a closing note before the planned boundary rest', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'plains',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 0,
+      clusterY: 0,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a')!;
+    const sectionAPrime = song.sections.find(
+      (section) => section.id === 'a-prime'
+    )!;
+    const phraseClosings = [
+      collectLeadPhraseClosing(song, sectionA, 0),
+      collectLeadPhraseClosing(song, sectionA, 1),
+      collectLeadPhraseClosing(song, sectionAPrime, 0),
+    ];
+
+    for (const closing of phraseClosings) {
+      expect(closing).not.toBeNull();
+      expect(closing!.startRatio).toBeGreaterThanOrEqual(0.84);
+      expect(closing!.durationRatio).toBeGreaterThanOrEqual(0.01);
+      expect(closing!.endRatio).toBeLessThan(1);
+    }
+  });
+
   it('builds an eight-measure phrase before repeating it across the full song', () => {
     const options = {
       nowMs: 1_000,
@@ -1169,6 +1197,51 @@ function collectLeadPhraseOpening(
       ),
       midiNote: resolveMidiNote(note.frequency),
     }));
+}
+
+function collectLeadPhraseClosing(
+  song: ReturnType<typeof createProceduralMusicSong>,
+  section: ReturnType<typeof createProceduralMusicSong>['sections'][number],
+  phraseIndexWithinSection: number
+): {
+  startRatio: number;
+  durationRatio: number;
+  endRatio: number;
+  midiNote: number;
+} | null {
+  const measureDurationMs =
+    section.durationMs / Math.max(1, section.measureCount);
+  const phraseStartMs =
+    song.startMs +
+    section.startOffsetMs +
+    phraseIndexWithinSection *
+      measureDurationMs *
+      PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+  const phraseDurationMs =
+    measureDurationMs * PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT;
+  const closingNote = [...song.notes]
+    .filter(
+      (note) =>
+        note.role === 'lead' &&
+        note.startMs >= phraseStartMs &&
+        note.startMs < phraseStartMs + phraseDurationMs
+    )
+    .at(-1);
+
+  if (!closingNote) {
+    return null;
+  }
+
+  const startRatio =
+    (closingNote.startMs - phraseStartMs) / Math.max(1, phraseDurationMs);
+  const durationRatio = closingNote.durationMs / Math.max(1, phraseDurationMs);
+
+  return {
+    startRatio: Number(startRatio.toFixed(3)),
+    durationRatio: Number(durationRatio.toFixed(3)),
+    endRatio: Number((startRatio + durationRatio).toFixed(3)),
+    midiNote: resolveMidiNote(closingNote.frequency),
+  };
 }
 
 function expectPhraseRhythmToMatch(
