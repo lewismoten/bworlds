@@ -1262,21 +1262,24 @@ function scheduleThemeLayerNotes(
   ].join(':');
   const clusterX = options.clusterX ?? 0;
   const clusterY = options.clusterY ?? 0;
-  let stepIndex =
-    previousState?.regionSignature === regionSignature
-      ? previousState.stepIndex
-      : 0;
-  let previousLeadSemitones =
-    previousState?.regionSignature === regionSignature
-      ? previousState.lastLeadSemitones
-      : null;
-  let nextNoteAtMs =
-    previousState?.regionSignature === regionSignature
-      ? Math.max(previousState.nextNoteAtMs, options.nowMs)
-      : options.nowMs;
+  const continuingRegion = previousState?.regionSignature === regionSignature;
+  let stepIndex = continuingRegion ? previousState.stepIndex : 0;
+  let previousLeadSemitones = continuingRegion
+    ? previousState.lastLeadSemitones
+    : null;
+  let nextNoteAtMs = continuingRegion
+    ? Math.max(previousState.nextNoteAtMs, options.nowMs)
+    : options.nowMs;
   const notes: ProceduralMusicNote[] = [];
+  const scheduleHorizonMs = options.nowMs + LOOKAHEAD_MS;
+  const pendingInitialRoleEntries = continuingRegion
+    ? new Set<InstrumentRole>()
+    : new Set<InstrumentRole>(['bass', 'harmony', 'lead', 'percussion']);
 
-  while (nextNoteAtMs < options.nowMs + LOOKAHEAD_MS) {
+  while (
+    nextNoteAtMs < scheduleHorizonMs ||
+    pendingInitialRoleEntries.size > 0
+  ) {
     const role = selectInstrumentRole(stepIndex);
     const arrangementProfile = arrangement.roleProfiles[role];
     const stepDurationMs = resolveProceduralRhythmicGridStep({
@@ -1284,13 +1287,16 @@ function scheduleThemeLayerNotes(
       stepIndex,
       tempoMultiplier: mood.tempoMultiplier,
     }).stepDurationMs;
+    const needsInitialEntry = pendingInitialRoleEntries.has(role);
     const shouldRest =
       role !== 'bass' &&
+      !needsInitialEntry &&
       shouldRestAtThemeStep(theme, role, stepIndex, clusterX, clusterY);
     const shouldSkipRole =
       shouldRest ||
       (typeof arrangementProfile.skipEvery === 'number' &&
         arrangementProfile.skipEvery > 1 &&
+        !needsInitialEntry &&
         stepIndex % arrangementProfile.skipEvery === 0);
 
     if (!shouldSkipRole) {
@@ -1315,6 +1321,9 @@ function scheduleThemeLayerNotes(
           ...note,
           volume: note.volume * options.gainMultiplier,
         });
+      }
+      if (createdNotes.length > 0) {
+        pendingInitialRoleEntries.delete(role);
       }
       if (role === 'lead' && createdNotes[0]) {
         previousLeadSemitones = Math.round(

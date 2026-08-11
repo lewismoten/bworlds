@@ -1525,6 +1525,40 @@ describe('procedural music', () => {
     expect(scheduled.state.nextNoteAtMs).toBeGreaterThan(1000);
   });
 
+  it('gives every role an initial entry in the first startup schedule', () => {
+    const scheduled = scheduleProceduralMusicNotes({
+      nowMs: 0,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.9,
+      yearProgress: 0,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const firstStartByRole = new Map<ProceduralMusicNote['role'], number>();
+
+    for (const note of scheduled.notes) {
+      if (!firstStartByRole.has(note.role)) {
+        firstStartByRole.set(note.role, note.startMs);
+      }
+    }
+
+    expect(firstStartByRole.get('bass')).not.toBeUndefined();
+    expect(firstStartByRole.get('harmony')).not.toBeUndefined();
+    expect(firstStartByRole.get('lead')).not.toBeUndefined();
+    expect(firstStartByRole.get('percussion')).not.toBeUndefined();
+    expect(firstStartByRole.get('bass')!).toBe(0);
+    expect(firstStartByRole.get('harmony')!).toBeGreaterThan(
+      firstStartByRole.get('bass')!
+    );
+    expect(firstStartByRole.get('lead')!).toBeGreaterThan(
+      firstStartByRole.get('harmony')!
+    );
+    expect(firstStartByRole.get('percussion')!).toBeGreaterThan(
+      firstStartByRole.get('lead')!
+    );
+  });
+
   it('uses recurring rhythmic motifs instead of uniform note spacing', () => {
     const scheduled = scheduleProceduralMusicNotes({
       nowMs: 0,
@@ -1613,7 +1647,7 @@ describe('procedural music', () => {
   });
 
   it('thins percussion and softens harmony in nighttime note scheduling', () => {
-    const dayScheduled = scheduleProceduralMusicNotes({
+    const dayIntro = scheduleProceduralMusicNotes({
       nowMs: 0,
       tileKind: 'town',
       contextType: 'town',
@@ -1622,7 +1656,7 @@ describe('procedural music', () => {
       clusterX: 0,
       clusterY: 0,
     });
-    const nightScheduled = scheduleProceduralMusicNotes({
+    const nightIntro = scheduleProceduralMusicNotes({
       nowMs: 0,
       tileKind: 'town',
       contextType: 'town',
@@ -1631,17 +1665,40 @@ describe('procedural music', () => {
       clusterX: 0,
       clusterY: 0,
     });
+    const dayScheduled = scheduleProceduralMusicNotes(
+      {
+        nowMs: dayIntro.state.nextNoteAtMs,
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.5,
+        yearProgress: 0.5,
+        clusterX: 0,
+        clusterY: 0,
+      },
+      dayIntro.state
+    );
+    const nightScheduled = scheduleProceduralMusicNotes(
+      {
+        nowMs: nightIntro.state.nextNoteAtMs,
+        tileKind: 'town',
+        contextType: 'town',
+        dayProgress: 0.9,
+        yearProgress: 0.5,
+        clusterX: 0,
+        clusterY: 0,
+      },
+      nightIntro.state
+    );
 
-    const dayPercussion = dayScheduled.notes.filter(
+    const dayPercussion = [...dayIntro.notes, ...dayScheduled.notes].filter(
       (note) => note.role === 'percussion'
     );
-    const nightPercussion = nightScheduled.notes.filter(
-      (note) => note.role === 'percussion'
-    );
-    const dayHarmony = dayScheduled.notes.find(
-      (note) => note.role === 'harmony'
-    );
-    const nightHarmony = nightScheduled.notes.find(
+    const nightPercussion = [
+      ...nightIntro.notes,
+      ...nightScheduled.notes,
+    ].filter((note) => note.role === 'percussion');
+    const dayHarmony = dayIntro.notes.find((note) => note.role === 'harmony');
+    const nightHarmony = nightIntro.notes.find(
       (note) => note.role === 'harmony'
     );
 
@@ -1657,7 +1714,7 @@ describe('procedural music', () => {
   });
 
   it('keeps ambient forest percussion quieter than the pitched roles', () => {
-    const introScheduled = scheduleProceduralMusicNotes({
+    const scheduled = scheduleProceduralMusicNotes({
       nowMs: 0,
       tileKind: 'forest',
       contextType: 'overworld',
@@ -1666,18 +1723,6 @@ describe('procedural music', () => {
       clusterX: 0,
       clusterY: 0,
     });
-    const scheduled = scheduleProceduralMusicNotes(
-      {
-        nowMs: introScheduled.state.nextNoteAtMs,
-        tileKind: 'forest',
-        contextType: 'overworld',
-        dayProgress: 0.5,
-        yearProgress: 0.5,
-        clusterX: 0,
-        clusterY: 0,
-      },
-      introScheduled.state
-    );
 
     const percussionNotes = scheduled.notes.filter(
       (note) => note.role === 'percussion'
