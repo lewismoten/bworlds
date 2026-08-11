@@ -14,6 +14,7 @@ import type {
   TraversalProfile3D,
   WaterTileKind,
 } from '@bworlds/plugin-api';
+import { createCoordinateCache } from '@bworlds/cache-support';
 
 export type RouteConnectionSegment = {
   startX: number;
@@ -379,7 +380,7 @@ export function createRoadsideRouteProfile({
   ] as const;
   const cachedSampleTerrainSignals =
     createCachedTerrainSignalSampler(sampleTerrainSignals);
-  const routePresenceCache = new Map<string, boolean>();
+  const routePresenceCache = createCoordinateCache<boolean>();
   const hasRouteAt = (targetX: number, targetY: number) =>
     getCachedRoutePresence(routePresenceCache, targetX, targetY, () =>
       hasPredictedRoutePresence({
@@ -417,11 +418,11 @@ export function createRoadsideRouteProfile({
     );
   };
   const frontier: Array<{ x: number; y: number; depth: number }> = [];
-  const visited = new Set<string>();
+  const visited = createCoordinateCache<boolean>();
   for (let index = 0; index < adjacentRouteCells.length; index += 1) {
     const point = adjacentRouteCells[index]!;
     frontier.push({ x: point.x, y: point.y, depth: 1 });
-    visited.add(`${point.x}:${point.y}`);
+    visited.set(point.x, point.y, true);
   }
   let routeSpan = 0;
 
@@ -435,11 +436,10 @@ export function createRoadsideRouteProfile({
     for (const direction of directions) {
       const nextX = current.x + direction.dx;
       const nextY = current.y + direction.dy;
-      const key = `${nextX}:${nextY}`;
-      if (visited.has(key) || !hasRouteAt(nextX, nextY)) {
+      if (visited.has(nextX, nextY) || !hasRouteAt(nextX, nextY)) {
         continue;
       }
-      visited.add(key);
+      visited.set(nextX, nextY, true);
       frontier.push({ x: nextX, y: nextY, depth: current.depth + 1 });
     }
   }
@@ -462,35 +462,26 @@ function createCachedTerrainSignalSampler(
   if (!sampleTerrainSignals) {
     return sampleTerrainSignals;
   }
-  const cache = new Map<
-    string,
-    ReturnType<NonNullable<typeof sampleTerrainSignals>>
-  >();
-  return (x: number, y: number) => {
-    const key = `${x}:${y}`;
-    const cached = cache.get(key);
-    if (cached) {
-      return cached;
-    }
-    const resolved = sampleTerrainSignals(x, y);
-    cache.set(key, resolved);
-    return resolved;
-  };
+  const cache =
+    createCoordinateCache<
+      ReturnType<NonNullable<typeof sampleTerrainSignals>>
+    >();
+  return (x: number, y: number) =>
+    cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
 }
 
 function getCachedRoutePresence(
-  cache: Map<string, boolean>,
+  cache: ReturnType<typeof createCoordinateCache<boolean>>,
   x: number,
   y: number,
   resolve: () => boolean
 ): boolean {
-  const key = `${x}:${y}`;
-  const cached = cache.get(key);
+  const cached = cache.get(x, y);
   if (cached !== undefined) {
     return cached;
   }
   const resolved = resolve();
-  cache.set(key, resolved);
+  cache.set(x, y, resolved);
   return resolved;
 }
 

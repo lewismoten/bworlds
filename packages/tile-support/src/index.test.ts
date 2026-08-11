@@ -84,6 +84,34 @@ describe('tile support', () => {
     expect(sampleCalls).toBe(13);
   });
 
+  it('reuses cached negative route scans during roadside profile checks', () => {
+    let sampleCalls = 0;
+    const profile = createRoadsideRouteProfile({
+      x: 4,
+      y: 7,
+      townAnchors: [],
+      bridgeAnchors: [],
+      sampleTerrainSignals() {
+        sampleCalls += 1;
+        return {
+          continent: 0.6,
+          elevation: 0.4,
+          moisture: 0.5,
+          riverSignal: 0.1,
+          roadSignal: 0.2,
+        };
+      },
+    });
+
+    expect(profile).toEqual({
+      onRoute: false,
+      adjacentRoadCount: 0,
+      atJunction: false,
+      routeSpan: 0,
+    });
+    expect(sampleCalls).toBe(5);
+  });
+
   it('treats tiles along the nearest town-to-bridge path as connected routes', () => {
     expect(
       hasConnectedRoutePath({
