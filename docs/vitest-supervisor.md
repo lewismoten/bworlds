@@ -78,6 +78,9 @@ Related commands:
   Still forwards file arguments through to Vitest and bypasses fast/long suite filtering.
 - `npm run test:hang-debug -- <files...>`
   Re-runs suspected hanging files with one worker and the verbose reporter.
+  On the current Vitest version this intentionally uses `--maxWorkers=1`
+  without `--minWorkers`, because the older `--minWorkers` flag is no longer
+  accepted.
 
 Reporter and output options such as `--reporter json` and
 `--outputFile /tmp/report.json` still count as full-suite invocations unless an

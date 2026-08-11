@@ -20,6 +20,7 @@ describe('package scripts', () => {
     expect(packageJson.scripts).toMatchObject({
       test: 'node ./scripts/vitest-supervisor.mjs --suite-mode fast',
       'test:fast': 'node ./scripts/vitest-supervisor.mjs --suite-mode fast',
+      'test:hang-debug': 'npm exec -- vitest run --reporter=verbose --maxWorkers=1',
       'test:watch': 'BWORLDS_VITEST_SUITE_MODE=fast vitest',
       'test:watch:all': 'BWORLDS_VITEST_SUITE_MODE=all vitest',
       'test:watch:long': 'BWORLDS_VITEST_SUITE_MODE=long vitest',
@@ -40,5 +41,20 @@ describe('package scripts', () => {
     expect(packageJson.scripts?.check).toContain('npm run test');
     expect(packageJson.scripts?.check).not.toContain('npm run test:all');
     expect(packageJson.scripts?.check).not.toContain('npm run test:long');
+  });
+
+  it('keeps the hang-debug script compatible with the current Vitest worker flags', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(packageJsonPath, 'utf8')
+    ) as {
+      scripts?: Record<string, string>;
+    };
+
+    expect(packageJson.scripts?.['test:hang-debug']).toBe(
+      'npm exec -- vitest run --reporter=verbose --maxWorkers=1'
+    );
+    expect(packageJson.scripts?.['test:hang-debug']).not.toContain(
+      '--minWorkers'
+    );
   });
 });
