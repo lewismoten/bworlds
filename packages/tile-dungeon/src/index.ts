@@ -283,14 +283,38 @@ export function createDungeonTilePlugin(): RuntimePlugin {
 
       group.add(gate);
 
-      getDungeonTowerBeaconDescriptors(
+      const towerBeacons = getDungeonTowerBeaconDescriptors(
         tileX,
         tileY,
         baseWidth,
         baseDepth
-      ).forEach((beacon) => {
-        createDungeonBeacon(three, group, beacon, style);
+      );
+      const towerBeaconBraziers = new three.InstancedMesh(
+        new three.CylinderGeometry(0.05, 0.06, 0.06, 6),
+        style.trimMaterial,
+        towerBeacons.length
+      );
+      towerBeaconBraziers.userData = {
+        ...(towerBeaconBraziers.userData ?? {}),
+        dungeonInstancedPart: 'beacon-brazier',
+      };
+      const towerBeaconBrazierMatrixScratch = new three.Matrix4();
+      towerBeacons.forEach((beacon, index) => {
+        towerBeaconBraziers.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            towerBeaconBrazierMatrixScratch,
+            beacon.x,
+            beacon.y - 0.02,
+            beacon.z,
+            1,
+            1,
+            1
+          )
+        );
+        createDungeonBeacon(three, group, beacon, style, false);
       });
+      group.add(towerBeaconBraziers);
       getDungeonBannerDescriptors(tileX, tileY, baseWidth, baseDepth).forEach(
         (banner, index) => {
           group.add(
@@ -566,7 +590,8 @@ function createDungeonBeacon(
   three: ThreeHostLike,
   parent: ThreeObject3DLike,
   descriptor: DungeonBeaconDescriptor,
-  style: DungeonStyle
+  style: DungeonStyle,
+  includeBrazier = true
 ) {
   const glowDayIntensity = quantizeDungeonGlowIntensity(
     descriptor.glowDayIntensity
@@ -574,16 +599,18 @@ function createDungeonBeacon(
   const glowNightIntensity = quantizeDungeonGlowIntensity(
     descriptor.glowNightIntensity
   );
-  const brazier = new three.Mesh(
-    new three.CylinderGeometry(0.05, 0.06, 0.06, 6),
-    style.trimMaterial
-  );
-  brazier.position.set(descriptor.x, descriptor.y - 0.02, descriptor.z);
-  brazier.userData = {
-    ...(brazier.userData ?? {}),
-    [DUNGEON_BEACON_KEY]: descriptor.label,
-  };
-  parent.add(brazier);
+  if (includeBrazier) {
+    const brazier = new three.Mesh(
+      new three.CylinderGeometry(0.05, 0.06, 0.06, 6),
+      style.trimMaterial
+    );
+    brazier.position.set(descriptor.x, descriptor.y - 0.02, descriptor.z);
+    brazier.userData = {
+      ...(brazier.userData ?? {}),
+      [DUNGEON_BEACON_KEY]: descriptor.label,
+    };
+    parent.add(brazier);
+  }
 
   const glow = markPoiLightEmitter(
     new three.Mesh(
