@@ -209,8 +209,8 @@
 - [ ] Measure draw calls produced by each LOD.
 - [ ] Measure materials produced by each LOD.
 - [ ] Measure Object3D counts produced by each LOD.
-- [ ] Count successful lower LOD recoveries.
-- [ ] Count fallback box appearances.
+- [x] Count successful lower LOD recoveries.
+- [x] Count fallback box appearances.
 - [ ] Count group creation and group split events.
 - [ ] Count group cache hits and misses.
 

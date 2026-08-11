@@ -2294,6 +2294,8 @@ function collectCurrentDebugSnapshot(
     tileBuildsPerSecond: rendererStats.tileBuildsPerSecond,
     lodChecksPerSecond: rendererStats.lodChecksPerSecond,
     lodReplacementsPerSecond: rendererStats.lodReplacementsPerSecond,
+    lowerLodRecoveriesPerSecond: rendererStats.lowerLodRecoveriesPerSecond,
+    fallbackBoxesPerSecond: rendererStats.fallbackBoxesPerSecond,
     object3dCount: rendererStats.object3dCount,
     visibleObjectCount: rendererStats.visibleObjectCount,
     invisibleObjectCount: rendererStats.invisibleObjectCount,

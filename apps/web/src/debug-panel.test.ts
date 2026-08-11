@@ -66,6 +66,8 @@ describe('debug panel', () => {
       tileBuildsPerSecond: 14,
       lodChecksPerSecond: 5,
       lodReplacementsPerSecond: 3,
+      lowerLodRecoveriesPerSecond: 2,
+      fallbackBoxesPerSecond: 1,
       object3dCount: 318,
       groupCount: 54,
       meshCount: 180,
@@ -141,6 +143,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Tile Builds/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Checks/s');
     expect(buildDebugMarkup(snapshot)).toContain('LOD Swaps/s');
+    expect(buildDebugMarkup(snapshot)).toContain('LOD Recoveries/s');
+    expect(buildDebugMarkup(snapshot)).toContain('Fallback Boxes/s');
     expect(buildDebugMarkup(snapshot)).toContain('Worst Frame');
     expect(buildDebugMarkup(snapshot)).toContain('Points Nodes');
     expect(buildDebugMarkup(snapshot)).toContain('Sprites');

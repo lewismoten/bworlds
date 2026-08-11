@@ -37,6 +37,8 @@ export type DebugSnapshot = {
   tileBuildsPerSecond: number;
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
+  lowerLodRecoveriesPerSecond?: number;
+  fallbackBoxesPerSecond?: number;
   object3dCount: number;
   visibleObjectCount?: number;
   invisibleObjectCount?: number;
@@ -204,6 +206,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.tileBuildsPerSecond,
     snapshot.lodChecksPerSecond,
     snapshot.lodReplacementsPerSecond,
+    snapshot.lowerLodRecoveriesPerSecond ?? 0,
+    snapshot.fallbackBoxesPerSecond ?? 0,
     snapshot.object3dCount,
     snapshot.groupCount,
     snapshot.meshCount,
@@ -334,6 +338,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Tile Builds/s</dt><dd>${snapshot.tileBuildsPerSecond}</dd></div>
     <div><dt>LOD Checks/s</dt><dd>${snapshot.lodChecksPerSecond}</dd></div>
     <div><dt>LOD Swaps/s</dt><dd>${snapshot.lodReplacementsPerSecond}</dd></div>
+    <div><dt>LOD Recoveries/s</dt><dd>${snapshot.lowerLodRecoveriesPerSecond ?? 0}</dd></div>
+    <div><dt>Fallback Boxes/s</dt><dd>${snapshot.fallbackBoxesPerSecond ?? 0}</dd></div>
     <div><dt>Active Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Three.js Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Objects / Tile</dt><dd>${objectsPerVisibleTile}</dd></div>

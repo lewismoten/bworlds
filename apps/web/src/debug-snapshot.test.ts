@@ -228,6 +228,8 @@ describe('debug snapshot', () => {
         tileBuildsPerSecond: 11,
         lodChecksPerSecond: 5,
         lodReplacementsPerSecond: 3,
+        lowerLodRecoveriesPerSecond: 2,
+        fallbackBoxesPerSecond: 1,
         object3dCount: 318,
         visibleObjectCount: 301,
         invisibleObjectCount: 17,
@@ -575,6 +577,8 @@ describe('debug snapshot', () => {
     expect(result.lod).toMatchObject({
       checksPerSecond: 5,
       swapsPerSecond: 3,
+      lowerDetailRecoveriesPerSecond: 2,
+      fallbackBoxesPerSecond: 1,
       thresholds: {
         lowDetailDistance: 6.5,
         lowDetailEnterDistance: 6.5,
