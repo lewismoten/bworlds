@@ -24,6 +24,9 @@ Current behavior:
   `syncTileModelDetailLevels()` can keep ordinary tiles on low detail when the
   remaining frame budget is nearly exhausted, while protected landmark and
   route-terminal tiles still keep their longer full-detail window.
+- Visible-tile LOD reevaluation keeps the existing model in place when a
+  replacement build cannot produce a real `modelRoot`, which avoids swapping a
+  valid model for a shell-only fallback during ordinary LOD churn.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

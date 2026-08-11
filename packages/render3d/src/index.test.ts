@@ -204,6 +204,7 @@ import {
   shouldProcessPendingWorldBuildEntry,
   shouldEvaluateTileModelDetailLevel,
   shouldKeepTileModelFullDetailLonger,
+  shouldReplaceVisibleTileModelDetailEntry,
   shouldSyncWorldCurvature,
   shouldSyncTileModelDetailLevels,
   summarizeVisibleTileKinds,
@@ -4838,6 +4839,33 @@ describe('render3d visibility helpers', () => {
     expect(shouldEvaluateTileModelDetailLevel(undefined, 100)).toBe(true);
     expect(shouldEvaluateTileModelDetailLevel('low', 100)).toBe(false);
     expect(shouldEvaluateTileModelDetailLevel('low', 36)).toBe(true);
+  });
+
+  it('keeps the current visible model when a lod replacement only built a fallback shell', () => {
+    expect(
+      shouldReplaceVisibleTileModelDetailEntry(
+        { modelRoot: { type: 'Group' } as never },
+        { modelRoot: null }
+      )
+    ).toBe(false);
+  });
+
+  it('allows visible lod replacements when the next model has a real model root', () => {
+    expect(
+      shouldReplaceVisibleTileModelDetailEntry(
+        { modelRoot: { type: 'Group' } as never },
+        { modelRoot: { type: 'Group' } as never }
+      )
+    ).toBe(true);
+  });
+
+  it('allows fallback-only entries to be replaced when there is no current valid model', () => {
+    expect(
+      shouldReplaceVisibleTileModelDetailEntry(
+        { modelRoot: null },
+        { modelRoot: null }
+      )
+    ).toBe(true);
   });
 
   it('uses low detail for non-near pending builds while the queue is still draining', () => {

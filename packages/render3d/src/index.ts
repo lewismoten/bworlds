@@ -3031,6 +3031,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           frameBudget ? getRemainingFrameTimeBudgetMs(frameBudget) : undefined
         )
       );
+      if (!shouldReplaceVisibleTileModelDetailEntry(entry, nextEntry)) {
+        continue;
+      }
       visibleTileNodes.set(key, nextEntry);
       worldRoot.remove(entry.node);
       disposeObject3DResources(entry.node);
@@ -3920,6 +3923,13 @@ export function shouldEvaluateTileModelDetailLevel(
   }
 
   return distanceSquared <= lowDetailExitDistanceSquared;
+}
+
+export function shouldReplaceVisibleTileModelDetailEntry(
+  currentEntry: { modelRoot?: THREE.Object3D | null },
+  nextEntry: { modelRoot?: THREE.Object3D | null }
+): boolean {
+  return !currentEntry.modelRoot || Boolean(nextEntry.modelRoot);
 }
 
 export function getPendingWorldBuildDetailLevel(
