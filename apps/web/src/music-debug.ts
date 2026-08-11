@@ -898,6 +898,11 @@ export function buildMusicDebugShellMarkup(
             <div id="music-debug-section-buttons" class="music-debug-section-buttons"></div>
           </div>
           <div class="music-debug-timeline-shell">
+            <div
+              id="music-debug-track-visibility"
+              class="music-debug-track-visibility"
+              aria-label="Track visibility"
+            ></div>
             <canvas id="music-debug-timeline" width="960" height="320"></canvas>
             <div
               id="music-debug-timeline-hover"

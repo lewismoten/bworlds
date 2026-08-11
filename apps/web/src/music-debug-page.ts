@@ -53,6 +53,11 @@ import {
 } from './music-debug.ts';
 import { MUSIC_DEBUG_PLAYBACK_CONTROLLER_LEAD_MS } from './music-debug-playback-profile.ts';
 import {
+  formatMusicDebugDisplayRoleLabel,
+  MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
+  type MusicDebugDisplayRole,
+} from './music-debug-role-display.ts';
+import {
   drawMusicDebugTimeline,
   resolveMusicDebugTimelineHoverDetail,
   resolveMusicDebugTimelineSeekOffset,
@@ -85,6 +90,9 @@ const timeline = document.querySelector<HTMLCanvasElement>(
 );
 const timelineHover = document.querySelector<HTMLElement>(
   '#music-debug-timeline-hover'
+);
+const trackVisibilityRoot = document.querySelector<HTMLElement>(
+  '#music-debug-track-visibility'
 );
 const playButton =
   document.querySelector<HTMLButtonElement>('#music-debug-play');
@@ -145,6 +153,7 @@ let playbackVisualState: MusicDebugPlaybackVisualState | null = null;
 let playbackFrameHandle: number | null = null;
 let percussionPlaybackState: MusicDebugPercussionPlaybackState =
   normalizeMusicDebugPercussionPlaybackState(null);
+let hiddenRoles: MusicDebugDisplayRole[] = [];
 const pagePersistence = createMusicDebugPagePersistenceController({
   storage: globalThis.localStorage ?? null,
   hmr: import.meta.hot,
@@ -213,7 +222,32 @@ function renderTimeline(
   drawMusicDebugTimeline(timeline, snapshot, {
     playheadOffsetMs: resolveDisplayedOffsetMs(),
     activeRegion: playbackVisualState?.region ?? null,
+    visibleRoles: resolveVisibleTimelineRoles(),
   });
+}
+
+function resolveVisibleTimelineRoles(): MusicDebugDisplayRole[] {
+  return MUSIC_DEBUG_DISPLAY_ROLE_ORDER.filter(
+    (role) => !hiddenRoles.includes(role)
+  );
+}
+
+function buildTrackVisibilityButtonMarkup(role: MusicDebugDisplayRole): string {
+  const hidden = hiddenRoles.includes(role);
+  const label = formatMusicDebugDisplayRoleLabel(role);
+  const icon = hidden
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4 20 21" /><path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" /><path d="M9.3 5.4A10.9 10.9 0 0 1 12 5c5.5 0 9.3 4.7 10 7-.3 1-1.2 2.6-2.7 4.1" /><path d="M6.7 6.8C4.4 8.1 2.8 10.2 2 12c.7 2.3 4.5 7 10 7 1.6 0 3-.3 4.3-.8" /></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c.7-2.3 4.5-7 10-7s9.3 4.7 10 7c-.7 2.3-4.5 7-10 7S2.7 14.3 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>';
+  return `<button type="button" class="music-debug-track-visibility-button" data-role="${role}" aria-pressed="${hidden}" aria-label="${hidden ? `Show ${label}` : `Hide ${label}`}">${icon}<span>${label}</span></button>`;
+}
+
+function renderTrackVisibilityControls(): void {
+  if (!trackVisibilityRoot) {
+    return;
+  }
+  trackVisibilityRoot.innerHTML = MUSIC_DEBUG_DISPLAY_ROLE_ORDER.map((role) =>
+    buildTrackVisibilityButtonMarkup(role)
+  ).join('');
 }
 
 function renderPlaybackUi(snapshot = resolveCurrentSnapshot()): void {
@@ -540,6 +574,8 @@ function applyPersistedPageState(): void {
   percussionPlaybackState = normalizeMusicDebugPercussionPlaybackState(
     persistedState.percussionPlaybackState
   );
+  hiddenRoles = [...persistedState.hiddenRoles];
+  renderTrackVisibilityControls();
 }
 
 function persistPageState(
@@ -554,6 +590,7 @@ function persistPageState(
     ),
     dryPlaybackEnabled: resolveSelectedDryPlaybackEnabled(),
     percussionPlaybackState,
+    hiddenRoles,
     previewOffsetMs: offsetMs,
     shouldResume,
     scrollY: Math.max(0, Math.round(globalThis.scrollY ?? 0)),
@@ -819,6 +856,7 @@ timeline?.addEventListener('pointermove', (event) => {
     boundsTop: bounds.top,
     boundsWidth: bounds.width,
     boundsHeight: bounds.height,
+    visibleRoles: resolveVisibleTimelineRoles(),
   });
   if (!hoverDetail) {
     hideTimelineHover();
@@ -837,6 +875,26 @@ timeline?.addEventListener('pointermove', (event) => {
 });
 
 timeline?.addEventListener('pointerleave', hideTimelineHover);
+
+trackVisibilityRoot?.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  const button = target.closest<HTMLButtonElement>(
+    '.music-debug-track-visibility-button'
+  );
+  const role = button?.dataset.role as MusicDebugDisplayRole | undefined;
+  if (!button || !role) {
+    return;
+  }
+  hiddenRoles = hiddenRoles.includes(role)
+    ? hiddenRoles.filter((entry) => entry !== role)
+    : [...hiddenRoles, role];
+  renderTrackVisibilityControls();
+  renderPlaybackUi();
+  persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
+});
 
 const scheduleAfterPaint =
   globalThis.requestAnimationFrame?.bind(globalThis) ??
@@ -861,6 +919,8 @@ scheduleAfterPaint(() => {
   syncPlaybackControls(snapshot);
   restorePersistedPageScrollY(persistedState?.scrollY ?? 0);
 });
+
+renderTrackVisibilityControls();
 
 globalThis.addEventListener?.(
   'pagehide',

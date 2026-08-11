@@ -74,6 +74,33 @@ describe('music debug timeline', () => {
     ).toBe(true);
   });
 
+  it('filters hidden roles out of timeline note bars and hover hit testing', () => {
+    const snapshot = createMusicDebugSnapshot();
+    const layout = resolveMusicDebugTimelineLayout(960, 320);
+    const leadNoteBar = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
+      visibleRoles: ['lead', 'harmony', 'bass', 'percussion'],
+    }).find((bar) => bar.role === 'lead')!;
+
+    const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
+      visibleRoles: ['harmony', 'bass', 'percussion'],
+    });
+
+    expect(noteBars.some((bar) => bar.role === 'lead')).toBe(false);
+    expect(
+      resolveMusicDebugTimelineHoverDetail({
+        snapshot,
+        canvas: { width: 960, height: 320 },
+        clientX: leadNoteBar.x + leadNoteBar.width * 0.5,
+        clientY: leadNoteBar.y + leadNoteBar.height * 0.5,
+        boundsLeft: 0,
+        boundsTop: 0,
+        boundsWidth: 960,
+        boundsHeight: 320,
+        visibleRoles: ['harmony', 'bass', 'percussion'],
+      })
+    ).toBeNull();
+  });
+
   it('tracks overlapping note bars so dense stacks can render more vividly', () => {
     const snapshot = createMusicDebugSnapshot();
     const layout = resolveMusicDebugTimelineLayout(960, 320);

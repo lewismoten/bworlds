@@ -246,6 +246,7 @@ describe('music debug', () => {
     expect(markup).toContain('music-debug-current-time');
     expect(markup).toContain('music-debug-current-section');
     expect(markup).toContain('music-debug-section-buttons');
+    expect(markup).toContain('music-debug-track-visibility');
     expect(markup).toContain('music-debug-timeline-hover');
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('music-debug-instrument-play');

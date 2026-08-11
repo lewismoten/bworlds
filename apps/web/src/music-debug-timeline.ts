@@ -13,7 +13,9 @@ import { createMusicDebugScaleOverlay } from './music-debug-scale.ts';
 import {
   formatMusicDebugDisplayRoleLabel,
   MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
+  normalizeMusicDebugDisplayRoles,
   resolveMusicDebugDisplayRoleColor,
+  type MusicDebugDisplayRole,
 } from './music-debug-role-display.ts';
 import {
   type MusicDebugChordCue,
@@ -156,6 +158,7 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
   boundsTop: number;
   boundsWidth: number;
   boundsHeight: number;
+  visibleRoles?: readonly MusicDebugDisplayRole[] | null;
 }): MusicDebugTimelineHoverDetail | null {
   const layout = resolveMusicDebugTimelineLayout(
     options.canvas.width,
@@ -169,7 +172,9 @@ export function resolveMusicDebugTimelineHoverDetail(options: {
     ((options.clientY - options.boundsTop) /
       Math.max(1, options.boundsHeight)) *
     options.canvas.height;
-  const noteBars = resolveMusicDebugTimelineNoteBars(options.snapshot, layout);
+  const noteBars = resolveMusicDebugTimelineNoteBars(options.snapshot, layout, {
+    visibleRoles: options.visibleRoles,
+  });
 
   for (let index = noteBars.length - 1; index >= 0; index -= 1) {
     const noteBar = noteBars[index]!;
@@ -245,6 +250,7 @@ export function drawMusicDebugTimeline(
   options: {
     playheadOffsetMs?: number;
     activeRegion?: MusicDebugPlaybackRegion | null;
+    visibleRoles?: readonly MusicDebugDisplayRole[] | null;
   } = {}
 ): void {
   const context = canvas.getContext('2d');
@@ -256,6 +262,9 @@ export function drawMusicDebugTimeline(
   const height = canvas.height;
   const layout = resolveMusicDebugTimelineLayout(width, height);
   const durationMs = Math.max(snapshot.durationMs, 1);
+  const visibleRoles = normalizeMusicDebugTimelineVisibleRoles(
+    options.visibleRoles
+  );
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const chordCues = resolveMusicDebugChordCues(snapshot);
   const chordLabels = resolveMusicDebugTimelineChordLabels(
@@ -298,6 +307,7 @@ export function drawMusicDebugTimeline(
   context.fillStyle = '#9db2bd';
   context.font = '13px Trebuchet MS';
   layout.roleOrder.forEach((role, index) => {
+    context.fillStyle = visibleRoles.includes(role) ? '#9db2bd' : '#51616d';
     context.fillText(
       formatMusicDebugDisplayRoleLabel(role).toUpperCase(),
       16,
@@ -352,7 +362,9 @@ export function drawMusicDebugTimeline(
   }
   context.textAlign = 'start';
 
-  const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+  const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
+    visibleRoles,
+  });
   for (const noteBar of noteBars) {
     context.fillStyle = resolveMusicDebugTimelineNoteBarColor(
       resolveMusicDebugDisplayRoleColor(noteBar.role),
@@ -399,14 +411,20 @@ export function buildMusicDebugTimelineSvgMarkup(
     height?: number;
     playheadOffsetMs?: number;
     activeRegion?: MusicDebugPlaybackRegion | null;
+    visibleRoles?: readonly MusicDebugDisplayRole[] | null;
   } = {}
 ): string {
   const width = options.width ?? MUSIC_DEBUG_TIMELINE_EXPORT_WIDTH;
   const height = options.height ?? MUSIC_DEBUG_TIMELINE_EXPORT_HEIGHT;
   const layout = resolveMusicDebugTimelineLayout(width, height);
   const durationMs = Math.max(snapshot.durationMs, 1);
+  const visibleRoles = normalizeMusicDebugTimelineVisibleRoles(
+    options.visibleRoles
+  );
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
-  const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+  const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout, {
+    visibleRoles,
+  });
   const chordCues = resolveMusicDebugChordCues(snapshot);
   const chordLabels = resolveMusicDebugTimelineChordLabels(
     layout,
@@ -459,7 +477,8 @@ export function buildMusicDebugTimelineSvgMarkup(
       ${layout.roleOrder
         .map((role, index) => {
           const y = layout.topPad + layout.trackHeight * index + 18;
-          return `<text x="16" y="${y.toFixed(2)}" fill="#9db2bd" font-family="Trebuchet MS, sans-serif" font-size="13">${formatMusicDebugDisplayRoleLabel(
+          const fill = visibleRoles.includes(role) ? '#9db2bd' : '#51616d';
+          return `<text x="16" y="${y.toFixed(2)}" fill="${fill}" font-family="Trebuchet MS, sans-serif" font-size="13">${formatMusicDebugDisplayRoleLabel(
             role
           ).toUpperCase()}</text>`;
         })
@@ -540,7 +559,10 @@ export function buildMusicDebugTimelineSvgMarkup(
 
 export function resolveMusicDebugTimelineNoteBars(
   snapshot: MusicDebugSnapshot,
-  layout: MusicDebugTimelineLayout
+  layout: MusicDebugTimelineLayout,
+  options: {
+    visibleRoles?: readonly MusicDebugDisplayRole[] | null;
+  } = {}
 ): MusicDebugTimelineNoteBar[] {
   const durationMs = Math.max(snapshot.durationMs, 1);
   const timelineStartMs = snapshot.notes[0]?.startMs ?? snapshot.song.startMs;
@@ -549,8 +571,14 @@ export function resolveMusicDebugTimelineNoteBars(
   const percussionLaneMap = createPercussionLaneMap(snapshot.notes);
   const noteBars: MusicDebugTimelineNoteBar[] = [];
   const usableWidth = layout.width - layout.leftPad - layout.rightPad;
+  const visibleRoles = normalizeMusicDebugTimelineVisibleRoles(
+    options.visibleRoles
+  );
 
   snapshot.notes.forEach((note, noteIndex) => {
+    if (!visibleRoles.includes(note.role)) {
+      return;
+    }
     const roleIndex = layout.roleOrder.indexOf(note.role);
     if (roleIndex < 0) {
       return;
@@ -606,6 +634,15 @@ export function resolveMusicDebugTimelineNoteBars(
 
   applyNoteBarOverlapCounts(noteBars);
   return noteBars;
+}
+
+function normalizeMusicDebugTimelineVisibleRoles(
+  value: readonly MusicDebugDisplayRole[] | null | undefined
+): MusicDebugDisplayRole[] {
+  if (value == null) {
+    return [...MUSIC_DEBUG_DISPLAY_ROLE_ORDER];
+  }
+  return normalizeMusicDebugDisplayRoles(value);
 }
 
 export function resolveMusicDebugTimelineNoteBarColor(

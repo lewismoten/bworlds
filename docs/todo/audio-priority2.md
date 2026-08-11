@@ -86,12 +86,18 @@
 - [x] Chord labels above the timeline overlap eachother and are not readable
 - [x] Show note name and duration on hover.
 - [x] Show drum voice name on percussion hover.
-- [ ] Add per-track eye icons to hide tracks.
+- [x] Add per-track eye icons to hide tracks.
 - [ ] Add per-track ear icons to solo or mute tracks.
 - [ ] Add per-drum toggles within the percussion lane.
 - [ ] Add a mini overview strip for fast scrubbing.
 - [ ] Add loop-range drag handles on the timeline.
 - [ ] Add snap-to-measure and snap-to-section navigation.
+- [ ] In full-song view, I should be able to drag the play head with my mouse.
+- [ ] Clicking a section mode while the music is playing should move the play head to that position.
+- [ ] I sould be able to toggle each track to be mute by clicking the track name and see a visual indication
+- [ ] The playhead should only cover the tracks and not extend past them
+- [ ] Hovering over letters like "Q" and "A" above the tracks should show some details
+- [ ] Text appears at the top that says "1 min" but is vauge on what that means
 
 ## 8) Add better diagnostics to the timeline
 

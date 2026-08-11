@@ -15,6 +15,9 @@ Current behavior:
   `Chord 5 minor` above the note lanes.
 - Chord labels now thin themselves automatically and fall back to compact
   `1 maj` or `5 min` forms on narrow spans so dense progressions stay readable.
+- Per-track eye toggles above the timeline now hide or restore individual
+  role lanes without affecting playback state, and that visibility choice is
+  persisted with the rest of the debug page session.
 - Hovering a note now shows its pitch or resolved drum voice plus duration, and
   the exported SVG note bars carry the same labels through `<title>` metadata.
 - Planned question and answer cadence markers now appear on the timeline header

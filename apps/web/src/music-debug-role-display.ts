@@ -19,6 +19,15 @@ const MUSIC_DEBUG_ROLE_COLORS: Record<MusicDebugDisplayRole, string> = {
 export const MUSIC_DEBUG_DISPLAY_ROLE_ORDER: readonly MusicDebugDisplayRole[] =
   ['lead', 'harmony', 'bass', 'percussion'];
 
+export function normalizeMusicDebugDisplayRoles(
+  value: readonly unknown[] | null | undefined
+): MusicDebugDisplayRole[] {
+  const requestedRoles = new Set(value);
+  return MUSIC_DEBUG_DISPLAY_ROLE_ORDER.filter((role) =>
+    requestedRoles.has(role)
+  );
+}
+
 export function formatMusicDebugDisplayRoleLabel(
   role: MusicDebugDisplayRole
 ): string {
