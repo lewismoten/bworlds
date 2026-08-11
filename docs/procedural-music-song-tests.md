@@ -18,7 +18,8 @@ can parallelize them and the file boundaries match the behavior under test:
   covers arrangement density and motif-versus-filler emphasis.
 - [procedural-music-song-motif.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-motif.test.ts:1)
   covers opening motif restatement, variation transposition, regeneration of
-  missed motif sections, and the cap that trims excess filler notes from the
+  missed motif sections, the immediate post-statement filler trim, and the
+  phrase-wide cap that keeps later filler bursts from overwhelming the
   protected motif phrase window before later song-wide density shaping runs.
 - [procedural-music-song-arrangement-boundaries.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-arrangement-boundaries.long.test.ts:1)
   covers section-window boundary safety for transformed notes.

@@ -40,6 +40,7 @@ const FILLER_DEEMPHASIS_VELOCITY_PENALTY = 4;
 const MOTIF_TO_FILLER_CONNECTION_GAP_RATIO = 0.08;
 const MOTIF_TO_FILLER_CONNECTION_RELEASE_MULTIPLIER = 1.35;
 const MAX_IMMEDIATE_FILLER_NOTES_AFTER_MOTIF = 2;
+const MAX_TOTAL_FILLER_NOTES_AFTER_MOTIF = 3;
 const IMMEDIATE_FILLER_CLUSTER_WINDOW_RATIO = 4;
 
 export function stateLeadMotifInFirstASection(options: {
@@ -589,6 +590,11 @@ function preserveLeadMotifStatementLane(
       Math.round(options.noteDurationMs * IMMEDIATE_FILLER_CLUSTER_WINDOW_RATIO)
     ),
   });
+  pruneExcessPhraseLeadFillers(notes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs: options.phraseEndMs,
+    motifLength: options.motifLength,
+  });
   let displacedStartMs = Math.min(
     options.phraseEndMs - 1,
     options.protectedThroughMs + statementGapMs
@@ -685,6 +691,24 @@ function pruneExcessImmediateLeadFillers(
 
   for (let index = immediateFillerIndexes.length - 1; index >= 0; index -= 1) {
     notes.splice(immediateFillerIndexes[index]!, 1);
+  }
+}
+
+function pruneExcessPhraseLeadFillers(
+  notes: ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseEndMs: number;
+    motifLength: number;
+  }
+): void {
+  const fillerIndexes = collectLeadIndexesInPhrase(notes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs: options.phraseEndMs,
+  }).slice(options.motifLength + MAX_TOTAL_FILLER_NOTES_AFTER_MOTIF);
+
+  for (let index = fillerIndexes.length - 1; index >= 0; index -= 1) {
+    notes.splice(fillerIndexes[index]!, 1);
   }
 }
 
