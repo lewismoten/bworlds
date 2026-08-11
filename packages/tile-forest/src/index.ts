@@ -74,6 +74,7 @@ import type {
   ThreeGeometryLike,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeObject3DLike,
   ThreeTextureLike,
   WorldEnvironmentLike,
@@ -97,7 +98,9 @@ const SPIDER_KEY = 'forestSpider';
 const BEAVER_DAMAGE_KEY = 'forestBeaverDamage';
 const TRAIL_KEY = 'forestTrail';
 const TREE_FORM_KEY = 'forestTreeForm';
+const TREE_BRANCH_INSTANCED_KEY = 'forestTreeBranchInstanced';
 const TREE_FOLIAGE_KEY = 'forestTreeFoliage';
+const TREE_FOLIAGE_INSTANCED_KEY = 'forestTreeFoliageInstanced';
 const RENDER_STATS_CATEGORY_KEY = 'renderStatKind';
 const TREE_CLUSTER_SIZE = 4;
 const MAX_FOREST_FIREFLIES = 3;
@@ -1971,43 +1974,76 @@ function addForestFullDetailTree(
     structure
   );
 
-  for (const branch of structure.branches) {
-    const branchCurveInfluence = Math.max(
-      0,
-      Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
+  if (structure.branches.length > 0) {
+    const branchInstances = new three.InstancedMesh(
+      geometry.branch,
+      style.trunkMaterial,
+      structure.branches.length
     );
-    const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
-    limb.position.set(
-      branch.x + structure.trunkCurveX * branchCurveInfluence,
-      branch.y,
-      branch.z + structure.trunkCurveZ * branchCurveInfluence
-    );
-    limb.rotation.z = branch.roll;
-    limb.rotation.x = branch.pitch;
-    limb.scale.y = branch.length;
-    tree.add(limb);
+    branchInstances.userData = {
+      ...(branchInstances.userData ?? {}),
+      [TREE_BRANCH_INSTANCED_KEY]: true,
+    };
+    const branchMatrixScratch = new three.Matrix4();
+    structure.branches.forEach((branch, index) => {
+      const branchCurveInfluence = Math.max(
+        0,
+        Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
+      );
+      branchInstances.setMatrixAt(
+        index,
+        writeForestBranchInstancedMatrix(
+          branchMatrixScratch,
+          branch.x + structure.trunkCurveX * branchCurveInfluence,
+          branch.y,
+          branch.z + structure.trunkCurveZ * branchCurveInfluence,
+          branch.length,
+          branch.pitch,
+          branch.roll
+        )
+      );
+    });
+    tree.add(branchInstances);
   }
 
-  for (const clump of canopy.foliage) {
-    const canopyCurveInfluence = Math.max(
-      0,
-      Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
+  if (canopy.foliage.length > 0) {
+    const foliageInstances = new three.InstancedMesh(
+      geometry.foliage,
+      style.foliageMaterial,
+      canopy.foliage.length
     );
-    const foliage = new three.Mesh(geometry.foliage, style.foliageMaterial);
-    foliage.position.set(
-      clump.x + structure.trunkCurveX * canopyCurveInfluence,
-      clump.y,
-      clump.z + structure.trunkCurveZ * canopyCurveInfluence
-    );
-    foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
+    foliageInstances.userData = {
+      ...(foliageInstances.userData ?? {}),
+      [TREE_FOLIAGE_INSTANCED_KEY]: true,
+    };
+    const foliageMatrixScratch = new three.Matrix4();
+    canopy.foliage.forEach((clump, index) => {
+      const canopyCurveInfluence = Math.max(
+        0,
+        Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
+      );
+      foliageInstances.setMatrixAt(
+        index,
+        writeLowDetailInstancedMatrix(
+          foliageMatrixScratch,
+          clump.x + structure.trunkCurveX * canopyCurveInfluence,
+          clump.y,
+          clump.z + structure.trunkCurveZ * canopyCurveInfluence,
+          clump.scaleX,
+          clump.scaleY,
+          clump.scaleZ
+        )
+      );
+    });
+    const leadClump = canopy.foliage[0]!;
     tagForestFoliageWind(
-      foliage,
+      foliageInstances,
       tileX,
       tileY,
       descriptor.variety,
-      clump.x + clump.y + clump.z
+      leadClump.x + leadClump.y + leadClump.z
     );
-    tree.add(foliage);
+    tree.add(foliageInstances);
   }
 
   if (damage.barkMarks.length > 0) {
@@ -2172,6 +2208,40 @@ function addForestFullDetailTrunk(
     forestTreeTrunkSegment: 'upper',
   };
   tree.add(upperTrunk);
+}
+
+function writeForestBranchInstancedMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  length: number,
+  pitch: number,
+  roll: number
+) {
+  const cosPitch = Math.cos(pitch);
+  const sinPitch = Math.sin(pitch);
+  const cosRoll = Math.cos(roll);
+  const sinRoll = Math.sin(roll);
+
+  return target.set(
+    cosRoll,
+    -sinRoll * cosPitch * length,
+    sinRoll * sinPitch,
+    x,
+    sinRoll,
+    cosRoll * cosPitch * length,
+    -cosRoll * sinPitch,
+    y,
+    0,
+    sinPitch * length,
+    cosPitch,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
 }
 
 function getForestTreeDescriptors(

@@ -285,6 +285,42 @@ describe('tile forest', () => {
     });
   });
 
+  it('instances full-detail tree branches and foliage within each tree', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const model = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const branchInstances: FakeInstancedMesh[] = [];
+    const foliageInstances: FakeInstancedMesh[] = [];
+    model.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestTreeBranchInstanced
+      ) {
+        branchInstances.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestTreeFoliageInstanced
+      ) {
+        foliageInstances.push(node);
+      }
+    });
+
+    expect(branchInstances.length).toBeGreaterThan(0);
+    expect(branchInstances.every((mesh) => mesh.count > 0)).toBe(true);
+    expect(foliageInstances.length).toBeGreaterThan(0);
+    expect(foliageInstances.every((mesh) => mesh.count > 0)).toBe(true);
+  });
+
   it('renders meadow grass only in full-detail forest models', () => {
     const tile = getForestTile();
     const state = createForestTestState();

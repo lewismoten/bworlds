@@ -21,11 +21,15 @@ Current layout:
 - Mushroom-ring landmarks now share one `CylinderGeometry` for stems, one
   `SphereGeometry` for caps, and two `InstancedMesh` nodes, with per-instance
   scale and position stored in matrices.
+- Full-detail trees now collapse each tree's repeated branches into one
+  `InstancedMesh` and each tree's repeated foliage clumps into one
+  `InstancedMesh`, while keeping the trunk segments and special-case detail
+  nodes as ordinary children.
 - Other close-detail landmark, wildlife, and decoration meshes remain ordinary
   nodes where they carry unique shapes, animation, or interaction metadata.
 
-This trims repeated static landmark children from full-detail forest tiles
-without changing landmark placement or silhouette.
+This trims repeated static landmark and tree children from full-detail forest
+tiles without changing landmark placement or silhouette.
 
 Material lifetime:
 
