@@ -109,7 +109,7 @@
 - [x] Build bass directly from the shared chord timeline.
 - [x] Verify each chord at every planned chord boundary.
 - [x] Keep chord changes aligned with strong beats.
-- [ ] Use inversions only when they improve voice movement.
+- [x] Use inversions only when they improve voice movement.
 - [ ] Keep harmony below the lead's main register.
 - [x] Reduce harmony activity during important lead phrases.
 - [ ] Let bass sustain through more of each chord.
@@ -120,10 +120,12 @@
       Regression coverage already proves the chord timeline is built before
       tracks read harmony or bass, assigns exact per-measure boundaries, keeps
       every chord change on beat one, verifies detected harmony against planned
-      progression windows, lowers harmony occupancy in lead-active sections,
-      repeats a stable bass figure with root-first downbeats and passing tones
-      between them, coordinates cadence targets across lead and bass, and
-      rejects cadence notes that drift outside the active harmony.
+      progression windows, uses chord voicings that keep shared tones close and
+      avoid octave-sized jumps as the default motion, lowers harmony occupancy
+      in lead-active sections, repeats a stable bass figure with root-first
+      downbeats and passing tones between them, coordinates cadence targets
+      across lead and bass, and rejects cadence notes that drift outside the
+      active harmony.
 
 ## Rhythm and Phrasing
 
