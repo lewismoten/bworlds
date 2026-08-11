@@ -49,9 +49,7 @@ describe('music debug export preflight', () => {
     expect(message).toContain(
       'Patch quality warnings were detected before export.'
     );
-    expect(message).toContain(
-      'Lead patch sounds unlike its target reference'
-    );
+    expect(message).toContain('Lead patch sounds unlike its target reference');
     expect(confirmMusicDebugExportPreflight(snapshot, { confirm })).toBe(false);
     expect(confirm).toHaveBeenCalledWith(message);
   });

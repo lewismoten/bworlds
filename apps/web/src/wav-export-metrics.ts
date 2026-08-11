@@ -40,7 +40,7 @@ export function createWavExportMetrics(options: {
   };
 }
 
-export function formatWavExportDuration(durationSeconds: number): string {
+function formatWavExportDuration(durationSeconds: number): string {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
     return '0.0s';
   }
@@ -50,7 +50,7 @@ export function formatWavExportDuration(durationSeconds: number): string {
   return `${durationSeconds.toFixed(0)}s`;
 }
 
-export function formatWavExportByteLength(byteLength: number): string {
+function formatWavExportByteLength(byteLength: number): string {
   const normalized = Math.max(0, Math.round(byteLength));
   if (normalized < 1024) {
     return `${normalized} B`;

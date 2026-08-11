@@ -6,14 +6,14 @@ export type MusicDebugExportConfirm = (message: string) => boolean;
 export function buildMusicDebugPatchWarningPreflightMessage(
   snapshot: Pick<MusicDebugSnapshot, 'instrumentBank'>
 ): string | null {
-  const warnings = collectMusicDebugPatchQualityWarnings(snapshot.instrumentBank);
+  const warnings = collectMusicDebugPatchQualityWarnings(
+    snapshot.instrumentBank
+  );
   if (warnings.length === 0) {
     return null;
   }
 
-  const lines = warnings
-    .slice(0, 3)
-    .map((warning) => `- ${warning.message}`);
+  const lines = warnings.slice(0, 3).map((warning) => `- ${warning.message}`);
   if (warnings.length > 3) {
     lines.push(`- ${warnings.length - 3} more patch warning(s) not shown`);
   }

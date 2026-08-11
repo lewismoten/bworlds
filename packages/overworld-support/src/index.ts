@@ -354,7 +354,8 @@ export function createOverworldTerrainSignalSampler(
   const riverControlPointCache = createCoordinateCache<RiverControlPoint[]>();
   const riverCurvePointCache = createCoordinateCache<RiverControlPoint[]>();
   const riverForkPathCache = createCoordinateCache<RiverForkPath | null>();
-  const riverPathNeighborhoodCache = createCoordinateCache<RiverPathNeighborhood>();
+  const riverPathNeighborhoodCache =
+    createCoordinateCache<RiverPathNeighborhood>();
 
   return function sampleTerrainSignals(x: number, y: number): OverworldSignals {
     return signalCache.getOrCreate(x, y, () => {

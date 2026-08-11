@@ -336,15 +336,12 @@ describe('overworld support', () => {
     const controlPointCache =
       createCoordinateCache<{ x: number; y: number }[]>();
     const curvePointCache = createCoordinateCache<{ x: number; y: number }[]>();
-    const forkPathCache = createCoordinateCache<
-      | {
-          trunkStartIndex: number;
-          trunkEndIndex: number;
-          trunkAngle: number;
-          points: { x: number; y: number }[];
-        }
-      | null
-    >();
+    const forkPathCache = createCoordinateCache<{
+      trunkStartIndex: number;
+      trunkEndIndex: number;
+      trunkAngle: number;
+      points: { x: number; y: number }[];
+    } | null>();
     const neighborhoodCache =
       createCoordinateCache<readonly { x: number; y: number }[][]>();
 

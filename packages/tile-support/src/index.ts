@@ -191,10 +191,11 @@ export function createConnectedRoutePathResolver({
     townPairPathTolerance,
     townBridgePathTolerance,
   });
-  const nearestTownCache =
-    createCoordinateCache<
-      { anchor: OverworldAnchorLike; distance: number; index: number } | null
-    >();
+  const nearestTownCache = createCoordinateCache<{
+    anchor: OverworldAnchorLike;
+    distance: number;
+    index: number;
+  } | null>();
   const bridgeSnapCache = createCoordinateCache<boolean>();
 
   return (x: number, y: number) =>
@@ -202,7 +203,6 @@ export function createConnectedRoutePathResolver({
       x,
       y,
       connectedSegments,
-      townAnchors,
       bridgeAnchors,
       townAnchorSnapDistance,
       townAnchorAxisTolerance,
@@ -210,7 +210,9 @@ export function createConnectedRoutePathResolver({
       resolveNearestTown(targetX, targetY) {
         return (
           nearestTownCache.getOrCreate(targetX, targetY, () => {
-            return findNearestAnchorDistance(townAnchors, targetX, targetY) ?? null;
+            return (
+              findNearestAnchorDistance(townAnchors, targetX, targetY) ?? null
+            );
           }) ?? undefined
         );
       },
@@ -230,7 +232,6 @@ function resolveConnectedRoutePathAtPoint({
   x,
   y,
   connectedSegments,
-  townAnchors,
   bridgeAnchors,
   townAnchorSnapDistance,
   townAnchorAxisTolerance,
@@ -241,7 +242,6 @@ function resolveConnectedRoutePathAtPoint({
   x: number;
   y: number;
   connectedSegments: ConnectedRouteSegments;
-  townAnchors: readonly OverworldAnchorLike[];
   bridgeAnchors: readonly OverworldAnchorLike[];
   townAnchorSnapDistance: number;
   townAnchorAxisTolerance: number;
@@ -249,7 +249,9 @@ function resolveConnectedRoutePathAtPoint({
   resolveNearestTown: (
     x: number,
     y: number
-  ) => { anchor: OverworldAnchorLike; distance: number; index: number } | undefined;
+  ) =>
+    | { anchor: OverworldAnchorLike; distance: number; index: number }
+    | undefined;
   hasNearbyBridge: (x: number, y: number) => boolean;
 }) {
   const nearestTown = resolveNearestTown(x, y);
@@ -450,8 +452,8 @@ function hasPredictedRoutePresence({
   hasConnectedRoutePathAt?: (x: number, y: number) => boolean;
 }) {
   if (
-    (hasConnectedRoutePathAt?.(x, y) ??
-      hasConnectedRoutePath({ x, y, townAnchors, bridgeAnchors }))
+    hasConnectedRoutePathAt?.(x, y) ??
+    hasConnectedRoutePath({ x, y, townAnchors, bridgeAnchors })
   ) {
     return true;
   }

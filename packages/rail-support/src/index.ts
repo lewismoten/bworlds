@@ -1,4 +1,8 @@
-import { createBoundedCache, createCoordinateCache, type CoordinateCache } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  createCoordinateCache,
+  type CoordinateCache,
+} from '@bworlds/cache-support';
 import { clamp } from '@bworlds/core';
 import {
   appendHashSeedLabel,
@@ -186,8 +190,7 @@ export function buildRailConnections({
         continue;
       }
       if (
-        (degrees.get(station.x, station.y) ?? 0) >=
-        MAX_CONNECTIONS_PER_STATION
+        (degrees.get(station.x, station.y) ?? 0) >= MAX_CONNECTIONS_PER_STATION
       ) {
         break;
       }
@@ -204,7 +207,11 @@ export function buildRailConnections({
 
       connections.push({ from: station, to: other, points });
       claimed.add(connectionKey);
-      degrees.set(station.x, station.y, (degrees.get(station.x, station.y) ?? 0) + 1);
+      degrees.set(
+        station.x,
+        station.y,
+        (degrees.get(station.x, station.y) ?? 0) + 1
+      );
       degrees.set(other.x, other.y, (degrees.get(other.x, other.y) ?? 0) + 1);
     }
   }
