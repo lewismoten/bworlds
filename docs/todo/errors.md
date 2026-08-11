@@ -163,6 +163,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.
+      Progress: `overworld-support` now caches sampled main-channel river
+      curve points per control cell and reuses them during terrain signal
+      sampling instead of rematerializing bezier segments on each river-path
+      probe.
 
 - [ ] Move deterministic world-generation computation into workers.
       The CPU profile is dominated by cache/hashing/world-generation code that does not need access to WebGL. Move terrain signals, hashes, anchors, river paths, tree descriptors, cave descriptors, etc. into workers and send compact numeric results back to the rendering thread.

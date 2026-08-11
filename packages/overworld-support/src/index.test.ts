@@ -1,3 +1,4 @@
+import { createCoordinateCache } from '@bworlds/cache-support';
 import { describe, expect, it } from 'vitest';
 import {
   collectNearbyOverworldPoiAnchors,
@@ -12,6 +13,7 @@ import {
   createGeneratedNamedOverworldCellAnchorSpec,
   createGeneratedPoiOverworldCellAnchorSpec,
   createOverworldCellAnchorCandidate,
+  getCachedRiverCurvePoints,
   getOverworldPlacementChance,
   getOverworldPlacementLabelHash,
   getRiverControlPathSignalAtPoint,
@@ -293,6 +295,39 @@ describe('overworld support', () => {
       { x: 8.88888888888889, y: 4.148148148148148 },
       { x: 10, y: 4 },
     ]);
+  });
+
+  it('reuses cached sampled river curve points for the same control cell', () => {
+    const controlPointCache = createCoordinateCache<{ x: number; y: number }[]>();
+    const curvePointCache = createCoordinateCache<{ x: number; y: number }[]>();
+
+    const first = getCachedRiverCurvePoints(
+      'spec-seed',
+      1,
+      -2,
+      controlPointCache,
+      curvePointCache
+    );
+    const second = getCachedRiverCurvePoints(
+      'spec-seed',
+      1,
+      -2,
+      controlPointCache,
+      curvePointCache
+    );
+    const third = getCachedRiverCurvePoints(
+      'spec-seed',
+      2,
+      -2,
+      controlPointCache,
+      curvePointCache
+    );
+
+    expect(second).toBe(first);
+    expect(third).not.toBe(first);
+    expect(first[0]).toEqual(
+      createRiverControlPoints('spec-seed', 1, -2)[0]
+    );
   });
 
   it('matches river path signals without materializing sampled curve points', () => {
