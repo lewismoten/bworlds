@@ -23,6 +23,13 @@ type PhraseBoundaryArticulation = {
   releaseMultiplier: number;
 };
 
+const ROLE_RELEASE_TAIL_DURATION_RATIOS = {
+  lead: 0.55,
+  harmony: 0.4,
+  bass: 0.36,
+  percussion: 0.28,
+} as const;
+
 const ROLE_HUMANIZATION_PROFILES: Record<
   ProceduralMusicNote['role'],
   RoleHumanizationProfile
@@ -502,6 +509,18 @@ function scaleSongNote(
   const attackMultiplier = options.attackMultiplier ?? 1;
   const releaseMultiplier = options.releaseMultiplier ?? 1;
   const transposeSemitones = options.transposeSemitones ?? 0;
+  const durationMs = Math.max(
+    24,
+    Math.round(note.durationMs * durationMultiplier)
+  );
+  const releaseMs = resolveCappedReleaseMs({
+    role: note.role,
+    durationMs,
+    requestedReleaseMs: Math.max(
+      12,
+      Math.round(note.releaseMs * releaseMultiplier)
+    ),
+  });
   const nextVelocity =
     note.velocity === undefined
       ? undefined
@@ -519,7 +538,7 @@ function scaleSongNote(
   return {
     ...note,
     startMs: note.startMs + (options.startOffsetMs ?? 0),
-    durationMs: Math.max(24, Math.round(note.durationMs * durationMultiplier)),
+    durationMs,
     frequency,
     volume: note.volume * (options.volumeMultiplier ?? 1),
     velocity: nextVelocity,
@@ -531,8 +550,23 @@ function scaleSongNote(
             timbre: note.timbre,
             velocity: nextVelocity,
           }),
-    releaseMs: Math.max(12, Math.round(note.releaseMs * releaseMultiplier)),
+    releaseMs,
   };
+}
+
+function resolveCappedReleaseMs(options: {
+  role: ProceduralMusicNote['role'];
+  durationMs: number;
+  requestedReleaseMs: number;
+}): number {
+  const durationRatio =
+    ROLE_RELEASE_TAIL_DURATION_RATIOS[options.role] ??
+    ROLE_RELEASE_TAIL_DURATION_RATIOS.lead;
+  const maxReleaseMs = Math.max(
+    12,
+    Math.round(options.durationMs * durationRatio)
+  );
+  return Math.max(12, Math.min(options.requestedReleaseMs, maxReleaseMs));
 }
 
 function transposeSongNoteFrequencyInMode(

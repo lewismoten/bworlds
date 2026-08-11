@@ -352,9 +352,70 @@ describe('procedural music song variation', () => {
     expect(openingPercussion).not.toBeNull();
     expect(closingPercussion).not.toBeNull();
     expect(openingPercussion?.attackMs).toBe(BASE_NOTE.attackMs);
-    expect(openingPercussion?.releaseMs).toBe(BASE_NOTE.releaseMs);
     expect(closingPercussion?.attackMs).toBe(BASE_NOTE.attackMs);
-    expect(closingPercussion?.releaseMs).toBe(BASE_NOTE.releaseMs);
+    expect(openingPercussion?.releaseMs).toBe(closingPercussion?.releaseMs);
+  });
+
+  it('caps accompaniment release tails so they do not blur later chord changes', () => {
+    const section = createSection('variation');
+    const harmony = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'harmony',
+        instrumentId: 'deep-forest:harmony:0:0',
+        durationMs: 320,
+        releaseMs: 240,
+      },
+      section,
+      7,
+      0
+    );
+    const bass = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+        durationMs: 320,
+        releaseMs: 220,
+      },
+      section,
+      7,
+      0
+    );
+
+    expect(harmony).not.toBeNull();
+    expect(bass).not.toBeNull();
+    expect(harmony!.releaseMs).toBeLessThanOrEqual(
+      Math.round(harmony!.durationMs * 0.4)
+    );
+    expect(bass!.releaseMs).toBeLessThanOrEqual(
+      Math.round(bass!.durationMs * 0.36)
+    );
+  });
+
+  it('keeps lead releases expressive but still bounded by the shaped note length', () => {
+    const section = createSection('variation');
+    const lead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+        durationMs: 320,
+        releaseMs: 260,
+      },
+      section,
+      7,
+      0
+    );
+
+    expect(lead).not.toBeNull();
+    expect(lead!.releaseMs).toBeLessThanOrEqual(
+      Math.round(lead!.durationMs * 0.55)
+    );
+    expect(lead!.releaseMs).toBeGreaterThan(
+      Math.round(lead!.durationMs * 0.35)
+    );
   });
 
   it('adds small velocity changes across phrase positions', () => {

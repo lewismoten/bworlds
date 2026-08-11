@@ -206,7 +206,7 @@
 - [ ] Pan percussion voices instead of the whole kit.
 - [x] Use one shared room reverb for the ensemble.
 - [ ] Give each instrument a controlled reverb send.
-- [ ] Prevent long releases from blurring chord changes.
+- [x] Prevent long releases from blurring chord changes.
 - [ ] Test the mix in mono.
 - [ ] Test the mix through laptop speakers.
 - [ ] Export dry and processed versions for comparison.
