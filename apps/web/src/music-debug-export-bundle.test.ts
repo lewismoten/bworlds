@@ -5,6 +5,7 @@ import {
   createMusicDebugExportBundle,
   downloadMusicDebugExportBundle,
 } from './music-debug-export-bundle.ts';
+import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
 import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
 
 describe('music debug export bundle', () => {
@@ -165,6 +166,38 @@ describe('music debug export bundle', () => {
     );
     expect(measured.metrics.previewWavFileCount).toBeGreaterThan(0);
   }, 3_000);
+
+  it('still packages an export zip when strict midi export would reject the snapshot', () => {
+    const snapshot = {
+      ...toExportableSnapshot(
+        createMusicDebugSnapshot({
+          tileKind: 'town',
+          contextType: 'town',
+          clusterX: 3,
+          clusterY: -2,
+        })
+      ),
+      cadenceValidation: {
+        isValidForMidiExport: false,
+        messages: [
+          'Outro answer cadence at measure 80 drifted outside the active harmony (G#; lead B4, bass B1).',
+        ],
+      },
+    };
+
+    expect(() => createMusicDebugMidiFile(snapshot)).toThrow(
+      'Cannot export MIDI: Outro answer cadence at measure 80 drifted outside the active harmony'
+    );
+
+    const bundle = createMusicDebugExportBundle(snapshot, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+
+    expect(bundle.fileName).toBe('bworlds-town-square-3--2-export.zip');
+    expect(bundle.entries.map((entry) => entry.fileName)).toContain(
+      'bworlds-town-square-3--2.mid'
+    );
+  }, 10_000);
 });
 
 function readStoredZipArchiveEntries(archive: Uint8Array) {

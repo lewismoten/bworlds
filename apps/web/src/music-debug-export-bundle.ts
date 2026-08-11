@@ -1,7 +1,9 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugInstrumentPreviewNote } from './music-debug-instrument-panel.ts';
-import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
-import { type MusicDebugMidiMetadataOptions } from './music-debug-midi.ts';
+import {
+  createMusicDebugMidiFileUnchecked,
+  type MusicDebugMidiMetadataOptions,
+} from './music-debug-midi.ts';
 import { buildMusicDebugParameterReport } from './music-debug-report.ts';
 import { createMusicDebugGraphExportFiles } from './music-debug-export-graphs.ts';
 import {
@@ -66,7 +68,7 @@ export function createMeasuredMusicDebugExportBundle(
 } {
   const totalStartedAtMs = performance.now();
   const midiStartedAtMs = performance.now();
-  const midiFile = createMusicDebugMidiFile(snapshot, metadataOptions);
+  const midiFile = createMusicDebugMidiFileUnchecked(snapshot, metadataOptions);
   const midiExportMs = performance.now() - midiStartedAtMs;
   const reportFile = createMusicDebugParameterReportFile(
     snapshot,
