@@ -15,6 +15,7 @@ import { createForestTilePlugin, getForestMeadows } from './index.ts';
 import {
   FakeGroup,
   FakeInstancedMesh,
+  FakeNode,
   createForestTestState,
   fakeThree,
 } from './testing/forest-test-support.ts';
@@ -26,7 +27,119 @@ function getForestTile() {
   return tile!;
 }
 
+function createForestModelSignature(root: FakeNode) {
+  const signature: string[] = [];
+  root.traverse((node) => {
+    const userDataParts = Object.entries(node.userData ?? {})
+      .filter(([, value]) =>
+        ['string', 'number', 'boolean'].includes(typeof value)
+      )
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => `${key}:${String(value)}`);
+    signature.push(
+      [
+        node.constructor.name,
+        `children:${node.children.length}`,
+        `position:${node.position.x},${node.position.y},${node.position.z}`,
+        `scale:${node.scale.x},${node.scale.y},${node.scale.z}`,
+        ...userDataParts,
+      ].join('|')
+    );
+  });
+  return signature;
+}
+
 describe('tile forest', () => {
+  it('builds the full-detail forest progressively before returning the final model', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const build = tile.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 4,
+        label: 'trees',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 4,
+        label: 'hollows-and-markings',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 4,
+        label: 'ground-detail',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 4,
+        totalSteps: 4,
+        label: 'close-effects',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous forest build aligned with the progressive final model', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const syncModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const progressiveBuild = tile.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(createForestModelSignature(progressiveModel!)).toEqual(
+      createForestModelSignature(syncModel)
+    );
+  });
+
   it('creates a lower-detail distant forest model', () => {
     const tile = getForestTile();
     const state = createForestTestState();

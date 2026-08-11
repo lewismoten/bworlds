@@ -66,8 +66,9 @@ import {
 import type {
   CanOccupy3DContext,
   ClassifyOverworldTileContext,
-  CreateWorldActionContext,
   Create3DModelContext,
+  Create3DModelProgress,
+  CreateWorldActionContext,
   RuntimePlugin,
   ThreeBufferGeometryLike,
   ThreeGeometryLike,
@@ -1329,651 +1330,13 @@ export function createForestTilePlugin(): RuntimePlugin {
       createWorldAction(context: CreateWorldActionContext) {
         return createForestCarvingInspectAction(context);
       },
-      create3DModel({
-        three,
-        state,
-        tileX,
-        tileY,
-        detailLevel = 'full',
-      }: Create3DModelContext) {
-        const group = new three.Group();
-        const renderCloseDetails = shouldRenderForestCloseDetails(
-          state,
-          tileX,
-          tileY
+      create3DModel(context: Create3DModelContext) {
+        return runForestModelBuildToCompletion(
+          createForestModelProgressive(context)
         );
-        const descriptors =
-          detailLevel === 'low'
-            ? getForestTreeDescriptors(tileX, tileY).filter(
-                (_descriptor, index) => index % 2 === 0
-              )
-            : getForestTreeDescriptors(tileX, tileY);
-        const geometry = getTreeGeometry(three);
-        if (detailLevel === 'low') {
-          addLowDetailForestTreeInstances(
-            three,
-            group,
-            geometry,
-            tileX,
-            tileY,
-            descriptors
-          );
-        }
-
-        for (const descriptor of descriptors) {
-          if (detailLevel === 'low') {
-            continue;
-          }
-          const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
-          const structure = getTreeStructuralState(descriptor);
-          const canopy = getTreeCanopyState(descriptor);
-          const damage = getTreeDamageState(descriptor);
-          const historical = getTreeHistoricalState(descriptor);
-
-          const tree = new three.Group();
-          tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-          tree.scale.setScalar(structure.scale);
-          tree.rotation.x = Math.atan2(
-            structure.trunkLeanZ,
-            Math.max(0.001, structure.trunkHeight)
-          );
-          tree.rotation.z = -Math.atan2(
-            structure.trunkLeanX,
-            Math.max(0.001, structure.trunkHeight)
-          );
-          tree.userData = {
-            ...(tree.userData ?? {}),
-            [TREE_FORM_KEY]: descriptor.form,
-            [RENDER_STATS_CATEGORY_KEY]: 'tree',
-            ...(historical.landmark
-              ? {
-                  [HISTORICAL_TREE_KEY]: historical.title,
-                  forestHistoricalTreeRecord: historical.record,
-                  forestHistoricalTreeProminence: historical.prominence,
-                }
-              : {}),
-          };
-
-          addForestFullDetailTrunk(
-            three,
-            tree,
-            style.trunkMaterial,
-            descriptor,
-            structure
-          );
-
-          for (const branch of structure.branches) {
-            const branchCurveInfluence = Math.max(
-              0,
-              Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
-            );
-            const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
-            limb.position.set(
-              branch.x + structure.trunkCurveX * branchCurveInfluence,
-              branch.y,
-              branch.z + structure.trunkCurveZ * branchCurveInfluence
-            );
-            limb.rotation.z = branch.roll;
-            limb.rotation.x = branch.pitch;
-            limb.scale.y = branch.length;
-            tree.add(limb);
-          }
-
-          for (const clump of canopy.foliage) {
-            const canopyCurveInfluence = Math.max(
-              0,
-              Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
-            );
-            const foliage = new three.Mesh(
-              geometry.foliage,
-              style.foliageMaterial
-            );
-            foliage.position.set(
-              clump.x + structure.trunkCurveX * canopyCurveInfluence,
-              clump.y,
-              clump.z + structure.trunkCurveZ * canopyCurveInfluence
-            );
-            foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
-            tagForestFoliageWind(
-              foliage,
-              tileX,
-              tileY,
-              descriptor.variety,
-              clump.x + clump.y + clump.z
-            );
-            tree.add(foliage);
-          }
-
-          if (damage.barkMarks.length > 0) {
-            const barkDamageInstances = new three.InstancedMesh(
-              geometry.foliage,
-              style.carvingMaterial,
-              damage.barkMarks.length
-            );
-            barkDamageInstances.userData = {
-              ...(barkDamageInstances.userData ?? {}),
-              [BARK_DAMAGE_KEY]: damage.barkMarks[0]?.kind,
-              forestBarkDamageSeverity: Math.max(
-                ...damage.barkMarks.map((barkMark) => barkMark.severity)
-              ),
-              forestBarkDamageInstanced: true,
-            };
-            const barkDamageMatrixScratch = new three.Matrix4();
-            damage.barkMarks.forEach((barkMark, index) => {
-              barkDamageInstances.setMatrixAt(
-                index,
-                writeLowDetailInstancedMatrix(
-                  barkDamageMatrixScratch,
-                  barkMark.x,
-                  barkMark.y,
-                  structure.radius *
-                    (barkMark.kind === 'crack' ? 0.92 : 0.82) *
-                    (barkMark.x >= 0 ? 1 : -1),
-                  barkMark.scale * (barkMark.kind === 'crack' ? 0.35 : 0.48),
-                  barkMark.scale * (0.9 + barkMark.severity * 0.6),
-                  barkMark.scale * (barkMark.kind === 'crack' ? 0.18 : 0.26)
-                )
-              );
-            });
-            tree.add(barkDamageInstances);
-          }
-
-          if (historical.landmark) {
-            const markerInstances = new three.InstancedMesh(
-              geometry.foliage,
-              style.stoneMaterial,
-              3
-            );
-            markerInstances.userData = {
-              ...(markerInstances.userData ?? {}),
-              [HISTORICAL_TREE_KEY]: historical.title,
-              forestHistoricalTreeRecord: historical.record,
-              forestHistoricalTreeMarker: true,
-            };
-            const markerMatrixScratch = new three.Matrix4();
-            for (let markerIndex = 0; markerIndex < 3; markerIndex += 1) {
-              const angle =
-                (markerIndex / 3) * Math.PI * 2 + historical.prominence;
-              markerInstances.setMatrixAt(
-                markerIndex,
-                writeLowDetailInstancedMatrix(
-                  markerMatrixScratch,
-                  Math.cos(angle) * structure.radius * 1.8,
-                  0.04 + markerIndex * 0.01,
-                  Math.sin(angle) * structure.radius * 1.8,
-                  0.05 + historical.prominence * 0.035,
-                  0.07 + historical.prominence * 0.05,
-                  0.05 + historical.prominence * 0.035
-                )
-              );
-            }
-            tree.add(markerInstances);
-          }
-
-          group.add(tree);
-        }
-
-        if (detailLevel === 'full') {
-          const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
-          const scene = getForestTreeSceneState(tileX, tileY);
-          const hollows = renderCloseDetails
-            ? scene.decorations.filter(
-                (
-                  decoration
-                ): decoration is Extract<
-                  ForestTreeDecoration,
-                  { kind: 'hollow' }
-                > => decoration.kind === 'hollow'
-              )
-            : [];
-          if (hollows.length > 0) {
-            const hollowInstances = new three.InstancedMesh(
-              geometry.foliage,
-              floorDetailStyle.hollowMaterial,
-              hollows.length
-            );
-            hollowInstances.userData = {
-              ...(hollowInstances.userData ?? {}),
-              [HOLLOW_KEY]: true,
-              forestHollowInstanced: true,
-            };
-            const hollowMatrixScratch = new three.Matrix4();
-            let hollowIndex = 0;
-            for (const hollow of hollows) {
-              const treeDescriptor = descriptors[hollow.treeIndex];
-              if (!treeDescriptor) {
-                continue;
-              }
-
-              hollowInstances.setMatrixAt(
-                hollowIndex,
-                writeLowDetailInstancedMatrix(
-                  hollowMatrixScratch,
-                  tileX +
-                    treeDescriptor.x +
-                    treeDescriptor.radius * 0.7 * hollow.sideOffset,
-                  hollow.height,
-                  tileY + treeDescriptor.y,
-                  hollow.scale,
-                  hollow.scale * 0.82,
-                  hollow.depth
-                )
-              );
-              hollowIndex += 1;
-            }
-            hollowInstances.count = hollowIndex;
-            group.add(hollowInstances);
-          }
-          if (renderCloseDetails) {
-            const owls = scene.inhabitants.filter(
-              (
-                inhabitant
-              ): inhabitant is Extract<ForestTreeInhabitant, { kind: 'owl' }> =>
-                inhabitant.kind === 'owl'
-            );
-            const owlBodyInstances =
-              owls.length > 0
-                ? new three.InstancedMesh(
-                    geometry.foliage,
-                    floorDetailStyle.owlBodyMaterial,
-                    owls.length
-                  )
-                : null;
-            if (owlBodyInstances) {
-              owlBodyInstances.userData = {
-                ...(owlBodyInstances.userData ?? {}),
-                [OWL_KEY]: true,
-                forestOwlBodyInstanced: true,
-              };
-            }
-            const owlEyeInstances =
-              owls.length > 0
-                ? new three.InstancedMesh(
-                    geometry.foliage,
-                    floorDetailStyle.owlEyeMaterial,
-                    owls.length * 2
-                  )
-                : null;
-            if (owlEyeInstances) {
-              owlEyeInstances.userData = {
-                ...(owlEyeInstances.userData ?? {}),
-                forestOwlEye: true,
-              };
-            }
-            const owlBodyMatrixScratch = new three.Matrix4();
-            const owlEyeMatrixScratch = new three.Matrix4();
-            let owlBodyIndex = 0;
-            let owlEyeIndex = 0;
-            for (const owl of owls) {
-              const hollow = hollows[owl.hollowIndex];
-              const treeDescriptor = hollow
-                ? descriptors[hollow.treeIndex]
-                : null;
-              if (!hollow || !treeDescriptor) {
-                continue;
-              }
-
-              const owlBodyX =
-                tileX +
-                treeDescriptor.x +
-                treeDescriptor.radius * 0.56 * hollow.sideOffset;
-              const owlBodyY = hollow.height - owl.perchOffset;
-              const owlBodyZ = tileY + treeDescriptor.y + hollow.depth * 0.2;
-              owlBodyInstances?.setMatrixAt(
-                owlBodyIndex,
-                writeLowDetailInstancedMatrix(
-                  owlBodyMatrixScratch,
-                  owlBodyX,
-                  owlBodyY,
-                  owlBodyZ,
-                  owl.bodyScale,
-                  owl.bodyScale * 1.18,
-                  owl.bodyScale * 0.92
-                )
-              );
-              owlBodyIndex += 1;
-
-              owlEyeInstances?.setMatrixAt(
-                owlEyeIndex,
-                writeLowDetailInstancedMatrix(
-                  owlEyeMatrixScratch,
-                  owlBodyX + owl.eyeSpread * 0.5,
-                  owlBodyY + owl.bodyScale * 0.16,
-                  owlBodyZ + owl.bodyScale * 0.68,
-                  owl.bodyScale * 0.16,
-                  owl.bodyScale * 0.16,
-                  owl.bodyScale * 0.16
-                )
-              );
-              owlEyeIndex += 1;
-              owlEyeInstances?.setMatrixAt(
-                owlEyeIndex,
-                writeLowDetailInstancedMatrix(
-                  owlEyeMatrixScratch,
-                  owlBodyX - owl.eyeSpread * 0.5,
-                  owlBodyY + owl.bodyScale * 0.16,
-                  owlBodyZ + owl.bodyScale * 0.68,
-                  owl.bodyScale * 0.16,
-                  owl.bodyScale * 0.16,
-                  owl.bodyScale * 0.16
-                )
-              );
-              owlEyeIndex += 1;
-            }
-            if (owlBodyInstances) {
-              owlBodyInstances.count = owlBodyIndex;
-              group.add(owlBodyInstances);
-            }
-            if (owlEyeInstances) {
-              group.add(owlEyeInstances);
-            }
-          }
-          if (renderCloseDetails) {
-            for (const carving of scene.decorations.filter(
-              (
-                decoration
-              ): decoration is Extract<
-                ForestTreeDecoration,
-                { kind: 'carving' }
-              > => decoration.kind === 'carving'
-            )) {
-              const treeDescriptor = descriptors[carving.treeIndex];
-              if (!treeDescriptor) {
-                continue;
-              }
-
-              const markers = getForestCarvingMarkers(carving);
-              const notchInstances = new three.InstancedMesh(
-                geometry.foliage,
-                floorDetailStyle.carvingMaterial,
-                markers.length
-              );
-              notchInstances.userData = {
-                ...(notchInstances.userData ?? {}),
-                [CARVING_KEY]: carving.text,
-                forestCarvingAge: carving.age,
-                forestCarvingBarkCoverage: carving.barkCoverage,
-                forestCarvingInstanced: true,
-              };
-              const notchMatrixScratch = new three.Matrix4();
-              markers.forEach((marker, index) => {
-                const notchScale =
-                  carving.scale *
-                  (0.94 - carving.age * 0.16 - carving.barkCoverage * 0.08);
-                notchInstances.setMatrixAt(
-                  index,
-                  writeLowDetailInstancedMatrix(
-                    notchMatrixScratch,
-                    tileX +
-                      treeDescriptor.x +
-                      treeDescriptor.radius * 0.74 * carving.sideOffset,
-                    carving.height + marker.y * carving.scale,
-                    tileY + treeDescriptor.y + marker.x * carving.scale,
-                    notchScale,
-                    notchScale,
-                    notchScale
-                  )
-                );
-              });
-              group.add(notchInstances);
-              if (markers.length === 0) {
-                continue;
-              }
-            }
-          }
-          const meadows = getForestMeadows(tileX, tileY);
-          if (meadows.length > 0) {
-            const meadowInstances = new three.InstancedMesh(
-              geometry.foliage,
-              floorDetailStyle.meadowGrassMaterial,
-              meadows.length
-            );
-            meadowInstances.userData = {
-              ...(meadowInstances.userData ?? {}),
-              [MEADOW_KEY]: 'grass',
-              forestMeadowInstanced: true,
-            };
-            const meadowMatrixScratch = new three.Matrix4();
-            meadows.forEach((meadow, index) => {
-              meadowInstances.setMatrixAt(
-                index,
-                writeLowDetailInstancedMatrix(
-                  meadowMatrixScratch,
-                  tileX + meadow.x,
-                  0.03,
-                  tileY + meadow.y,
-                  meadow.radiusX,
-                  0.08,
-                  meadow.radiusY
-                )
-              );
-            });
-            group.add(meadowInstances);
-          }
-          for (const meadow of meadows) {
-            addForestMeadowFlowerInstances(
-              three,
-              group,
-              geometry,
-              floorDetailStyle,
-              tileX,
-              tileY,
-              meadow
-            );
-          }
-          if (renderCloseDetails) {
-            for (const bird of scene.inhabitants.filter(
-              (
-                inhabitant
-              ): inhabitant is Extract<
-                ForestTreeInhabitant,
-                { kind: 'bird' }
-              > => inhabitant.kind === 'bird'
-            )) {
-              const birdGroup = new three.Group();
-              birdGroup.userData = {
-                ...(birdGroup.userData ?? {}),
-                [BIRD_KEY]: bird,
-              };
-
-              const leftWing = new three.Mesh(
-                geometry.branch,
-                floorDetailStyle.birdMaterial
-              );
-              leftWing.position.set(-bird.wingScale * 0.5, 0, 0);
-              leftWing.rotation.z = -0.35;
-              leftWing.scale.set(0.18, bird.wingScale, 0.18);
-              birdGroup.add(leftWing);
-
-              const rightWing = new three.Mesh(
-                geometry.branch,
-                floorDetailStyle.birdMaterial
-              );
-              rightWing.position.set(bird.wingScale * 0.5, 0, 0);
-              rightWing.rotation.z = 0.35;
-              rightWing.scale.set(0.18, bird.wingScale, 0.18);
-              birdGroup.add(rightWing);
-
-              const body = new three.Mesh(
-                geometry.foliage,
-                floorDetailStyle.birdMaterial
-              );
-              body.scale.set(
-                bird.wingScale * 0.55,
-                bird.wingScale * 0.3,
-                bird.wingScale * 0.3
-              );
-              birdGroup.add(body);
-              group.add(birdGroup);
-            }
-          }
-          if (renderCloseDetails) {
-            addForestWebInstances(
-              three,
-              group,
-              geometry,
-              floorDetailStyle,
-              tileX,
-              tileY,
-              scene.decorations
-                .filter(
-                  (
-                    decoration
-                  ): decoration is Extract<
-                    ForestTreeDecoration,
-                    { kind: 'web' }
-                  > => decoration.kind === 'web'
-                )
-                .map((web) => ({
-                  kind: web.webKind,
-                  x: web.x,
-                  y: web.y,
-                  z: web.z,
-                  radius: web.radius,
-                  strandCount: web.strandCount,
-                }))
-            );
-          }
-          if (renderCloseDetails) {
-            addForestSpiderInstances(
-              three,
-              group,
-              geometry,
-              floorDetailStyle,
-              tileX,
-              tileY,
-              scene.inhabitants.filter(
-                (
-                  inhabitant
-                ): inhabitant is Extract<
-                  ForestTreeInhabitant,
-                  { kind: 'spider' }
-                > => inhabitant.kind === 'spider'
-              )
-            );
-          }
-          if (renderCloseDetails) {
-            addForestBeaverDamageInstances(
-              three,
-              group,
-              geometry,
-              floorDetailStyle,
-              tileX,
-              tileY,
-              descriptors,
-              getForestBeaverDamage(state, tileX, tileY)
-            );
-          }
-          const trail = getForestTrail(tileX, tileY);
-          if (trail) {
-            addForestBreadcrumbInstances(
-              three,
-              group,
-              geometry,
-              floorDetailStyle,
-              tileX,
-              tileY,
-              trail
-            );
-          }
-          const landmark = getForestLandmark(tileX, tileY);
-          if (landmark) {
-            createForestLandmarkMeshes(
-              three,
-              group,
-              tileX,
-              tileY,
-              landmark,
-              floorDetailStyle
-            );
-          }
-          addForestBushInstances(
-            three,
-            group,
-            geometry,
-            floorDetailStyle,
-            tileX,
-            tileY,
-            getForestBushes(tileX, tileY)
-          );
-          const floorDetails = getForestFloorDetails(tileX, tileY);
-          const stumpDetails = floorDetails.filter(
-            (detail) => detail.kind === 'stump'
-          );
-          if (stumpDetails.length > 0) {
-            const stumpInstances = new three.InstancedMesh(
-              geometry.trunk,
-              floorDetailStyle.trunkMaterial,
-              stumpDetails.length
-            );
-            stumpInstances.userData = {
-              ...(stumpInstances.userData ?? {}),
-              [FLOOR_DETAIL_KEY]: 'stump',
-            };
-            const stumpMatrixScratch = new three.Matrix4();
-
-            stumpDetails.forEach((detail, index) => {
-              stumpInstances.setMatrixAt(
-                index,
-                writeLowDetailInstancedMatrix(
-                  stumpMatrixScratch,
-                  tileX + detail.x,
-                  detail.height * 0.5,
-                  tileY + detail.y,
-                  detail.radius,
-                  detail.height,
-                  detail.radius
-                )
-              );
-            });
-            group.add(stumpInstances);
-          }
-
-          const fallenTreeDetails = floorDetails.filter(
-            (detail) => detail.kind === 'fallen-tree'
-          );
-          if (fallenTreeDetails.length > 0) {
-            const logInstances = new three.InstancedMesh(
-              geometry.trunk,
-              floorDetailStyle.trunkMaterial,
-              fallenTreeDetails.length
-            );
-            logInstances.userData = {
-              ...(logInstances.userData ?? {}),
-              [FLOOR_DETAIL_KEY]: 'fallen-tree',
-            };
-            const logMatrixScratch = new three.Matrix4();
-
-            fallenTreeDetails.forEach((detail, index) => {
-              logInstances.setMatrixAt(
-                index,
-                writeHorizontalCylinderInstancedMatrix(
-                  logMatrixScratch,
-                  tileX + detail.x,
-                  detail.radius * 0.8,
-                  tileY + detail.y,
-                  detail.radius,
-                  detail.length ?? detail.radius,
-                  detail.rotation
-                )
-              );
-            });
-            group.add(logInstances);
-          }
-
-          if (renderCloseDetails) {
-            for (const firefly of getForestFireflies(
-              three,
-              state,
-              tileX,
-              tileY
-            )) {
-              group.add(firefly);
-            }
-          }
-        }
-
-        return group;
+      },
+      create3DModelProgressive(context: Create3DModelContext) {
+        return createForestModelProgressive(context);
       },
       sync3DModel({ model, cycle, timeMs = 0, environment }) {
         if (!model || typeof model !== 'object') {
@@ -2005,6 +1368,662 @@ export function createForestTilePlugin(): RuntimePlugin {
       },
     },
   ]);
+}
+
+function runForestModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+) {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
+}
+
+function* createForestModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+  detailLevel = 'full',
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const group = new three.Group();
+  const renderCloseDetails = shouldRenderForestCloseDetails(
+    state,
+    tileX,
+    tileY
+  );
+  const descriptors =
+    detailLevel === 'low'
+      ? getForestTreeDescriptors(tileX, tileY).filter(
+          (_descriptor, index) => index % 2 === 0
+        )
+      : getForestTreeDescriptors(tileX, tileY);
+  const geometry = getTreeGeometry(three);
+
+  if (detailLevel === 'low') {
+    addLowDetailForestTreeInstances(
+      three,
+      group,
+      geometry,
+      tileX,
+      tileY,
+      descriptors
+    );
+    return group;
+  }
+
+  const totalSteps = 4;
+  for (const descriptor of descriptors) {
+    const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
+    const structure = getTreeStructuralState(descriptor);
+    const canopy = getTreeCanopyState(descriptor);
+    const damage = getTreeDamageState(descriptor);
+    const historical = getTreeHistoricalState(descriptor);
+
+    const tree = new three.Group();
+    tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
+    tree.scale.setScalar(structure.scale);
+    tree.rotation.x = Math.atan2(
+      structure.trunkLeanZ,
+      Math.max(0.001, structure.trunkHeight)
+    );
+    tree.rotation.z = -Math.atan2(
+      structure.trunkLeanX,
+      Math.max(0.001, structure.trunkHeight)
+    );
+    tree.userData = {
+      ...(tree.userData ?? {}),
+      [TREE_FORM_KEY]: descriptor.form,
+      [RENDER_STATS_CATEGORY_KEY]: 'tree',
+      ...(historical.landmark
+        ? {
+            [HISTORICAL_TREE_KEY]: historical.title,
+            forestHistoricalTreeRecord: historical.record,
+            forestHistoricalTreeProminence: historical.prominence,
+          }
+        : {}),
+    };
+
+    addForestFullDetailTrunk(
+      three,
+      tree,
+      style.trunkMaterial,
+      descriptor,
+      structure
+    );
+
+    for (const branch of structure.branches) {
+      const branchCurveInfluence = Math.max(
+        0,
+        Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
+      );
+      const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
+      limb.position.set(
+        branch.x + structure.trunkCurveX * branchCurveInfluence,
+        branch.y,
+        branch.z + structure.trunkCurveZ * branchCurveInfluence
+      );
+      limb.rotation.z = branch.roll;
+      limb.rotation.x = branch.pitch;
+      limb.scale.y = branch.length;
+      tree.add(limb);
+    }
+
+    for (const clump of canopy.foliage) {
+      const canopyCurveInfluence = Math.max(
+        0,
+        Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
+      );
+      const foliage = new three.Mesh(geometry.foliage, style.foliageMaterial);
+      foliage.position.set(
+        clump.x + structure.trunkCurveX * canopyCurveInfluence,
+        clump.y,
+        clump.z + structure.trunkCurveZ * canopyCurveInfluence
+      );
+      foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
+      tagForestFoliageWind(
+        foliage,
+        tileX,
+        tileY,
+        descriptor.variety,
+        clump.x + clump.y + clump.z
+      );
+      tree.add(foliage);
+    }
+
+    if (damage.barkMarks.length > 0) {
+      const barkDamageInstances = new three.InstancedMesh(
+        geometry.foliage,
+        style.carvingMaterial,
+        damage.barkMarks.length
+      );
+      barkDamageInstances.userData = {
+        ...(barkDamageInstances.userData ?? {}),
+        [BARK_DAMAGE_KEY]: damage.barkMarks[0]?.kind,
+        forestBarkDamageSeverity: Math.max(
+          ...damage.barkMarks.map((barkMark) => barkMark.severity)
+        ),
+        forestBarkDamageInstanced: true,
+      };
+      const barkDamageMatrixScratch = new three.Matrix4();
+      damage.barkMarks.forEach((barkMark, index) => {
+        barkDamageInstances.setMatrixAt(
+          index,
+          writeLowDetailInstancedMatrix(
+            barkDamageMatrixScratch,
+            barkMark.x,
+            barkMark.y,
+            structure.radius *
+              (barkMark.kind === 'crack' ? 0.92 : 0.82) *
+              (barkMark.x >= 0 ? 1 : -1),
+            barkMark.scale * (barkMark.kind === 'crack' ? 0.35 : 0.48),
+            barkMark.scale * (0.9 + barkMark.severity * 0.6),
+            barkMark.scale * (barkMark.kind === 'crack' ? 0.18 : 0.26)
+          )
+        );
+      });
+      tree.add(barkDamageInstances);
+    }
+
+    if (historical.landmark) {
+      const markerInstances = new three.InstancedMesh(
+        geometry.foliage,
+        style.stoneMaterial,
+        3
+      );
+      markerInstances.userData = {
+        ...(markerInstances.userData ?? {}),
+        [HISTORICAL_TREE_KEY]: historical.title,
+        forestHistoricalTreeRecord: historical.record,
+        forestHistoricalTreeMarker: true,
+      };
+      const markerMatrixScratch = new three.Matrix4();
+      for (let markerIndex = 0; markerIndex < 3; markerIndex += 1) {
+        const angle = (markerIndex / 3) * Math.PI * 2 + historical.prominence;
+        markerInstances.setMatrixAt(
+          markerIndex,
+          writeLowDetailInstancedMatrix(
+            markerMatrixScratch,
+            Math.cos(angle) * structure.radius * 1.8,
+            0.04 + markerIndex * 0.01,
+            Math.sin(angle) * structure.radius * 1.8,
+            0.05 + historical.prominence * 0.035,
+            0.07 + historical.prominence * 0.05,
+            0.05 + historical.prominence * 0.035
+          )
+        );
+      }
+      tree.add(markerInstances);
+    }
+
+    group.add(tree);
+  }
+
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'trees',
+  };
+
+  const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
+  const scene = getForestTreeSceneState(tileX, tileY);
+  const hollows = renderCloseDetails
+    ? scene.decorations.filter(
+        (
+          decoration
+        ): decoration is Extract<ForestTreeDecoration, { kind: 'hollow' }> =>
+          decoration.kind === 'hollow'
+      )
+    : [];
+  if (hollows.length > 0) {
+    const hollowInstances = new three.InstancedMesh(
+      geometry.foliage,
+      floorDetailStyle.hollowMaterial,
+      hollows.length
+    );
+    hollowInstances.userData = {
+      ...(hollowInstances.userData ?? {}),
+      [HOLLOW_KEY]: true,
+      forestHollowInstanced: true,
+    };
+    const hollowMatrixScratch = new three.Matrix4();
+    let hollowIndex = 0;
+    for (const hollow of hollows) {
+      const treeDescriptor = descriptors[hollow.treeIndex];
+      if (!treeDescriptor) {
+        continue;
+      }
+
+      hollowInstances.setMatrixAt(
+        hollowIndex,
+        writeLowDetailInstancedMatrix(
+          hollowMatrixScratch,
+          tileX +
+            treeDescriptor.x +
+            treeDescriptor.radius * 0.7 * hollow.sideOffset,
+          hollow.height,
+          tileY + treeDescriptor.y,
+          hollow.scale,
+          hollow.scale * 0.82,
+          hollow.depth
+        )
+      );
+      hollowIndex += 1;
+    }
+    hollowInstances.count = hollowIndex;
+    group.add(hollowInstances);
+  }
+
+  if (renderCloseDetails) {
+    const owls = scene.inhabitants.filter(
+      (
+        inhabitant
+      ): inhabitant is Extract<ForestTreeInhabitant, { kind: 'owl' }> =>
+        inhabitant.kind === 'owl'
+    );
+    const owlBodyInstances =
+      owls.length > 0
+        ? new three.InstancedMesh(
+            geometry.foliage,
+            floorDetailStyle.owlBodyMaterial,
+            owls.length
+          )
+        : null;
+    if (owlBodyInstances) {
+      owlBodyInstances.userData = {
+        ...(owlBodyInstances.userData ?? {}),
+        [OWL_KEY]: true,
+        forestOwlBodyInstanced: true,
+      };
+    }
+    const owlEyeInstances =
+      owls.length > 0
+        ? new three.InstancedMesh(
+            geometry.foliage,
+            floorDetailStyle.owlEyeMaterial,
+            owls.length * 2
+          )
+        : null;
+    if (owlEyeInstances) {
+      owlEyeInstances.userData = {
+        ...(owlEyeInstances.userData ?? {}),
+        forestOwlEye: true,
+      };
+    }
+    const owlBodyMatrixScratch = new three.Matrix4();
+    const owlEyeMatrixScratch = new three.Matrix4();
+    let owlBodyIndex = 0;
+    let owlEyeIndex = 0;
+    for (const owl of owls) {
+      const hollow = hollows[owl.hollowIndex];
+      const treeDescriptor = hollow ? descriptors[hollow.treeIndex] : null;
+      if (!hollow || !treeDescriptor) {
+        continue;
+      }
+
+      const owlBodyX =
+        tileX +
+        treeDescriptor.x +
+        treeDescriptor.radius * 0.56 * hollow.sideOffset;
+      const owlBodyY = hollow.height - owl.perchOffset;
+      const owlBodyZ = tileY + treeDescriptor.y + hollow.depth * 0.2;
+      owlBodyInstances?.setMatrixAt(
+        owlBodyIndex,
+        writeLowDetailInstancedMatrix(
+          owlBodyMatrixScratch,
+          owlBodyX,
+          owlBodyY,
+          owlBodyZ,
+          owl.bodyScale,
+          owl.bodyScale * 1.18,
+          owl.bodyScale * 0.92
+        )
+      );
+      owlBodyIndex += 1;
+
+      owlEyeInstances?.setMatrixAt(
+        owlEyeIndex,
+        writeLowDetailInstancedMatrix(
+          owlEyeMatrixScratch,
+          owlBodyX + owl.eyeSpread * 0.5,
+          owlBodyY + owl.bodyScale * 0.16,
+          owlBodyZ + owl.bodyScale * 0.68,
+          owl.bodyScale * 0.16,
+          owl.bodyScale * 0.16,
+          owl.bodyScale * 0.16
+        )
+      );
+      owlEyeIndex += 1;
+      owlEyeInstances?.setMatrixAt(
+        owlEyeIndex,
+        writeLowDetailInstancedMatrix(
+          owlEyeMatrixScratch,
+          owlBodyX - owl.eyeSpread * 0.5,
+          owlBodyY + owl.bodyScale * 0.16,
+          owlBodyZ + owl.bodyScale * 0.68,
+          owl.bodyScale * 0.16,
+          owl.bodyScale * 0.16,
+          owl.bodyScale * 0.16
+        )
+      );
+      owlEyeIndex += 1;
+    }
+    if (owlBodyInstances) {
+      owlBodyInstances.count = owlBodyIndex;
+      group.add(owlBodyInstances);
+    }
+    if (owlEyeInstances) {
+      group.add(owlEyeInstances);
+    }
+  }
+
+  if (renderCloseDetails) {
+    for (const carving of scene.decorations.filter(
+      (
+        decoration
+      ): decoration is Extract<ForestTreeDecoration, { kind: 'carving' }> =>
+        decoration.kind === 'carving'
+    )) {
+      const treeDescriptor = descriptors[carving.treeIndex];
+      if (!treeDescriptor) {
+        continue;
+      }
+
+      const markers = getForestCarvingMarkers(carving);
+      const notchInstances = new three.InstancedMesh(
+        geometry.foliage,
+        floorDetailStyle.carvingMaterial,
+        markers.length
+      );
+      notchInstances.userData = {
+        ...(notchInstances.userData ?? {}),
+        [CARVING_KEY]: carving.text,
+        forestCarvingAge: carving.age,
+        forestCarvingBarkCoverage: carving.barkCoverage,
+        forestCarvingInstanced: true,
+      };
+      const notchMatrixScratch = new three.Matrix4();
+      markers.forEach((marker, index) => {
+        const notchScale =
+          carving.scale *
+          (0.94 - carving.age * 0.16 - carving.barkCoverage * 0.08);
+        notchInstances.setMatrixAt(
+          index,
+          writeLowDetailInstancedMatrix(
+            notchMatrixScratch,
+            tileX +
+              treeDescriptor.x +
+              treeDescriptor.radius * 0.74 * carving.sideOffset,
+            carving.height + marker.y * carving.scale,
+            tileY + treeDescriptor.y + marker.x * carving.scale,
+            notchScale,
+            notchScale,
+            notchScale
+          )
+        );
+      });
+      group.add(notchInstances);
+    }
+  }
+
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'hollows-and-markings',
+  };
+
+  const meadows = getForestMeadows(tileX, tileY);
+  if (meadows.length > 0) {
+    const meadowInstances = new three.InstancedMesh(
+      geometry.foliage,
+      floorDetailStyle.meadowGrassMaterial,
+      meadows.length
+    );
+    meadowInstances.userData = {
+      ...(meadowInstances.userData ?? {}),
+      [MEADOW_KEY]: 'grass',
+      forestMeadowInstanced: true,
+    };
+    const meadowMatrixScratch = new three.Matrix4();
+    meadows.forEach((meadow, index) => {
+      meadowInstances.setMatrixAt(
+        index,
+        writeLowDetailInstancedMatrix(
+          meadowMatrixScratch,
+          tileX + meadow.x,
+          0.03,
+          tileY + meadow.y,
+          meadow.radiusX,
+          0.08,
+          meadow.radiusY
+        )
+      );
+    });
+    group.add(meadowInstances);
+  }
+  for (const meadow of meadows) {
+    addForestMeadowFlowerInstances(
+      three,
+      group,
+      geometry,
+      floorDetailStyle,
+      tileX,
+      tileY,
+      meadow
+    );
+  }
+
+  if (renderCloseDetails) {
+    for (const bird of scene.inhabitants.filter(
+      (
+        inhabitant
+      ): inhabitant is Extract<ForestTreeInhabitant, { kind: 'bird' }> =>
+        inhabitant.kind === 'bird'
+    )) {
+      const birdGroup = new three.Group();
+      birdGroup.userData = {
+        ...(birdGroup.userData ?? {}),
+        [BIRD_KEY]: bird,
+      };
+
+      const leftWing = new three.Mesh(
+        geometry.branch,
+        floorDetailStyle.birdMaterial
+      );
+      leftWing.position.set(-bird.wingScale * 0.5, 0, 0);
+      leftWing.rotation.z = -0.35;
+      leftWing.scale.set(0.18, bird.wingScale, 0.18);
+      birdGroup.add(leftWing);
+
+      const rightWing = new three.Mesh(
+        geometry.branch,
+        floorDetailStyle.birdMaterial
+      );
+      rightWing.position.set(bird.wingScale * 0.5, 0, 0);
+      rightWing.rotation.z = 0.35;
+      rightWing.scale.set(0.18, bird.wingScale, 0.18);
+      birdGroup.add(rightWing);
+
+      const body = new three.Mesh(
+        geometry.foliage,
+        floorDetailStyle.birdMaterial
+      );
+      body.scale.set(
+        bird.wingScale * 0.55,
+        bird.wingScale * 0.3,
+        bird.wingScale * 0.3
+      );
+      birdGroup.add(body);
+      group.add(birdGroup);
+    }
+  }
+
+  if (renderCloseDetails) {
+    addForestWebInstances(
+      three,
+      group,
+      geometry,
+      floorDetailStyle,
+      tileX,
+      tileY,
+      scene.decorations
+        .filter(
+          (
+            decoration
+          ): decoration is Extract<ForestTreeDecoration, { kind: 'web' }> =>
+            decoration.kind === 'web'
+        )
+        .map((web) => ({
+          kind: web.webKind,
+          x: web.x,
+          y: web.y,
+          z: web.z,
+          radius: web.radius,
+          strandCount: web.strandCount,
+        }))
+    );
+    addForestSpiderInstances(
+      three,
+      group,
+      geometry,
+      floorDetailStyle,
+      tileX,
+      tileY,
+      scene.inhabitants.filter(
+        (
+          inhabitant
+        ): inhabitant is Extract<ForestTreeInhabitant, { kind: 'spider' }> =>
+          inhabitant.kind === 'spider'
+      )
+    );
+    addForestBeaverDamageInstances(
+      three,
+      group,
+      geometry,
+      floorDetailStyle,
+      tileX,
+      tileY,
+      descriptors,
+      getForestBeaverDamage(state, tileX, tileY)
+    );
+  }
+
+  const trail = getForestTrail(tileX, tileY);
+  if (trail) {
+    addForestBreadcrumbInstances(
+      three,
+      group,
+      geometry,
+      floorDetailStyle,
+      tileX,
+      tileY,
+      trail
+    );
+  }
+  const landmark = getForestLandmark(tileX, tileY);
+  if (landmark) {
+    createForestLandmarkMeshes(
+      three,
+      group,
+      tileX,
+      tileY,
+      landmark,
+      floorDetailStyle
+    );
+  }
+  addForestBushInstances(
+    three,
+    group,
+    geometry,
+    floorDetailStyle,
+    tileX,
+    tileY,
+    getForestBushes(tileX, tileY)
+  );
+  const floorDetails = getForestFloorDetails(tileX, tileY);
+  const stumpDetails = floorDetails.filter((detail) => detail.kind === 'stump');
+  if (stumpDetails.length > 0) {
+    const stumpInstances = new three.InstancedMesh(
+      geometry.trunk,
+      floorDetailStyle.trunkMaterial,
+      stumpDetails.length
+    );
+    stumpInstances.userData = {
+      ...(stumpInstances.userData ?? {}),
+      [FLOOR_DETAIL_KEY]: 'stump',
+    };
+    const stumpMatrixScratch = new three.Matrix4();
+
+    stumpDetails.forEach((detail, index) => {
+      stumpInstances.setMatrixAt(
+        index,
+        writeLowDetailInstancedMatrix(
+          stumpMatrixScratch,
+          tileX + detail.x,
+          detail.height * 0.5,
+          tileY + detail.y,
+          detail.radius,
+          detail.height,
+          detail.radius
+        )
+      );
+    });
+    group.add(stumpInstances);
+  }
+
+  const fallenTreeDetails = floorDetails.filter(
+    (detail) => detail.kind === 'fallen-tree'
+  );
+  if (fallenTreeDetails.length > 0) {
+    const logInstances = new three.InstancedMesh(
+      geometry.trunk,
+      floorDetailStyle.trunkMaterial,
+      fallenTreeDetails.length
+    );
+    logInstances.userData = {
+      ...(logInstances.userData ?? {}),
+      [FLOOR_DETAIL_KEY]: 'fallen-tree',
+    };
+    const logMatrixScratch = new three.Matrix4();
+
+    fallenTreeDetails.forEach((detail, index) => {
+      logInstances.setMatrixAt(
+        index,
+        writeHorizontalCylinderInstancedMatrix(
+          logMatrixScratch,
+          tileX + detail.x,
+          detail.radius * 0.8,
+          tileY + detail.y,
+          detail.radius,
+          detail.length ?? detail.radius,
+          detail.rotation
+        )
+      );
+    });
+    group.add(logInstances);
+  }
+
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'ground-detail',
+  };
+
+  if (renderCloseDetails) {
+    for (const firefly of getForestFireflies(three, state, tileX, tileY)) {
+      group.add(firefly);
+    }
+  }
+
+  yield {
+    completedSteps: 4,
+    totalSteps,
+    label: 'close-effects',
+  };
+
+  return group;
 }
 
 function getTreeGeometry(three: ThreeHostLike): TreeGeometry {

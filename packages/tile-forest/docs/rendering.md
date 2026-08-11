@@ -3,6 +3,16 @@
 The forest tile now instances repeated ring-landmark geometry instead of
 emitting one mesh per repeated stone or mushroom.
 
+Progressive loading:
+
+- Full-detail forest tiles now expose `create3DModelProgressive(...)` so the
+  renderer can spread the heaviest tree, hollow, ground-detail, and firefly
+  work across multiple frames.
+- Current progressive phases are `trees`, `hollows-and-markings`,
+  `ground-detail`, and `close-effects`.
+- The low-detail forest path remains synchronous because it is already a small
+  instanced pass.
+
 Current layout:
 
 - Stone-ring landmarks share one `SphereGeometry`, one material, and one

@@ -15,7 +15,10 @@ Always run tests to make sure all tests pass
         Progress: `tile-rail` now exposes `create3DModelProgressive(...)` so the
         renderer can yield after laying the two rails and before placing the four
         sleepers, while the synchronous wrapper still exhausts the same generator
-        for parity.
+        for parity, and `tile-forest` now exposes `create3DModelProgressive(...)`
+        for its full-detail path so the renderer can resume after tree trunks and
+        canopies, hollows and bark markings, ground clutter, and close firefly
+        effects without forcing the whole forest tile to finish in one frame.
 - [ ] Reduce unique materials and shader program variants.
       Progress: `tile-forest` now scopes its tree-family style material cache
       per Three host instead of sharing one process-wide material/texture
