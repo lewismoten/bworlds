@@ -50,7 +50,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       detail tiles now collapse their repeated stump and fallen-tree props
       into shared `InstancedMesh` sets, and full-detail forest hollows now
       collapse into one shared `InstancedMesh` per tile, and full-detail forest owls now
-      collapse their repeated eye meshes into one shared `InstancedMesh`, and
+      collapse their repeated body and eye meshes into shared `InstancedMesh`
+      sets, and
       full-detail historical forest trees now collapse their repeated marker
       stones into one shared `InstancedMesh` per landmark tree, and full-
       detail forest carvings now collapse their repeated notch meshes into
@@ -100,8 +101,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       their repeated stump and fallen-tree props instead of emitting one mesh
       per floor-detail prop, and full-detail forest hollows now instance
       their repeated foliage meshes instead of emitting one mesh per hollow,
-      and full-detail forest owls now instance their
-      repeated eye meshes instead of emitting one mesh per eye, and full-
+      and full-detail forest owls now instance their repeated body and eye
+      meshes instead of emitting one mesh per owl body or eye, and full-
       detail historical forest trees now instance their repeated marker
       stones instead of emitting one mesh per landmark marker, and full-
       detail forest carvings now instance their repeated notch meshes instead

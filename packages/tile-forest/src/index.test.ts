@@ -3227,11 +3227,14 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    let fullOwlCount = 0;
+    const owlBodyInstances: FakeInstancedMesh[] = [];
     const owlEyeInstances: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
-      if (node.userData?.forestOwl) {
-        fullOwlCount += 1;
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestOwlBodyInstanced
+      ) {
+        owlBodyInstances.push(node);
       }
       if (node instanceof FakeInstancedMesh && node.userData?.forestOwlEye) {
         owlEyeInstances.push(node);
@@ -3245,7 +3248,9 @@ describe('tile forest', () => {
       }
     });
 
-    expect(fullOwlCount).toBeGreaterThan(0);
+    expect(owlBodyInstances).toHaveLength(1);
+    expect(owlBodyInstances[0]?.count).toBe(owlCount);
+    expect(owlBodyInstances[0]?.matrices).toHaveLength(owlCount);
     expect(owlEyeInstances).toHaveLength(1);
     expect(owlEyeInstances[0]?.count).toBe(owlCount * 2);
     expect(owlEyeInstances[0]?.matrices).toHaveLength(owlCount * 2);

@@ -1567,6 +1567,21 @@ export function createForestTilePlugin(): RuntimePlugin {
               ): inhabitant is Extract<ForestTreeInhabitant, { kind: 'owl' }> =>
                 inhabitant.kind === 'owl'
             );
+            const owlBodyInstances =
+              owls.length > 0
+                ? new three.InstancedMesh(
+                    geometry.foliage,
+                    floorDetailStyle.owlBodyMaterial,
+                    owls.length
+                  )
+                : null;
+            if (owlBodyInstances) {
+              owlBodyInstances.userData = {
+                ...(owlBodyInstances.userData ?? {}),
+                [OWL_KEY]: true,
+                forestOwlBodyInstanced: true,
+              };
+            }
             const owlEyeInstances =
               owls.length > 0
                 ? new three.InstancedMesh(
@@ -1581,7 +1596,9 @@ export function createForestTilePlugin(): RuntimePlugin {
                 forestOwlEye: true,
               };
             }
+            const owlBodyMatrixScratch = new three.Matrix4();
             const owlEyeMatrixScratch = new three.Matrix4();
+            let owlBodyIndex = 0;
             let owlEyeIndex = 0;
             for (const owl of owls) {
               const hollow = hollows[owl.hollowIndex];
@@ -1592,35 +1609,33 @@ export function createForestTilePlugin(): RuntimePlugin {
                 continue;
               }
 
-              const owlBody = new three.Mesh(
-                geometry.foliage,
-                floorDetailStyle.owlBodyMaterial
-              );
-              owlBody.position.set(
+              const owlBodyX =
                 tileX +
-                  treeDescriptor.x +
-                  treeDescriptor.radius * 0.56 * hollow.sideOffset,
-                hollow.height - owl.perchOffset,
-                tileY + treeDescriptor.y + hollow.depth * 0.2
+                treeDescriptor.x +
+                treeDescriptor.radius * 0.56 * hollow.sideOffset;
+              const owlBodyY = hollow.height - owl.perchOffset;
+              const owlBodyZ = tileY + treeDescriptor.y + hollow.depth * 0.2;
+              owlBodyInstances?.setMatrixAt(
+                owlBodyIndex,
+                writeLowDetailInstancedMatrix(
+                  owlBodyMatrixScratch,
+                  owlBodyX,
+                  owlBodyY,
+                  owlBodyZ,
+                  owl.bodyScale,
+                  owl.bodyScale * 1.18,
+                  owl.bodyScale * 0.92
+                )
               );
-              owlBody.scale.set(
-                owl.bodyScale,
-                owl.bodyScale * 1.18,
-                owl.bodyScale * 0.92
-              );
-              owlBody.userData = {
-                ...(owlBody.userData ?? {}),
-                [OWL_KEY]: true,
-              };
-              group.add(owlBody);
+              owlBodyIndex += 1;
 
               owlEyeInstances?.setMatrixAt(
                 owlEyeIndex,
                 writeLowDetailInstancedMatrix(
                   owlEyeMatrixScratch,
-                  owlBody.position.x + owl.eyeSpread * 0.5,
-                  owlBody.position.y + owl.bodyScale * 0.16,
-                  owlBody.position.z + owl.bodyScale * 0.68,
+                  owlBodyX + owl.eyeSpread * 0.5,
+                  owlBodyY + owl.bodyScale * 0.16,
+                  owlBodyZ + owl.bodyScale * 0.68,
                   owl.bodyScale * 0.16,
                   owl.bodyScale * 0.16,
                   owl.bodyScale * 0.16
@@ -1631,15 +1646,19 @@ export function createForestTilePlugin(): RuntimePlugin {
                 owlEyeIndex,
                 writeLowDetailInstancedMatrix(
                   owlEyeMatrixScratch,
-                  owlBody.position.x - owl.eyeSpread * 0.5,
-                  owlBody.position.y + owl.bodyScale * 0.16,
-                  owlBody.position.z + owl.bodyScale * 0.68,
+                  owlBodyX - owl.eyeSpread * 0.5,
+                  owlBodyY + owl.bodyScale * 0.16,
+                  owlBodyZ + owl.bodyScale * 0.68,
                   owl.bodyScale * 0.16,
                   owl.bodyScale * 0.16,
                   owl.bodyScale * 0.16
                 )
               );
               owlEyeIndex += 1;
+            }
+            if (owlBodyInstances) {
+              owlBodyInstances.count = owlBodyIndex;
+              group.add(owlBodyInstances);
             }
             if (owlEyeInstances) {
               group.add(owlEyeInstances);
