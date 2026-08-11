@@ -282,6 +282,7 @@
 - [ ] Include LOD level in export metadata.
 - [ ] Include footprint shape in export metadata.
 - [ ] Use deterministic filenames for model exports.
+- [ ] Option to export all LOD models, metadata, statistics, etc. as ZIP package for offline analysis.
 
 ## Export Validation
 
