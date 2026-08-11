@@ -24,6 +24,9 @@ Current groundwork:
   `tile-water`, and the `tile-route` dock renderer now follow the same pattern
   for their heavier landmark builds, each yielding coarse structural phases
   before returning the final Three.js object.
+- `tile-forest` now splits its full-detail tree construction into two
+  resumable batches before close-detail passes, which reduces how much work can
+  hide behind the first progressive yield.
 
 This is the typed scheduler seam for the `errors.md` frame-stall work. The
 renderer now keeps one unfinished plugin build alive across frames and resumes

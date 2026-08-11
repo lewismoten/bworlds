@@ -8,8 +8,9 @@ Progressive loading:
 - Full-detail forest tiles now expose `create3DModelProgressive(...)` so the
   renderer can spread the heaviest tree, hollow, ground-detail, and firefly
   work across multiple frames.
-- Current progressive phases are `trees`, `hollows-and-markings`,
-  `ground-detail`, and `close-effects`.
+- Current progressive phases split the heaviest tree build into two batches
+  before continuing with `hollows-and-markings`, `ground-detail`, and
+  `close-effects`.
 - The low-detail forest path remains synchronous because it is already a small
   instanced pass.
 

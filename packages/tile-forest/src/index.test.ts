@@ -68,31 +68,39 @@ describe('tile forest', () => {
       done: false,
       value: {
         completedSteps: 1,
-        totalSteps: 4,
-        label: 'trees',
+        totalSteps: 5,
+        label: 'trees-primary',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 2,
-        totalSteps: 4,
-        label: 'hollows-and-markings',
+        totalSteps: 5,
+        label: 'trees-secondary',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 3,
-        totalSteps: 4,
-        label: 'ground-detail',
+        totalSteps: 5,
+        label: 'hollows-and-markings',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 4,
-        totalSteps: 4,
+        totalSteps: 5,
+        label: 'ground-detail',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 5,
+        totalSteps: 5,
         label: 'close-effects',
       },
     });

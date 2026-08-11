@@ -1414,158 +1414,34 @@ function* createForestModelProgressive({
     return group;
   }
 
-  const totalSteps = 4;
-  for (const descriptor of descriptors) {
-    const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
-    const structure = getTreeStructuralState(descriptor);
-    const canopy = getTreeCanopyState(descriptor);
-    const damage = getTreeDamageState(descriptor);
-    const historical = getTreeHistoricalState(descriptor);
+  const firstTreeBatchCount = Math.ceil(descriptors.length / 2);
+  const primaryTreeDescriptors = descriptors.slice(0, firstTreeBatchCount);
+  const secondaryTreeDescriptors = descriptors.slice(firstTreeBatchCount);
+  const totalSteps = secondaryTreeDescriptors.length > 0 ? 5 : 4;
 
-    const tree = new three.Group();
-    tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-    tree.scale.setScalar(structure.scale);
-    tree.rotation.x = Math.atan2(
-      structure.trunkLeanZ,
-      Math.max(0.001, structure.trunkHeight)
-    );
-    tree.rotation.z = -Math.atan2(
-      structure.trunkLeanX,
-      Math.max(0.001, structure.trunkHeight)
-    );
-    tree.userData = {
-      ...(tree.userData ?? {}),
-      [TREE_FORM_KEY]: descriptor.form,
-      [RENDER_STATS_CATEGORY_KEY]: 'tree',
-      ...(historical.landmark
-        ? {
-            [HISTORICAL_TREE_KEY]: historical.title,
-            forestHistoricalTreeRecord: historical.record,
-            forestHistoricalTreeProminence: historical.prominence,
-          }
-        : {}),
-    };
-
-    addForestFullDetailTrunk(
-      three,
-      tree,
-      style.trunkMaterial,
-      descriptor,
-      structure
-    );
-
-    for (const branch of structure.branches) {
-      const branchCurveInfluence = Math.max(
-        0,
-        Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
-      );
-      const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
-      limb.position.set(
-        branch.x + structure.trunkCurveX * branchCurveInfluence,
-        branch.y,
-        branch.z + structure.trunkCurveZ * branchCurveInfluence
-      );
-      limb.rotation.z = branch.roll;
-      limb.rotation.x = branch.pitch;
-      limb.scale.y = branch.length;
-      tree.add(limb);
-    }
-
-    for (const clump of canopy.foliage) {
-      const canopyCurveInfluence = Math.max(
-        0,
-        Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
-      );
-      const foliage = new three.Mesh(geometry.foliage, style.foliageMaterial);
-      foliage.position.set(
-        clump.x + structure.trunkCurveX * canopyCurveInfluence,
-        clump.y,
-        clump.z + structure.trunkCurveZ * canopyCurveInfluence
-      );
-      foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
-      tagForestFoliageWind(
-        foliage,
-        tileX,
-        tileY,
-        descriptor.variety,
-        clump.x + clump.y + clump.z
-      );
-      tree.add(foliage);
-    }
-
-    if (damage.barkMarks.length > 0) {
-      const barkDamageInstances = new three.InstancedMesh(
-        geometry.foliage,
-        style.carvingMaterial,
-        damage.barkMarks.length
-      );
-      barkDamageInstances.userData = {
-        ...(barkDamageInstances.userData ?? {}),
-        [BARK_DAMAGE_KEY]: damage.barkMarks[0]?.kind,
-        forestBarkDamageSeverity: Math.max(
-          ...damage.barkMarks.map((barkMark) => barkMark.severity)
-        ),
-        forestBarkDamageInstanced: true,
-      };
-      const barkDamageMatrixScratch = new three.Matrix4();
-      damage.barkMarks.forEach((barkMark, index) => {
-        barkDamageInstances.setMatrixAt(
-          index,
-          writeLowDetailInstancedMatrix(
-            barkDamageMatrixScratch,
-            barkMark.x,
-            barkMark.y,
-            structure.radius *
-              (barkMark.kind === 'crack' ? 0.92 : 0.82) *
-              (barkMark.x >= 0 ? 1 : -1),
-            barkMark.scale * (barkMark.kind === 'crack' ? 0.35 : 0.48),
-            barkMark.scale * (0.9 + barkMark.severity * 0.6),
-            barkMark.scale * (barkMark.kind === 'crack' ? 0.18 : 0.26)
-          )
-        );
-      });
-      tree.add(barkDamageInstances);
-    }
-
-    if (historical.landmark) {
-      const markerInstances = new three.InstancedMesh(
-        geometry.foliage,
-        style.stoneMaterial,
-        3
-      );
-      markerInstances.userData = {
-        ...(markerInstances.userData ?? {}),
-        [HISTORICAL_TREE_KEY]: historical.title,
-        forestHistoricalTreeRecord: historical.record,
-        forestHistoricalTreeMarker: true,
-      };
-      const markerMatrixScratch = new three.Matrix4();
-      for (let markerIndex = 0; markerIndex < 3; markerIndex += 1) {
-        const angle = (markerIndex / 3) * Math.PI * 2 + historical.prominence;
-        markerInstances.setMatrixAt(
-          markerIndex,
-          writeLowDetailInstancedMatrix(
-            markerMatrixScratch,
-            Math.cos(angle) * structure.radius * 1.8,
-            0.04 + markerIndex * 0.01,
-            Math.sin(angle) * structure.radius * 1.8,
-            0.05 + historical.prominence * 0.035,
-            0.07 + historical.prominence * 0.05,
-            0.05 + historical.prominence * 0.035
-          )
-        );
-      }
-      tree.add(markerInstances);
-    }
-
-    group.add(tree);
+  for (const descriptor of primaryTreeDescriptors) {
+    addForestFullDetailTree(group, three, geometry, tileX, tileY, descriptor);
   }
 
   yield {
     completedSteps: 1,
     totalSteps,
-    label: 'trees',
+    label: 'trees-primary',
   };
+
+  for (const descriptor of secondaryTreeDescriptors) {
+    addForestFullDetailTree(group, three, geometry, tileX, tileY, descriptor);
+  }
+
+  if (secondaryTreeDescriptors.length > 0) {
+    yield {
+      completedSteps: 2,
+      totalSteps,
+      label: 'trees-secondary',
+    };
+  }
+
+  const postTreeBaseStep = secondaryTreeDescriptors.length > 0 ? 2 : 1;
 
   const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
   const scene = getForestTreeSceneState(tileX, tileY);
@@ -1769,7 +1645,7 @@ function* createForestModelProgressive({
   }
 
   yield {
-    completedSteps: 2,
+    completedSteps: postTreeBaseStep + 1,
     totalSteps,
     label: 'hollows-and-markings',
   };
@@ -2006,7 +1882,7 @@ function* createForestModelProgressive({
   }
 
   yield {
-    completedSteps: 3,
+    completedSteps: postTreeBaseStep + 2,
     totalSteps,
     label: 'ground-detail',
   };
@@ -2018,12 +1894,165 @@ function* createForestModelProgressive({
   }
 
   yield {
-    completedSteps: 4,
+    completedSteps: postTreeBaseStep + 3,
     totalSteps,
     label: 'close-effects',
   };
 
   return group;
+}
+
+function addForestFullDetailTree(
+  group: ThreeObject3DLike,
+  three: ThreeHostLike,
+  geometry: TreeGeometry,
+  tileX: number,
+  tileY: number,
+  descriptor: ForestTreeDescriptor
+): void {
+  const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
+  const structure = getTreeStructuralState(descriptor);
+  const canopy = getTreeCanopyState(descriptor);
+  const damage = getTreeDamageState(descriptor);
+  const historical = getTreeHistoricalState(descriptor);
+
+  const tree = new three.Group();
+  tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
+  tree.scale.setScalar(structure.scale);
+  tree.rotation.x = Math.atan2(
+    structure.trunkLeanZ,
+    Math.max(0.001, structure.trunkHeight)
+  );
+  tree.rotation.z = -Math.atan2(
+    structure.trunkLeanX,
+    Math.max(0.001, structure.trunkHeight)
+  );
+  tree.userData = {
+    ...(tree.userData ?? {}),
+    [TREE_FORM_KEY]: descriptor.form,
+    [RENDER_STATS_CATEGORY_KEY]: 'tree',
+    ...(historical.landmark
+      ? {
+          [HISTORICAL_TREE_KEY]: historical.title,
+          forestHistoricalTreeRecord: historical.record,
+          forestHistoricalTreeProminence: historical.prominence,
+        }
+      : {}),
+  };
+
+  addForestFullDetailTrunk(
+    three,
+    tree,
+    style.trunkMaterial,
+    descriptor,
+    structure
+  );
+
+  for (const branch of structure.branches) {
+    const branchCurveInfluence = Math.max(
+      0,
+      Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
+    );
+    const limb = new three.Mesh(geometry.branch, style.trunkMaterial);
+    limb.position.set(
+      branch.x + structure.trunkCurveX * branchCurveInfluence,
+      branch.y,
+      branch.z + structure.trunkCurveZ * branchCurveInfluence
+    );
+    limb.rotation.z = branch.roll;
+    limb.rotation.x = branch.pitch;
+    limb.scale.y = branch.length;
+    tree.add(limb);
+  }
+
+  for (const clump of canopy.foliage) {
+    const canopyCurveInfluence = Math.max(
+      0,
+      Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
+    );
+    const foliage = new three.Mesh(geometry.foliage, style.foliageMaterial);
+    foliage.position.set(
+      clump.x + structure.trunkCurveX * canopyCurveInfluence,
+      clump.y,
+      clump.z + structure.trunkCurveZ * canopyCurveInfluence
+    );
+    foliage.scale.set(clump.scaleX, clump.scaleY, clump.scaleZ);
+    tagForestFoliageWind(
+      foliage,
+      tileX,
+      tileY,
+      descriptor.variety,
+      clump.x + clump.y + clump.z
+    );
+    tree.add(foliage);
+  }
+
+  if (damage.barkMarks.length > 0) {
+    const barkDamageInstances = new three.InstancedMesh(
+      geometry.foliage,
+      style.carvingMaterial,
+      damage.barkMarks.length
+    );
+    barkDamageInstances.userData = {
+      ...(barkDamageInstances.userData ?? {}),
+      [BARK_DAMAGE_KEY]: damage.barkMarks[0]?.kind,
+      forestBarkDamageSeverity: Math.max(
+        ...damage.barkMarks.map((barkMark) => barkMark.severity)
+      ),
+      forestBarkDamageInstanced: true,
+    };
+    const barkDamageMatrixScratch = new three.Matrix4();
+    damage.barkMarks.forEach((barkMark, index) => {
+      barkDamageInstances.setMatrixAt(
+        index,
+        writeLowDetailInstancedMatrix(
+          barkDamageMatrixScratch,
+          barkMark.x,
+          barkMark.y,
+          structure.radius *
+            (barkMark.kind === 'crack' ? 0.92 : 0.82) *
+            (barkMark.x >= 0 ? 1 : -1),
+          barkMark.scale * (barkMark.kind === 'crack' ? 0.35 : 0.48),
+          barkMark.scale * (0.9 + barkMark.severity * 0.6),
+          barkMark.scale * (barkMark.kind === 'crack' ? 0.18 : 0.26)
+        )
+      );
+    });
+    tree.add(barkDamageInstances);
+  }
+
+  if (historical.landmark) {
+    const markerInstances = new three.InstancedMesh(
+      geometry.foliage,
+      style.stoneMaterial,
+      3
+    );
+    markerInstances.userData = {
+      ...(markerInstances.userData ?? {}),
+      [HISTORICAL_TREE_KEY]: historical.title,
+      forestHistoricalTreeRecord: historical.record,
+      forestHistoricalTreeMarker: true,
+    };
+    const markerMatrixScratch = new three.Matrix4();
+    for (let markerIndex = 0; markerIndex < 3; markerIndex += 1) {
+      const angle = (markerIndex / 3) * Math.PI * 2 + historical.prominence;
+      markerInstances.setMatrixAt(
+        markerIndex,
+        writeLowDetailInstancedMatrix(
+          markerMatrixScratch,
+          Math.cos(angle) * structure.radius * 1.8,
+          0.04 + markerIndex * 0.01,
+          Math.sin(angle) * structure.radius * 1.8,
+          0.05 + historical.prominence * 0.035,
+          0.07 + historical.prominence * 0.05,
+          0.05 + historical.prominence * 0.035
+        )
+      );
+    }
+    tree.add(markerInstances);
+  }
+
+  group.add(tree);
 }
 
 function getTreeGeometry(three: ThreeHostLike): TreeGeometry {
