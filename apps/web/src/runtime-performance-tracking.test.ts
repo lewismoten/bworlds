@@ -25,6 +25,7 @@ function createDebugSnapshot(
     renderQualityLimiters: 'frame time, materials',
     playerLevel: 1,
     visibilityRadius: 6,
+    weatherVisibilityRadiusCap: 6,
     drawCalls: 1301,
     triangles: 1000,
     points: 0,
@@ -81,12 +82,18 @@ function createDebugSnapshot(
     object3dCount: 2600,
     visibleObjectCount: 2500,
     invisibleObjectCount: 100,
+    maxChunkDrawCalls: 184,
+    maxChunkObjectCount: 180,
+    maxChunkMeshes: 120,
+    maxChunkTriangleCount: 26000,
     groupCount: 20,
     meshCount: 100,
     instancedMeshCount: 0,
     visibleInstancedMeshCount: 0,
     renderedInstanceCount: 0,
     visibleMeshCount: 100,
+    visibleTriangleCount: 1000,
+    visibleVertexCount: 2000,
     maxHierarchyDepth: 6,
     averageHierarchyDepth: 3,
     emptyGroupCount: 0,
@@ -143,6 +150,7 @@ function createDebugSnapshot(
     textureCount: 20,
     textureMemoryEstimateMb: 16,
     programCount: 12,
+    estimatedGpuMemoryBytes: 80 * 1024 * 1024,
     latitude: 0,
     longitude: 0,
     gridX: 0,
@@ -225,10 +233,16 @@ describe('runtime performance tracking', () => {
     });
 
     expect(issue).not.toBeNull();
-    expect(issue?.summary).toContain('exceeded');
+    expect(issue?.summary).toBe(
+      'Visible tile generation 22.0 ms exceeded 16.0 ms.'
+    );
     expect(issue?.pluginHotspots.rejectedModels).toBe('tile-plains');
     expect(issue?.pluginHotspots.materials).toBe('tile-water');
     expect(issue?.renderState.renderQualityLimiters).toEqual([
+      'frame time',
+      'materials',
+    ]);
+    expect(issue?.renderState.renderQualityLimiterDetails).toEqual([
       'frame time',
       'materials',
     ]);
@@ -237,6 +251,42 @@ describe('runtime performance tracking', () => {
         expect.stringContaining('Maximum frame time'),
         expect.stringContaining('Draw calls'),
       ])
+    );
+  });
+
+  it('adds measured quality-limiter details and prefers hard-cap details in the summary', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      worldSeed: 'alpha',
+      context: {
+        id: 'overworld',
+        label: 'Overworld',
+        depth: 0,
+      },
+      debugSnapshot: createDebugSnapshot({
+        performanceTier: 'critical',
+        worstRecentFrameMs: 17.6,
+        frameMs: 17.6,
+        drawCalls: 285,
+        renderQualityLimiters:
+          'Visibility radius reduced to 10, Weather visibility reduced draw distance, Chunk draw calls exceeded the soft cap, Scene materials exceeded the hard cap',
+        visibilityRadius: 10,
+        weatherVisibilityRadiusCap: 10,
+        maxChunkDrawCalls: 184,
+        materialCount: 52,
+      }),
+    });
+
+    expect(issue?.summary).toBe('Scene materials 52 exceeded hard cap 48.');
+    expect(issue?.renderState.renderQualityLimiterDetails).toEqual([
+      'Visibility radius reduced to 10 (full 18, reduced 14, minimum 10)',
+      'Weather visibility capped draw distance at 10 (full 18, weather cap 10)',
+      'Chunk draw calls 184 exceeded soft cap 160',
+      'Scene materials 52 exceeded hard cap 48',
+    ]);
+    expect(issue?.reasons).toContain(
+      'Graphics quality is constrained by Visibility radius reduced to 10 (full 18, reduced 14, minimum 10); Weather visibility capped draw distance at 10 (full 18, weather cap 10); Chunk draw calls 184 exceeded soft cap 160; Scene materials 52 exceeded hard cap 48.'
     );
   });
 

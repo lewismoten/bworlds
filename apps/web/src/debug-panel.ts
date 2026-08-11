@@ -9,6 +9,7 @@ export type DebugSnapshot = {
   renderQualityLimiters: string;
   playerLevel: number;
   visibilityRadius: number;
+  weatherVisibilityRadiusCap?: number;
   drawCalls: number;
   triangles: number;
   points: number;
@@ -71,12 +72,18 @@ export type DebugSnapshot = {
   object3dCount: number;
   visibleObjectCount?: number;
   invisibleObjectCount?: number;
+  maxChunkDrawCalls?: number;
+  maxChunkObjectCount?: number;
+  maxChunkMeshes?: number;
+  maxChunkTriangleCount?: number;
   groupCount: number;
   meshCount: number;
   instancedMeshCount?: number;
   visibleInstancedMeshCount?: number;
   renderedInstanceCount?: number;
   visibleMeshCount: number;
+  visibleTriangleCount?: number;
+  visibleVertexCount?: number;
   maxHierarchyDepth?: number;
   averageHierarchyDepth?: number;
   emptyGroupCount?: number;
@@ -133,6 +140,7 @@ export type DebugSnapshot = {
   textureCount: number;
   textureMemoryEstimateMb: number;
   programCount: number;
+  estimatedGpuMemoryBytes?: number;
   latitude: number;
   longitude: number;
   gridX: number;

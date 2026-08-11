@@ -1,5 +1,11 @@
 import type { DebugSnapshot } from './debug-panel.ts';
 import {
+  DEFAULT_VISIBILITY_RADIUS,
+  getRenderBudgetCaps,
+  MIN_VISIBILITY_RADIUS,
+  REDUCED_VISIBILITY_RADIUS,
+} from './render-budget.ts';
+import {
   buildRuntimePerformanceSnapshot,
   buildRuntimePerformanceSnapshotMetricsFromDebugSnapshot,
   type RuntimePerformanceSnapshot,
@@ -26,6 +32,7 @@ export type RuntimePerformanceIssueReport = {
     performanceTier: DebugSnapshot['performanceTier'];
     renderQualityLevel: string;
     renderQualityLimiters: string[];
+    renderQualityLimiterDetails: string[];
     targetFps: 60 | 30;
     visibilityRadius: number;
     pendingTileCount: number;
@@ -78,6 +85,8 @@ export function buildRuntimePerformanceIssueReport(
     options.debugSnapshot,
     performanceSnapshot
   );
+  const renderQualityLimiterDetails =
+    describeRuntimePerformanceLimiterDetails(options.debugSnapshot);
   if (reasons.length === 0) {
     return null;
   }
@@ -96,10 +105,14 @@ export function buildRuntimePerformanceIssueReport(
         options.debugSnapshot.performanceTier,
         options.debugSnapshot.renderQualityLevel,
         reasons.join('|'),
+        renderQualityLimiterDetails.join('|'),
         options.debugSnapshot.currentTilePlugin ?? '',
       ].join('\n')
     ),
-    summary: reasons[0],
+    summary: selectRuntimePerformanceIssueSummary(
+      reasons,
+      renderQualityLimiterDetails
+    ),
     reasons,
     performanceSnapshot,
     renderState: {
@@ -108,6 +121,7 @@ export function buildRuntimePerformanceIssueReport(
       renderQualityLimiters: splitRuntimePerformanceLimiters(
         options.debugSnapshot.renderQualityLimiters
       ),
+      renderQualityLimiterDetails,
       targetFps: options.debugSnapshot.targetFps,
       visibilityRadius: options.debugSnapshot.visibilityRadius,
       pendingTileCount: options.debugSnapshot.pendingTileCount,
@@ -159,8 +173,13 @@ function collectRuntimePerformanceIssueReasons(
   const limiters = splitRuntimePerformanceLimiters(
     debugSnapshot.renderQualityLimiters
   );
+  const limiterDetails = describeRuntimePerformanceLimiterDetails(debugSnapshot);
   if (limiters.length > 0) {
-    reasons.push(`Graphics quality is constrained by ${limiters.join(', ')}.`);
+    reasons.push(
+      hasActionableLimiterDetails(limiterDetails)
+        ? `Graphics quality is constrained by ${limiterDetails.join('; ')}.`
+        : `Graphics quality is constrained by ${limiters.join(', ')}.`
+    );
   }
 
   if ((debugSnapshot.tileModelBudgetViolationsPerSecond ?? 0) > 0) {
@@ -195,6 +214,296 @@ function splitRuntimePerformanceLimiters(value: string): string[] {
     .split(',')
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0);
+}
+
+function describeRuntimePerformanceLimiterDetails(
+  debugSnapshot: DebugSnapshot
+): string[] {
+  const caps = getRenderBudgetCaps({
+    targetFps: debugSnapshot.targetFps,
+  });
+  return splitRuntimePerformanceLimiters(debugSnapshot.renderQualityLimiters)
+    .map((limiter) => describeRuntimePerformanceLimiter(limiter, debugSnapshot, caps))
+    .filter((detail): detail is string => detail !== null);
+}
+
+function describeRuntimePerformanceLimiter(
+  limiter: string,
+  debugSnapshot: DebugSnapshot,
+  caps: ReturnType<typeof getRenderBudgetCaps>
+): string | null {
+  switch (limiter) {
+    case 'Target FPS reduced to 30':
+      return 'Target FPS reduced to 30 from 60';
+    case 'Weather visibility reduced draw distance':
+      return `Weather visibility capped draw distance at ${debugSnapshot.visibilityRadius} (full ${DEFAULT_VISIBILITY_RADIUS}, weather cap ${Math.floor(debugSnapshot.weatherVisibilityRadiusCap ?? debugSnapshot.visibilityRadius)})`;
+    case 'Optional effects minimized after sustained frame stalls':
+      return `Optional effects minimized after sustained frame stalls (${debugSnapshot.worstRecentFrameMs.toFixed(1)} ms worst recent frame time)`;
+    case 'Scene draw calls exceeded the hard cap':
+      return `${limiterValueLabel('Scene draw calls', debugSnapshot.drawCalls, caps.drawCalls.hard, 'hard cap')}`;
+    case 'Scene draw calls exceeded the soft cap':
+      return `${limiterValueLabel('Scene draw calls', debugSnapshot.drawCalls, caps.drawCalls.soft, 'soft cap')}`;
+    case 'Chunk draw calls exceeded the hard cap':
+      return limiterValueLabel(
+        'Chunk draw calls',
+        debugSnapshot.maxChunkDrawCalls,
+        caps.chunkDrawCalls.hard,
+        'hard cap'
+      );
+    case 'Chunk draw calls exceeded the soft cap':
+      return limiterValueLabel(
+        'Chunk draw calls',
+        debugSnapshot.maxChunkDrawCalls,
+        caps.chunkDrawCalls.soft,
+        'soft cap'
+      );
+    case 'Chunk objects exceeded the hard cap':
+      return limiterValueLabel(
+        'Chunk objects',
+        debugSnapshot.maxChunkObjectCount,
+        caps.chunkObjects.hard,
+        'hard cap'
+      );
+    case 'Chunk objects exceeded the soft cap':
+      return limiterValueLabel(
+        'Chunk objects',
+        debugSnapshot.maxChunkObjectCount,
+        caps.chunkObjects.soft,
+        'soft cap'
+      );
+    case 'Chunk meshes exceeded the hard cap':
+      return limiterValueLabel(
+        'Chunk meshes',
+        debugSnapshot.maxChunkMeshes,
+        caps.chunkMeshes.hard,
+        'hard cap'
+      );
+    case 'Chunk meshes exceeded the soft cap':
+      return limiterValueLabel(
+        'Chunk meshes',
+        debugSnapshot.maxChunkMeshes,
+        caps.chunkMeshes.soft,
+        'soft cap'
+      );
+    case 'Chunk triangles exceeded the hard cap':
+      return limiterValueLabel(
+        'Chunk triangles',
+        debugSnapshot.maxChunkTriangleCount,
+        caps.chunkTriangles.hard,
+        'hard cap'
+      );
+    case 'Chunk triangles exceeded the soft cap':
+      return limiterValueLabel(
+        'Chunk triangles',
+        debugSnapshot.maxChunkTriangleCount,
+        caps.chunkTriangles.soft,
+        'soft cap'
+      );
+    case 'Active lights exceeded the hard cap':
+      return limiterValueLabel(
+        'Active lights',
+        debugSnapshot.lightCount,
+        caps.lights.hard,
+        'hard cap'
+      );
+    case 'Active lights exceeded the soft cap':
+      return limiterValueLabel(
+        'Active lights',
+        debugSnapshot.lightCount,
+        caps.lights.soft,
+        'soft cap'
+      );
+    case 'Shadow lights exceeded the hard cap':
+      return limiterValueLabel(
+        'Shadow lights',
+        debugSnapshot.shadowLightCount,
+        caps.shadowLights.hard,
+        'hard cap'
+      );
+    case 'Shadow lights exceeded the soft cap':
+      return limiterValueLabel(
+        'Shadow lights',
+        debugSnapshot.shadowLightCount,
+        caps.shadowLights.soft,
+        'soft cap'
+      );
+    case 'Active textures exceeded the hard cap':
+      return limiterValueLabel(
+        'Active textures',
+        debugSnapshot.textureCount,
+        caps.textures.hard,
+        'hard cap'
+      );
+    case 'Active textures exceeded the soft cap':
+      return limiterValueLabel(
+        'Active textures',
+        debugSnapshot.textureCount,
+        caps.textures.soft,
+        'soft cap'
+      );
+    case 'Estimated GPU memory exceeded the hard cap':
+      return limiterByteLabel(
+        'Estimated GPU memory',
+        debugSnapshot.estimatedGpuMemoryBytes,
+        caps.estimatedGpuMemoryBytes.hard,
+        'hard cap'
+      );
+    case 'Estimated GPU memory exceeded the soft cap':
+      return limiterByteLabel(
+        'Estimated GPU memory',
+        debugSnapshot.estimatedGpuMemoryBytes,
+        caps.estimatedGpuMemoryBytes.soft,
+        'soft cap'
+      );
+    case 'Scene materials exceeded the hard cap':
+      return limiterValueLabel(
+        'Scene materials',
+        debugSnapshot.materialCount,
+        caps.materials.hard,
+        'hard cap'
+      );
+    case 'Scene materials exceeded the soft cap':
+      return limiterValueLabel(
+        'Scene materials',
+        debugSnapshot.materialCount,
+        caps.materials.soft,
+        'soft cap'
+      );
+    case 'Visible objects exceeded the hard cap':
+      return limiterValueLabel(
+        'Visible objects',
+        debugSnapshot.visibleObjectCount,
+        caps.visibleObjects.hard,
+        'hard cap'
+      );
+    case 'Visible objects exceeded the soft cap':
+      return limiterValueLabel(
+        'Visible objects',
+        debugSnapshot.visibleObjectCount,
+        caps.visibleObjects.soft,
+        'soft cap'
+      );
+    case 'Visible triangles exceeded the hard cap':
+      return limiterValueLabel(
+        'Visible triangles',
+        debugSnapshot.visibleTriangleCount,
+        caps.visibleTriangles.hard,
+        'hard cap'
+      );
+    case 'Visible triangles exceeded the soft cap':
+      return limiterValueLabel(
+        'Visible triangles',
+        debugSnapshot.visibleTriangleCount,
+        caps.visibleTriangles.soft,
+        'soft cap'
+      );
+    case 'Visible vertices exceeded the hard cap':
+      return limiterValueLabel(
+        'Visible vertices',
+        debugSnapshot.visibleVertexCount,
+        caps.visibleVertices.hard,
+        'hard cap'
+      );
+    case 'Visible vertices exceeded the soft cap':
+      return limiterValueLabel(
+        'Visible vertices',
+        debugSnapshot.visibleVertexCount,
+        caps.visibleVertices.soft,
+        'soft cap'
+      );
+    case 'Visible meshes exceeded the hard cap':
+      return limiterValueLabel(
+        'Visible meshes',
+        debugSnapshot.visibleMeshCount,
+        caps.visibleMeshes.hard,
+        'hard cap'
+      );
+    case 'Visible meshes exceeded the soft cap':
+      return limiterValueLabel(
+        'Visible meshes',
+        debugSnapshot.visibleMeshCount,
+        caps.visibleMeshes.soft,
+        'soft cap'
+      );
+    case 'Critical frame pressure':
+      return limiterMsLabel(
+        'Smoothed frame time',
+        debugSnapshot.frameMs,
+        caps.frameMs.hard,
+        'critical cap'
+      );
+    case 'High frame pressure':
+      return limiterMsLabel(
+        'Smoothed frame time',
+        debugSnapshot.frameMs,
+        caps.frameMs.soft,
+        'soft cap'
+      );
+    default: {
+      if (limiter.startsWith('Visibility radius reduced to ')) {
+        return `Visibility radius reduced to ${debugSnapshot.visibilityRadius} (full ${DEFAULT_VISIBILITY_RADIUS}, reduced ${REDUCED_VISIBILITY_RADIUS}, minimum ${MIN_VISIBILITY_RADIUS})`;
+      }
+      return limiter;
+    }
+  }
+}
+
+function limiterValueLabel(
+  label: string,
+  current: number | undefined,
+  limit: number,
+  limitLabel: string
+): string {
+  return `${label} ${Math.max(0, Math.floor(current ?? 0))} exceeded ${limitLabel} ${limit}`;
+}
+
+function limiterMsLabel(
+  label: string,
+  current: number | undefined,
+  limit: number,
+  limitLabel: string
+): string {
+  return `${label} ${(current ?? 0).toFixed(1)} ms exceeded ${limitLabel} ${limit.toFixed(1)} ms`;
+}
+
+function limiterByteLabel(
+  label: string,
+  current: number | undefined,
+  limit: number,
+  limitLabel: string
+): string {
+  return `${label} ${formatMegabytes(current ?? 0)} MB exceeded ${limitLabel} ${formatMegabytes(limit)} MB`;
+}
+
+function formatMegabytes(value: number): string {
+  return (value / (1024 * 1024)).toFixed(1);
+}
+
+function selectRuntimePerformanceIssueSummary(
+  reasons: string[],
+  renderQualityLimiterDetails: string[]
+): string {
+  const hardCapDetail = renderQualityLimiterDetails.find((detail) =>
+    isActionableLimiterDetail(detail) && /hard cap|critical cap/.test(detail)
+  );
+  if (hardCapDetail) {
+    return `${hardCapDetail}.`;
+  }
+  const firstLimiterDetail = renderQualityLimiterDetails.find(
+    isActionableLimiterDetail
+  );
+  if (firstLimiterDetail) {
+    return `${firstLimiterDetail}.`;
+  }
+  return reasons[0]!;
+}
+
+function hasActionableLimiterDetails(details: string[]): boolean {
+  return details.some(isActionableLimiterDetail);
+}
+
+function isActionableLimiterDetail(detail: string): boolean {
+  return /(exceeded|reduced|capped|minimized)/.test(detail);
 }
 
 function createRuntimePerformanceIssueHash(value: string): string {
