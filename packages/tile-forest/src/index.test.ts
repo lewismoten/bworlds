@@ -53,6 +53,7 @@ import {
   FakeInstancedMesh,
   FakeMaterial,
   FakeMesh,
+  FakeNode,
   FakePointLight,
   FakePoints,
   createFakeThreeHost,

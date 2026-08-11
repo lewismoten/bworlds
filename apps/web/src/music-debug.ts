@@ -123,6 +123,11 @@ import {
   type MusicDebugSectionValidationSummary,
 } from './music-debug-section-validation-summary.ts';
 import {
+  createMusicDebugChordToneScores,
+  formatMusicDebugChordToneTrackScores,
+  type MusicDebugChordToneScores,
+} from './music-debug-chord-tone-score.ts';
+import {
   createMusicDebugMidiExportAudit,
   type MusicDebugMidiAudit,
 } from './music-debug-midi-audit.ts';
@@ -230,6 +235,7 @@ export type MusicDebugSnapshot = {
   leadContourAnalysis: MusicDebugLeadContourAnalysis;
   sectionMotifMatches: MusicDebugSectionMotifMatch[];
   motifValidation: MusicDebugMotifValidation;
+  chordToneScores: MusicDebugChordToneScores;
   harmonyChordDetections: MusicDebugHarmonyChordDetection[];
   bassProgressionDetections: MusicDebugBassProgressionDetection[];
   cadenceDetections: MusicDebugCadenceDetection[];
@@ -582,6 +588,15 @@ export function createMusicDebugSnapshot(
     outOfModeNotesByRole: midiExportValidation.outOfModeNotesByRole,
     dominantPitchClassesByRole: midiExportValidation.dominantPitchClassesByRole,
   });
+  const chordToneScores = createMusicDebugChordToneScores({
+    notes: song.notes,
+    notePitchDiagnostics: midiExportValidation.notePitchDiagnostics,
+    sections: song.sections,
+    scale: theme.scale,
+    rootMidiNote: theme.rootMidiNote,
+    chordTimeline,
+  });
+
   const snapshotBase = {
     options,
     theme,
@@ -622,6 +637,7 @@ export function createMusicDebugSnapshot(
     leadContourAnalysis,
     sectionMotifMatches,
     motifValidation,
+    chordToneScores,
     harmonyChordDetections,
     bassProgressionDetections,
     cadenceDetections: cadenceValidation.detections,
@@ -1014,6 +1030,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Motif Validation ${snapshot.motifValidation.isValidForMidiExport ? 'ok' : snapshot.motifValidation.messages.join(' | ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Chord-Tone Score ${formatMusicDebugChordToneTrackScores(snapshot.chordToneScores)}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Chord Measures ${formatMusicDebugChordMeasureWindows(snapshot.harmonyChordDetections)}</span>

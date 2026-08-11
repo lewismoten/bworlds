@@ -133,6 +133,10 @@ describe('music debug snapshot generation baseline', () => {
     expect(first.sectionMotifMatches).toHaveLength(first.song.sections.length);
     expect(first.motifValidation.totalMatchCount).toBeGreaterThan(0);
     expect(first.motifValidation.isValidForMidiExport).toBe(true);
+    expect(first.chordToneScores.measures).toHaveLength(first.measureCount);
+    expect(first.chordToneScores.tracks.bass.noteCount).toBeGreaterThan(0);
+    expect(first.chordToneScores.tracks.harmony.score).not.toBeNull();
+    expect(first.chordToneScores.tracks.lead.score).not.toBeNull();
     expect(first.harmonyChordDetections).toHaveLength(
       first.song.sections.length
     );

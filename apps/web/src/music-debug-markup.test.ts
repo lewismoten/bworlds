@@ -112,6 +112,7 @@ describe('music debug markup', () => {
     expect(summary).toContain('exact repeats');
     expect(summary).toContain('Motif Matches');
     expect(summary).toContain('Motif Validation');
+    expect(summary).toContain('Chord-Tone Score');
     expect(summary).toContain('Chord Measures');
     expect(summary).toContain('Harmony Chords');
     expect(summary).toContain('Bass Progression');
