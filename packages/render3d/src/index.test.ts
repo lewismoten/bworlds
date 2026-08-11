@@ -135,6 +135,7 @@ import {
   countEquivalentShareableMaterials,
   createTilePluginModelFromCostEstimate,
   resumeProgressiveTileModelBuild,
+  disposeAndClearObject3D,
   disposeObject3DResources,
   applyObjectDistanceFade,
   clampCameraPitch,
@@ -569,6 +570,23 @@ describe('render3d visibility helpers', () => {
 
     nowSpy.mockRestore();
     resetOwnedMaterialLifecycleMetrics();
+  });
+
+  it('disposes child resources before clearing a world root', () => {
+    const rootMaterial = createMockMaterial();
+    const childMaterial = createMockMaterial();
+    const child = createMockObject3D(childMaterial, [], createMockGeometry(12));
+    const root = {
+      ...createMockObject3D(rootMaterial, [child]),
+      clear: vi.fn(),
+    };
+
+    trackOwnedObject3DMaterials(root as never);
+    disposeAndClearObject3D(root as never);
+
+    expect(root.clear).toHaveBeenCalledTimes(1);
+    expect(rootMaterial.dispose).toHaveBeenCalledTimes(1);
+    expect(childMaterial.dispose).toHaveBeenCalledTimes(1);
   });
 
   it('records additional object-type counts for points, lines, sprites, visible meshes, dynamic lights, and shadow lights', () => {

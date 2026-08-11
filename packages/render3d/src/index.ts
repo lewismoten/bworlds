@@ -1759,7 +1759,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   }
 
   function clearWorld() {
-    worldRoot.clear();
+    disposeAndClearObject3D(worldRoot);
     visibleTileNodes.clear();
     lastSuccessfulVisibleTileDetailLevels.clear();
     lastLodSyncPlayerPosition = null;
@@ -4749,6 +4749,13 @@ export function disposeObject3DResources(
     }
   });
   disposeOwnedObject3DMaterials(root);
+}
+
+export function disposeAndClearObject3D(
+  root: Pick<THREE.Object3D, 'traverse' | 'clear'>
+): void {
+  disposeObject3DResources(root);
+  root.clear();
 }
 
 export function collectSceneResourceStats(

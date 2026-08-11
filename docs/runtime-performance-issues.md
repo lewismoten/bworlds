@@ -41,6 +41,10 @@ Recent mitigation work:
   material sets. Broadleaf geometry and tree state still vary per tree, but
   compatible nearby species stop duplicating trunk, foliage, and accessory
   materials just to swap between the two broadleaf species.
+- `render3d` now disposes tracked world-root child materials before clearing
+  the visible world on context resets. That closes the gap where route or
+  world changes could leave hundreds of detached tile materials counted in the
+  scene after `visibleTileCount` had already dropped to zero.
 
 Captured issue reports currently include:
 
