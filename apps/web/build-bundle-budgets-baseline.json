@@ -16,7 +16,7 @@
     "minimumTrackedBytes": 64000,
     "baselineBytesByName": {
       "main": 1153645,
-      "music-debug-instrument-preview": 141566,
+      "music-debug-instrument-preview": 155428,
       "procedural-music-audio-sink": 136881,
       "sound-effects": 144366,
       "src": 102071

@@ -5,7 +5,7 @@ import {
   resolveMusicEqStages,
   resolveMusicStereoPan,
 } from './procedural-music-mix.ts';
-import type { ProceduralMusicNote, MusicSink } from './procedural-music.ts';
+import type { MusicSink } from './procedural-music.ts';
 import type { MusicSpaceProfile } from './procedural-music-space.ts';
 
 type MusicPosition = { x: number; y: number };
@@ -151,16 +151,24 @@ export function createWebAudioMusicSink(
     voice.harmonicOscillator.onended = null;
     try {
       voice.oscillator.stop(stopAt);
-    } catch {}
+    } catch {
+      // Ignore duplicate stop calls while pruning voices.
+    }
     try {
       voice.harmonicOscillator.stop(stopAt);
-    } catch {}
+    } catch {
+      // Ignore duplicate stop calls while pruning voices.
+    }
     try {
       voice.transientSource?.stop(stopAt);
-    } catch {}
+    } catch {
+      // Ignore duplicate stop calls while pruning voices.
+    }
     try {
       voice.noiseSource?.stop(stopAt);
-    } catch {}
+    } catch {
+      // Ignore duplicate stop calls while pruning voices.
+    }
     removeVoice(voice);
   }
 

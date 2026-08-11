@@ -34,6 +34,7 @@ import {
   type PercussionVoiceId,
 } from './procedural-music-percussion-voices.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
+import type { ProceduralInstrument } from './procedural-music-sound-bank.ts';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
 import {
   createSoundBankInstrumentRegistry,
@@ -1226,24 +1227,11 @@ function buildSelectedInstrumentFilterResponseCurveMarkup(
   for (let sampleIndex = 0; sampleIndex < 48; sampleIndex += 1) {
     const ratio = sampleIndex / 47;
     const offset = ratio - normalizedCutoff;
-    let magnitude = 0;
-
-    switch (instrument.timbre.filterType) {
-      case 'highpass':
-        magnitude = 1 / (1 + Math.exp(-(offset * 14 + resonance * 0.15)));
-        break;
-      case 'bandpass': {
-        const distance = Math.abs(offset);
-        const widthScale = 0.1 + 0.3 / Math.min(6, resonance + 1);
-        const peak = 1 + Math.min(0.45, resonance / 10);
-        magnitude = Math.max(0, peak * (1 - distance / widthScale));
-        break;
-      }
-      case 'lowpass':
-      default:
-        magnitude = 1 / (1 + Math.exp(offset * 14 - resonance * 0.15));
-        break;
-    }
+    const magnitude = resolveInstrumentFilterResponseMagnitude({
+      filterType: instrument.timbre.filterType,
+      offset,
+      resonance,
+    });
 
     const x = ratio * width;
     const y = baselineY - Math.min(1, magnitude) * (height * 0.62);
@@ -1268,6 +1256,28 @@ function buildSelectedInstrumentFilterResponseCurveMarkup(
       ></polyline>
     </svg>
   `;
+}
+
+function resolveInstrumentFilterResponseMagnitude(options: {
+  filterType: ProceduralInstrument['timbre']['filterType'];
+  offset: number;
+  resonance: number;
+}): number {
+  switch (options.filterType) {
+    case 'highpass':
+      return (
+        1 / (1 + Math.exp(-(options.offset * 14 + options.resonance * 0.15)))
+      );
+    case 'bandpass': {
+      const distance = Math.abs(options.offset);
+      const widthScale = 0.1 + 0.3 / Math.min(6, options.resonance + 1);
+      const peak = 1 + Math.min(0.45, options.resonance / 10);
+      return Math.max(0, peak * (1 - distance / widthScale));
+    }
+    case 'lowpass':
+    default:
+      return 1 / (1 + Math.exp(options.offset * 14 - options.resonance * 0.15));
+  }
 }
 
 function describeWaveformHarmonicContent(waveform: MusicWaveform): string {

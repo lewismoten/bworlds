@@ -18,7 +18,8 @@ describe('test cleanup helpers', () => {
   it('fails fast when a callback-style close never completes', async () => {
     trackClosableTestResource(
       {
-        close(_callback: (error?: unknown) => void) {
+        close(callback: (error?: unknown) => void) {
+          void callback;
           return undefined;
         },
       },

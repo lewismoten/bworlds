@@ -2,10 +2,10 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const TEST_SOURCE_AUDIT_DISABLE_FILE = 'test-source-audit-disable-file';
+const TEST_SOURCE_AUDIT_DISABLE_FILE = 'test-source-audit-disable-file';
 export const TEST_SOURCE_AUDIT_DISABLE_NEXT_LINE =
   'test-source-audit-disable-next-line';
-export const TEST_SOURCE_AUDIT_MAX_STATIC_COLLECTION_SIZE = 5_000;
+const TEST_SOURCE_AUDIT_MAX_STATIC_COLLECTION_SIZE = 5_000;
 
 const TEST_FILE_NAME_PATTERN = /\.test\.[cm]?[jt]sx?$/;
 const IGNORED_DIRECTORY_NAMES = new Set([

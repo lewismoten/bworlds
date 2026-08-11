@@ -26,7 +26,7 @@ describe('music debug known-good seeds', () => {
       );
       expect(first.sectionMotifMatches).toEqual(second.sectionMotifMatches);
     }
-  });
+  }, 3_000);
 
   it('resolves known-good seeds by id for reuse across regression tests', () => {
     expect(resolveMusicDebugKnownGoodSeed('forest-structure-baseline')).toEqual(

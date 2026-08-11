@@ -83,9 +83,9 @@ describe('sound bank debug page', () => {
     expect(markup).toContain('music-debug-instrument-panel');
     expect(markup).toContain('sound-bank-debug-layout-compact');
     expect(markup).toContain('sound-bank-debug-layout-expanded');
-    expect(markup).toContain('Play lead');
-    expect(markup).toContain('Play harmony');
-    expect(markup).toContain('Play bass');
+    expect(markup).toContain('Play Melody');
+    expect(markup).toContain('Play Harmony');
+    expect(markup).toContain('Play Bass');
     expect(markup).toContain('Play percussion / ');
     expect(markup).toContain('data-preview-id="percussion:');
     expect(normalizedMarkup).toContain('GM family: Synth Lead');

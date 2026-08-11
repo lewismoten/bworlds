@@ -1,11 +1,6 @@
-import {
-  resolveMusicTheme as resolveRuntimeMusicTheme,
-  resolveMusicThemeById,
-} from './procedural-music.ts';
+import { resolveMusicTheme as resolveRuntimeMusicTheme } from './procedural-music.ts';
 import { blendThemeMotifWithFactionInteraction } from './procedural-music-faction-motif.ts';
 import { blendThemeMotifWithImportantNpcMotif } from './procedural-music-npc-motif.ts';
-
-export { resolveMusicThemeById } from './procedural-music.ts';
 
 export function resolveMusicTheme(
   ...args: Parameters<typeof resolveRuntimeMusicTheme>

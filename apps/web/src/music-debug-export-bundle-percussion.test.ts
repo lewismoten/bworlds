@@ -28,8 +28,11 @@ describe('music debug export bundle percussion solo wavs', () => {
       expect(fileNames).toContain(
         `bworlds-deep-forest-4--1-percussion-${voice.voiceId}-solo.wav`
       );
+      expect(fileNames).toContain(
+        `bworlds-deep-forest-4--1-percussion-${voice.voiceId}-waveform.svg`
+      );
     }
-    expect(bundle.entries).toHaveLength(6 + percussionVoices.length);
+    expect(bundle.entries).toHaveLength(11 + percussionVoices.length * 2);
   }, 10_000);
 });
 

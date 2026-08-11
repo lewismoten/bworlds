@@ -96,7 +96,7 @@ describe('music debug export bundle', () => {
         )?.bytes ?? new Uint8Array()
       )
     ).toContain('Lead contour graph');
-  });
+  }, 3_000);
 
   it('downloads the bundled zip through a blob url', () => {
     const snapshot = toExportableSnapshot(
@@ -164,7 +164,7 @@ describe('music debug export bundle', () => {
       })
     );
     expect(measured.metrics.previewWavFileCount).toBeGreaterThan(0);
-  });
+  }, 3_000);
 });
 
 function readStoredZipArchiveEntries(archive: Uint8Array) {

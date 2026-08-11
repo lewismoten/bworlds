@@ -8,6 +8,8 @@ export default tseslint.config(
     ignores: [
       '**/coverage/**',
       '**/dist/**',
+      '**/dist-analyze/**',
+      '**/dist-analyze2/**',
       '**/build/**',
       '**/.vite/**',
       '**/node_modules/**',
