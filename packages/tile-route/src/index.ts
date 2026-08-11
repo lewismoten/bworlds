@@ -403,8 +403,13 @@ export function createRouteTilePlugin(): RuntimePlugin {
         fillRect(context, x, y + 12, TILE_PIXEL_SIZE, 1, '#6b3f15');
         return true;
       },
-      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-        return createBridgeGroup(three, state, tileX, tileY);
+      create3DModel(context: Create3DModelContext) {
+        return runBridgeModelBuildToCompletion(
+          createBridgeGroupProgressive(context)
+        );
+      },
+      create3DModelProgressive(context: Create3DModelContext) {
+        return createBridgeGroupProgressive(context);
       },
     },
     {
@@ -506,6 +511,17 @@ function runDockModelBuildToCompletion(
     const next = build.next();
     if (next.done) {
       return next.value;
+    }
+  }
+}
+
+function runBridgeModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+) {
+  while (true) {
+    const step = build.next();
+    if (step.done) {
+      return step.value;
     }
   }
 }
@@ -1253,15 +1269,23 @@ function createRoadShoulderTexture(
   });
 }
 
-function createBridgeGroup(
-  three: ThreeHostLike,
-  state: WorldStateLike,
-  tileX: number,
-  tileY: number
-) {
+function* createBridgeGroupProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+}: Pick<
+  Create3DModelContext,
+  'three' | 'state' | 'tileX' | 'tileY'
+>): Generator<Create3DModelProgress, unknown, void> {
   const forestLogAxis = getForestLogBridgeAxis(state, tileX, tileY);
   if (forestLogAxis) {
-    return createForestLogBridgeGroup(three, tileX, tileY, forestLogAxis);
+    return yield* createForestLogBridgeGroupProgressive(
+      three,
+      tileX,
+      tileY,
+      forestLogAxis
+    );
   }
 
   const info = getBridgeClusterInfo(state, tileX, tileY);
@@ -1280,6 +1304,18 @@ function createBridgeGroup(
   const deckWidth = 0.72 + style.widthJitter;
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
+  const stepLabels = ['deck', 'railings-or-parapets'];
+  if (style.covered) {
+    stepLabels.push('cover');
+  }
+  if (style.drawbridge) {
+    stepLabels.push('drawbridge');
+  }
+  if (info.length > 1 && style.pillarSpacing > 0) {
+    stepLabels.push('pillars');
+  }
+  const totalSteps = stepLabels.length;
+  let completedSteps = 0;
 
   const deck = new three.Mesh(
     new three.BoxGeometry(
@@ -1291,37 +1327,68 @@ function createBridgeGroup(
   );
   deck.position.y = -BRIDGE_DECK_THICKNESS * 0.5;
   group.add(deck);
+  completedSteps += 1;
+  yield {
+    completedSteps,
+    totalSteps,
+    label: 'deck',
+  };
 
   if (style.type === 'stone') {
     addBridgeParapets(three, group, style, alongX, deckLength, deckWidth);
   } else {
     addBridgeRailings(three, group, style, alongX, deckLength, deckWidth, info);
   }
+  completedSteps += 1;
+  yield {
+    completedSteps,
+    totalSteps,
+    label: 'railings-or-parapets',
+  };
 
   if (style.covered) {
     addBridgeCover(three, group, style, alongX, deckLength, deckWidth, info);
+    completedSteps += 1;
+    yield {
+      completedSteps,
+      totalSteps,
+      label: 'cover',
+    };
   }
 
   if (style.drawbridge) {
     addDrawbridgeDetails(three, group, style, alongX, deckWidth);
+    completedSteps += 1;
+    yield {
+      completedSteps,
+      totalSteps,
+      label: 'drawbridge',
+    };
   }
 
   if (info.length > 1 && style.pillarSpacing > 0) {
     addBridgePillars(three, group, style, alongX, info, deckWidth);
+    completedSteps += 1;
+    yield {
+      completedSteps,
+      totalSteps,
+      label: 'pillars',
+    };
   }
 
   return group;
 }
 
-function createForestLogBridgeGroup(
+function* createForestLogBridgeGroupProgressive(
   three: ThreeHostLike,
   tileX: number,
   tileY: number,
   axis: 'ew' | 'ns'
-) {
+): Generator<Create3DModelProgress, unknown, void> {
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
   const { trunkMaterial, supportMaterial } = getForestLogBridgeMaterials(three);
+  const totalSteps = 2;
 
   const trunk = new three.Mesh(
     new three.CylinderGeometry(0.08, 0.1, 1.08, 7),
@@ -1338,6 +1405,11 @@ function createForestLogBridgeGroup(
     [FOREST_LOG_BRIDGE_KEY]: axis,
   };
   group.add(trunk);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'trunk',
+  };
 
   const supportOffsets =
     axis === 'ew'
@@ -1370,6 +1442,11 @@ function createForestLogBridgeGroup(
     );
   }
   group.add(supportInstances);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'supports',
+  };
 
   return group;
 }

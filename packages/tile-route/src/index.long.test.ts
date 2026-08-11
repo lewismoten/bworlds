@@ -716,6 +716,134 @@ describe('tile route', () => {
     expect(supportInstances[0]?.matrices).toHaveLength(2);
   });
 
+  it('builds forest-log bridges progressively before returning the final model', () => {
+    const state = createForestLogBridgeState();
+    const build = bridgeTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 2,
+        label: 'trunk',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 2,
+        label: 'supports',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous forest-log bridge build aligned with the progressive final model', () => {
+    const state = createForestLogBridgeState();
+    const syncModel = bridgeTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+    const progressiveBuild = bridgeTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    const captureBridgeSignature = (model: FakeGroup | undefined) => {
+      const markers: Array<Record<string, unknown>> = [];
+      model?.traverse((node) => {
+        if (
+          node.userData?.forestLogBridge ||
+          node.userData?.routeInstancedPart
+        ) {
+          markers.push({
+            forestLogBridge: node.userData?.forestLogBridge,
+            routeInstancedPart: node.userData?.routeInstancedPart,
+          });
+        }
+      });
+      return markers;
+    };
+
+    expect(captureBridgeSignature(progressiveModel)).toEqual(
+      captureBridgeSignature(syncModel)
+    );
+  });
+
+  it('builds standard bridges progressively in ordered structural phases', () => {
+    const state = createStandardBridgeState(8, 8);
+    const build = bridgeTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 8,
+      tileY: 8,
+    });
+    const progress: Array<{
+      completedSteps: number;
+      totalSteps: number;
+      label: string;
+    }> = [];
+
+    expect(build).toBeDefined();
+
+    while (true) {
+      const next = build?.next();
+      if (next?.done) {
+        expect(
+          ((next.value as { children?: unknown[] } | undefined)?.children
+            ?.length ?? 0) > 0
+        ).toBe(true);
+        break;
+      }
+      progress.push(next.value as (typeof progress)[number]);
+    }
+
+    expect(progress[0]).toEqual({
+      completedSteps: 1,
+      totalSteps: progress[0]?.totalSteps ?? 0,
+      label: 'deck',
+    });
+    expect(progress[1]).toEqual({
+      completedSteps: 2,
+      totalSteps: progress[1]?.totalSteps ?? 0,
+      label: 'railings-or-parapets',
+    });
+    expect(progress.every((entry) => entry.totalSteps === progress.length)).toBe(
+      true
+    );
+    expect(progress.at(-1)?.completedSteps).toBe(progress.length);
+  });
+
   it('renders multiple boats across long dock clusters', () => {
     const state = createDockModelState();
     const models = [0, 1, 2, 3].map((tileX) =>
