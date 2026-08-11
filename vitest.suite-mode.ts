@@ -25,6 +25,7 @@ export const LONG_TEST_FILES = [
   'apps/web/src/music-debug-snapshot-generation-baseline.test.ts',
   'apps/web/src/music-debug-snapshot-generation-variants.test.ts',
   'apps/web/src/music-debug-snapshot-representative.test.ts',
+  'apps/web/src/music-debug-timeline.test.ts',
   'apps/web/src/testing/test-source-audit-repository.test.ts',
   'apps/web/src/music-debug-track-stats.test.ts',
   'apps/web/src/procedural-music-harmony-chords.test.ts',
