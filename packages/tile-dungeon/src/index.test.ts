@@ -261,6 +261,91 @@ function createDungeonState() {
 }
 
 describe('tile dungeon', () => {
+  it('builds the full-detail dungeon progressively before returning the final model', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createDungeonState(),
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 4,
+        label: 'shell-and-keep',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 4,
+        label: 'towers-and-gate',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 4,
+        label: 'beacons',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 4,
+        totalSteps: 4,
+        label: 'banners',
+      },
+    });
+
+    const completed = build?.next();
+    const model = completed?.value as FakeGroup | undefined;
+    expect(completed?.done).toBe(true);
+    expect(model?.children.length).toBeGreaterThan(0);
+  });
+
+  it('keeps the synchronous dungeon build aligned with the progressive final model', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createDungeonState(),
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: createDungeonState(),
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    });
+    let progressiveModel: FakeGroup | undefined;
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel!)).toEqual(
+      createModelSignature(syncModel)
+    );
+  });
+
   it('adds more red beacon emitters in full-detail stronghold models than low detail', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');

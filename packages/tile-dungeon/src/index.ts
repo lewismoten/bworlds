@@ -22,6 +22,7 @@ import {
 import { createLowDetailDungeonModel } from './low-detail.ts';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   Paint2DContext,
   RenderBudgetQualityLevel,
   RuntimePlugin,
@@ -90,325 +91,13 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       fillRect(context, x + mouth + 2, y + 6, 4, 6, '#dc2626');
       return true;
     },
-    create3DModel({
-      three,
-      state,
-      tileX,
-      tileY,
-      detailLevel = 'full',
-      renderBudget,
-    }: Create3DModelContext) {
-      const style = getDungeonStyle(three, tileX, tileY, renderBudget?.quality);
-      const entrance = getDungeonEntranceDirection(state, tileX, tileY);
-      const baseWidth = 0.9 + hash2D(DUNGEON_WIDTH_SEED, tileX, tileY) * 0.16;
-      const baseDepth = 0.9 + hash2D(DUNGEON_DEPTH_SEED, tileX, tileY) * 0.18;
-      const baseHeight = 0.7 + hash2D(DUNGEON_HEIGHT_SEED, tileX, tileY) * 0.16;
-
-      if (detailLevel === 'low') {
-        return createLowDetailDungeonModel(three, {
-          tileX,
-          tileY,
-          baseWidth,
-          baseDepth,
-          baseHeight,
-          entrance,
-          style,
-        });
-      }
-
-      const group = new three.Group();
-
-      const base = new three.Mesh(
-        new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
-        style.wallMaterial
+    create3DModel(context: Create3DModelContext) {
+      return runDungeonModelBuildToCompletion(
+        createDungeonModelProgressive(context)
       );
-      base.position.set(tileX, baseHeight * 0.5, tileY);
-      group.add(base);
-
-      const keep = new three.Mesh(
-        new three.BoxGeometry(
-          baseWidth * 0.62,
-          baseHeight * 0.8,
-          baseDepth * 0.62
-        ),
-        style.wallMaterial
-      );
-      keep.position.set(tileX, baseHeight * 0.9, tileY);
-      group.add(keep);
-
-      const towers = getDungeonTowerOffsets(tileX, tileY, baseWidth, baseDepth);
-      const towerInstances = new three.InstancedMesh(
-        new three.CylinderGeometry(1, 1.08, 1, 6),
-        style.wallMaterial,
-        towers.length
-      );
-      towerInstances.userData = {
-        ...towerInstances.userData,
-        dungeonInstancedPart: 'tower-body',
-      };
-      const towerCaps = new three.InstancedMesh(
-        new three.ConeGeometry(1.08, 1, 6),
-        style.roofMaterial,
-        towers.length
-      );
-      towerCaps.userData = {
-        ...towerCaps.userData,
-        dungeonInstancedPart: 'tower-cap',
-      };
-      const towerMatrixScratch = new three.Matrix4();
-      const capMatrixScratch = new three.Matrix4();
-
-      for (let index = 0; index < towers.length; index += 1) {
-        const tower = towers[index]!;
-        towerInstances.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            towerMatrixScratch,
-            tileX + tower.x,
-            tower.height * 0.5,
-            tileY + tower.z,
-            tower.radius,
-            tower.height,
-            tower.radius
-          )
-        );
-        towerCaps.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            capMatrixScratch,
-            tileX + tower.x,
-            tower.height + tower.capHeight * 0.5 - 0.02,
-            tileY + tower.z,
-            tower.radius,
-            tower.capHeight,
-            tower.radius
-          )
-        );
-      }
-      group.add(towerInstances);
-      group.add(towerCaps);
-
-      const gateOriginX = tileX + entrance.dx * (baseDepth * 0.42);
-      const gateOriginZ = tileY + entrance.dy * (baseDepth * 0.42);
-
-      const arch = new three.Mesh(
-        new three.TorusGeometry(0.18, 0.04, 6, 12, Math.PI),
-        style.trimMaterial
-      );
-      const archOffset = rotateDungeonLocalOffset(0, 0.03, entrance.rotationY);
-      arch.position.set(
-        gateOriginX + archOffset.x,
-        0.33,
-        gateOriginZ + archOffset.z
-      );
-      arch.rotation.y = entrance.rotationY;
-      arch.rotation.z = Math.PI;
-      group.add(arch);
-
-      const gatePostInstances = new three.InstancedMesh(
-        new three.BoxGeometry(0.08, 0.34, 0.08),
-        style.trimMaterial,
-        2
-      );
-      gatePostInstances.userData = {
-        ...(gatePostInstances.userData ?? {}),
-        dungeonInstancedPart: 'gate-post',
-      };
-      const gatePostMatrixScratch = new three.Matrix4();
-      gatePostInstances.setMatrixAt(
-        0,
-        writeRotatedInstancedScalePositionMatrix(
-          gatePostMatrixScratch,
-          gateOriginX +
-            rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).x,
-          0.17,
-          gateOriginZ +
-            rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).z,
-          1,
-          1,
-          1,
-          entrance.rotationY
-        )
-      );
-      gatePostInstances.setMatrixAt(
-        1,
-        writeRotatedInstancedScalePositionMatrix(
-          gatePostMatrixScratch,
-          gateOriginX +
-            rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).x,
-          0.17,
-          gateOriginZ +
-            rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).z,
-          1,
-          1,
-          1,
-          entrance.rotationY
-        )
-      );
-      group.add(gatePostInstances);
-
-      const portcullis = new three.Mesh(
-        new three.PlaneGeometry(0.24, 0.28),
-        style.gateVoidMaterial
-      );
-      const portcullisOffset = rotateDungeonLocalOffset(
-        0,
-        0.08,
-        entrance.rotationY
-      );
-      portcullis.position.set(
-        gateOriginX + portcullisOffset.x,
-        0.17,
-        gateOriginZ + portcullisOffset.z
-      );
-      portcullis.rotation.y = entrance.rotationY;
-      group.add(portcullis);
-
-      const bars = new three.Mesh(
-        new three.BoxGeometry(0.22, 0.26, 0.02),
-        style.barMaterial
-      );
-      const barsOffset = rotateDungeonLocalOffset(0, 0.02, entrance.rotationY);
-      bars.position.set(
-        gateOriginX + barsOffset.x,
-        0.17,
-        gateOriginZ + barsOffset.z
-      );
-      bars.rotation.y = entrance.rotationY;
-      group.add(bars);
-
-      const darkness = new three.Mesh(
-        new three.CircleGeometry(0.12, 18),
-        style.gateVoidMaterial
-      );
-      const darknessOffset = rotateDungeonLocalOffset(
-        0,
-        -0.1,
-        entrance.rotationY
-      );
-      darkness.position.set(
-        gateOriginX + darknessOffset.x,
-        0.15,
-        gateOriginZ + darknessOffset.z
-      );
-      darkness.rotation.y = entrance.rotationY;
-      group.add(darkness);
-
-      createDungeonBeacon(
-        three,
-        group,
-        {
-          x: gateOriginX,
-          y: 0.42,
-          z:
-            gateOriginZ +
-            rotateDungeonLocalOffset(0, 0.06, entrance.rotationY).z,
-          glowScale: 0.04,
-          pointLightY: 0.4,
-          pointLightZ:
-            gateOriginZ +
-            rotateDungeonLocalOffset(0, 0.03, entrance.rotationY).z,
-          glowDayIntensity: 0.02,
-          glowNightIntensity: 1.45,
-          pointLightIntensity: 0.95,
-          pointLightDistance: 3.6,
-          pointLightDecay: 1.85,
-          label: 'gate',
-        },
-        style
-      );
-
-      const towerBeacons = getDungeonTowerBeaconDescriptors(
-        tileX,
-        tileY,
-        baseWidth,
-        baseDepth
-      );
-      const towerBeaconBraziers = new three.InstancedMesh(
-        new three.CylinderGeometry(0.05, 0.06, 0.06, 6),
-        style.trimMaterial,
-        towerBeacons.length
-      );
-      towerBeaconBraziers.userData = {
-        ...(towerBeaconBraziers.userData ?? {}),
-        dungeonInstancedPart: 'beacon-brazier',
-      };
-      const towerBeaconBrazierMatrixScratch = new three.Matrix4();
-      towerBeacons.forEach((beacon, index) => {
-        towerBeaconBraziers.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            towerBeaconBrazierMatrixScratch,
-            beacon.x,
-            beacon.y - 0.02,
-            beacon.z,
-            1,
-            1,
-            1
-          )
-        );
-        createDungeonBeacon(three, group, beacon, style, false);
-      });
-      group.add(towerBeaconBraziers);
-      const banners = getDungeonBannerDescriptors(
-        tileX,
-        tileY,
-        baseWidth,
-        baseDepth
-      );
-      const bannerPoleInstances = new three.InstancedMesh(
-        new three.CylinderGeometry(0.018, 0.022, 1, 5),
-        style.trimMaterial,
-        banners.length
-      );
-      bannerPoleInstances.userData = {
-        ...(bannerPoleInstances.userData ?? {}),
-        dungeonInstancedPart: 'banner-pole',
-      };
-      const bannerCrossbarInstances = new three.InstancedMesh(
-        new three.BoxGeometry(1, 1, 1),
-        style.trimMaterial,
-        banners.length
-      );
-      bannerCrossbarInstances.userData = {
-        ...(bannerCrossbarInstances.userData ?? {}),
-        dungeonInstancedPart: 'banner-crossbar',
-      };
-      const bannerPoleMatrixScratch = new three.Matrix4();
-      const bannerCrossbarMatrixScratch = new three.Matrix4();
-      banners.forEach((banner, index) => {
-        bannerPoleInstances.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            bannerPoleMatrixScratch,
-            banner.x,
-            banner.height * 0.5,
-            banner.z,
-            1,
-            banner.height,
-            1
-          )
-        );
-        bannerCrossbarInstances.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            bannerCrossbarMatrixScratch,
-            banner.x + banner.width * 0.46,
-            banner.height - 0.03,
-            banner.z,
-            banner.width * 0.88,
-            0.028,
-            0.028
-          )
-        );
-        group.add(
-          createDungeonBanner(three, banner, style, tileX, tileY, index, false)
-        );
-      });
-      group.add(bannerPoleInstances);
-      group.add(bannerCrossbarInstances);
-
-      return group;
+    },
+    create3DModelProgressive(context: Create3DModelContext) {
+      return createDungeonModelProgressive(context);
     },
     sync3DModel({ model, cycle, environment, timeMs = 0 }) {
       if (model && typeof model === 'object') {
@@ -424,6 +113,345 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function* createDungeonModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+  detailLevel = 'full',
+  renderBudget,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const style = getDungeonStyle(three, tileX, tileY, renderBudget?.quality);
+  const entrance = getDungeonEntranceDirection(state, tileX, tileY);
+  const baseWidth = 0.9 + hash2D(DUNGEON_WIDTH_SEED, tileX, tileY) * 0.16;
+  const baseDepth = 0.9 + hash2D(DUNGEON_DEPTH_SEED, tileX, tileY) * 0.18;
+  const baseHeight = 0.7 + hash2D(DUNGEON_HEIGHT_SEED, tileX, tileY) * 0.16;
+
+  if (detailLevel === 'low') {
+    return createLowDetailDungeonModel(three, {
+      tileX,
+      tileY,
+      baseWidth,
+      baseDepth,
+      baseHeight,
+      entrance,
+      style,
+    });
+  }
+
+  const group = new three.Group();
+  const totalSteps = 4;
+
+  const base = new three.Mesh(
+    new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
+    style.wallMaterial
+  );
+  base.position.set(tileX, baseHeight * 0.5, tileY);
+  group.add(base);
+
+  const keep = new three.Mesh(
+    new three.BoxGeometry(baseWidth * 0.62, baseHeight * 0.8, baseDepth * 0.62),
+    style.wallMaterial
+  );
+  keep.position.set(tileX, baseHeight * 0.9, tileY);
+  group.add(keep);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'shell-and-keep',
+  };
+
+  const towers = getDungeonTowerOffsets(tileX, tileY, baseWidth, baseDepth);
+  const towerInstances = new three.InstancedMesh(
+    new three.CylinderGeometry(1, 1.08, 1, 6),
+    style.wallMaterial,
+    towers.length
+  );
+  towerInstances.userData = {
+    ...towerInstances.userData,
+    dungeonInstancedPart: 'tower-body',
+  };
+  const towerCaps = new three.InstancedMesh(
+    new three.ConeGeometry(1.08, 1, 6),
+    style.roofMaterial,
+    towers.length
+  );
+  towerCaps.userData = {
+    ...towerCaps.userData,
+    dungeonInstancedPart: 'tower-cap',
+  };
+  const towerMatrixScratch = new three.Matrix4();
+  const capMatrixScratch = new three.Matrix4();
+
+  for (let index = 0; index < towers.length; index += 1) {
+    const tower = towers[index]!;
+    towerInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        towerMatrixScratch,
+        tileX + tower.x,
+        tower.height * 0.5,
+        tileY + tower.z,
+        tower.radius,
+        tower.height,
+        tower.radius
+      )
+    );
+    towerCaps.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        capMatrixScratch,
+        tileX + tower.x,
+        tower.height + tower.capHeight * 0.5 - 0.02,
+        tileY + tower.z,
+        tower.radius,
+        tower.capHeight,
+        tower.radius
+      )
+    );
+  }
+  group.add(towerInstances);
+  group.add(towerCaps);
+
+  const gateOriginX = tileX + entrance.dx * (baseDepth * 0.42);
+  const gateOriginZ = tileY + entrance.dy * (baseDepth * 0.42);
+
+  const arch = new three.Mesh(
+    new three.TorusGeometry(0.18, 0.04, 6, 12, Math.PI),
+    style.trimMaterial
+  );
+  const archOffset = rotateDungeonLocalOffset(0, 0.03, entrance.rotationY);
+  arch.position.set(
+    gateOriginX + archOffset.x,
+    0.33,
+    gateOriginZ + archOffset.z
+  );
+  arch.rotation.y = entrance.rotationY;
+  arch.rotation.z = Math.PI;
+  group.add(arch);
+
+  const gatePostInstances = new three.InstancedMesh(
+    new three.BoxGeometry(0.08, 0.34, 0.08),
+    style.trimMaterial,
+    2
+  );
+  gatePostInstances.userData = {
+    ...(gatePostInstances.userData ?? {}),
+    dungeonInstancedPart: 'gate-post',
+  };
+  const gatePostMatrixScratch = new three.Matrix4();
+  gatePostInstances.setMatrixAt(
+    0,
+    writeRotatedInstancedScalePositionMatrix(
+      gatePostMatrixScratch,
+      gateOriginX + rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).x,
+      0.17,
+      gateOriginZ + rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).z,
+      1,
+      1,
+      1,
+      entrance.rotationY
+    )
+  );
+  gatePostInstances.setMatrixAt(
+    1,
+    writeRotatedInstancedScalePositionMatrix(
+      gatePostMatrixScratch,
+      gateOriginX + rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).x,
+      0.17,
+      gateOriginZ + rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).z,
+      1,
+      1,
+      1,
+      entrance.rotationY
+    )
+  );
+  group.add(gatePostInstances);
+
+  const portcullis = new three.Mesh(
+    new three.PlaneGeometry(0.24, 0.28),
+    style.gateVoidMaterial
+  );
+  const portcullisOffset = rotateDungeonLocalOffset(
+    0,
+    0.08,
+    entrance.rotationY
+  );
+  portcullis.position.set(
+    gateOriginX + portcullisOffset.x,
+    0.17,
+    gateOriginZ + portcullisOffset.z
+  );
+  portcullis.rotation.y = entrance.rotationY;
+  group.add(portcullis);
+
+  const bars = new three.Mesh(
+    new three.BoxGeometry(0.22, 0.26, 0.02),
+    style.barMaterial
+  );
+  const barsOffset = rotateDungeonLocalOffset(0, 0.02, entrance.rotationY);
+  bars.position.set(
+    gateOriginX + barsOffset.x,
+    0.17,
+    gateOriginZ + barsOffset.z
+  );
+  bars.rotation.y = entrance.rotationY;
+  group.add(bars);
+
+  const darkness = new three.Mesh(
+    new three.CircleGeometry(0.12, 18),
+    style.gateVoidMaterial
+  );
+  const darknessOffset = rotateDungeonLocalOffset(0, -0.1, entrance.rotationY);
+  darkness.position.set(
+    gateOriginX + darknessOffset.x,
+    0.15,
+    gateOriginZ + darknessOffset.z
+  );
+  darkness.rotation.y = entrance.rotationY;
+  group.add(darkness);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'towers-and-gate',
+  };
+
+  createDungeonBeacon(
+    three,
+    group,
+    {
+      x: gateOriginX,
+      y: 0.42,
+      z: gateOriginZ + rotateDungeonLocalOffset(0, 0.06, entrance.rotationY).z,
+      glowScale: 0.04,
+      pointLightY: 0.4,
+      pointLightZ:
+        gateOriginZ + rotateDungeonLocalOffset(0, 0.03, entrance.rotationY).z,
+      glowDayIntensity: 0.02,
+      glowNightIntensity: 1.45,
+      pointLightIntensity: 0.95,
+      pointLightDistance: 3.6,
+      pointLightDecay: 1.85,
+      label: 'gate',
+    },
+    style
+  );
+
+  const towerBeacons = getDungeonTowerBeaconDescriptors(
+    tileX,
+    tileY,
+    baseWidth,
+    baseDepth
+  );
+  const towerBeaconBraziers = new three.InstancedMesh(
+    new three.CylinderGeometry(0.05, 0.06, 0.06, 6),
+    style.trimMaterial,
+    towerBeacons.length
+  );
+  towerBeaconBraziers.userData = {
+    ...(towerBeaconBraziers.userData ?? {}),
+    dungeonInstancedPart: 'beacon-brazier',
+  };
+  const towerBeaconBrazierMatrixScratch = new three.Matrix4();
+  towerBeacons.forEach((beacon, index) => {
+    towerBeaconBraziers.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        towerBeaconBrazierMatrixScratch,
+        beacon.x,
+        beacon.y - 0.02,
+        beacon.z,
+        1,
+        1,
+        1
+      )
+    );
+    createDungeonBeacon(three, group, beacon, style, false);
+  });
+  group.add(towerBeaconBraziers);
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'beacons',
+  };
+
+  const banners = getDungeonBannerDescriptors(
+    tileX,
+    tileY,
+    baseWidth,
+    baseDepth
+  );
+  const bannerPoleInstances = new three.InstancedMesh(
+    new three.CylinderGeometry(0.018, 0.022, 1, 5),
+    style.trimMaterial,
+    banners.length
+  );
+  bannerPoleInstances.userData = {
+    ...(bannerPoleInstances.userData ?? {}),
+    dungeonInstancedPart: 'banner-pole',
+  };
+  const bannerCrossbarInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.trimMaterial,
+    banners.length
+  );
+  bannerCrossbarInstances.userData = {
+    ...(bannerCrossbarInstances.userData ?? {}),
+    dungeonInstancedPart: 'banner-crossbar',
+  };
+  const bannerPoleMatrixScratch = new three.Matrix4();
+  const bannerCrossbarMatrixScratch = new three.Matrix4();
+  banners.forEach((banner, index) => {
+    bannerPoleInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        bannerPoleMatrixScratch,
+        banner.x,
+        banner.height * 0.5,
+        banner.z,
+        1,
+        banner.height,
+        1
+      )
+    );
+    bannerCrossbarInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        bannerCrossbarMatrixScratch,
+        banner.x + banner.width * 0.46,
+        banner.height - 0.03,
+        banner.z,
+        banner.width * 0.88,
+        0.028,
+        0.028
+      )
+    );
+    group.add(
+      createDungeonBanner(three, banner, style, tileX, tileY, index, false)
+    );
+  });
+  group.add(bannerPoleInstances);
+  group.add(bannerCrossbarInstances);
+  yield {
+    completedSteps: 4,
+    totalSteps,
+    label: 'banners',
+  };
+
+  return group;
+}
+
+function runDungeonModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function getDungeonTowerOffsets(
