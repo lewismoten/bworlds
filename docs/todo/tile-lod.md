@@ -203,6 +203,7 @@ This is also partially due to performance issues which can be seen here, and add
 - [x] Add a toggle to freeze LOD selection.
 - [ ] Add a toggle to show canonical bounds.
 - [x] Add a toggle to show cached model availability.
+- [ ] Any toggle change in debug should persist in refresh
 
 ## Metrics
 
