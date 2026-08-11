@@ -216,6 +216,49 @@ describe('tile cave', () => {
     expect(east?.poi?.entrances).toEqual(west?.poi?.entrances);
   });
 
+  it('reuses terrain samples across overlapping cave-link pass scans', () => {
+    const sampleCounts = new Map<string, number>();
+
+    const tile = classifier?.(
+      createCaveClassifierPayload({
+        x: 5,
+        y: 5,
+        sampleTerrainSignals(sampleX: number, sampleY: number) {
+          const key = `${sampleX},${sampleY}`;
+          sampleCounts.set(key, (sampleCounts.get(key) ?? 0) + 1);
+          if (
+            (sampleY === 5 && sampleX >= 5 && sampleX <= 11) ||
+            (sampleY === 4 && sampleX >= 5 && sampleX <= 11)
+          ) {
+            return {
+              continent: 0.64,
+              elevation: sampleY === 4 ? 0.82 : 0.58,
+              moisture: 0.42,
+              riverSignal: 0.12,
+              roadSignal: 0.22,
+            };
+          }
+          return {
+            continent: 0.62,
+            elevation: 0.52,
+            moisture: 0.4,
+            riverSignal: 0.12,
+            roadSignal: 0.2,
+          };
+        },
+        poiAnchors: [
+          { x: 5, y: 5, type: 'cave', name: 'West Mouth' },
+          { x: 8, y: 5, type: 'cave', name: 'Mid Mouth' },
+          { x: 11, y: 5, type: 'cave', name: 'East Mouth' },
+        ],
+      })
+    );
+
+    expect(tile?.kind).toBe('cave');
+    expect(sampleCounts.size).toBeGreaterThan(1);
+    expect(Math.max(...sampleCounts.values())).toBe(1);
+  });
+
   it('creates shared cave enter actions while preserving each entrance origin', () => {
     const westTile = classifier?.(
       createCaveClassifierPayload({

@@ -208,6 +208,10 @@ Always run tests to make sure all tests pass
       per-call coordinate cache for `sampleTerrainSignals()` so overlapping
       mountain, forest, coastline, and summit-cluster checks stop re-sampling
       the same nearby coordinates within one deterministic anchor scan, and
+      `tile-cave` now wraps each cave-linking classification pass in a
+      per-call coordinate cache for `sampleTerrainSignals()` so overlapping
+      mountain-pass probes between nearby cave entrances stop re-sampling the
+      same terrain coordinates within one cave-system resolution, and
       `overworld-support` now caches fully composed overworld tiles for
       repeated generation requests that share the same plugin registry, terrain
       sampler, world-state revision, seed, coordinates, and starting tile kind

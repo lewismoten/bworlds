@@ -1,4 +1,7 @@
-import { getOrCreateWeakMapValue } from '@bworlds/cache-support';
+import {
+  createCoordinateCache,
+  getOrCreateWeakMapValue,
+} from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -521,6 +524,9 @@ function resolveLinkedCaveEntrances(
   context: ClassifyOverworldTileContext,
   anchor: PoiAnchorLike
 ): PoiAnchorLike[] {
+  const cachedSampleTerrainSignals = context.sampleTerrainSignals
+    ? createCachedTerrainSignalSampler(context.sampleTerrainSignals)
+    : context.sampleTerrainSignals;
   const caveAnchors = (context.poiAnchors ?? []).filter(
     (candidate): candidate is PoiAnchorLike => candidate.type === 'cave'
   );
@@ -548,9 +554,7 @@ function resolveLinkedCaveEntrances(
       ) {
         return;
       }
-      if (
-        !sharesMountainPass(current, candidate, context.sampleTerrainSignals)
-      ) {
+      if (!sharesMountainPass(current, candidate, cachedSampleTerrainSignals)) {
         return;
       }
       queue.push(candidate);
@@ -560,6 +564,20 @@ function resolveLinkedCaveEntrances(
   return linked.sort((left, right) =>
     left.y === right.y ? left.x - right.x : left.y - right.y
   );
+}
+
+function createCachedTerrainSignalSampler(
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >
+): NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']> {
+  const cache =
+    createCoordinateCache<
+      ReturnType<
+        NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>
+      >
+    >();
+  return (x, y) => cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
 }
 
 function sharesMountainPass(
