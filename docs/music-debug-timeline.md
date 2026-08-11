@@ -43,6 +43,10 @@ Current behavior:
   variation `V` badges on the header row, driven directly from
   `sectionMotifMatches` so the timeline reflects the same section counters as
   the debug summary and MIDI export validation.
+- Planned and actual lead-climax checkpoints now render as `P` and `A` badges
+  on the header, using the existing `leadContourAnalysis` step indices and
+  measure mapping so contour validation and the timeline point at the same
+  musical peak.
 - The active playhead also renders the current planned chord in a dedicated
   badge, using the same cue source as the exported SVG timeline.
 - Chord cues are grouped across repeated measures so long tonic spans render as

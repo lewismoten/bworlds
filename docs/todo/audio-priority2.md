@@ -153,7 +153,7 @@
 - [x] Mark harmony drift at exact measures.
 - [x] Mark bass root drift at exact measures.
 - [x] Mark motif matches and motif variations.
-- [ ] Mark the planned and actual climax positions.
+- [x] Mark the planned and actual climax positions.
 - [x] Show current chord under the playhead.
 - [x] Show current scale under the playhead.
 - [ ] Add density heatmaps behind each lane.

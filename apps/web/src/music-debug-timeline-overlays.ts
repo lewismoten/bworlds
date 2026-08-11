@@ -1,4 +1,5 @@
 export const MUSIC_DEBUG_TIMELINE_OVERLAY_KINDS = [
+  'chords',
   'note-warnings',
   'cadence',
   'harmony-drift',
