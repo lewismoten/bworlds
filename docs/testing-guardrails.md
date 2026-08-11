@@ -34,6 +34,11 @@ WAV previews, or other debug-package outputs: if multiple tests assert on the
 same deterministic artifact, build it once in a shared test fixture module and
 reuse it across files.
 
+For deterministic grid or tile sweeps, precompute the sampled profile set once
+when multiple assertions need to walk the same coordinates. The tree quality
+tests now reuse cached branch, canopy, trunk, age, and fruit samples instead of
+regenerating the same forest profiles in separate loops.
+
 When the goal is determinism rather than object-shape exhaustiveness, prefer a
 small stable signature over whole-object deep equality. Music snapshot
 regression checks now use
