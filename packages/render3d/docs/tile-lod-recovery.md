@@ -55,6 +55,8 @@ The debug panel also includes a `Freeze LOD` toggle that stops new visible-tile 
 
 The text viewport also shows the current rendered visible-tile LOD directly above each tile glyph when the renderer has visible-tile state for that coordinate. It uses compact `F` and `L` labels so LOD churn is visible without opening the debug summary.
 
+The debug panel also exposes a `Show Cached LOD` toggle for the text viewport. When enabled, those per-tile labels switch from current rendered LOD (`F` or `L`) to cached-availability labels (`CF` or `CL`) so nearby cache coverage is visible without inspecting a single selected tile.
+
 ## Checklist Coverage
 
 The current implementation already covers these `docs/todo/tile-lod.md` items:

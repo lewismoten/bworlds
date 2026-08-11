@@ -202,7 +202,7 @@ This is also partially due to performance issues which can be seen here, and add
 - [ ] Add a toggle to disable consolidation.
 - [x] Add a toggle to freeze LOD selection.
 - [ ] Add a toggle to show canonical bounds.
-- [ ] Add a toggle to show cached model availability.
+- [x] Add a toggle to show cached model availability.
 
 ## Metrics
 

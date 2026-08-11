@@ -6,21 +6,28 @@ type VisibleTileDebugInfoReader = {
     tileY: number
   ): {
     renderedDetailLevel: string | null;
+    cachedDetailLevel?: string | null;
   } | null;
 };
 
 export function annotateTextViewportGridWithVisibleTileLods(
   grid: TextViewportGrid,
-  renderer3d: VisibleTileDebugInfoReader
+  renderer3d: VisibleTileDebugInfoReader,
+  options?: {
+    showCachedAvailability?: boolean;
+  }
 ): TextViewportGrid {
+  const showCachedAvailability = options?.showCachedAvailability ?? false;
   return {
     ...grid,
     rows: grid.rows.map((row) =>
       row.map((cell) => ({
         ...cell,
         annotation: formatVisibleTileLodAnnotation(
-          renderer3d.getVisibleTileDebugInfo(cell.worldX, cell.worldY)
-            ?.renderedDetailLevel
+          renderer3d.getVisibleTileDebugInfo(cell.worldX, cell.worldY),
+          {
+            showCachedAvailability,
+          }
         ),
       }))
     ),
@@ -28,12 +35,30 @@ export function annotateTextViewportGridWithVisibleTileLods(
 }
 
 export function formatVisibleTileLodAnnotation(
-  detailLevel: string | null | undefined
+  debugInfo:
+    | {
+        renderedDetailLevel: string | null;
+        cachedDetailLevel?: string | null;
+      }
+    | null
+    | undefined,
+  options?: {
+    showCachedAvailability?: boolean;
+  }
 ): string | undefined {
-  if (detailLevel === 'full') {
+  if (options?.showCachedAvailability) {
+    if (debugInfo?.cachedDetailLevel === 'full') {
+      return 'CF';
+    }
+    if (debugInfo?.cachedDetailLevel === 'low') {
+      return 'CL';
+    }
+    return undefined;
+  }
+  if (debugInfo?.renderedDetailLevel === 'full') {
     return 'F';
   }
-  if (detailLevel === 'low') {
+  if (debugInfo?.renderedDetailLevel === 'low') {
     return 'L';
   }
   return undefined;

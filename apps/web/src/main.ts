@@ -657,6 +657,9 @@ root.innerHTML = `
               <button id="debug-freeze-lod-toggle" type="button">
                 Freeze LOD
               </button>
+              <button id="debug-show-cached-models-toggle" type="button">
+                Show Cached LOD
+              </button>
               <button id="debug-download-snapshot" type="button">
                 Download Debug Snapshot
               </button>
@@ -1117,6 +1120,9 @@ const debugLevelUpButton =
 const debugFreezeLodButton = document.querySelector<HTMLButtonElement>(
   '#debug-freeze-lod-toggle'
 );
+const debugShowCachedModelsButton = document.querySelector<HTMLButtonElement>(
+  '#debug-show-cached-models-toggle'
+);
 const debugDownloadSnapshotButton = document.querySelector<HTMLButtonElement>(
   '#debug-download-snapshot'
 );
@@ -1476,6 +1482,7 @@ const debugSnapshotState = {
 };
 const debugTileLodState = {
   selectionFrozen: false,
+  showCachedModelAvailability: false,
 };
 const MAX_DEBUG_RECENT_EVENTS = 64;
 const DEBUG_RECENT_EVENT_WINDOW_MS = 30_000;
@@ -1583,6 +1590,7 @@ const runLoopFrame = createFrameLoopRunner({
 
 updateFreezeTimeButton();
 updateFreezeLodButton();
+updateShowCachedModelsButton();
 updateViewModeUi();
 updateTimekeeperDisplayModeUi();
 updateCompassDisplayModeUi();
@@ -3355,9 +3363,28 @@ function updateFreezeLodButton(): void {
   );
 }
 
+function updateShowCachedModelsButton(): void {
+  if (!debugShowCachedModelsButton) return;
+  debugShowCachedModelsButton.textContent =
+    debugTileLodState.showCachedModelAvailability
+      ? 'Hide Cached LOD'
+      : 'Show Cached LOD';
+  debugShowCachedModelsButton.classList.toggle(
+    'is-active',
+    debugTileLodState.showCachedModelAvailability
+  );
+}
+
 function toggleFreezeLodSelection(): void {
   debugTileLodState.selectionFrozen = !debugTileLodState.selectionFrozen;
   updateFreezeLodButton();
+  requestRender();
+}
+
+function toggleShowCachedModelAvailability(): void {
+  debugTileLodState.showCachedModelAvailability =
+    !debugTileLodState.showCachedModelAvailability;
+  updateShowCachedModelsButton();
   requestRender();
 }
 
@@ -3629,7 +3656,10 @@ function render(): FrameLoopActivityLike {
         columns: 29,
         rows: 19,
       }),
-      renderer3d
+      renderer3d,
+      {
+        showCachedAvailability: debugTileLodState.showCachedModelAvailability,
+      }
     );
     const textViewportSignature = getTextViewportSignature(grid);
     if (textViewportSignature !== uiRenderState.lastTextViewportSignature) {
@@ -4383,6 +4413,10 @@ zoomOutMinimapButton?.addEventListener('click', () => adjustMinimapZoom(-0.1));
 zoomInMinimapButton?.addEventListener('click', () => adjustMinimapZoom(0.1));
 freezeTimeButton?.addEventListener('click', toggleTimeFreeze);
 debugFreezeLodButton?.addEventListener('click', toggleFreezeLodSelection);
+debugShowCachedModelsButton?.addEventListener(
+  'click',
+  toggleShowCachedModelAvailability
+);
 inspectorTabButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setInspectorTab(button.id.replace('tab-', ''));
