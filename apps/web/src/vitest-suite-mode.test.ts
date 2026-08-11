@@ -56,6 +56,15 @@ describe('vitest suite mode', () => {
       'apps/web/src/music-debug-export-bundle-archive.test.ts'
     );
     expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-midi-export-metadata.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-midi-export-structure.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-midi-export-variants.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
       'apps/web/src/music-debug-markup.test.ts'
     );
     expect(LONG_TEST_FILES).not.toContain(

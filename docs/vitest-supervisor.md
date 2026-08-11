@@ -46,6 +46,7 @@ Related commands:
   Recent examples include the split sound-bank shell coverage described in
   [docs/sound-bank-debug-shell-tests.md](/Users/lewismoten/dev/bworlds/docs/sound-bank-debug-shell-tests.md:1)
   plus the renamed `music-debug-export-bundle-*.long.test.ts`,
+  `music-debug-midi-export-*.long.test.ts`,
   `music-debug-snapshot-generation-*.long.test.ts`,
   `music-debug-markup.long.test.ts`, and
   `music-debug-song-playback.long.test.ts` suites.

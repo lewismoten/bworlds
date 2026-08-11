@@ -9,9 +9,6 @@ import {
   readTrackName,
   resolveExpectedPercussionMidiNotes,
   toExportableSnapshot,
-  withValidCadenceValidation,
-  withValidLeadContourAnalysis,
-  withValidProgressionDetections,
 } from './testing/music-debug-midi-test-support.ts';
 import { resolvePercussionFamilyFromInstrumentId } from './procedural-music-percussion.ts';
 
@@ -26,9 +23,7 @@ describe('music debug midi export variants', () => {
       weatherKind: 'heavy-rain',
       weatherIntensity: 1,
     });
-    const exportableSnapshot = withValidLeadContourAnalysis(
-      withValidProgressionDetections(withValidCadenceValidation(snapshot))
-    );
+    const exportableSnapshot = toExportableSnapshot(snapshot);
 
     const file = createMusicDebugMidiFile(exportableSnapshot, {
       createdAt: new Date('2026-08-09T00:00:00.000Z'),
@@ -58,15 +53,13 @@ describe('music debug midi export variants', () => {
   });
 
   it('exports a melody-only midi file for rapid lead review', () => {
-    const snapshot = withValidProgressionDetections(
-      withValidLeadContourAnalysis(
-        createMusicDebugSnapshot({
-          tileKind: 'forest',
-          contextType: 'overworld',
-          clusterX: 0,
-          clusterY: 0,
-        })
-      )
+    const snapshot = toExportableSnapshot(
+      createMusicDebugSnapshot({
+        tileKind: 'forest',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      })
     );
 
     const file = createMusicDebugMidiFile(snapshot, {
