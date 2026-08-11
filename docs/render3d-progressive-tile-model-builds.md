@@ -15,9 +15,9 @@ Current groundwork:
   multiple yielded steps from the same active build while the current
   pending-world-build flush still has budget remaining.
 - `tile-lighthouse` now uses the hook for its full-detail 3D model, yielding
-  after the tower shell, lantern framing, balcony/window pass, and beam/beacon
-  pass while still keeping `create3DModel()` aligned by exhausting the same
-  generator synchronously.
+  after `base-and-tower`, `crown-and-lantern`, lantern framing,
+  balcony/window, and beam/beacon passes while still keeping
+  `create3DModel()` aligned by exhausting the same generator synchronously.
 - `tile-dungeon`, `tile-cave`, `tile-town`, `tile-sign`,
   `tile-observatory`, `tile-tower`, `tile-station`, `tile-ship`,
   `tile-quarry`, `tile-ruins`, `tile-forest`, `tile-mountain`,

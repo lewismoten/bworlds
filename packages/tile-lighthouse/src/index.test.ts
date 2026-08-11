@@ -182,31 +182,39 @@ describe('tile lighthouse', () => {
       done: false,
       value: {
         completedSteps: 1,
-        totalSteps: 4,
-        label: 'tower-shell',
+        totalSteps: 5,
+        label: 'base-and-tower',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 2,
-        totalSteps: 4,
-        label: 'lantern-frame',
+        totalSteps: 5,
+        label: 'crown-and-lantern',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 3,
-        totalSteps: 4,
-        label: 'balcony-and-panes',
+        totalSteps: 5,
+        label: 'lantern-frame',
       },
     });
     expect(build?.next()).toEqual({
       done: false,
       value: {
         completedSteps: 4,
-        totalSteps: 4,
+        totalSteps: 5,
+        label: 'balcony-and-panes',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 5,
+        totalSteps: 5,
         label: 'beam-and-beacon',
       },
     });

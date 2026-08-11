@@ -17,3 +17,11 @@ Current layout:
 
 This trims another small repeated static cluster from the full-detail
 lighthouse while preserving the lantern-room silhouette.
+
+Progressive loading:
+
+- The full-detail lighthouse progressive path now yields after
+  `base-and-tower`, `crown-and-lantern`, `lantern-frame`,
+  `balcony-and-panes`, and `beam-and-beacon`.
+- Splitting the shell into two structural steps gives the renderer an earlier
+  frame boundary before the lantern-frame and beam passes.

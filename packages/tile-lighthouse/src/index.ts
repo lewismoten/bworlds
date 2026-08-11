@@ -351,7 +351,7 @@ function* createLighthouseModelProgressive({
       beamSegments: LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS,
     });
   }
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const base = markStructuralRenderBudgetPart(
     new three.Mesh(
@@ -372,6 +372,11 @@ function* createLighthouseModelProgressive({
   );
   tower.position.set(tileX, 1.06, tileY);
   group.add(tower);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'base-and-tower',
+  };
 
   const stripe = markStructuralRenderBudgetPart(
     new three.Mesh(
@@ -409,9 +414,9 @@ function* createLighthouseModelProgressive({
   lanternRoom.position.set(tileX, 1.86, tileY);
   group.add(lanternRoom);
   yield {
-    completedSteps: 1,
+    completedSteps: 2,
     totalSteps,
-    label: 'tower-shell',
+    label: 'crown-and-lantern',
   };
 
   const lanternGlass = markOptionalDecorativeRenderBudgetPart(
@@ -593,7 +598,7 @@ function* createLighthouseModelProgressive({
   );
   group.add(horizontalWallGlowInstances);
   yield {
-    completedSteps: 2,
+    completedSteps: 3,
     totalSteps,
     label: 'lantern-frame',
   };
@@ -774,7 +779,7 @@ function* createLighthouseModelProgressive({
   horizontalPaneInstances.setMatrixAt(1, horizontalPaneMatrixScratch);
   group.add(horizontalPaneInstances);
   yield {
-    completedSteps: 3,
+    completedSteps: 4,
     totalSteps,
     label: 'balcony-and-panes',
   };
@@ -823,7 +828,7 @@ function* createLighthouseModelProgressive({
   beacon.visible = false;
   group.add(beacon);
   yield {
-    completedSteps: 4,
+    completedSteps: 5,
     totalSteps,
     label: 'beam-and-beacon',
   };
