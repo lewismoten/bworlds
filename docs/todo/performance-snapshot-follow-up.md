@@ -66,7 +66,7 @@
 - [ ] Investigate repeated tile-plains model rejection events.
 - [x] Distinguish missing models from budget rejections.
 - [x] Do not label missing plugin models as budget failures.
-- [ ] Add a normal low-cost plains model instead of a wall box.
+- [x] Add a normal low-cost plains model instead of a wall box.
 - [ ] Cache the plains fallback geometry for reuse.
 - [ ] Avoid rebuilding identical plains fallback models.
 - [ ] Count fallback models by plugin in the snapshot.
