@@ -28,6 +28,7 @@ import type {
   ThreeObject3DLike,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeTextureLike,
 } from '@bworlds/plugin-api';
 
@@ -135,39 +136,57 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       keep.position.set(tileX, baseHeight * 0.9, tileY);
       group.add(keep);
 
-      for (const tower of getDungeonTowerOffsets(
-        tileX,
-        tileY,
-        baseWidth,
-        baseDepth
-      )) {
-        const towerMesh = new three.Mesh(
-          new three.CylinderGeometry(
-            tower.radius,
-            tower.radius * 1.08,
-            tower.height,
-            6
-          ),
-          style.wallMaterial
-        );
-        towerMesh.position.set(
-          tileX + tower.x,
-          tower.height * 0.5,
-          tileY + tower.z
-        );
-        group.add(towerMesh);
+      const towers = getDungeonTowerOffsets(tileX, tileY, baseWidth, baseDepth);
+      const towerInstances = new three.InstancedMesh(
+        new three.CylinderGeometry(1, 1.08, 1, 6),
+        style.wallMaterial,
+        towers.length
+      );
+      towerInstances.userData = {
+        ...towerInstances.userData,
+        dungeonInstancedPart: 'tower-body',
+      };
+      const towerCaps = new three.InstancedMesh(
+        new three.ConeGeometry(1.08, 1, 6),
+        style.roofMaterial,
+        towers.length
+      );
+      towerCaps.userData = {
+        ...towerCaps.userData,
+        dungeonInstancedPart: 'tower-cap',
+      };
+      const towerMatrixScratch = new three.Matrix4();
+      const capMatrixScratch = new three.Matrix4();
 
-        const cap = new three.Mesh(
-          new three.ConeGeometry(tower.radius * 1.08, tower.capHeight, 6),
-          style.roofMaterial
+      for (let index = 0; index < towers.length; index += 1) {
+        const tower = towers[index]!;
+        towerInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            towerMatrixScratch,
+            tileX + tower.x,
+            tower.height * 0.5,
+            tileY + tower.z,
+            tower.radius,
+            tower.height,
+            tower.radius
+          )
         );
-        cap.position.set(
-          tileX + tower.x,
-          tower.height + tower.capHeight * 0.5 - 0.02,
-          tileY + tower.z
+        towerCaps.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            capMatrixScratch,
+            tileX + tower.x,
+            tower.height + tower.capHeight * 0.5 - 0.02,
+            tileY + tower.z,
+            tower.radius,
+            tower.capHeight,
+            tower.radius
+          )
         );
-        group.add(cap);
       }
+      group.add(towerInstances);
+      group.add(towerCaps);
 
       const gate = new three.Group();
       gate.position.set(
@@ -357,6 +376,18 @@ function quantizeDungeonGlowIntensity(intensity: number): number {
       DUNGEON_GLOW_INTENSITY_STEP
     ).toFixed(2)
   );
+}
+
+function writeInstancedScalePositionMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return target.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
 
 function getDungeonEntranceDirection(

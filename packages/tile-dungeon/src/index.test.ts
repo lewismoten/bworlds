@@ -85,12 +85,43 @@ class FakeNode {
 }
 
 class FakeGroup extends FakeNode {}
+class FakeMatrix4 {
+  scale = { x: 1, y: 1, z: 1 };
+  position = { x: 0, y: 0, z: 0 };
+  makeScale(x: number, y: number, z: number) {
+    this.scale = { x, y, z };
+    return this;
+  }
+  setPosition(x: number, y: number, z: number) {
+    this.position = { x, y, z };
+    return this;
+  }
+  clone() {
+    const next = new FakeMatrix4();
+    next.scale = { ...this.scale };
+    next.position = { ...this.position };
+    return next;
+  }
+}
 class FakeMesh extends FakeNode {
   constructor(
     public geometry?: object,
     public material?: FakeMaterial | FakeMaterial[]
   ) {
     super();
+  }
+}
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[],
+    public count = 0
+  ) {
+    super();
+  }
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
   }
 }
 class FakePointLight extends FakeNode {
@@ -107,6 +138,8 @@ class FakePointLight extends FakeNode {
 const fakeThree = {
   Group: FakeGroup,
   Mesh: FakeMesh,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
@@ -287,6 +320,45 @@ describe('tile dungeon', () => {
     }) as FakeGroup;
 
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
+  });
+
+  it('instances repeated tower bodies and caps in full-detail dungeon models', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const towerBodies: FakeInstancedMesh[] = [];
+    const towerCaps: FakeInstancedMesh[] = [];
+    fullModel.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.dungeonInstancedPart === 'tower-body'
+      ) {
+        towerBodies.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.dungeonInstancedPart === 'tower-cap'
+      ) {
+        towerCaps.push(node);
+      }
+    });
+
+    expect(towerBodies).toHaveLength(1);
+    expect(towerCaps).toHaveLength(1);
+    expect(towerBodies[0]?.count).toBeGreaterThanOrEqual(2);
+    expect(towerBodies[0]?.count).toBe(towerCaps[0]?.count);
+    expect(towerBodies[0]?.matrices.length).toBe(towerBodies[0]?.count);
+    expect(towerCaps[0]?.matrices.length).toBe(towerCaps[0]?.count);
   });
 
   it('intensifies red stronghold beacons at night', () => {
@@ -636,7 +708,7 @@ function countSharedMaterialReferences(
 function collectMeshMaterials(root: FakeGroup): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root.traverse((node) => {
-    if (node instanceof FakeMesh) {
+    if (node instanceof FakeMesh || node instanceof FakeInstancedMesh) {
       if (Array.isArray(node.material)) {
         node.material.forEach((material) => materials.add(material));
       } else if (node.material) {

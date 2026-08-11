@@ -76,9 +76,10 @@ Always run tests to make sure all tests pass
       Progress: `tile-quarry` now collapses its six repeated rubble stones into
       one `InstancedMesh`, and `tile-rail` now collapses four repeated sleepers
       into one `InstancedMesh`, and full-detail cave mouths now collapse their
-      repeated entrance boulders into one `InstancedMesh`, which removes small
-      clusters of redundant static child nodes from each visible landmark or
-      track tile.
+      repeated entrance boulders into one `InstancedMesh`, and full-detail
+      dungeons now collapse their repeated tower bodies and caps into two
+      `InstancedMesh` nodes, which removes small clusters of redundant static
+      child nodes from each visible landmark or track tile.
 - [x] Disable matrix updates for static objects and static subtrees.
 - [x] Remove has() + get() double cache lookups.
 - [x] Cache nearby overworld anchor queries by region or tile.
@@ -88,7 +89,8 @@ Always run tests to make sure all tests pass
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
       stones, rail tiles now instance their repeated sleepers, and full-detail
-      cave mouths now instance their repeated entrance boulders instead of
+      cave mouths now instance their repeated entrance boulders, and full-detail
+      dungeons now instance their repeated tower bodies and caps instead of
       emitting one mesh per repeated prop.
 
 - [x] Cache whole generation contexts/results instead of caching tiny calculations individually.
