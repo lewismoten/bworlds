@@ -313,6 +313,7 @@ This probably deserves several interchangeable strategies.
 - [ ] Allow partially defoliated trees.
 - [ ] Allow insect-damaged foliage.
 - [ ] Allow diseased foliage.
+- [ ] Tree foliage objects that do not intersect should have their own pivot points on the branch/bark to sway in the wind.
 
 # Seasons
 
