@@ -3,6 +3,13 @@
 Always run tests to make sure all tests pass
 
 - [ ] Complete client-error-snapshot.md
+      Progress: local client error snapshots now save to the ignored
+      `.client-error-snapshots/` folder through a dedicated Vite API, reuse the
+      existing runtime performance tracking flag, capture `window.error`,
+      `unhandledrejection`, and `console.error`, keep one file per normalized
+      message hash, and fail tests when saved snapshots remain on disk. The
+      remaining checklist items are explicit snapshot cleanup commands plus the
+      rethrow/stack-preservation follow-up.
 - [ ] Complete audio-priority2.md
 
 # Next Highest
