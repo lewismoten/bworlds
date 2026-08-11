@@ -6,41 +6,43 @@ import {
   resolveMusicDebugInstrumentPreviewNote,
 } from './music-debug-instrument-panel.ts';
 
+const FOREST_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+});
+const FOREST_MARKUP = buildMusicDebugInstrumentPanelMarkup(FOREST_SNAPSHOT);
+const PERCUSSION_NOTE = FOREST_SNAPSHOT.notes.find(
+  (note) => note.role === 'percussion' && note.instrumentId.includes(':perc-')
+)!;
+const PERCUSSION_VOICE_ID =
+  PERCUSSION_NOTE.instrumentId.match(/:perc-([a-z-]+-\d+):/)?.[1] ?? null;
+
 describe('music debug instrument panel', () => {
   it('renders instrument cards with waveform previews and play buttons', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-    });
-    const markup = buildMusicDebugInstrumentPanelMarkup(snapshot);
-
-    expect(markup).toContain('music-debug-instrument-panel');
-    expect(markup).toContain('music-debug-instrument-card');
-    expect(markup).toContain('music-debug-instrument-waveform');
-    expect(markup).toContain('music-debug-instrument-play');
-    expect(markup).toContain('data-preview-id="lead"');
-    expect(markup).toContain('data-preview-id="harmony"');
-    expect(markup).toContain('data-preview-id="bass"');
-    expect(markup).toContain('data-preview-id="percussion:');
-    expect(markup).toContain('percussion / ');
-    expect(markup).toContain('>Melody<');
-    expect(markup).toContain('>Harmony<');
-    expect(markup).toContain('>Bass<');
-    expect(markup.indexOf('>Melody<')).toBeLessThan(
-      markup.indexOf('>Harmony<')
+    expect(FOREST_MARKUP).toContain('music-debug-instrument-panel');
+    expect(FOREST_MARKUP).toContain('music-debug-instrument-card');
+    expect(FOREST_MARKUP).toContain('music-debug-instrument-waveform');
+    expect(FOREST_MARKUP).toContain('music-debug-instrument-play');
+    expect(FOREST_MARKUP).toContain('data-preview-id="lead"');
+    expect(FOREST_MARKUP).toContain('data-preview-id="harmony"');
+    expect(FOREST_MARKUP).toContain('data-preview-id="bass"');
+    expect(FOREST_MARKUP).toContain('data-preview-id="percussion:');
+    expect(FOREST_MARKUP).toContain('percussion / ');
+    expect(FOREST_MARKUP).toContain('>Melody<');
+    expect(FOREST_MARKUP).toContain('>Harmony<');
+    expect(FOREST_MARKUP).toContain('>Bass<');
+    expect(FOREST_MARKUP.indexOf('>Melody<')).toBeLessThan(
+      FOREST_MARKUP.indexOf('>Harmony<')
     );
-    expect(markup.indexOf('>Harmony<')).toBeLessThan(markup.indexOf('>Bass<'));
-    expect(markup).toContain('<svg viewBox=');
+    expect(FOREST_MARKUP.indexOf('>Harmony<')).toBeLessThan(
+      FOREST_MARKUP.indexOf('>Bass<')
+    );
+    expect(FOREST_MARKUP).toContain('<svg viewBox=');
   });
 
   it('derives a short solo-preview note from a role in the song', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-    });
-
     const note = resolveMusicDebugInstrumentPreviewNote(
-      snapshot,
+      FOREST_SNAPSHOT,
       'lead',
       5_000
     );
@@ -48,7 +50,7 @@ describe('music debug instrument panel', () => {
     expect(note).toEqual(
       expect.objectContaining({
         role: 'lead',
-        instrumentId: snapshot.instrumentBank.instruments.lead.id,
+        instrumentId: FOREST_SNAPSHOT.instrumentBank.instruments.lead.id,
         startMs: 5_004,
       })
     );
@@ -59,31 +61,18 @@ describe('music debug instrument panel', () => {
   });
 
   it('derives a solo-preview note for a specific percussion voice', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-    });
-    const percussionNote = snapshot.notes.find(
-      (note) =>
-        note.role === 'percussion' && note.instrumentId.includes(':perc-')
-    )!;
-    const voiceIdMatch =
-      percussionNote.instrumentId.match(/:perc-([a-z-]+-\d+):/);
-
-    expect(voiceIdMatch).not.toBeNull();
-    const voiceId = voiceIdMatch?.[1];
-    expect(voiceId).toBeTruthy();
+    expect(PERCUSSION_VOICE_ID).toBeTruthy();
 
     const note = resolveMusicDebugInstrumentPreviewNote(
-      snapshot,
-      `percussion:${voiceId!}`,
+      FOREST_SNAPSHOT,
+      `percussion:${PERCUSSION_VOICE_ID!}`,
       7_000
     );
 
     expect(note).toEqual(
       expect.objectContaining({
         role: 'percussion',
-        instrumentId: percussionNote.instrumentId,
+        instrumentId: PERCUSSION_NOTE.instrumentId,
         startMs: 7_004,
       })
     );

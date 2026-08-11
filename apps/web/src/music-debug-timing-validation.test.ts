@@ -2,58 +2,55 @@ import { describe, expect, it } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import { validateMusicDebugTiming } from './music-debug-timing-validation.ts';
 
+const FOREST_SNAPSHOT = createMusicDebugSnapshot({
+  tileKind: 'forest',
+  contextType: 'overworld',
+  clusterX: 3,
+  clusterY: -2,
+  encounterMode: 'ambient',
+  dayProgress: 0.5,
+  yearProgress: 0.25,
+});
+
 describe('music debug timing validation', () => {
   it('accepts deterministic snapshots whose sections align with planned measures and loop bounds', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 3,
-      clusterY: -2,
-      encounterMode: 'ambient',
-      dayProgress: 0.5,
-      yearProgress: 0.25,
-    });
-
-    expect(snapshot.timingValidation).toEqual(
+    expect(FOREST_SNAPSHOT.timingValidation).toEqual(
       expect.objectContaining({
-        expectedMeasureCount: snapshot.measureCount,
-        actualMeasureCount: snapshot.measureCount,
+        expectedMeasureCount: FOREST_SNAPSHOT.measureCount,
+        actualMeasureCount: FOREST_SNAPSHOT.measureCount,
         isValidForMidiExport: true,
       })
     );
-    expect(snapshot.song.sections[0]).toEqual(
+    expect(FOREST_SNAPSHOT.song.sections[0]).toEqual(
       expect.objectContaining({
         label: 'Intro',
         startMeasure: 1,
         endMeasure: 8,
       })
     );
-    expect(snapshot.song.sections[1]).toEqual(
+    expect(FOREST_SNAPSHOT.song.sections[1]).toEqual(
       expect.objectContaining({
         label: 'Section A',
         startMeasure: 9,
         endMeasure: 24,
       })
     );
-    expect(snapshot.loopStartOffsetMs).toBeLessThan(snapshot.loopEndOffsetMs);
-    expect(snapshot.loopEndOffsetMs).toBeLessThanOrEqual(snapshot.durationMs);
+    expect(FOREST_SNAPSHOT.loopStartOffsetMs).toBeLessThan(
+      FOREST_SNAPSHOT.loopEndOffsetMs
+    );
+    expect(FOREST_SNAPSHOT.loopEndOffsetMs).toBeLessThanOrEqual(
+      FOREST_SNAPSHOT.durationMs
+    );
   });
 
   it('flags invalid loop and measure metadata before midi export', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 3,
-      clusterY: -2,
-    });
-
     const invalid = validateMusicDebugTiming({
-      ...snapshot,
-      loopStartOffsetMs: snapshot.durationMs,
-      loopEndOffsetMs: snapshot.durationMs - 1_000,
+      ...FOREST_SNAPSHOT,
+      loopStartOffsetMs: FOREST_SNAPSHOT.durationMs,
+      loopEndOffsetMs: FOREST_SNAPSHOT.durationMs - 1_000,
       song: {
-        ...snapshot.song,
-        sections: snapshot.song.sections.map((section, index) =>
+        ...FOREST_SNAPSHOT.song,
+        sections: FOREST_SNAPSHOT.song.sections.map((section, index) =>
           index === 0
             ? { ...section, endMeasure: section.endMeasure - 1 }
             : section
@@ -71,19 +68,13 @@ describe('music debug timing validation', () => {
   });
 
   it('flags section notes that spill past their assigned boundary', () => {
-    const snapshot = createMusicDebugSnapshot({
-      tileKind: 'forest',
-      contextType: 'overworld',
-      clusterX: 3,
-      clusterY: -2,
-    });
-    const intro = snapshot.song.sections[0]!;
-    const introStartMs = snapshot.song.startMs + intro.startOffsetMs;
+    const intro = FOREST_SNAPSHOT.song.sections[0]!;
+    const introStartMs = FOREST_SNAPSHOT.song.startMs + intro.startOffsetMs;
     const invalid = validateMusicDebugTiming({
-      ...snapshot,
+      ...FOREST_SNAPSHOT,
       song: {
-        ...snapshot.song,
-        notes: snapshot.song.notes.map((note, index) =>
+        ...FOREST_SNAPSHOT.song,
+        notes: FOREST_SNAPSHOT.song.notes.map((note, index) =>
           index === 0
             ? {
                 ...note,

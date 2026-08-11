@@ -6,20 +6,22 @@ import {
   saveRejectedMusicDebugReport,
 } from './music-debug-rejection-report-storage.ts';
 
+const EXPORTABLE_SNAPSHOT = createExportableSnapshot();
+const REJECTED_SNAPSHOT = createRejectedSnapshot();
+
 describe('music debug rejection report storage', () => {
   it('saves a report when a snapshot fails export-related validation', () => {
     const storage = createMemoryStorage();
-    const snapshot = createRejectedSnapshot();
 
-    const saved = saveRejectedMusicDebugReport(snapshot, storage, {
+    const saved = saveRejectedMusicDebugReport(REJECTED_SNAPSHOT, storage, {
       createdAt: new Date('2026-08-10T00:00:00.000Z'),
     });
 
     expect(saved).toEqual(
       expect.objectContaining({
-        themeId: snapshot.theme.id,
-        clusterX: snapshot.options.clusterX,
-        clusterY: snapshot.options.clusterY,
+        themeId: REJECTED_SNAPSHOT.theme.id,
+        clusterX: REJECTED_SNAPSHOT.options.clusterX,
+        clusterY: REJECTED_SNAPSHOT.options.clusterY,
         rejectionReasons: expect.arrayContaining([
           'Variation answer cadence at measure 72 drifted outside the active harmony (C#, F; lead G#3, bass C2).',
         ]),
@@ -38,12 +40,11 @@ describe('music debug rejection report storage', () => {
 
   it('skips saving when the latest rejected report has the same rejection signature', () => {
     const storage = createMemoryStorage();
-    const snapshot = createRejectedSnapshot();
 
-    saveRejectedMusicDebugReport(snapshot, storage, {
+    saveRejectedMusicDebugReport(REJECTED_SNAPSHOT, storage, {
       createdAt: new Date('2026-08-10T00:00:00.000Z'),
     });
-    saveRejectedMusicDebugReport(snapshot, storage, {
+    saveRejectedMusicDebugReport(REJECTED_SNAPSHOT, storage, {
       createdAt: new Date('2026-08-10T00:00:01.000Z'),
     });
 
@@ -52,9 +53,10 @@ describe('music debug rejection report storage', () => {
 
   it('does not save a report for exportable snapshots', () => {
     const storage = createMemoryStorage();
-    const snapshot = createExportableSnapshot();
 
-    expect(saveRejectedMusicDebugReport(snapshot, storage)).toBeNull();
+    expect(
+      saveRejectedMusicDebugReport(EXPORTABLE_SNAPSHOT, storage)
+    ).toBeNull();
     expect(loadRejectedMusicDebugReports(storage)).toEqual([]);
   });
 });
