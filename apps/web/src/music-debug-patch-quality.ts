@@ -4,8 +4,8 @@ import type {
   ProceduralInstrumentBank,
 } from './procedural-music-sound-bank.ts';
 
-export const MUSIC_DEBUG_PATCH_QUALITY_WARNING_MIN_SIMILARITY = 0.75;
-export const MUSIC_DEBUG_PATCH_QUALITY_FAILURE_MIN_SIMILARITY = 0.6;
+const MUSIC_DEBUG_PATCH_QUALITY_WARNING_MIN_SIMILARITY = 0.75;
+const MUSIC_DEBUG_PATCH_QUALITY_FAILURE_MIN_SIMILARITY = 0.6;
 
 export type MusicDebugPatchQualityTone = 'pass' | 'warning' | 'failure';
 

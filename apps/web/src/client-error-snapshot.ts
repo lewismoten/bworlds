@@ -73,9 +73,7 @@ export function buildClientErrorSnapshot(
   };
 }
 
-export function normalizeClientErrorValue(
-  value: unknown
-): NormalizedClientErrorValue {
+function normalizeClientErrorValue(value: unknown): NormalizedClientErrorValue {
   if (value instanceof Error) {
     return {
       message: value.message || value.name || 'Error',
