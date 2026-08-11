@@ -23,6 +23,7 @@ import {
   createCoordinateValueResolver,
   tintHexColor,
 } from '@bworlds/procedural-style';
+import { writeHorizontalCylinderInstancedMatrix } from './floor-detail-instanced-matrix.ts';
 import { writeLowDetailInstancedMatrix } from './low-detail-instanced-matrix.ts';
 import {
   createTreeBiologicalState,
@@ -1835,28 +1836,36 @@ export function createForestTilePlugin(): RuntimePlugin {
             group.add(stumpInstances);
           }
 
-          for (const detail of floorDetails) {
-            if (detail.kind === 'stump') {
-              continue;
-            }
-
-            const log = new three.Mesh(
+          const fallenTreeDetails = floorDetails.filter(
+            (detail) => detail.kind === 'fallen-tree'
+          );
+          if (fallenTreeDetails.length > 0) {
+            const logInstances = new three.InstancedMesh(
               geometry.trunk,
-              floorDetailStyle.trunkMaterial
+              floorDetailStyle.trunkMaterial,
+              fallenTreeDetails.length
             );
-            log.position.set(
-              tileX + detail.x,
-              detail.radius * 0.8,
-              tileY + detail.y
-            );
-            log.rotation.z = Math.PI / 2;
-            log.rotation.y = detail.rotation;
-            log.scale.set(detail.radius, detail.length, detail.radius);
-            log.userData = {
-              ...(log.userData ?? {}),
-              [FLOOR_DETAIL_KEY]: detail.kind,
+            logInstances.userData = {
+              ...(logInstances.userData ?? {}),
+              [FLOOR_DETAIL_KEY]: 'fallen-tree',
             };
-            group.add(log);
+            const logMatrixScratch = new three.Matrix4();
+
+            fallenTreeDetails.forEach((detail, index) => {
+              logInstances.setMatrixAt(
+                index,
+                writeHorizontalCylinderInstancedMatrix(
+                  logMatrixScratch,
+                  tileX + detail.x,
+                  detail.radius * 0.8,
+                  tileY + detail.y,
+                  detail.radius,
+                  detail.length ?? detail.radius,
+                  detail.rotation
+                )
+              );
+            });
+            group.add(logInstances);
           }
 
           if (renderCloseDetails) {

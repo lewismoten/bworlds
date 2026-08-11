@@ -141,6 +141,7 @@ class FakePointLight extends FakeNode {
   }
 }
 class FakeMatrix4 {
+  elements = Array<number>(16).fill(0);
   scale = { x: 1, y: 1, z: 1 };
   position = { x: 0, y: 0, z: 0 };
   makeScale(x: number, y: number, z: number) {
@@ -151,8 +152,48 @@ class FakeMatrix4 {
     this.position = { x, y, z };
     return this;
   }
+  set(
+    n11: number,
+    n12: number,
+    n13: number,
+    n14: number,
+    n21: number,
+    n22: number,
+    n23: number,
+    n24: number,
+    n31: number,
+    n32: number,
+    n33: number,
+    n34: number,
+    n41: number,
+    n42: number,
+    n43: number,
+    n44: number
+  ) {
+    this.elements = [
+      n11,
+      n12,
+      n13,
+      n14,
+      n21,
+      n22,
+      n23,
+      n24,
+      n31,
+      n32,
+      n33,
+      n34,
+      n41,
+      n42,
+      n43,
+      n44,
+    ];
+    this.position = { x: n14, y: n24, z: n34 };
+    return this;
+  }
   clone() {
     const next = new FakeMatrix4();
+    next.elements = [...this.elements];
     next.scale = { ...this.scale };
     next.position = { ...this.position };
     return next;
@@ -2643,6 +2684,69 @@ describe('tile forest', () => {
     expect(stumpInstances[0]?.count).toBe(stumpDetailCount);
     expect(stumpInstances[0]?.matrices).toHaveLength(stumpDetailCount);
     expect(lowDetailKinds.size).toBe(0);
+  });
+
+  it('instances fallen tree floor details in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState();
+
+    let targetTile: {
+      x: number;
+      y: number;
+      details: ReturnType<typeof getForestFloorDetails>;
+    } | null = null;
+    for (let tileY = 0; tileY < 18 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 18; tileX += 1) {
+        const details = getForestFloorDetails(tileX, tileY);
+        if (details.some((detail) => detail.kind === 'fallen-tree')) {
+          targetTile = { x: tileX, y: tileY, details };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fallenTreeDetailCount = targetTile!.details.filter(
+      (detail) => detail.kind === 'fallen-tree'
+    ).length;
+    const fallenTreeInstances = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestFloorDetail === 'fallen-tree'
+    ) as FakeInstancedMesh[];
+    let lowFallenTreeCount = 0;
+    lowModel.traverse((node) => {
+      if (node.userData?.forestFloorDetail === 'fallen-tree') {
+        lowFallenTreeCount += 1;
+      }
+    });
+
+    expect(fallenTreeDetailCount).toBeGreaterThan(0);
+    expect(fallenTreeInstances).toHaveLength(1);
+    expect(fallenTreeInstances[0]?.count).toBe(fallenTreeDetailCount);
+    expect(fallenTreeInstances[0]?.matrices).toHaveLength(
+      fallenTreeDetailCount
+    );
+    expect(lowFallenTreeCount).toBe(0);
   });
 
   it('renders forest ring landmarks only in full-detail models', () => {
