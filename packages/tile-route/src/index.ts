@@ -132,6 +132,13 @@ const dockRouteLabelCache = createBoundedCache<string, ThreeTextureLike>(
   ROUTE_LABEL_CACHE_LIMIT
 );
 const dockClusterCache = createCoordinateCache<DockClusterInfo>();
+const dockClassificationFootprintCache = new WeakMap<
+  NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>,
+  WeakMap<
+    NonNullable<ClassifyOverworldTileContext['poiAnchors']>,
+    ReturnType<typeof createCoordinateCache<true>>
+  >
+>();
 const roadStyleCache = createBoundedCache<string, RoadStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
@@ -303,9 +310,17 @@ export function createRouteTilePlugin(): RuntimePlugin {
         const signalSampler = createCachedTerrainSignalSampler(
           context.sampleTerrainSignals
         );
+        if (signalSampler) {
+          (
+            signalSampler as typeof signalSampler & {
+              sourceTerrainSignals?: ClassifyOverworldTileContext['sampleTerrainSignals'];
+            }
+          ).sourceTerrainSignals = context.sampleTerrainSignals;
+        }
         const cachedContext = {
           ...context,
           sampleTerrainSignals: signalSampler,
+          sourceTerrainSignals: context.sampleTerrainSignals,
         };
         const connectedRoadKind = classifyConnectedRoad(cachedContext);
         if (connectedRoadKind) {
@@ -553,8 +568,11 @@ function classifyConnectedRoad({
   bridgeAnchors,
   poiAnchors,
   sampleTerrainSignals,
+  sourceTerrainSignals,
   signals,
-}: ClassifyOverworldTileContext) {
+}: ClassifyOverworldTileContext & {
+  sourceTerrainSignals?: ClassifyOverworldTileContext['sampleTerrainSignals'];
+}) {
   const baseKind = tile.kind;
   if (baseKind === 'mountain' || isRouteTerminalKind(baseKind)) {
     return null;
@@ -565,6 +583,7 @@ function classifyConnectedRoad({
     tile,
     poiAnchors,
     sampleTerrainSignals,
+    sourceTerrainSignals,
   });
   if (dockKind) {
     return dockKind;
@@ -696,63 +715,29 @@ function classifyPoiDock({
   tile,
   poiAnchors,
   sampleTerrainSignals,
+  sourceTerrainSignals,
 }: Pick<
   ClassifyOverworldTileContext,
   'x' | 'y' | 'tile' | 'poiAnchors' | 'sampleTerrainSignals'
->) {
+> & {
+  sourceTerrainSignals?: ClassifyOverworldTileContext['sampleTerrainSignals'];
+}) {
   if (!sampleTerrainSignals) {
     return null;
   }
   if (tile.kind !== 'shore' && tile.kind !== 'ocean') {
     return null;
   }
-
-  const anchors = (poiAnchors ?? []).filter(
-    (anchor) =>
-      anchor.type === 'lighthouse' ||
-      anchor.type === 'town' ||
-      anchor.type === 'ship'
+  const sourceSampler =
+    resolveTerrainSignalSamplerSource(sourceTerrainSignals) ??
+    resolveTerrainSignalSamplerSource(sampleTerrainSignals);
+  const footprintCache = getDockClassificationFootprintCache(
+    poiAnchors,
+    sampleTerrainSignals,
+    sourceSampler
   );
-  for (const anchor of anchors) {
-    for (const direction of [
-      { dx: 1, dy: 0 },
-      { dx: -1, dy: 0 },
-      { dx: 0, dy: 1 },
-      { dx: 0, dy: -1 },
-    ]) {
-      const landBehind = sampleTerrainSignals(
-        anchor.x - direction.dx,
-        anchor.y - direction.dy
-      ).continent;
-      if (landBehind < COASTAL_LAND_CONTINENT_THRESHOLD) {
-        continue;
-      }
 
-      const segments: Array<{ x: number; y: number }> = [];
-      let oceanSeen = false;
-      for (let step = 1; step <= MAX_DOCK_LENGTH; step += 1) {
-        const segmentX = anchor.x + direction.dx * step;
-        const segmentY = anchor.y + direction.dy * step;
-        const continent = sampleTerrainSignals(segmentX, segmentY).continent;
-        if (continent > 0.46) {
-          break;
-        }
-        if (continent <= OCEAN_CONTINENT_THRESHOLD) {
-          oceanSeen = true;
-        }
-        segments.push({ x: segmentX, y: segmentY });
-      }
-
-      if (
-        oceanSeen &&
-        segments.some((segment) => segment.x === x && segment.y === y)
-      ) {
-        return 'dock';
-      }
-    }
-  }
-
-  return null;
+  return footprintCache?.has(x, y) ? 'dock' : null;
 }
 
 function canClassifyBridgeWaterTile({
@@ -939,6 +924,102 @@ function createCachedTerrainSignalSampler(
     >();
   return (x: number, y: number) =>
     cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
+}
+
+function resolveTerrainSignalSamplerSource(
+  sampleTerrainSignals: ClassifyOverworldTileContext['sampleTerrainSignals']
+) {
+  if (!sampleTerrainSignals) {
+    return null;
+  }
+  const sourceSampler = (
+    sampleTerrainSignals as ClassifyOverworldTileContext['sampleTerrainSignals'] & {
+      sourceTerrainSignals?: ClassifyOverworldTileContext['sampleTerrainSignals'];
+    }
+  ).sourceTerrainSignals;
+  return sourceSampler ?? sampleTerrainSignals;
+}
+
+function getDockClassificationFootprintCache(
+  poiAnchors: ClassifyOverworldTileContext['poiAnchors'],
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >,
+  sourceTerrainSignals: ClassifyOverworldTileContext['sampleTerrainSignals']
+) {
+  if (!poiAnchors || poiAnchors.length === 0 || !sourceTerrainSignals) {
+    return null;
+  }
+  let samplerCache = dockClassificationFootprintCache.get(sourceTerrainSignals);
+  if (!samplerCache) {
+    samplerCache = new WeakMap();
+    dockClassificationFootprintCache.set(sourceTerrainSignals, samplerCache);
+  }
+  let footprintCache = samplerCache.get(poiAnchors);
+  if (!footprintCache) {
+    footprintCache = buildDockClassificationFootprintCache(
+      poiAnchors,
+      sampleTerrainSignals
+    );
+    samplerCache.set(poiAnchors, footprintCache);
+  }
+  return footprintCache;
+}
+
+function buildDockClassificationFootprintCache(
+  poiAnchors: NonNullable<ClassifyOverworldTileContext['poiAnchors']>,
+  sampleTerrainSignals: NonNullable<
+    ClassifyOverworldTileContext['sampleTerrainSignals']
+  >
+) {
+  const footprintCache = createCoordinateCache<true>();
+  const anchors = poiAnchors.filter(
+    (anchor) =>
+      anchor.type === 'lighthouse' ||
+      anchor.type === 'town' ||
+      anchor.type === 'ship'
+  );
+
+  for (const anchor of anchors) {
+    for (const direction of [
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: 0, dy: -1 },
+    ]) {
+      const landBehind = sampleTerrainSignals(
+        anchor.x - direction.dx,
+        anchor.y - direction.dy
+      ).continent;
+      if (landBehind < COASTAL_LAND_CONTINENT_THRESHOLD) {
+        continue;
+      }
+
+      const segments: Array<{ x: number; y: number }> = [];
+      let oceanSeen = false;
+      for (let step = 1; step <= MAX_DOCK_LENGTH; step += 1) {
+        const segmentX = anchor.x + direction.dx * step;
+        const segmentY = anchor.y + direction.dy * step;
+        const continent = sampleTerrainSignals(segmentX, segmentY).continent;
+        if (continent > 0.46) {
+          break;
+        }
+        if (continent <= OCEAN_CONTINENT_THRESHOLD) {
+          oceanSeen = true;
+        }
+        segments.push({ x: segmentX, y: segmentY });
+      }
+
+      if (!oceanSeen) {
+        continue;
+      }
+      for (const segment of segments) {
+        footprintCache.set(segment.x, segment.y, true);
+      }
+    }
+  }
+
+  return footprintCache;
 }
 
 function* createRoadGroupProgressive({

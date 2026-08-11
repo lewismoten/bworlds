@@ -366,6 +366,83 @@ describe('tile route', () => {
     );
   });
 
+  it('reuses precomputed dock footprints across repeated nearby classifications', () => {
+    const poiAnchors = [
+      { x: 11, y: 4, type: 'ship' as const, name: 'Harbor Mast' },
+    ];
+    const sampleCalls: string[] = [];
+    const sampleTerrainSignals = (sampleX: number, sampleY: number) => {
+      sampleCalls.push(`${sampleX}:${sampleY}`);
+      if (sampleX === 10 && sampleY === 4) {
+        return {
+          continent: 0.58,
+          elevation: 0.24,
+          moisture: 0.52,
+          riverSignal: 0.1,
+          roadSignal: 0.52,
+        };
+      }
+      if (sampleY === 4 && sampleX >= 12 && sampleX <= 14) {
+        return {
+          continent: 0.24,
+          elevation: 0.08,
+          moisture: 0.66,
+          riverSignal: 0.08,
+          roadSignal: 0.16,
+        };
+      }
+      return {
+        continent: 0.6,
+        elevation: 0.18,
+        moisture: 0.54,
+        riverSignal: 0.08,
+        roadSignal: 0.18,
+      };
+    };
+
+    const dockXs = [12, 13, 14];
+    for (const [index, dockX] of dockXs.entries()) {
+      expect(
+        classifier?.(
+          createRouteClassifierPayload({
+            x: dockX,
+            y: 4,
+            tile: { kind: 'shore' },
+            signals: {
+              continent: 0.38,
+              elevation: 0.18,
+              moisture: 0.6,
+              riverSignal: 0.08,
+              roadSignal: 0.94,
+            },
+            sampleTerrainSignals,
+            townAnchors: [],
+            bridgeAnchors: [],
+            poiAnchors,
+          })
+        )
+      ).toEqual(
+        expect.objectContaining({
+          kind: 'dock',
+        })
+      );
+
+      if (index === 0) {
+        expect(sampleCalls).toEqual([
+          '10:4',
+          '12:4',
+          '13:4',
+          '14:4',
+          '11:3',
+          '11:5',
+        ]);
+        continue;
+      }
+
+      expect(sampleCalls).toHaveLength(6);
+    }
+  });
+
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
     expect(resolver?.(createRouteFloorPayload())).toBe('plains');
   });

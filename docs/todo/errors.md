@@ -182,7 +182,11 @@ Always run tests to make sure all tests pass
       probe, and `tile-route` now wraps `sampleTerrainSignals()` in a
       per-classification coordinate cache so dock, bridge, and neighboring
       route checks reuse repeated terrain reads within one route-classifier
-      pass, and `runtime-rail-network` now delegates directly to the shared
+      pass, and `tile-route` now reuses resolved dock-footprint scans across
+      repeated nearby classifications that share the same raw terrain sampler
+      and `poiAnchors` array instead of rediscovering the same coastal
+      segments tile by tile, and `runtime-rail-network` now delegates directly
+      to the shared
       `rail-support` region and train caches instead of adding a duplicate
       per-tile runtime cache layer, and `rail-support` now caches terrain
       reads for one `buildRailConnections()` pass so overlapping candidate
