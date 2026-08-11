@@ -54,10 +54,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       tiles now collapse their repeated rails, support piles, and dock route
       sign stop placards into shared `InstancedMesh` sets, and forest log
       bridges now collapse their repeated support posts into one shared
-      `InstancedMesh`, and standard bridge railings now collapse their
-      repeated posts into one shared `InstancedMesh`, which removes small
-      clusters of redundant static child nodes from each visible landmark or
-      track tile.
+      `InstancedMesh`, and standard bridge railings and covered bridge spans
+      now collapse their repeated posts into shared `InstancedMesh` sets,
+      which removes small clusters of redundant static child nodes from each
+      visible landmark or track tile.
 - [ ] Instance repeated trees, foliage, rocks, and other static props.
       Progress: forest low-detail trees and several forest detail sets were
       already instanced, quarry landmarks now instance their repeated rubble
@@ -87,8 +87,8 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       rails, support piles, and dock route sign stop placards instead of
       emitting one mesh per part, and forest log bridges now instance their
       repeated support posts instead of emitting one mesh per post, and
-      standard bridges now instance their repeated railing posts instead of
-      emitting one mesh per post.
+      standard bridges now instance their repeated railing and covered-span
+      support posts instead of emitting one mesh per post.
 
 - [ ] Consolidate river and route calculations.
       The trace still shows `getCachedRiverCurvePoints()`, `getCachedRiverForkPath()`, `getDistanceToLineSegment()`, route connectivity checks, rail-network resolution, and terrain classification in the generation path. Resolve those once per relevant region/tile and share the result instead of having multiple plugins rediscover them.

@@ -2227,22 +2227,52 @@ function addBridgeCover(
   const coverY = postHeight + 0.08;
   const postOffset = deckWidth * 0.5 - 0.08;
   const spanCount = Math.max(2, Math.round(deckLength / 0.5));
+  const coverPostInstances = new three.InstancedMesh(
+    new three.BoxGeometry(0.05, postHeight, 0.05),
+    style.postMaterial,
+    spanCount * 2
+  );
+  coverPostInstances.userData = {
+    ...(coverPostInstances.userData ?? {}),
+    routeInstancedPart: 'bridge-cover-post',
+  };
+  const coverPostMatrixScratch = new three.Matrix4();
+  let nextCoverPostIndex = 0;
   for (let index = 0; index < spanCount; index += 1) {
     const t = spanCount === 1 ? 0.5 : index / (spanCount - 1);
     const local = -deckLength * 0.5 + t * deckLength;
     for (let side = -1; side <= 1; side += 2) {
-      const post = new three.Mesh(
-        new three.BoxGeometry(0.05, postHeight, 0.05),
-        style.postMaterial
-      );
       if (alongX) {
-        post.position.set(local, postHeight * 0.5, side * postOffset);
+        coverPostInstances.setMatrixAt(
+          nextCoverPostIndex,
+          writeRouteInstancedScalePositionMatrix(
+            coverPostMatrixScratch,
+            local,
+            postHeight * 0.5,
+            side * postOffset,
+            1,
+            1,
+            1
+          )
+        );
       } else {
-        post.position.set(side * postOffset, postHeight * 0.5, local);
+        coverPostInstances.setMatrixAt(
+          nextCoverPostIndex,
+          writeRouteInstancedScalePositionMatrix(
+            coverPostMatrixScratch,
+            side * postOffset,
+            postHeight * 0.5,
+            local,
+            1,
+            1,
+            1
+          )
+        );
       }
-      group.add(post);
+      nextCoverPostIndex += 1;
     }
   }
+  group.add(coverPostInstances);
 
   const roof = new three.Mesh(
     new three.BoxGeometry(
