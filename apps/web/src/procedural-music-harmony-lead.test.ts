@@ -138,6 +138,65 @@ describe('procedural music harmony lead motion', () => {
     }
   });
 
+  it('keeps long same-pitch runs isolated to cadence windows', () => {
+    const sampledClusters = [
+      { clusterX: 0, clusterY: 0 },
+      { clusterX: 3, clusterY: -2 },
+      { clusterX: 8, clusterY: -4 },
+      { clusterX: -6, clusterY: 5 },
+    ];
+
+    for (const cluster of sampledClusters) {
+      const semitones = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralInstrumentSemitones({
+          theme: TEST_THEME,
+          role: 'lead',
+          stepIndex,
+          clusterX: cluster.clusterX,
+          clusterY: cluster.clusterY,
+        })
+      );
+      const compositions = Array.from({ length: 32 }, (_, stepIndex) =>
+        resolveProceduralCompositionStep(
+          TEST_THEME,
+          stepIndex,
+          cluster.clusterX,
+          cluster.clusterY
+        )
+      );
+      let runLength = 1;
+      let runStartIndex = 0;
+      const repeatedRuns: Array<{ startIndex: number; endIndex: number }> = [];
+
+      for (let index = 1; index < semitones.length; index += 1) {
+        if (semitones[index] === semitones[index - 1]) {
+          runLength += 1;
+          continue;
+        }
+        if (runLength > 2) {
+          repeatedRuns.push({
+            startIndex: runStartIndex,
+            endIndex: index - 1,
+          });
+        }
+        runStartIndex = index;
+        runLength = 1;
+      }
+      if (runLength > 2) {
+        repeatedRuns.push({
+          startIndex: runStartIndex,
+          endIndex: semitones.length - 1,
+        });
+      }
+
+      for (const run of repeatedRuns) {
+        for (let stepIndex = run.startIndex; stepIndex <= run.endIndex; stepIndex += 1) {
+          expect(compositions[stepIndex]!.cadence).not.toBe('neutral');
+        }
+      }
+    }
+  });
+
   it('lets preferred lead intervals change the sampled melodic path', () => {
     const stepTheme: ProceduralHarmonyTheme = {
       ...TEST_THEME,

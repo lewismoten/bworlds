@@ -14,6 +14,7 @@ export type ProceduralLeadMotionPenaltyOptions = {
   preferredIntervals?: readonly number[];
   previousLeapDistance?: number | null;
   priorLargeLeapCount?: number;
+  repeatedPitchRunLength?: number;
 };
 
 const PROCEDURAL_MINOR_SIXTH_INTERVAL = 8;
@@ -40,6 +41,14 @@ export function scoreProceduralLeadMotionPenalty(
     (options.priorLargeLeapCount ?? 0) > 0
       ? 140
       : 0;
+  const repeatedPitchPenalty =
+    options.distance === 0
+      ? resolveRepeatedPitchPenalty(
+          options.repeatedPitchRunLength ?? 0,
+          options.strongLeadBeat,
+          options.structuralAccent
+        )
+      : 0;
   const ordinaryLeapPenalty =
     options.distance === PROCEDURAL_ORDINARY_LEAP_LIMIT + 1 &&
     !options.structuralAccent
@@ -54,6 +63,7 @@ export function scoreProceduralLeadMotionPenalty(
       preferencePenalty +
       repeatedMinorSixthPenalty +
       repeatedLargeLeapPenalty +
+      repeatedPitchPenalty +
       (options.isPrimaryCandidate ? -0.75 : 0)
     );
   }
@@ -70,6 +80,7 @@ export function scoreProceduralLeadMotionPenalty(
       preferencePenalty +
       repeatedMinorSixthPenalty +
       repeatedLargeLeapPenalty +
+      repeatedPitchPenalty +
       ordinaryLeapPenalty +
       (options.isPrimaryCandidate ? -0.1 : 0)
     );
@@ -82,9 +93,26 @@ export function scoreProceduralLeadMotionPenalty(
     preferencePenalty +
     repeatedMinorSixthPenalty +
     repeatedLargeLeapPenalty +
+    repeatedPitchPenalty +
     ordinaryLeapPenalty +
     (options.isPrimaryCandidate ? -0.05 : 0)
   );
+}
+
+function resolveRepeatedPitchPenalty(
+  repeatedPitchRunLength: number,
+  strongLeadBeat: boolean,
+  structuralAccent: boolean
+): number {
+  if (repeatedPitchRunLength <= 0) {
+    return 0;
+  }
+
+  if (structuralAccent && strongLeadBeat) {
+    return 3 + repeatedPitchRunLength * 3;
+  }
+
+  return 10 + repeatedPitchRunLength * 12;
 }
 
 function resolvePreferredIntervalPenalty(

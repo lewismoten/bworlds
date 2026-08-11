@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { scoreProceduralLeadMotionPenalty } from './procedural-music-lead-motion.ts';
 
 describe('procedural music lead motion', () => {
@@ -89,5 +88,47 @@ describe('procedural music lead motion', () => {
         priorLargeLeapCount: 0,
       })
     );
+  });
+
+  it('penalizes repeated same-pitch runs more than nearby stepwise motion', () => {
+    const repeatedPitchPenalty = scoreProceduralLeadMotionPenalty({
+      distance: 0,
+      isPrimaryCandidate: true,
+      strongLeadBeat: false,
+      structuralAccent: false,
+      candidateSemitones: 7,
+      repeatedPitchRunLength: 2,
+    });
+    const stepwisePenalty = scoreProceduralLeadMotionPenalty({
+      distance: 1,
+      isPrimaryCandidate: false,
+      strongLeadBeat: false,
+      structuralAccent: false,
+      candidateSemitones: 8,
+      repeatedPitchRunLength: 2,
+    });
+
+    expect(repeatedPitchPenalty).toBeGreaterThan(stepwisePenalty);
+  });
+
+  it('keeps the repeated-pitch penalty softer on structural accents', () => {
+    const neutralPenalty = scoreProceduralLeadMotionPenalty({
+      distance: 0,
+      isPrimaryCandidate: true,
+      strongLeadBeat: false,
+      structuralAccent: false,
+      candidateSemitones: 7,
+      repeatedPitchRunLength: 2,
+    });
+    const accentedPenalty = scoreProceduralLeadMotionPenalty({
+      distance: 0,
+      isPrimaryCandidate: true,
+      strongLeadBeat: true,
+      structuralAccent: true,
+      candidateSemitones: 7,
+      repeatedPitchRunLength: 2,
+    });
+
+    expect(accentedPenalty).toBeLessThan(neutralPenalty);
   });
 });

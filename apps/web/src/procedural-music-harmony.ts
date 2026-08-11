@@ -833,6 +833,14 @@ function resolveLeadSemitonesCached(
     memo,
     threshold: ORDINARY_LEAD_MOTION_LIMIT_SEMITONES,
   });
+  const repeatedPitchRunLength = countTrailingRepeatedLeadPitchInPhrase({
+    theme,
+    stepIndex,
+    clusterX,
+    clusterY,
+    allowLeadAccidentals,
+    memo,
+  });
   let selectedCurrentSemitones = selectPreferredLeadSemitoneClass({
     candidates: current.candidateSemitones,
     previousSemitones: previous.semitones,
@@ -842,6 +850,7 @@ function resolveLeadSemitonesCached(
     preferredIntervals: theme.vocabulary?.preferredIntervals,
     previousLeapDistance,
     priorLargeLeapCount,
+    repeatedPitchRunLength,
   });
   selectedCurrentSemitones = shapeLeadSemitonesForContourStage({
     theme,
@@ -1143,6 +1152,7 @@ function selectPreferredLeadSemitoneClass(options: {
   preferredIntervals?: readonly number[];
   previousLeapDistance?: number | null;
   priorLargeLeapCount?: number;
+  repeatedPitchRunLength?: number;
   contourRange?: {
     minSemitones: number;
     targetSemitones: number;
@@ -1184,6 +1194,7 @@ function selectPreferredLeadSemitoneClass(options: {
         contourRange: options.contourRange,
         preferredIntervals: options.preferredIntervals,
         previousLeapDistance: options.previousLeapDistance,
+        repeatedPitchRunLength: options.repeatedPitchRunLength,
       });
       const rightPenalty = scoreProceduralLeadMotionPenalty({
         distance: right.distance,
@@ -1194,6 +1205,7 @@ function selectPreferredLeadSemitoneClass(options: {
         contourRange: options.contourRange,
         preferredIntervals: options.preferredIntervals,
         previousLeapDistance: options.previousLeapDistance,
+        repeatedPitchRunLength: options.repeatedPitchRunLength,
       });
       return leftPenalty - rightPenalty || left.index - right.index;
     });
@@ -1367,6 +1379,67 @@ function countPriorLargeLeadLeapsInPhrase(options: {
   }
 
   return count;
+}
+
+function countTrailingRepeatedLeadPitchInPhrase(options: {
+  theme: ProceduralHarmonyTheme;
+  stepIndex: number;
+  clusterX: number;
+  clusterY: number;
+  allowLeadAccidentals: boolean;
+  memo: Map<number, number>;
+}): number {
+  if (options.stepIndex <= 0) {
+    return 0;
+  }
+
+  const phraseLength = Math.max(1, options.theme.stepPattern.length);
+  const phraseStart =
+    Math.floor(options.stepIndex / phraseLength) * phraseLength;
+  const previousStepIndex = options.stepIndex - 1;
+  const previousSemitones = resolveLeadSemitonesCached(
+    options.theme,
+    resolveProceduralChordAtStep(
+      options.theme,
+      previousStepIndex,
+      options.clusterX,
+      options.clusterY
+    ),
+    previousStepIndex,
+    options.clusterX,
+    options.clusterY,
+    options.allowLeadAccidentals,
+    options.memo
+  );
+  let runLength = 1;
+
+  for (
+    let index = previousStepIndex - 1;
+    index >= phraseStart;
+    index -= 1
+  ) {
+    const currentSemitones = resolveLeadSemitonesCached(
+      options.theme,
+      resolveProceduralChordAtStep(
+        options.theme,
+        index,
+        options.clusterX,
+        options.clusterY
+      ),
+      index,
+      options.clusterX,
+      options.clusterY,
+      options.allowLeadAccidentals,
+      options.memo
+    );
+
+    if (currentSemitones !== previousSemitones) {
+      break;
+    }
+    runLength += 1;
+  }
+
+  return runLength;
 }
 
 function shapeLeadSemitonesForContourStage(options: {
