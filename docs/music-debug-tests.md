@@ -27,7 +27,7 @@ parallelize them and the files stay easier to maintain:
 - [music-debug-timeline-fast.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline-fast.test.ts:1)
   keeps timeline coordinate math, label hit-testing, and compact chord-label
   formatting in the fast suite.
-- [music-debug-timeline.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline.test.ts:1)
+- [music-debug-timeline.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline.long.test.ts:1)
   stays on the long path because it builds full debug snapshots to cover hover
   diagnostics, drift markers, motif markers, and SVG export rendering.
 - [music-debug-behavior.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-behavior.test.ts:1)

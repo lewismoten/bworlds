@@ -29,8 +29,6 @@ describe('vitest suite mode', () => {
     expect(LONG_TEST_FILES).toEqual(
       expect.arrayContaining([
         'apps/web/src/ambience-debug.test.ts',
-        'apps/web/src/procedural-music-song-repair.test.ts',
-        'apps/web/src/procedural-music.test.ts',
         'packages/map-overworld/src/index.test.ts',
         'packages/overworld-support/src/index.test.ts',
         'packages/runtime-dock-traffic/src/index.test.ts',
@@ -56,6 +54,9 @@ describe('vitest suite mode', () => {
       'apps/web/src/music-debug-export-bundle-archive.test.ts'
     );
     expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/music-debug-timeline.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
       'apps/web/src/music-debug-midi-export-metadata.test.ts'
     );
     expect(LONG_TEST_FILES).not.toContain(
@@ -71,7 +72,16 @@ describe('vitest suite mode', () => {
       'apps/web/src/music-debug-song-playback.test.ts'
     );
     expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/procedural-music-song-repair.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/procedural-music.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
       'apps/web/src/sound-bank-debug-shell-audio.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'apps/web/src/testing/test-source-audit-repository.test.ts'
     );
   });
 });

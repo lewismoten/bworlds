@@ -37,10 +37,10 @@ describe('vitest supervisor', () => {
 
   it('forwards file arguments without disabling normal worker parallelism', () => {
     expect(
-      parseSupervisorArgs(['apps/web/src/music-debug-timeline.test.ts'])
+      parseSupervisorArgs(['apps/web/src/music-debug-timeline.long.test.ts'])
     ).toEqual({
-      passthroughArgs: ['apps/web/src/music-debug-timeline.test.ts'],
-      positionalArgs: ['apps/web/src/music-debug-timeline.test.ts'],
+      passthroughArgs: ['apps/web/src/music-debug-timeline.long.test.ts'],
+      positionalArgs: ['apps/web/src/music-debug-timeline.long.test.ts'],
       suiteTimeoutMs: 60_000,
       suiteMode: 'all',
       isFullSuiteRun: false,
@@ -93,7 +93,7 @@ describe('vitest supervisor', () => {
 
     updateVitestSupervisorState(
       state,
-      ' ✓ apps/web/src/music-debug-timeline.test.ts > music debug timeline > renders short note bars'
+      ' ✓ apps/web/src/music-debug-timeline.long.test.ts > music debug timeline > renders short note bars'
     );
     updateVitestSupervisorState(
       state,
@@ -101,7 +101,7 @@ describe('vitest supervisor', () => {
     );
 
     expect(state.recentTestFiles).toEqual([
-      'apps/web/src/music-debug-timeline.test.ts',
+      'apps/web/src/music-debug-timeline.long.test.ts',
       'packages/core/src/index.test.ts',
     ]);
     expect(state.lastStartedTest).toBe(
@@ -126,11 +126,11 @@ describe('vitest supervisor', () => {
   it('builds a one-worker hang-debug command from observed files', () => {
     expect(
       buildHangDebugCommand([
-        'apps/web/src/music-debug-timeline.test.ts',
+        'apps/web/src/music-debug-timeline.long.test.ts',
         'packages/core/src/index.test.ts',
       ])
     ).toBe(
-      'npm run test:hang-debug -- apps/web/src/music-debug-timeline.test.ts packages/core/src/index.test.ts'
+      'npm run test:hang-debug -- apps/web/src/music-debug-timeline.long.test.ts packages/core/src/index.test.ts'
     );
   });
 

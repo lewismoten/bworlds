@@ -22,13 +22,15 @@ Related commands:
   keeps the cheap timeline coordinate and label helpers in the normal check.
   The same allowlist now keeps the broadest overworld and audio generation
   sweeps off the default path, including
-  [procedural-music.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music.test.ts:1),
-  [procedural-music-song-repair.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-repair.test.ts:1),
   [ambience-debug.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/ambience-debug.test.ts:1),
   [packages/map-overworld/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/map-overworld/src/index.test.ts:1),
   and [packages/overworld-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/overworld-support/src/index.test.ts:1).
   Recent companion `*.long.test.ts` splits also keep brute-force cache churn and
   seed-sweep checks off the default path, including
+  [music-debug-timeline.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline.long.test.ts:1),
+  [procedural-music.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music.long.test.ts:1),
+  [procedural-music-song-repair.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-repair.long.test.ts:1),
+  [test-source-audit-repository.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/testing/test-source-audit-repository.long.test.ts:1),
   [packages/runtime-overworld-anchors/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/runtime-overworld-anchors/src/index.long.test.ts:1),
   [packages/dock-route-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/dock-route-support/src/index.long.test.ts:1),
   [packages/town-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/town-support/src/index.long.test.ts:1),
