@@ -7,14 +7,12 @@ import {
   type RuntimePerformanceSnapshot,
   type RuntimePerformanceSnapshotTrigger,
 } from './runtime-performance-tracking.ts';
-import {
-  collectMusicDebugFormOptions,
-  setMusicDebugNamedFormValue,
-} from './music-debug-form.ts';
+import { collectMusicDebugFormOptions } from './music-debug-form.ts';
 import {
   createMusicDebugPagePersistenceController,
   loadMusicDebugPagePersistenceState,
 } from './music-debug-page-persistence.ts';
+import { restoreMusicDebugPageStateFromPersistence } from './music-debug-page-restore.ts';
 import { restorePersistedPageScrollY } from './page-scroll-state.ts';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
@@ -177,7 +175,19 @@ const pagePersistence = createMusicDebugPagePersistenceController({
   hmr: import.meta.hot,
 });
 
-applyPersistedPageState();
+const restoredPageState = restoreMusicDebugPageStateFromPersistence({
+  form,
+  persistedState,
+  loopInput,
+  playbackVariantSelect,
+  playbackDryInput,
+});
+if (restoredPageState) {
+  previewOffsetMs = restoredPageState.previewOffsetMs;
+  percussionPlaybackState = restoredPageState.percussionPlaybackState;
+  hiddenRoles = restoredPageState.hiddenRoles;
+  trackPlaybackState = restoredPageState.trackPlaybackState;
+}
 
 function resolveCurrentSnapshot() {
   return pageState.currentSnapshot();
@@ -572,78 +582,6 @@ function reportMusicDebugRuntimePerformanceSnapshot(
       metrics,
     })
   );
-}
-
-function applyPersistedPageState(): void {
-  if (!form || !persistedState) {
-    return;
-  }
-  setMusicDebugNamedFormValue(
-    form,
-    'tileKind',
-    persistedState.options.tileKind
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'contextType',
-    persistedState.options.contextType
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'encounterMode',
-    persistedState.options.encounterMode
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'weatherKind',
-    persistedState.options.weatherKind
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'weatherIntensity',
-    String(persistedState.options.weatherIntensity)
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'combatIntensity',
-    String(persistedState.options.combatIntensity)
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'dayProgress',
-    String(persistedState.options.dayProgress)
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'yearProgress',
-    String(persistedState.options.yearProgress)
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'clusterX',
-    String(persistedState.options.clusterX)
-  );
-  setMusicDebugNamedFormValue(
-    form,
-    'clusterY',
-    String(persistedState.options.clusterY)
-  );
-  previewOffsetMs = persistedState.previewOffsetMs;
-  if (loopInput) {
-    loopInput.checked = persistedState.loopEnabled;
-  }
-  if (playbackVariantSelect) {
-    playbackVariantSelect.value = persistedState.playbackVariant;
-  }
-  if (playbackDryInput) {
-    playbackDryInput.checked = persistedState.dryPlaybackEnabled;
-  }
-  percussionPlaybackState = normalizeMusicDebugPercussionPlaybackState(
-    persistedState.percussionPlaybackState
-  );
-  hiddenRoles = [...persistedState.hiddenRoles];
-  trackPlaybackState = persistedState.trackPlaybackState;
-  renderTrackVisibilityControls();
 }
 
 function persistPageState(

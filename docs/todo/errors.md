@@ -2,7 +2,7 @@
 
 Always run tests to make sure all tests pass
 
-- [ ] Fix console error on music debug page
+- [x] Fix console error on music debug page
       music-debug-page.ts:183 Uncaught (in promise) ReferenceError: Cannot access 'pageState' before initialization
       at resolveCurrentSnapshot (music-debug-page.ts:183:3)
       at buildTrackVisibilityButtonMarkup (music-debug-page.ts:271:11)
@@ -17,6 +17,9 @@ Always run tests to make sure all tests pass
       renderTrackVisibilityControls @ music-debug-page.ts:292
       applyPersistedPageState @ music-debug-page.ts:646
       (anonymous) @ music-debug-page.ts:180
+      Resolution: persisted form fields and playback toggles now restore
+      through `music-debug-page-restore.ts` before `pageState` exists, and the
+      later render pass handles snapshot-dependent UI after bootstrap.
 
 - [ ] Complete audio-priority2.md
 

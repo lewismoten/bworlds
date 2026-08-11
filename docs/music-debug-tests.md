@@ -20,6 +20,10 @@ parallelize them and the files stay easier to maintain:
 - [music-debug-song-playback.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-song-playback.long.test.ts:1)
   covers playback scheduling, batching, role filtering, and dry/percussion
   routing behavior.
+- [music-debug-page-restore.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-page-restore.test.ts:1)
+  covers the restore layer that rehydrates persisted form fields and playback
+  state before `pageState` exists, keeping snapshot-driven rendering out of the
+  early bootstrap path.
 - [music-debug-timeline-fast.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline-fast.test.ts:1)
   keeps timeline coordinate math, label hit-testing, and compact chord-label
   formatting in the fast suite.
