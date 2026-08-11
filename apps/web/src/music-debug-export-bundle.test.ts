@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   createMeasuredMusicDebugExportBundle,
@@ -6,19 +7,16 @@ import {
   downloadMusicDebugExportBundle,
 } from './music-debug-export-bundle.ts';
 import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
-import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
+import {
+  FOREST_EXPORTABLE_SNAPSHOT,
+  FOREST_PERCUSSION_VOICES,
+  TOWN_EXPORTABLE_SNAPSHOT,
+  toExportableSnapshot,
+} from './testing/music-debug-export-bundle-fixtures.ts';
 
 describe('music debug export bundle', () => {
   it('packages midi, preview wavs, and a parameter report into one zip file', () => {
-    const snapshot = toExportableSnapshot(
-      createMusicDebugSnapshot({
-        tileKind: 'forest',
-        contextType: 'overworld',
-        clusterX: 4,
-        clusterY: -1,
-      })
-    );
-
+    const snapshot = FOREST_EXPORTABLE_SNAPSHOT;
     const bundle = createMusicDebugExportBundle(snapshot, {
       variant: 'melody-only',
       createdAt: new Date('2026-08-10T00:00:00.000Z'),
@@ -28,9 +26,7 @@ describe('music debug export bundle', () => {
     const reportEntry = archiveEntries.find((entry) =>
       entry.fileName.endsWith('-report.json')
     );
-    const percussionVoices = createMusicDebugPercussionVoiceCounts(
-      snapshot.notes
-    );
+    const percussionVoices = FOREST_PERCUSSION_VOICES;
 
     expect(bundle.fileName).toBe('bworlds-deep-forest-4--1-melody-export.zip');
     expect(bundle.mimeType).toBe('application/zip');
@@ -100,14 +96,7 @@ describe('music debug export bundle', () => {
   }, 3_000);
 
   it('downloads the bundled zip through a blob url', () => {
-    const snapshot = toExportableSnapshot(
-      createMusicDebugSnapshot({
-        tileKind: 'town',
-        contextType: 'town',
-        clusterX: 3,
-        clusterY: -2,
-      })
-    );
+    const snapshot = TOWN_EXPORTABLE_SNAPSHOT;
     const remove = vi.fn();
     const click = vi.fn();
     const anchor = {
@@ -169,14 +158,7 @@ describe('music debug export bundle', () => {
 
   it('still packages an export zip when strict midi export would reject the snapshot', () => {
     const snapshot = {
-      ...toExportableSnapshot(
-        createMusicDebugSnapshot({
-          tileKind: 'town',
-          contextType: 'town',
-          clusterX: 3,
-          clusterY: -2,
-        })
-      ),
+      ...TOWN_EXPORTABLE_SNAPSHOT,
       cadenceValidation: {
         isValidForMidiExport: false,
         messages: [
@@ -232,78 +214,4 @@ function readStoredZipArchiveEntries(archive: Uint8Array) {
   }
 
   return entries;
-}
-
-function toExportableSnapshot(
-  snapshot: ReturnType<typeof createMusicDebugSnapshot>
-): ReturnType<typeof createMusicDebugSnapshot> {
-  return withValidPercussionValidation(
-    withValidLeadContourAnalysis(
-      withValidProgressionDetections(withValidCadenceValidation(snapshot))
-    )
-  );
-}
-
-function withValidCadenceValidation(
-  snapshot: ReturnType<typeof createMusicDebugSnapshot>
-): ReturnType<typeof createMusicDebugSnapshot> {
-  return {
-    ...snapshot,
-    cadenceValidation: {
-      ...snapshot.cadenceValidation,
-      isValidForMidiExport: true,
-      messages: [],
-    },
-  };
-}
-
-function withValidLeadContourAnalysis(
-  snapshot: ReturnType<typeof createMusicDebugSnapshot>
-): ReturnType<typeof createMusicDebugSnapshot> {
-  return {
-    ...snapshot,
-    leadContourAnalysis: {
-      ...snapshot.leadContourAnalysis,
-      finalResolvesToTonic: true,
-      climaxNearPlannedPeak: true,
-      matchesPlannedContour: true,
-      messages: snapshot.leadContourAnalysis.messages.filter(
-        (message) =>
-          !message.includes('climax peaked at') &&
-          !message.includes('resolved to scale degree')
-      ),
-    },
-  };
-}
-
-function withValidPercussionValidation(
-  snapshot: ReturnType<typeof createMusicDebugSnapshot>
-): ReturnType<typeof createMusicDebugSnapshot> {
-  return {
-    ...snapshot,
-    percussionValidation: {
-      isValidForMidiExport: true,
-      messages: [],
-    },
-  };
-}
-
-function withValidProgressionDetections(
-  snapshot: ReturnType<typeof createMusicDebugSnapshot>
-): ReturnType<typeof createMusicDebugSnapshot> {
-  return {
-    ...snapshot,
-    harmonyChordDetections: snapshot.harmonyChordDetections.map((section) => ({
-      ...section,
-      followsPlannedProgression: true,
-      driftWindows: [],
-    })),
-    bassProgressionDetections: snapshot.bassProgressionDetections.map(
-      (section) => ({
-        ...section,
-        followsPlannedProgression: true,
-        driftWindows: [],
-      })
-    ),
-  };
 }

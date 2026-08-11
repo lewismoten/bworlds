@@ -29,6 +29,11 @@ rebuilding the same deterministic snapshots inside multiple assertions. That
 keeps regression coverage intact while avoiding repeated generator work inside a
 single file.
 
+The same rule applies to expensive derived artifacts such as export bundles,
+WAV previews, or other debug-package outputs: if multiple tests assert on the
+same deterministic artifact, build it once in a shared test fixture module and
+reuse it across files.
+
 When a fast-path test intentionally exercises timeout handling, prefer the
 smallest timeout that still proves the behavior. Both
 [registerTestCleanup](/Users/lewismoten/dev/bworlds/apps/web/src/test-cleanup.ts:27)
