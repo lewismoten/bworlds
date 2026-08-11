@@ -62,6 +62,7 @@ import {
 import {
   createPaintedCanvasTexture,
   getSharedCylinderGeometry,
+  getSharedSphereGeometry,
 } from '@bworlds/three-support';
 import type {
   CanOccupy3DContext,
@@ -5028,7 +5029,7 @@ function createForestLandmarkMeshes(
 ) {
   if (landmark.kind === 'stone-ring') {
     const stoneInstances = new three.InstancedMesh(
-      new three.SphereGeometry(0.12, 6, 6),
+      getSharedSphereGeometry(three, 0.12, 6, 6),
       style.stoneMaterial,
       landmark.memberCount
     );
@@ -5061,7 +5062,7 @@ function createForestLandmarkMeshes(
   }
 
   const stemInstances = new three.InstancedMesh(
-    new three.CylinderGeometry(0.03, 0.05, 0.18, 6),
+    getSharedCylinderGeometry(three, 0.03, 0.05, 0.18, 6),
     style.mushroomStemMaterial,
     landmark.memberCount
   );
@@ -5071,7 +5072,7 @@ function createForestLandmarkMeshes(
     [LANDMARK_INSTANCED_PART_KEY]: 'mushroom-ring-stem',
   };
   const capInstances = new three.InstancedMesh(
-    new three.SphereGeometry(0.11, 7, 7),
+    getSharedSphereGeometry(three, 0.11, 7, 7),
     style.mushroomCapMaterial,
     landmark.memberCount
   );

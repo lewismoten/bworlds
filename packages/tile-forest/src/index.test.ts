@@ -14,6 +14,7 @@ vi.mock('@bworlds/three-support', async (importOriginal) => {
 import {
   createForestTilePlugin,
   getForestBirds,
+  getForestLandmark,
   getForestMeadows,
 } from './index.ts';
 import {
@@ -455,6 +456,59 @@ describe('tile forest', () => {
       new Set(['left-wing', 'right-wing', 'body'])
     );
     expect(legacyBirdGroups).toBe(0);
+  });
+
+  it('reuses landmark geometries across repeated forest landmark tiles on one host', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    const geometryByMarker = new Map<string, Set<unknown>>();
+    const expectedMarkers = new Set([
+      'stone-ring',
+      'mushroom-ring-stem',
+      'mushroom-ring-cap',
+    ]);
+
+    outer: for (let tileY = 0; tileY < 32; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        if (!getForestLandmark(tileX, tileY)) {
+          continue;
+        }
+        const model = tile.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: { kind: 'forest' },
+          tileX,
+          tileY,
+          detailLevel: 'full',
+        }) as FakeGroup;
+        model.traverse((node) => {
+          if (
+            node instanceof FakeInstancedMesh &&
+            node.userData?.forestLandmarkInstancedPart
+          ) {
+            const marker = String(node.userData.forestLandmarkInstancedPart);
+            if (!geometryByMarker.has(marker)) {
+              geometryByMarker.set(marker, new Set());
+            }
+            geometryByMarker.get(marker)!.add(node.geometry);
+          }
+        });
+
+        const allMarkersFound = [...expectedMarkers].every((marker) =>
+          geometryByMarker.has(marker)
+        );
+        if (allMarkersFound) {
+          break outer;
+        }
+      }
+    }
+
+    expect(
+      [...expectedMarkers].every((marker) => geometryByMarker.has(marker))
+    ).toBe(true);
+    expectedMarkers.forEach((marker) => {
+      expect(geometryByMarker.get(marker)?.size).toBe(1);
+    });
   });
 });
 

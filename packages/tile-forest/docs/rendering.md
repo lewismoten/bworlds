@@ -21,6 +21,9 @@ Current layout:
 - Mushroom-ring landmarks now share one `CylinderGeometry` for stems, one
   `SphereGeometry` for caps, and two `InstancedMesh` nodes, with per-instance
   scale and position stored in matrices.
+- Those landmark geometries are now also shared per Three host across repeated
+  landmark tiles instead of rebuilding identical stone-ring and mushroom-ring
+  geometry objects on every tile model creation.
 - Full-detail trees now collapse each tree's repeated branches into one
   `InstancedMesh` and each tree's repeated foliage clumps into one
   `InstancedMesh`, while keeping the trunk segments and special-case detail

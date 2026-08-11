@@ -55,6 +55,10 @@ Recent mitigation work:
   still updated every frame, but the repeated wing/body draw calls and object
   nodes now scale with three instanced meshes instead of three meshes per
   inhabitant.
+- `tile-forest` landmark rings now reuse shared host geometry for their stone
+  and mushroom pieces instead of recreating identical sphere/cylinder geometry
+  objects on every landmark tile build. That reduces repeated geometry churn
+  in the same visible forest cluster without changing landmark placement.
 
 Captured issue reports currently include:
 
