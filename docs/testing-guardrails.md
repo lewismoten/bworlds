@@ -46,7 +46,11 @@ full-song and cache-rollover coverage. Forest rendering now follows the same
 shape: [packages/tile-forest/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-forest/src/index.test.ts:1)
 keeps the cheap smoke checks in the normal suite, while
 [packages/tile-forest/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-forest/src/index.long.test.ts:1)
-holds the broad descriptor and rendering sweeps.
+holds the broad descriptor and rendering sweeps. Route rendering now follows it
+too: [packages/tile-route/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-route/src/index.test.ts:1)
+keeps the fast-path route classifier and dock smoke checks, while
+[packages/tile-route/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-route/src/index.long.test.ts:1)
+holds the heavier bridge/dock scan and cache-churn coverage.
 
 After that split exists, remove the short `*.test.ts` file from
 `LONG_TEST_FILES` in

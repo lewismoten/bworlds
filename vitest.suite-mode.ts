@@ -54,7 +54,6 @@ export const LONG_TEST_FILES = [
   'packages/overworld-support/src/index.test.ts',
   'packages/runtime-dock-traffic/src/index.test.ts',
   'packages/runtime-rail-network/src/index.test.ts',
-  'packages/tile-route/src/index.test.ts',
   'packages/worldgen/src/index.test.ts',
 ] as const;
 

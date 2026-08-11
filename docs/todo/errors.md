@@ -3,21 +3,20 @@
 Always run tests to make sure all tests pass
 
 - [ ] Fix console error on music debug page
-music-debug-page.ts:183 Uncaught (in promise) ReferenceError: Cannot access 'pageState' before initialization
-    at resolveCurrentSnapshot (music-debug-page.ts:183:3)
-    at buildTrackVisibilityButtonMarkup (music-debug-page.ts:271:11)
-    at music-debug-page.ts:293:5
-    at Array.map (<anonymous>)
-    at renderTrackVisibilityControls (music-debug-page.ts:292:66)
-    at applyPersistedPageState (music-debug-page.ts:646:3)
-    at music-debug-page.ts:180:1
-resolveCurrentSnapshot @ music-debug-page.ts:183
-buildTrackVisibilityButtonMarkup @ music-debug-page.ts:271
-(anonymous) @ music-debug-page.ts:293
-renderTrackVisibilityControls @ music-debug-page.ts:292
-applyPersistedPageState @ music-debug-page.ts:646
-(anonymous) @ music-debug-page.ts:180
-
+      music-debug-page.ts:183 Uncaught (in promise) ReferenceError: Cannot access 'pageState' before initialization
+      at resolveCurrentSnapshot (music-debug-page.ts:183:3)
+      at buildTrackVisibilityButtonMarkup (music-debug-page.ts:271:11)
+      at music-debug-page.ts:293:5
+      at Array.map (<anonymous>)
+      at renderTrackVisibilityControls (music-debug-page.ts:292:66)
+      at applyPersistedPageState (music-debug-page.ts:646:3)
+      at music-debug-page.ts:180:1
+      resolveCurrentSnapshot @ music-debug-page.ts:183
+      buildTrackVisibilityButtonMarkup @ music-debug-page.ts:271
+      (anonymous) @ music-debug-page.ts:293
+      renderTrackVisibilityControls @ music-debug-page.ts:292
+      applyPersistedPageState @ music-debug-page.ts:646
+      (anonymous) @ music-debug-page.ts:180
 
 - [ ] Complete audio-priority2.md
 

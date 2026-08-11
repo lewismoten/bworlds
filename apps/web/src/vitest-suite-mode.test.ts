@@ -34,7 +34,6 @@ describe('vitest suite mode', () => {
         'packages/map-overworld/src/index.test.ts',
         'packages/overworld-support/src/index.test.ts',
         'packages/runtime-dock-traffic/src/index.test.ts',
-        'packages/tile-route/src/index.test.ts',
         'packages/worldgen/src/index.test.ts',
       ])
     );
@@ -43,6 +42,9 @@ describe('vitest suite mode', () => {
   it('keeps already-split support package behavior tests on the fast path', () => {
     expect(LONG_TEST_FILES).not.toContain(
       'packages/dock-route-support/src/index.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'packages/tile-route/src/index.test.ts'
     );
     expect(LONG_TEST_FILES).not.toContain(
       'packages/town-support/src/index.test.ts'
