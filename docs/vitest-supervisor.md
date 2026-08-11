@@ -21,6 +21,9 @@ Related commands:
   Runs the supervised full suite without fast-suite exclusions.
 - `npm run test:long`
   Runs only the known long-running suites behind the same supervisor path.
+  The slowest audio/browser suites can be split into multiple long-suite files
+  so Vitest can parallelize them without putting those checks back into the
+  fast path.
 - `npm run test -- apps/web/src/example.test.ts`
   Still forwards file arguments through to Vitest and bypasses fast/long suite filtering.
 - `npm run test:hang-debug -- <files...>`
