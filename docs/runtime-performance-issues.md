@@ -18,6 +18,8 @@ Captured issue reports currently include:
 - the nested runtime performance snapshot with hard-limit violations
 - current render tier, quality limiters, target FPS, visibility radius, and
   pending tile count
+- measured quality-limiter details plus the limiter that triggered the latest
+  graphics-quality downgrade
 - top plugin hotspots for materials, draw calls, objects, meshes, LOD swaps,
   fallback boxes, rejected models, and static matrix updates
 - current tile LOD/fallback details and renderer resource warnings

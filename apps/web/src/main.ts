@@ -2295,6 +2295,29 @@ function collectCurrentDebugSnapshot(
   const appliedRenderPixelRatio = Math.min(devicePixelRatio, 2);
   const renderBudgetCaps = getRenderBudgetCaps(renderBudgetState);
   const pendingWorldBuildBudget = getPendingWorldBuildBudget(renderBudgetState);
+  const renderQualityLevel = formatRenderQualityLevel(
+    getRenderQualityLevel(renderBudgetState)
+  );
+  const renderQualityLimiters = getRenderQualityLimiters(renderBudgetState);
+  const previousSnapshot = debugSnapshotState.latestSnapshot;
+  const qualityChangeEvent =
+    options.recordDiagnostics &&
+    previousSnapshot &&
+    (previousSnapshot.targetFps !== renderBudgetState.targetFps ||
+      previousSnapshot.visibilityRadius !== renderBudgetState.visibilityRadius ||
+      previousSnapshot.renderQualityLevel !== renderQualityLevel)
+      ? {
+          nowMs,
+          type: 'graphics-quality-changed' as const,
+          fromTargetFps: previousSnapshot.targetFps,
+          targetFps: renderBudgetState.targetFps,
+          fromVisibilityRadius: previousSnapshot.visibilityRadius,
+          visibilityRadius: renderBudgetState.visibilityRadius,
+          fromRenderQualityLevel: previousSnapshot.renderQualityLevel,
+          renderQualityLevel,
+          summary: renderQualityLimiters.join(', '),
+        }
+      : null;
 
   if (options.recordDiagnostics) {
     recordMaterialGrowthSample(debugResourceTrendState.materialSamples, {
@@ -2360,11 +2383,8 @@ function collectCurrentDebugSnapshot(
       ],
       resolvePerformanceTier(renderBudgetState.smoothedFrameMs)
     ),
-    renderQualityLevel: formatRenderQualityLevel(
-      getRenderQualityLevel(renderBudgetState)
-    ),
-    renderQualityLimiters:
-      getRenderQualityLimiters(renderBudgetState).join(', '),
+    renderQualityLevel,
+    renderQualityLimiters: renderQualityLimiters.join(', '),
     playerLevel: normalizePlayerLevel(state.playerLevel),
     visibilityRadius: renderBudgetState.visibilityRadius,
     weatherVisibilityRadiusCap: renderBudgetState.weatherVisibilityRadiusCap,
@@ -2538,11 +2558,23 @@ function collectCurrentDebugSnapshot(
     spatial.gridX,
     spatial.gridY
   );
+  const latestGraphicsQualityChangeEvent =
+    qualityChangeEvent ??
+    getMostRecentDebugEventByType(
+      debugRecentEventsState.events,
+      'graphics-quality-changed'
+    );
   debugSnapshot.lastLodFailureReason = lastLodFailureEvent
     ? (formatRecentDebugEventReason(lastLodFailureEvent) ?? undefined)
     : undefined;
   debugSnapshot.lastFallbackReason = lastFallbackEvent
     ? (formatRecentDebugEventReason(lastFallbackEvent) ?? undefined)
+    : undefined;
+  debugSnapshot.latestQualityChangeLimiter = latestGraphicsQualityChangeEvent
+    ? getPrimaryRenderQualityLimiter(latestGraphicsQualityChangeEvent.summary)
+    : undefined;
+  debugSnapshot.latestQualityChangeSummary = latestGraphicsQualityChangeEvent
+    ? formatGraphicsQualityChangeSummary(latestGraphicsQualityChangeEvent)
     : undefined;
   debugSnapshot.currentTilePlugin = currentTileDebugInfo?.plugin ?? undefined;
   debugSnapshot.currentTileRequestedDetailLevel =
@@ -2570,24 +2602,8 @@ function collectCurrentDebugSnapshot(
     ...(stationaryTileBuildWarning ? [stationaryTileBuildWarning] : []),
   ];
 
-  const previousSnapshot = debugSnapshotState.latestSnapshot;
-  if (
-    options.recordDiagnostics &&
-    previousSnapshot &&
-    (previousSnapshot.targetFps !== debugSnapshot.targetFps ||
-      previousSnapshot.visibilityRadius !== debugSnapshot.visibilityRadius ||
-      previousSnapshot.renderQualityLevel !== debugSnapshot.renderQualityLevel)
-  ) {
-    recordDebugRecentEvent({
-      nowMs,
-      type: 'graphics-quality-changed',
-      fromTargetFps: previousSnapshot.targetFps,
-      targetFps: debugSnapshot.targetFps,
-      fromVisibilityRadius: previousSnapshot.visibilityRadius,
-      visibilityRadius: debugSnapshot.visibilityRadius,
-      fromRenderQualityLevel: previousSnapshot.renderQualityLevel,
-      renderQualityLevel: debugSnapshot.renderQualityLevel,
-    });
+  if (qualityChangeEvent) {
+    recordDebugRecentEvent(qualityChangeEvent);
   }
 
   if (options.recordDiagnostics) {
@@ -2759,6 +2775,43 @@ function recordDebugRecentEvent(event: DebugSnapshotRecentEvent): void {
       debugRecentEventsState.events.length - MAX_DEBUG_RECENT_EVENTS
     );
   }
+}
+
+function getPrimaryRenderQualityLimiter(
+  summary: string | undefined
+): string | undefined {
+  return summary
+    ?.split(',')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.length > 0 && entry !== 'None');
+}
+
+function formatGraphicsQualityChangeSummary(
+  event: Pick<
+    DebugSnapshotRecentEvent,
+    | 'fromTargetFps'
+    | 'targetFps'
+    | 'fromVisibilityRadius'
+    | 'visibilityRadius'
+    | 'fromRenderQualityLevel'
+    | 'renderQualityLevel'
+    | 'summary'
+  >
+): string {
+  const segments = [
+    `Target FPS ${event.fromTargetFps ?? '?'} -> ${event.targetFps ?? '?'}`,
+    `visibility radius ${formatQualityRadius(event.fromVisibilityRadius)} -> ${formatQualityRadius(event.visibilityRadius)}`,
+    `quality ${event.fromRenderQualityLevel ?? '?'} -> ${event.renderQualityLevel ?? '?'}`,
+  ];
+  const limiters = event.summary?.trim();
+  if (limiters && limiters !== 'None') {
+    segments.push(`limiters: ${limiters}`);
+  }
+  return segments.join(', ');
+}
+
+function formatQualityRadius(value: number | undefined): string {
+  return typeof value === 'number' ? value.toFixed(1) : '?';
 }
 
 function canLandOnOverworldTile(x: number, y: number): boolean {

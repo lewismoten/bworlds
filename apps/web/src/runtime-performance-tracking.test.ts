@@ -23,6 +23,9 @@ function createDebugSnapshot(
     performanceTier: 'critical',
     renderQualityLevel: 'reduced',
     renderQualityLimiters: 'frame time, materials',
+    latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
+    latestQualityChangeSummary:
+      'Target FPS 60 -> 30, visibility radius 18.0 -> 14.0, quality Full -> Reduced, limiters: Scene materials exceeded the hard cap',
     playerLevel: 1,
     visibilityRadius: 6,
     weatherVisibilityRadiusCap: 6,
@@ -246,6 +249,18 @@ describe('runtime performance tracking', () => {
       'frame time',
       'materials',
     ]);
+    expect(issue?.renderState.latestQualityChangeLimiter).toBe(
+      'Scene materials exceeded the hard cap'
+    );
+    expect(issue?.renderState.latestQualityChangeLimiterDetail).toBe(
+      'Scene materials 467 exceeded hard cap 48'
+    );
+    expect(issue?.renderState.latestQualityChangeSummary).toContain(
+      'Scene materials exceeded the hard cap'
+    );
+    expect(issue?.reasons).toContain(
+      'Latest quality change was triggered by Scene materials 467 exceeded hard cap 48.'
+    );
     expect(issue?.performanceSnapshot.violations).toEqual(
       expect.arrayContaining([
         expect.stringContaining('Maximum frame time'),
@@ -275,6 +290,9 @@ describe('runtime performance tracking', () => {
         weatherVisibilityRadiusCap: 10,
         maxChunkDrawCalls: 184,
         materialCount: 52,
+        latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
+        latestQualityChangeSummary:
+          'Target FPS 60 -> 30, visibility radius 18.0 -> 10.0, quality Full -> Reduced, limiters: Scene materials exceeded the hard cap',
       }),
     });
 
@@ -287,6 +305,9 @@ describe('runtime performance tracking', () => {
     ]);
     expect(issue?.reasons).toContain(
       'Graphics quality is constrained by Visibility radius reduced to 10 (full 18, reduced 14, minimum 10); Weather visibility capped draw distance at 10 (full 18, weather cap 10); Chunk draw calls 184 exceeded soft cap 160; Scene materials 52 exceeded hard cap 48.'
+    );
+    expect(issue?.reasons).toContain(
+      'Latest quality change was triggered by Scene materials 52 exceeded hard cap 48.'
     );
   });
 

@@ -60,6 +60,8 @@ export type DebugSnapshot = {
   clonedMaterialSummary?: string;
   staticMatrixUpdateTopPluginLabel?: string;
   staticMatrixUpdateSummary?: string;
+  latestQualityChangeLimiter?: string;
+  latestQualityChangeSummary?: string;
   lastLodFailureReason?: string;
   lastFallbackReason?: string;
   currentTilePlugin?: string;

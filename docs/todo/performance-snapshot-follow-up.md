@@ -74,9 +74,9 @@
 
 ## Quality Reduction
 
-- [ ] Report each quality limiter with its measured value.
-- [ ] Report which limiter caused the latest quality change.
-- [ ] Show materials as critical in the summary.
+- [x] Report each quality limiter with its measured value.
+- [x] Report which limiter caused the latest quality change.
+- [x] Show materials as critical in the summary.
 - [ ] Show visibility radius reduction as a consequence.
 - [ ] Avoid calling the tier healthy while quality is reduced.
 - [ ] Track how long the renderer remains in reduced quality.

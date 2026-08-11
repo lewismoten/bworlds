@@ -33,6 +33,9 @@ export type RuntimePerformanceIssueReport = {
     renderQualityLevel: string;
     renderQualityLimiters: string[];
     renderQualityLimiterDetails: string[];
+    latestQualityChangeLimiter: string | null;
+    latestQualityChangeLimiterDetail: string | null;
+    latestQualityChangeSummary: string | null;
     targetFps: 60 | 30;
     visibilityRadius: number;
     pendingTileCount: number;
@@ -85,8 +88,9 @@ export function buildRuntimePerformanceIssueReport(
     options.debugSnapshot,
     performanceSnapshot
   );
-  const renderQualityLimiterDetails =
-    describeRuntimePerformanceLimiterDetails(options.debugSnapshot);
+  const renderQualityLimiterDetails = describeRuntimePerformanceLimiterDetails(
+    options.debugSnapshot
+  );
   if (reasons.length === 0) {
     return null;
   }
@@ -122,6 +126,13 @@ export function buildRuntimePerformanceIssueReport(
         options.debugSnapshot.renderQualityLimiters
       ),
       renderQualityLimiterDetails,
+      latestQualityChangeLimiter:
+        options.debugSnapshot.latestQualityChangeLimiter?.trim() || null,
+      latestQualityChangeLimiterDetail: describeLatestQualityChangeLimiter(
+        options.debugSnapshot
+      ),
+      latestQualityChangeSummary:
+        options.debugSnapshot.latestQualityChangeSummary?.trim() || null,
       targetFps: options.debugSnapshot.targetFps,
       visibilityRadius: options.debugSnapshot.visibilityRadius,
       pendingTileCount: options.debugSnapshot.pendingTileCount,
@@ -173,12 +184,21 @@ function collectRuntimePerformanceIssueReasons(
   const limiters = splitRuntimePerformanceLimiters(
     debugSnapshot.renderQualityLimiters
   );
-  const limiterDetails = describeRuntimePerformanceLimiterDetails(debugSnapshot);
+  const limiterDetails =
+    describeRuntimePerformanceLimiterDetails(debugSnapshot);
   if (limiters.length > 0) {
     reasons.push(
       hasActionableLimiterDetails(limiterDetails)
         ? `Graphics quality is constrained by ${limiterDetails.join('; ')}.`
         : `Graphics quality is constrained by ${limiters.join(', ')}.`
+    );
+  }
+
+  const latestQualityChangeLimiterDetail =
+    reasons.length > 0 ? describeLatestQualityChangeLimiter(debugSnapshot) : null;
+  if (latestQualityChangeLimiterDetail) {
+    reasons.push(
+      `Latest quality change was triggered by ${latestQualityChangeLimiterDetail}.`
     );
   }
 
@@ -223,8 +243,23 @@ function describeRuntimePerformanceLimiterDetails(
     targetFps: debugSnapshot.targetFps,
   });
   return splitRuntimePerformanceLimiters(debugSnapshot.renderQualityLimiters)
-    .map((limiter) => describeRuntimePerformanceLimiter(limiter, debugSnapshot, caps))
+    .map((limiter) =>
+      describeRuntimePerformanceLimiter(limiter, debugSnapshot, caps)
+    )
     .filter((detail): detail is string => detail !== null);
+}
+
+function describeLatestQualityChangeLimiter(
+  debugSnapshot: DebugSnapshot
+): string | null {
+  const limiter = debugSnapshot.latestQualityChangeLimiter?.trim();
+  if (!limiter) {
+    return null;
+  }
+  const caps = getRenderBudgetCaps({
+    targetFps: debugSnapshot.targetFps,
+  });
+  return describeRuntimePerformanceLimiter(limiter, debugSnapshot, caps);
 }
 
 function describeRuntimePerformanceLimiter(
@@ -483,8 +518,9 @@ function selectRuntimePerformanceIssueSummary(
   reasons: string[],
   renderQualityLimiterDetails: string[]
 ): string {
-  const hardCapDetail = renderQualityLimiterDetails.find((detail) =>
-    isActionableLimiterDetail(detail) && /hard cap|critical cap/.test(detail)
+  const hardCapDetail = renderQualityLimiterDetails.find(
+    (detail) =>
+      isActionableLimiterDetail(detail) && /hard cap|critical cap/.test(detail)
   );
   if (hardCapDetail) {
     return `${hardCapDetail}.`;
