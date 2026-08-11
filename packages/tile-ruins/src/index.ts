@@ -228,6 +228,17 @@ export function createRuinsTilePlugin(): RuntimePlugin {
 
           const columnCount =
             3 + Math.floor(hash2D(RUINS_COLUMNS_SEED, tileX, tileY) * 3);
+          const columnInstances = new three.InstancedMesh(
+            new three.BoxGeometry(1, 1, 1),
+            style.stoneMaterial,
+            columnCount
+          );
+          columnInstances.userData = {
+            ...columnInstances.userData,
+            ruinsInstancedPart: 'column',
+          };
+          const capPositions: Array<{ x: number; y: number; z: number }> = [];
+          const columnMatrixScratch = new three.Matrix4();
           for (let index = 0; index < columnCount; index += 1) {
             const angle = (index / columnCount) * Math.PI * 2;
             const radius =
@@ -236,32 +247,59 @@ export function createRuinsTilePlugin(): RuntimePlugin {
             const height =
               0.28 +
               hash2D(RUINS_COLUMN_HEIGHT_SEED, tileX, tileY + index) * 0.36;
-            const column = new three.Mesh(
-              new three.BoxGeometry(0.1, height, 0.1),
-              style.stoneMaterial
+            const columnX = Math.cos(angle) * radius;
+            const columnY = 0.1 + height * 0.5;
+            const columnZ = Math.sin(angle) * radius;
+            columnInstances.setMatrixAt(
+              index,
+              writeInstancedScalePositionMatrix(
+                columnMatrixScratch,
+                tileX + columnX,
+                columnY,
+                tileY + columnZ,
+                0.1,
+                height,
+                0.1
+              )
             );
-            column.position.set(
-              Math.cos(angle) * radius,
-              0.1 + height * 0.5,
-              Math.sin(angle) * radius
-            );
-            column.rotation.y =
-              hash2D(RUINS_COLUMN_ROTATION_SEED, tileX + index, tileY - index) *
-              Math.PI;
-            group.add(column);
 
             if (height > 0.44) {
-              const cap = new three.Mesh(
-                new three.BoxGeometry(0.16, 0.06, 0.16),
-                style.accentMaterial
-              );
-              cap.position.set(
-                column.position.x,
-                column.position.y + height * 0.5 - 0.02,
-                column.position.z
-              );
-              group.add(cap);
+              capPositions.push({
+                x: columnX,
+                y: columnY + height * 0.5 - 0.02,
+                z: columnZ,
+              });
             }
+          }
+          group.add(columnInstances);
+
+          if (capPositions.length > 0) {
+            const capInstances = new three.InstancedMesh(
+              new three.BoxGeometry(1, 1, 1),
+              style.accentMaterial,
+              capPositions.length
+            );
+            capInstances.userData = {
+              ...capInstances.userData,
+              ruinsInstancedPart: 'column-cap',
+            };
+            const capMatrixScratch = new three.Matrix4();
+            for (let index = 0; index < capPositions.length; index += 1) {
+              const capPosition = capPositions[index];
+              capInstances.setMatrixAt(
+                index,
+                writeInstancedScalePositionMatrix(
+                  capMatrixScratch,
+                  tileX + capPosition.x,
+                  capPosition.y,
+                  tileY + capPosition.z,
+                  0.16,
+                  0.06,
+                  0.16
+                )
+              );
+            }
+            group.add(capInstances);
           }
 
           if (hash2D(RUINS_ARCH_SEED, tileX, tileY) > 0.28) {

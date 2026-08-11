@@ -360,6 +360,56 @@ describe('tile ruins', () => {
     expect(rubbleMeshes).toHaveLength(0);
   });
 
+  it('instances repeated ruins columns and taller column caps', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createRuinsState(),
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup;
+
+    const columnInstances = model.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.ruinsInstancedPart === 'column'
+    ) as FakeInstancedMesh[];
+    const capInstances = model.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.ruinsInstancedPart === 'column-cap'
+    ) as FakeInstancedMesh[];
+    const standaloneColumns = model.children.filter(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.userData?.ruinsInstancedPart === 'column'
+    ) as FakeMesh[];
+    const standaloneCaps = model.children.filter(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.userData?.ruinsInstancedPart === 'column-cap'
+    ) as FakeMesh[];
+
+    expect(columnInstances).toHaveLength(1);
+    expect(columnInstances[0]?.count).toBeGreaterThanOrEqual(3);
+    expect(columnInstances[0]?.matrices).toHaveLength(
+      columnInstances[0]?.count ?? 0
+    );
+    expect(
+      columnInstances[0]?.matrices.some((matrix) => matrix.scale.y > 0.44)
+    ).toBe(true);
+    expect(capInstances).toHaveLength(1);
+    expect(capInstances[0]?.count).toBeGreaterThanOrEqual(1);
+    expect(capInstances[0]?.count).toBeLessThanOrEqual(
+      columnInstances[0]?.count ?? 0
+    );
+    expect(capInstances[0]?.matrices).toHaveLength(capInstances[0]?.count ?? 0);
+    expect(standaloneColumns).toHaveLength(0);
+    expect(standaloneCaps).toHaveLength(0);
+  });
+
   it('reuses the cached glow material for ruins in the same region', () => {
     const plugin = createRuinsTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
