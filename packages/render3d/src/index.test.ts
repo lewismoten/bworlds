@@ -189,6 +189,7 @@ import {
   getTileModelDetailLevelWithHysteresis,
   getPendingWorldBuildDetailLevel,
   getVisibleWorldTileBuildOrder,
+  getFallbackBoxReason,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   buildRecoverableVisibleTileModelDetailEntry,
@@ -4263,6 +4264,13 @@ describe('render3d visibility helpers', () => {
       summary: 'vertexCount 10000>8000',
     });
     recordRenderDebugEvent(events, {
+      nowMs: 310,
+      type: 'fallback-box',
+      tileKey: '2:1',
+      plugin: 'tile-forest',
+      summary: 'vertexCount 10000>8000',
+    });
+    recordRenderDebugEvent(events, {
       nowMs: 320,
       type: 'plugin-performance-warning',
       tileKey: '2:1',
@@ -4287,6 +4295,13 @@ describe('render3d visibility helpers', () => {
       {
         nowMs: 300,
         type: 'model-rejected',
+        tileKey: '2:1',
+        plugin: 'tile-forest',
+        summary: 'vertexCount 10000>8000',
+      },
+      {
+        nowMs: 310,
+        type: 'fallback-box',
         tileKey: '2:1',
         plugin: 'tile-forest',
         summary: 'vertexCount 10000>8000',
@@ -4921,6 +4936,24 @@ describe('render3d visibility helpers', () => {
       resolvedDetailLevel: 'low',
     });
     expect(buildEntry.mock.calls).toEqual([['full'], ['low']]);
+  });
+
+  it('prefers the last rejected summary when reporting a fallback box reason', () => {
+    expect(getFallbackBoxReason('vertexCount 10000>8000', true)).toBe(
+      'vertexCount 10000>8000'
+    );
+  });
+
+  it('describes plugin fallback boxes that were built without a rejected summary', () => {
+    expect(getFallbackBoxReason(null, true)).toBe(
+      'tile plugin returned no model'
+    );
+  });
+
+  it('describes non-plugin fallback boxes explicitly', () => {
+    expect(getFallbackBoxReason(null, false)).toBe(
+      'tile has no plugin model and uses the wall-height fallback'
+    );
   });
 
   it('uses low detail for non-near pending builds while the queue is still draining', () => {

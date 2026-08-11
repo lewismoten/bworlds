@@ -414,6 +414,7 @@ export type Render3DDebugEvent = {
   nowMs: number;
   type:
     | 'lod-changed'
+    | 'fallback-box'
     | 'model-rejected'
     | 'plugin-exceeded-budget'
     | 'plugin-performance-warning';
@@ -1791,6 +1792,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const { estimateValidation, pluginBuildStartMs, pluginBuildDurationMs } =
       buildMetadata;
     let pluginModel = initialPluginModel;
+    let lastRejectedSummary: string | null = null;
+    const usedTilePluginModelFactory = Boolean(
+      tilePlugin?.create3DModel || tilePlugin?.create3DModelProgressive
+    );
 
     if (pluginModel) {
       trackOwnedObject3DMaterials(pluginModel);
@@ -1810,6 +1815,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       const violationSummary = summarizeTileModelCostEstimateBudgetViolations(
         estimateValidation.violations
       );
+      lastRejectedSummary = violationSummary;
       recordRecentLabeledCountMetric(
         renderChurnMetrics.tileModelBudgetViolations,
         {
@@ -1852,6 +1858,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         const violationSummary = summarizeTileModelCostEstimateBudgetViolations(
           reportedActualCostValidation.violations
         );
+        lastRejectedSummary = violationSummary;
         recordRecentLabeledCountMetric(
           renderChurnMetrics.tileModelBudgetViolations,
           {
@@ -1885,6 +1892,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     let pluginUniqueTextures: readonly unknown[] = [];
 
     const rejectPluginModelForBudget = (summary: string) => {
+      lastRejectedSummary = summary;
       recordRecentLabeledCountMetric(
         renderChurnMetrics.tileModelBudgetViolations,
         {
@@ -1927,6 +1935,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         const violationSummary = summarizeTileModelBudgetViolations(
           modelBudgetValidation.violations
         );
+        lastRejectedSummary = violationSummary;
         recordRecentLabeledCountMetric(
           renderChurnMetrics.tileModelBudgetViolations,
           {
@@ -2141,6 +2150,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         }
       }
     } else if (!isWaterKind(tile.kind) && definition.wallHeight > 0.08) {
+      recordRenderDebugEvent(recentDebugEvents, {
+        nowMs: pluginBuildStartMs,
+        type: 'fallback-box',
+        tileKey: `${x}:${y}`,
+        plugin: tilePluginOwnerLabel,
+        summary: getFallbackBoxReason(
+          lastRejectedSummary,
+          usedTilePluginModelFactory
+        ),
+      });
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
       const wallMesh = new THREE.Mesh(
         getSharedBoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
@@ -3967,6 +3986,19 @@ export function buildRecoverableVisibleTileModelDetailEntry<
     entry: buildEntry('low'),
     resolvedDetailLevel: 'low',
   };
+}
+
+export function getFallbackBoxReason(
+  lastRejectedSummary: string | null,
+  usedTilePluginModelFactory: boolean
+): string {
+  if (lastRejectedSummary) {
+    return lastRejectedSummary;
+  }
+  if (usedTilePluginModelFactory) {
+    return 'tile plugin returned no model';
+  }
+  return 'tile has no plugin model and uses the wall-height fallback';
 }
 
 export function getPendingWorldBuildDetailLevel(

@@ -30,6 +30,9 @@ Current behavior:
 - When a visible tile tries to upgrade back to full detail and that build
   cannot produce a real model, `syncTileModelDetailLevels()` now retries the
   same tile at low detail before it allows any shell-only fallback through.
+- Shell-only fallback boxes are now logged as dedicated debug events with the
+  tile key and the best available failure reason, so fallback churn is visible
+  in the renderer diagnostics instead of being inferred indirectly.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep
