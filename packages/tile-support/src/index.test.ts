@@ -44,12 +44,14 @@ describe('tile support', () => {
   });
 
   it('profiles roadside route junctions through the adjacent road tile', () => {
+    let sampleCalls = 0;
     const profile = createRoadsideRouteProfile({
       x: 9,
       y: 10,
       townAnchors: [{ x: 18, y: 10 }],
       bridgeAnchors: [],
       sampleTerrainSignals(x, y) {
+        sampleCalls += 1;
         if (
           (x === 10 && y === 10) ||
           (x === 10 && (y === 9 || y === 11)) ||
@@ -77,6 +79,7 @@ describe('tile support', () => {
     expect(profile.adjacentRoadCount).toBe(1);
     expect(profile.atJunction).toBe(true);
     expect(profile.routeSpan).toBeGreaterThanOrEqual(4);
+    expect(sampleCalls).toBe(13);
   });
 
   it('treats tiles along the nearest town-to-bridge path as connected routes', () => {

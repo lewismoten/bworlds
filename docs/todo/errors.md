@@ -171,7 +171,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       route checks reuse repeated terrain reads within one route-classifier
       pass, and `runtime-rail-network` now delegates directly to the shared
       `rail-support` region and train caches instead of adding a duplicate
-      per-tile runtime cache layer.
+      per-tile runtime cache layer, and `tile-support` now caches both
+      terrain signals and predicted route-presence lookups inside
+      `createRoadsideRouteProfile()` so repeated local junction/span scans
+      stop rediscovering the same nearby coordinates.
 
 - [ ] Move deterministic world-generation computation into workers.
       The CPU profile is dominated by cache/hashing/world-generation code that does not need access to WebGL. Move terrain signals, hashes, anchors, river paths, tree descriptors, cave descriptors, etc. into workers and send compact numeric results back to the rendering thread.

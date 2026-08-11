@@ -257,14 +257,24 @@ export function createRoadsideRouteProfile({
     { dx: 0, dy: 1 },
     { dx: -1, dy: 0 },
   ] as const;
+  const cachedSampleTerrainSignals = createCachedTerrainSignalSampler(
+    sampleTerrainSignals
+  );
+  const routePresenceCache = new Map<string, boolean>();
   const hasRouteAt = (targetX: number, targetY: number) =>
-    hasPredictedRoutePresence({
-      x: targetX,
-      y: targetY,
-      townAnchors,
-      bridgeAnchors,
-      sampleTerrainSignals,
-    });
+    getCachedRoutePresence(
+      routePresenceCache,
+      targetX,
+      targetY,
+      () =>
+        hasPredictedRoutePresence({
+          x: targetX,
+          y: targetY,
+          townAnchors,
+          bridgeAnchors,
+          sampleTerrainSignals: cachedSampleTerrainSignals,
+        })
+    );
   const adjacentRouteCells: Array<{ x: number; y: number }> = [];
   for (let index = 0; index < directions.length; index += 1) {
     const direction = directions[index]!;
@@ -329,6 +339,41 @@ export function createRoadsideRouteProfile({
       ),
     routeSpan,
   };
+}
+
+function createCachedTerrainSignalSampler(
+  sampleTerrainSignals?: ClassifyOverworldTileContext['sampleTerrainSignals']
+): ClassifyOverworldTileContext['sampleTerrainSignals'] {
+  if (!sampleTerrainSignals) {
+    return sampleTerrainSignals;
+  }
+  const cache = new Map<string, ReturnType<NonNullable<typeof sampleTerrainSignals>>>();
+  return (x: number, y: number) => {
+    const key = `${x}:${y}`;
+    const cached = cache.get(key);
+    if (cached) {
+      return cached;
+    }
+    const resolved = sampleTerrainSignals(x, y);
+    cache.set(key, resolved);
+    return resolved;
+  };
+}
+
+function getCachedRoutePresence(
+  cache: Map<string, boolean>,
+  x: number,
+  y: number,
+  resolve: () => boolean
+): boolean {
+  const key = `${x}:${y}`;
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const resolved = resolve();
+  cache.set(key, resolved);
+  return resolved;
 }
 
 export function createBoundarySurfaceProfile({
