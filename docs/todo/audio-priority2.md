@@ -102,7 +102,7 @@
 
 ## 8) Add better diagnostics to the timeline
 
-- [ ] Mark out-of-scale notes with a warning color.
+- [x] Mark out-of-scale notes with a warning color.
 - [ ] Mark non-chord tones with a warning color.
 - [ ] Mark failed cadence notes with icons.
 - [ ] Mark harmony drift at exact measures.

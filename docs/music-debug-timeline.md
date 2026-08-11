@@ -21,6 +21,9 @@ Current behavior:
 - The percussion row now draws readable lane labels from the resolved drum
   families or voice names so separated kick, snare, cymbal, and similar lanes
   can be read without relying on hover.
+- Notes that fall outside the active mode now render with a warning fill on the
+  browser timeline and in exported SVG timelines, driven by the existing
+  `notePitchDiagnostics` snapshot data.
 - Hovering a note now shows its pitch or resolved drum voice plus duration, and
   the exported SVG note bars carry the same labels through `<title>` metadata.
 - Planned question and answer cadence markers now appear on the timeline header

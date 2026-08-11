@@ -7,6 +7,7 @@ import {
   buildMusicDebugTimelineSvgMarkup,
   resolveMusicDebugTimelineChordLabels,
   resolveMusicDebugTimelineHoverDetail,
+  resolveMusicDebugTimelineNoteBarFill,
   resolveMusicDebugTimelineNoteBarColor,
   resolveMusicDebugTimelineLayout,
   resolveMusicDebugTimelinePercussionLaneLabels,
@@ -65,6 +66,24 @@ const TIMELINE_PERCUSSION_HOVER_SNAPSHOT = {
   ],
   durationMs: 1_000,
 };
+const OUT_OF_SCALE_TIMELINE_SNAPSHOT = (() => {
+  const leadIndex = DEFAULT_SNAPSHOT.notes.findIndex(
+    (note) => note.role === 'lead'
+  );
+  return {
+    ...DEFAULT_SNAPSHOT,
+    notePitchDiagnostics: DEFAULT_SNAPSHOT.notePitchDiagnostics.map(
+      (diagnostic, index) =>
+        index === leadIndex
+          ? {
+              ...diagnostic,
+              inMode: false,
+              accidentalReason: 'unresolved-chromatic',
+            }
+          : diagnostic
+    ),
+  };
+})();
 
 describe('music debug timeline', () => {
   it('maps offsets to timeline positions and back', () => {
@@ -237,6 +256,20 @@ describe('music debug timeline', () => {
   it('brightens note-bar colors when overlaps increase', () => {
     expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 1)).toBe('#4f8cff');
     expect(resolveMusicDebugTimelineNoteBarColor('#4f8cff', 3)).toBe('#6fa1ff');
+  });
+
+  it('uses a warning fill for out-of-scale note bars', () => {
+    const warningBar = resolveMusicDebugTimelineNoteBars(
+      OUT_OF_SCALE_TIMELINE_SNAPSHOT,
+      DEFAULT_LAYOUT
+    ).find((bar) => bar.role === 'lead');
+
+    expect(warningBar).toEqual(
+      expect.objectContaining({
+        warningKind: 'out-of-scale',
+      })
+    );
+    expect(resolveMusicDebugTimelineNoteBarFill(warningBar!)).toBe('#ff7b72');
   });
 
   it('thins dense chord labels and abbreviates narrow cue spans', () => {
@@ -428,5 +461,13 @@ describe('music debug timeline', () => {
     expect(markup).toContain('>Kick<');
     expect(markup).toContain('>Snare<');
     expect(markup).toContain('>Cymbals<');
+  });
+
+  it('renders out-of-scale notes with a warning color in svg exports', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(
+      OUT_OF_SCALE_TIMELINE_SNAPSHOT
+    );
+
+    expect(markup).toContain('fill="#ff7b72"');
   });
 });

@@ -57,6 +57,7 @@ export type MusicDebugTimelineNoteBar = {
   noteLabel: string;
   hoverLabel: string;
   hoverDurationLabel: string;
+  warningKind: 'out-of-scale' | null;
   x: number;
   y: number;
   width: number;
@@ -475,10 +476,7 @@ export function drawMusicDebugTimeline(
     ? resolveMusicDebugTimelinePercussionLaneLabels(snapshot, layout)
     : [];
   for (const noteBar of noteBars) {
-    context.fillStyle = resolveMusicDebugTimelineNoteBarColor(
-      resolveMusicDebugDisplayRoleColor(noteBar.role),
-      noteBar.overlapCount
-    );
+    context.fillStyle = resolveMusicDebugTimelineNoteBarFill(noteBar);
     context.fillRect(noteBar.x, noteBar.y, noteBar.width, noteBar.height);
   }
 
@@ -659,9 +657,8 @@ export function buildMusicDebugTimelineSvgMarkup(
               2
             )}" width="${noteBar.width.toFixed(2)}" height="${noteBar.height.toFixed(
               2
-            )}" fill="${resolveMusicDebugTimelineNoteBarColor(
-              resolveMusicDebugDisplayRoleColor(noteBar.role),
-              noteBar.overlapCount
+            )}" fill="${resolveMusicDebugTimelineNoteBarFill(
+              noteBar
             )}" rx="2" ry="2"><title>${escapeMusicDebugTimelineSvgText(
               `${noteBar.hoverLabel} (${noteBar.hoverDurationLabel})`
             )}</title></rect>`
@@ -761,6 +758,10 @@ export function resolveMusicDebugTimelineNoteBars(
       hoverDurationLabel: formatMusicDebugTimelineHoverDuration(
         note.durationMs
       ),
+      warningKind: resolveMusicDebugTimelineNoteWarningKind(
+        snapshot,
+        noteIndex
+      ),
       x: layout.leftPad + startRatio * usableWidth,
       y: clampNoteBarY(centerY - height * 0.5, trackTop, trackBottom - height),
       width,
@@ -857,6 +858,18 @@ export function resolveMusicDebugTimelineNoteBarColor(
   return `#${brighten(red)}${brighten(green)}${brighten(blue)}`;
 }
 
+export function resolveMusicDebugTimelineNoteBarFill(
+  noteBar: Pick<MusicDebugTimelineNoteBar, 'warningKind' | 'role' | 'overlapCount'>
+): string {
+  if (noteBar.warningKind === 'out-of-scale') {
+    return '#ff7b72';
+  }
+  return resolveMusicDebugTimelineNoteBarColor(
+    resolveMusicDebugDisplayRoleColor(noteBar.role),
+    noteBar.overlapCount
+  );
+}
+
 function applyNoteBarOverlapCounts(
   noteBars: MusicDebugTimelineNoteBar[]
 ): void {
@@ -888,6 +901,17 @@ function applyNoteBarOverlapCounts(
 
     current.overlapCount = overlapCount;
   }
+}
+
+function resolveMusicDebugTimelineNoteWarningKind(
+  snapshot: MusicDebugSnapshot,
+  noteIndex: number
+): MusicDebugTimelineNoteBar['warningKind'] {
+  const diagnostic = snapshot.notePitchDiagnostics[noteIndex];
+  if (!diagnostic || diagnostic.role === 'percussion' || diagnostic.inMode) {
+    return null;
+  }
+  return 'out-of-scale';
 }
 
 function drawMusicDebugSectionBands(
