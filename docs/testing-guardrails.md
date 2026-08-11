@@ -42,7 +42,11 @@ The same pattern now applies to the procedural music harmony-span sweep and the
 dock route cache-eviction churn regression: the short-path files keep the local
 behavior checks, while `procedural-music.long.test.ts` and
 `packages/dock-route-support/src/index.long.test.ts` hold the representative
-full-song and cache-rollover coverage.
+full-song and cache-rollover coverage. Forest rendering now follows the same
+shape: [packages/tile-forest/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-forest/src/index.test.ts:1)
+keeps the cheap smoke checks in the normal suite, while
+[packages/tile-forest/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-forest/src/index.long.test.ts:1)
+holds the broad descriptor and rendering sweeps.
 
 After that split exists, remove the short `*.test.ts` file from
 `LONG_TEST_FILES` in
