@@ -56,6 +56,144 @@ function createCaveClassifierPayload(
 }
 
 describe('tile cave', () => {
+  it('builds the full-detail cave progressively before returning the final model', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+    const three = createFakeThree() as never;
+    const state = {
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return { walkable: true };
+      },
+    } as never;
+
+    try {
+      const build = caveTile?.create3DModelProgressive?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+        detailLevel: 'full',
+      });
+
+      expect(build).toBeDefined();
+      expect(build?.next()).toEqual({
+        done: false,
+        value: {
+          completedSteps: 1,
+          totalSteps: 4,
+          label: 'entrance-boulders',
+        },
+      });
+      expect(build?.next()).toEqual({
+        done: false,
+        value: {
+          completedSteps: 2,
+          totalSteps: 4,
+          label: 'portal-shell',
+        },
+      });
+      expect(build?.next()).toEqual({
+        done: false,
+        value: {
+          completedSteps: 3,
+          totalSteps: 4,
+          label: 'arch-and-pillars',
+        },
+      });
+      expect(build?.next()).toEqual({
+        done: false,
+        value: {
+          completedSteps: 4,
+          totalSteps: 4,
+          label: 'lantern',
+        },
+      });
+
+      const completed = build?.next();
+      expect(completed?.done).toBe(true);
+      expect(
+        ((completed?.value as { children?: unknown[] } | undefined)?.children
+          ?.length ?? 0) > 0
+      ).toBe(true);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
+
+  it('keeps the synchronous cave build aligned with the progressive final model', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+    const three = createFakeThree() as never;
+    const state = {
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return { walkable: true };
+      },
+    } as never;
+
+    try {
+      const syncModel = caveTile?.create3DModel?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+        detailLevel: 'full',
+      }) as
+        | {
+            children?: Array<{
+              userData?: Record<string, unknown>;
+              material?: { options?: { color?: unknown } };
+            }>;
+          }
+        | null
+        | undefined;
+      const progressiveBuild = caveTile?.create3DModelProgressive?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+        detailLevel: 'full',
+      });
+      let progressiveModel:
+        | {
+            children?: Array<{
+              userData?: Record<string, unknown>;
+              material?: { options?: { color?: unknown } };
+            }>;
+          }
+        | null
+        | undefined;
+
+      while (true) {
+        const next = progressiveBuild?.next();
+        if (next?.done) {
+          progressiveModel = next.value as typeof progressiveModel;
+          break;
+        }
+      }
+
+      expect(progressiveModel?.children?.length).toBe(
+        syncModel?.children?.length
+      );
+      expect(collectCaveInstancedParts(progressiveModel?.children)).toEqual(
+        collectCaveInstancedParts(syncModel?.children)
+      );
+      expect(findPortalChildren(progressiveModel?.children)).toHaveLength(
+        findPortalChildren(syncModel?.children).length
+      );
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
+
   it('groups nearby cave mouths along the same mountain pass into one cave system', () => {
     const west = classifier?.(
       createCaveClassifierPayload({
@@ -691,6 +829,19 @@ function findPortalChildren(
         child.material?.options?.color === '#f59e0b'
     ) ?? []
   );
+}
+
+function collectCaveInstancedParts(
+  children:
+    | Array<{
+        userData?: Record<string, unknown>;
+      }>
+    | undefined
+) {
+  return (children ?? [])
+    .map((child) => child.userData?.caveInstancedPart)
+    .filter((value): value is string => typeof value === 'string')
+    .sort();
 }
 
 function createFakeDocument() {

@@ -4,6 +4,17 @@ The cave tile now instances its repeated mushroom props, dripstone spires,
 fallen-rock obstacle boulders, and full-detail entrance boulders instead of
 emitting one mesh per repeated decoration.
 
+The full-detail cave-mouth build now also exposes a progressive path with four
+phases:
+
+- `entrance-boulders`
+- `portal-shell`
+- `arch-and-pillars`
+- `lantern`
+
+The synchronous `create3DModel()` path exhausts the same generator, so the
+progressive renderer and the eager build path stay structurally aligned.
+
 Current layout:
 
 - The repeated cave mushrooms now share one `CylinderGeometry`, one

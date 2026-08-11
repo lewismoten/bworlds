@@ -15,6 +15,7 @@ import {
 import type {
   ClassifyOverworldTileContext,
   Create3DModelContext,
+  Create3DModelProgress,
   CreateWorldActionContext,
   Paint2DContext,
   PoiAnchorLike,
@@ -137,339 +138,11 @@ export function createCaveTilePlugin(): RuntimePlugin {
         facing: 0,
       };
     },
-    create3DModel({
-      three,
-      state,
-      tileX,
-      tileY,
-      detailLevel = 'full',
-    }: Create3DModelContext) {
-      const { mountainMaterial } = createMountainTerrainMaterials(three);
-      const {
-        mouthVoidMaterial,
-        tunnelBackMaterial,
-        tunnelCeilingMaterial,
-        tunnelFloorMaterial,
-        lanternCoreMaterial,
-      } = getCaveSharedMaterials(three);
-
-      const group = new three.Group();
-      const entrance = getCaveEntranceDirection(state, tileX, tileY);
-      const width = 0.9 + hash2D(CAVE_WIDTH_SEED, tileX, tileY) * 0.22;
-      const depth = 0.92 + hash2D(CAVE_DEPTH_SEED, tileX, tileY) * 0.24;
-      const height = 0.96 + hash2D(CAVE_HEIGHT_SEED, tileX, tileY) * 0.26;
-
-      if (detailLevel === 'low') {
-        addLowDetailCaveModel(group, three, {
-          tileX,
-          tileY,
-          width,
-          depth,
-          height,
-          entrance,
-          mountainMaterial,
-          mouthVoidMaterial,
-          tunnelBackMaterial,
-        });
-        return group;
-      }
-
-      const boulderCount =
-        3 + Math.floor(hash2D(CAVE_BOULDER_COUNT_SEED, tileX, tileY) * 3);
-      const boulderInstances = new three.InstancedMesh(
-        new three.SphereGeometry(0.36, 8, 7),
-        mountainMaterial,
-        boulderCount
-      );
-      boulderInstances.userData = {
-        ...boulderInstances.userData,
-        caveInstancedPart: 'entrance-boulder',
-      };
-      const boulderMatrixScratch = new three.Matrix4();
-
-      for (let index = 0; index < boulderInstances.count; index += 1) {
-        const radiusScale =
-          0.9 +
-          hash2D(CAVE_BOULDER_SCALE_SEED, tileX * 13 + index, tileY * 17) *
-            0.45;
-        const xOffset =
-          (hash2D(CAVE_BOULDER_X_SEED, tileX * 19 + index, tileY) - 0.5) * 0.34;
-        const zOffset =
-          (hash2D(CAVE_BOULDER_Z_SEED, tileX, tileY * 23 + index) - 0.5) * 0.32;
-        const yOffset =
-          0.2 +
-          hash2D(CAVE_BOULDER_Y_SEED, tileX + index, tileY - index) * 0.32;
-        boulderInstances.setMatrixAt(
-          index,
-          writeInstancedScalePositionMatrix(
-            boulderMatrixScratch,
-            tileX + xOffset,
-            yOffset,
-            tileY + zOffset,
-            width * radiusScale,
-            height * (0.72 + radiusScale * 0.12),
-            depth * radiusScale
-          )
-        );
-      }
-      group.add(boulderInstances);
-
-      const cap = new three.Mesh(
-        new three.SphereGeometry(0.3, 7, 6),
-        mountainMaterial
-      );
-      cap.position.set(
-        tileX + (hash2D(CAVE_CAP_X_SEED, tileX, tileY) - 0.5) * 0.08,
-        height * 0.82,
-        tileY + (hash2D(CAVE_CAP_Z_SEED, tileX, tileY) - 0.5) * 0.08
-      );
-      cap.scale.set(width * 0.88, height * 0.6, depth * 0.82);
-      group.add(cap);
-
-      const portalOriginX = tileX + entrance.dx * 0.5;
-      const portalOriginY = 0;
-      const portalOriginZ = tileY + entrance.dy * 0.5;
-
-      const crown = new three.Mesh(
-        new three.SphereGeometry(0.17, 7, 6),
-        mountainMaterial
-      );
-      const crownOffset = rotateCaveLocalOffset(0, 0.08, entrance.rotationY);
-      crown.position.set(
-        portalOriginX + crownOffset.x,
-        portalOriginY + 0.42,
-        portalOriginZ + crownOffset.z
-      );
-      crown.rotation.y = entrance.rotationY;
-      crown.scale.set(2.2, 1.5, 1.05);
-      group.add(crown);
-
-      const cheekInstances = new three.InstancedMesh(
-        new three.SphereGeometry(0.14, 7, 6),
-        mountainMaterial
-      );
-      cheekInstances.count = 2;
-      cheekInstances.userData = {
-        ...(cheekInstances.userData ?? {}),
-        caveInstancedPart: 'entrance-cheek',
-      };
-      const cheekMatrixScratch = new three.Matrix4();
-      cheekInstances.setMatrixAt(
-        0,
-        writeRotatedInstancedScalePositionMatrix(
-          cheekMatrixScratch,
-          portalOriginX +
-            rotateCaveLocalOffset(-0.24, 0.08, entrance.rotationY).x,
-          portalOriginY + 0.2,
-          portalOriginZ +
-            rotateCaveLocalOffset(-0.24, 0.08, entrance.rotationY).z,
-          1.4,
-          1.9,
-          1.1,
-          entrance.rotationY
-        )
-      );
-      cheekInstances.setMatrixAt(
-        1,
-        writeRotatedInstancedScalePositionMatrix(
-          cheekMatrixScratch,
-          portalOriginX +
-            rotateCaveLocalOffset(0.24, 0.08, entrance.rotationY).x,
-          portalOriginY + 0.2,
-          portalOriginZ +
-            rotateCaveLocalOffset(0.24, 0.08, entrance.rotationY).z,
-          1.4,
-          1.9,
-          1.1,
-          entrance.rotationY
-        )
-      );
-      group.add(cheekInstances);
-
-      const mouthVoid = new three.Mesh(
-        new three.CircleGeometry(0.18, 20),
-        mouthVoidMaterial
-      );
-      const mouthVoidOffset = rotateCaveLocalOffset(
-        0,
-        0.22,
-        entrance.rotationY
-      );
-      mouthVoid.position.set(
-        portalOriginX + mouthVoidOffset.x,
-        portalOriginY + 0.2,
-        portalOriginZ + mouthVoidOffset.z
-      );
-      mouthVoid.rotation.y = entrance.rotationY;
-      group.add(mouthVoid);
-
-      const tunnelBack = new three.Mesh(
-        new three.CircleGeometry(0.12, 18),
-        tunnelBackMaterial
-      );
-      const tunnelBackOffset = rotateCaveLocalOffset(
-        0,
-        -0.16,
-        entrance.rotationY
-      );
-      tunnelBack.position.set(
-        portalOriginX + tunnelBackOffset.x,
-        portalOriginY + 0.19,
-        portalOriginZ + tunnelBackOffset.z
-      );
-      tunnelBack.rotation.y = entrance.rotationY;
-      group.add(tunnelBack);
-
-      const tunnelCeiling = new three.Mesh(
-        new three.PlaneGeometry(0.24, 0.46),
-        tunnelCeilingMaterial
-      );
-      const tunnelCeilingOffset = rotateCaveLocalOffset(
-        0,
-        0.01,
-        entrance.rotationY
-      );
-      tunnelCeiling.position.set(
-        portalOriginX + tunnelCeilingOffset.x,
-        portalOriginY + 0.26,
-        portalOriginZ + tunnelCeilingOffset.z
-      );
-      tunnelCeiling.rotation.x = Math.PI * 0.5;
-      tunnelCeiling.rotation.y = entrance.rotationY;
-      group.add(tunnelCeiling);
-
-      const tunnelFloor = new three.Mesh(
-        new three.PlaneGeometry(0.22, 0.34),
-        tunnelFloorMaterial
-      );
-      const tunnelFloorOffset = rotateCaveLocalOffset(
-        0,
-        0.02,
-        entrance.rotationY
-      );
-      tunnelFloor.position.set(
-        portalOriginX + tunnelFloorOffset.x,
-        portalOriginY + 0.04,
-        portalOriginZ + tunnelFloorOffset.z
-      );
-      tunnelFloor.rotation.x = -Math.PI * 0.5;
-      tunnelFloor.rotation.y = entrance.rotationY;
-      group.add(tunnelFloor);
-
-      const arch = new three.Mesh(
-        new three.TorusGeometry(0.24, 0.06, 6, 12, Math.PI),
-        mountainMaterial
-      );
-      const archOffset = rotateCaveLocalOffset(0, 0.22, entrance.rotationY);
-      arch.position.set(
-        portalOriginX + archOffset.x,
-        portalOriginY + 0.31,
-        portalOriginZ + archOffset.z
-      );
-      arch.rotation.y = entrance.rotationY;
-      arch.rotation.z = Math.PI;
-      group.add(arch);
-
-      const pillarInstances = new three.InstancedMesh(
-        new three.SphereGeometry(0.08, 6, 6),
-        mountainMaterial
-      );
-      pillarInstances.count = 2;
-      pillarInstances.userData = {
-        ...(pillarInstances.userData ?? {}),
-        caveInstancedPart: 'entrance-pillar',
-      };
-      const pillarMatrixScratch = new three.Matrix4();
-      pillarInstances.setMatrixAt(
-        0,
-        writeRotatedInstancedScalePositionMatrix(
-          pillarMatrixScratch,
-          portalOriginX +
-            rotateCaveLocalOffset(-0.2, 0.16, entrance.rotationY).x,
-          portalOriginY + 0.16,
-          portalOriginZ +
-            rotateCaveLocalOffset(-0.2, 0.16, entrance.rotationY).z,
-          1,
-          1.9,
-          1.2,
-          entrance.rotationY
-        )
-      );
-      pillarInstances.setMatrixAt(
-        1,
-        writeRotatedInstancedScalePositionMatrix(
-          pillarMatrixScratch,
-          portalOriginX +
-            rotateCaveLocalOffset(0.2, 0.16, entrance.rotationY).x,
-          portalOriginY + 0.16,
-          portalOriginZ +
-            rotateCaveLocalOffset(0.2, 0.16, entrance.rotationY).z,
-          1,
-          1.9,
-          1.2,
-          entrance.rotationY
-        )
-      );
-      group.add(pillarInstances);
-
-      const sill = new three.Mesh(
-        new three.SphereGeometry(0.1, 6, 6),
-        mountainMaterial
-      );
-      const sillOffset = rotateCaveLocalOffset(0, 0.22, entrance.rotationY);
-      sill.position.set(
-        portalOriginX + sillOffset.x,
-        portalOriginY + 0.03,
-        portalOriginZ + sillOffset.z
-      );
-      sill.rotation.y = entrance.rotationY;
-      sill.scale.set(2.8, 0.55, 1.2);
-      group.add(sill);
-
-      const lanternCore = markPoiLightEmitter(
-        new three.Mesh(
-          new three.SphereGeometry(0.035, 6, 6),
-          lanternCoreMaterial
-        ),
-        {
-          kind: 'emissive-mesh',
-          dayIntensity: 0.02,
-          nightIntensity: 1.35,
-        }
-      );
-      const lanternCoreOffset = rotateCaveLocalOffset(
-        0.24,
-        0.18,
-        entrance.rotationY
-      );
-      lanternCore.position.set(
-        portalOriginX + lanternCoreOffset.x,
-        portalOriginY + 0.34,
-        portalOriginZ + lanternCoreOffset.z
-      );
-      group.add(lanternCore);
-
-      const lanternLight = markPoiLightEmitter(
-        new three.PointLight('#f6b85d', 0, 2.9, 1.9),
-        {
-          kind: 'point-light',
-          nightIntensity: 0.82,
-          visibleThreshold: 0.04,
-        }
-      );
-      const lanternLightOffset = rotateCaveLocalOffset(
-        0.24,
-        0.12,
-        entrance.rotationY
-      );
-      lanternLight.position.set(
-        portalOriginX + lanternLightOffset.x,
-        portalOriginY + 0.34,
-        portalOriginZ + lanternLightOffset.z
-      );
-      lanternLight.visible = false;
-      group.add(lanternLight);
-      return group;
+    create3DModel(context: Create3DModelContext) {
+      return runCaveModelBuildToCompletion(createCaveModelProgressive(context));
+    },
+    create3DModelProgressive(context: Create3DModelContext) {
+      return createCaveModelProgressive(context);
     },
     sync3DModel({ model, cycle }) {
       if (model && typeof model === 'object') {
@@ -485,6 +158,349 @@ export function createCaveTilePlugin(): RuntimePlugin {
     ...basePlugin,
     tiles: [...(basePlugin.tiles ?? []), ...createCaveInteriorTiles()],
   };
+}
+
+function* createCaveModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+  detailLevel = 'full',
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const { mountainMaterial } = createMountainTerrainMaterials(three);
+  const {
+    mouthVoidMaterial,
+    tunnelBackMaterial,
+    tunnelCeilingMaterial,
+    tunnelFloorMaterial,
+    lanternCoreMaterial,
+  } = getCaveSharedMaterials(three);
+
+  const group = new three.Group();
+  const entrance = getCaveEntranceDirection(state, tileX, tileY);
+  const width = 0.9 + hash2D(CAVE_WIDTH_SEED, tileX, tileY) * 0.22;
+  const depth = 0.92 + hash2D(CAVE_DEPTH_SEED, tileX, tileY) * 0.24;
+  const height = 0.96 + hash2D(CAVE_HEIGHT_SEED, tileX, tileY) * 0.26;
+
+  if (detailLevel === 'low') {
+    addLowDetailCaveModel(group, three, {
+      tileX,
+      tileY,
+      width,
+      depth,
+      height,
+      entrance,
+      mountainMaterial,
+      mouthVoidMaterial,
+      tunnelBackMaterial,
+    });
+    return group;
+  }
+
+  const totalSteps = 4;
+  const boulderCount =
+    3 + Math.floor(hash2D(CAVE_BOULDER_COUNT_SEED, tileX, tileY) * 3);
+  const boulderInstances = new three.InstancedMesh(
+    new three.SphereGeometry(0.36, 8, 7),
+    mountainMaterial,
+    boulderCount
+  );
+  boulderInstances.userData = {
+    ...boulderInstances.userData,
+    caveInstancedPart: 'entrance-boulder',
+  };
+  const boulderMatrixScratch = new three.Matrix4();
+
+  for (let index = 0; index < boulderInstances.count; index += 1) {
+    const radiusScale =
+      0.9 +
+      hash2D(CAVE_BOULDER_SCALE_SEED, tileX * 13 + index, tileY * 17) * 0.45;
+    const xOffset =
+      (hash2D(CAVE_BOULDER_X_SEED, tileX * 19 + index, tileY) - 0.5) * 0.34;
+    const zOffset =
+      (hash2D(CAVE_BOULDER_Z_SEED, tileX, tileY * 23 + index) - 0.5) * 0.32;
+    const yOffset =
+      0.2 + hash2D(CAVE_BOULDER_Y_SEED, tileX + index, tileY - index) * 0.32;
+    boulderInstances.setMatrixAt(
+      index,
+      writeInstancedScalePositionMatrix(
+        boulderMatrixScratch,
+        tileX + xOffset,
+        yOffset,
+        tileY + zOffset,
+        width * radiusScale,
+        height * (0.72 + radiusScale * 0.12),
+        depth * radiusScale
+      )
+    );
+  }
+  group.add(boulderInstances);
+
+  const cap = new three.Mesh(
+    new three.SphereGeometry(0.3, 7, 6),
+    mountainMaterial
+  );
+  cap.position.set(
+    tileX + (hash2D(CAVE_CAP_X_SEED, tileX, tileY) - 0.5) * 0.08,
+    height * 0.82,
+    tileY + (hash2D(CAVE_CAP_Z_SEED, tileX, tileY) - 0.5) * 0.08
+  );
+  cap.scale.set(width * 0.88, height * 0.6, depth * 0.82);
+  group.add(cap);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'entrance-boulders',
+  };
+
+  const portalOriginX = tileX + entrance.dx * 0.5;
+  const portalOriginY = 0;
+  const portalOriginZ = tileY + entrance.dy * 0.5;
+
+  const crown = new three.Mesh(
+    new three.SphereGeometry(0.17, 7, 6),
+    mountainMaterial
+  );
+  const crownOffset = rotateCaveLocalOffset(0, 0.08, entrance.rotationY);
+  crown.position.set(
+    portalOriginX + crownOffset.x,
+    portalOriginY + 0.42,
+    portalOriginZ + crownOffset.z
+  );
+  crown.rotation.y = entrance.rotationY;
+  crown.scale.set(2.2, 1.5, 1.05);
+  group.add(crown);
+
+  const cheekInstances = new three.InstancedMesh(
+    new three.SphereGeometry(0.14, 7, 6),
+    mountainMaterial
+  );
+  cheekInstances.count = 2;
+  cheekInstances.userData = {
+    ...(cheekInstances.userData ?? {}),
+    caveInstancedPart: 'entrance-cheek',
+  };
+  const cheekMatrixScratch = new three.Matrix4();
+  cheekInstances.setMatrixAt(
+    0,
+    writeRotatedInstancedScalePositionMatrix(
+      cheekMatrixScratch,
+      portalOriginX + rotateCaveLocalOffset(-0.24, 0.08, entrance.rotationY).x,
+      portalOriginY + 0.2,
+      portalOriginZ + rotateCaveLocalOffset(-0.24, 0.08, entrance.rotationY).z,
+      1.4,
+      1.9,
+      1.1,
+      entrance.rotationY
+    )
+  );
+  cheekInstances.setMatrixAt(
+    1,
+    writeRotatedInstancedScalePositionMatrix(
+      cheekMatrixScratch,
+      portalOriginX + rotateCaveLocalOffset(0.24, 0.08, entrance.rotationY).x,
+      portalOriginY + 0.2,
+      portalOriginZ + rotateCaveLocalOffset(0.24, 0.08, entrance.rotationY).z,
+      1.4,
+      1.9,
+      1.1,
+      entrance.rotationY
+    )
+  );
+  group.add(cheekInstances);
+
+  const mouthVoid = new three.Mesh(
+    new three.CircleGeometry(0.18, 20),
+    mouthVoidMaterial
+  );
+  const mouthVoidOffset = rotateCaveLocalOffset(0, 0.22, entrance.rotationY);
+  mouthVoid.position.set(
+    portalOriginX + mouthVoidOffset.x,
+    portalOriginY + 0.2,
+    portalOriginZ + mouthVoidOffset.z
+  );
+  mouthVoid.rotation.y = entrance.rotationY;
+  group.add(mouthVoid);
+
+  const tunnelBack = new three.Mesh(
+    new three.CircleGeometry(0.12, 18),
+    tunnelBackMaterial
+  );
+  const tunnelBackOffset = rotateCaveLocalOffset(0, -0.16, entrance.rotationY);
+  tunnelBack.position.set(
+    portalOriginX + tunnelBackOffset.x,
+    portalOriginY + 0.19,
+    portalOriginZ + tunnelBackOffset.z
+  );
+  tunnelBack.rotation.y = entrance.rotationY;
+  group.add(tunnelBack);
+
+  const tunnelCeiling = new three.Mesh(
+    new three.PlaneGeometry(0.24, 0.46),
+    tunnelCeilingMaterial
+  );
+  const tunnelCeilingOffset = rotateCaveLocalOffset(
+    0,
+    0.01,
+    entrance.rotationY
+  );
+  tunnelCeiling.position.set(
+    portalOriginX + tunnelCeilingOffset.x,
+    portalOriginY + 0.26,
+    portalOriginZ + tunnelCeilingOffset.z
+  );
+  tunnelCeiling.rotation.x = Math.PI * 0.5;
+  tunnelCeiling.rotation.y = entrance.rotationY;
+  group.add(tunnelCeiling);
+
+  const tunnelFloor = new three.Mesh(
+    new three.PlaneGeometry(0.22, 0.34),
+    tunnelFloorMaterial
+  );
+  const tunnelFloorOffset = rotateCaveLocalOffset(0, 0.02, entrance.rotationY);
+  tunnelFloor.position.set(
+    portalOriginX + tunnelFloorOffset.x,
+    portalOriginY + 0.04,
+    portalOriginZ + tunnelFloorOffset.z
+  );
+  tunnelFloor.rotation.x = -Math.PI * 0.5;
+  tunnelFloor.rotation.y = entrance.rotationY;
+  group.add(tunnelFloor);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'portal-shell',
+  };
+
+  const arch = new three.Mesh(
+    new three.TorusGeometry(0.24, 0.06, 6, 12, Math.PI),
+    mountainMaterial
+  );
+  const archOffset = rotateCaveLocalOffset(0, 0.22, entrance.rotationY);
+  arch.position.set(
+    portalOriginX + archOffset.x,
+    portalOriginY + 0.31,
+    portalOriginZ + archOffset.z
+  );
+  arch.rotation.y = entrance.rotationY;
+  arch.rotation.z = Math.PI;
+  group.add(arch);
+
+  const pillarInstances = new three.InstancedMesh(
+    new three.SphereGeometry(0.08, 6, 6),
+    mountainMaterial
+  );
+  pillarInstances.count = 2;
+  pillarInstances.userData = {
+    ...(pillarInstances.userData ?? {}),
+    caveInstancedPart: 'entrance-pillar',
+  };
+  const pillarMatrixScratch = new three.Matrix4();
+  pillarInstances.setMatrixAt(
+    0,
+    writeRotatedInstancedScalePositionMatrix(
+      pillarMatrixScratch,
+      portalOriginX + rotateCaveLocalOffset(-0.2, 0.16, entrance.rotationY).x,
+      portalOriginY + 0.16,
+      portalOriginZ + rotateCaveLocalOffset(-0.2, 0.16, entrance.rotationY).z,
+      1,
+      1.9,
+      1.2,
+      entrance.rotationY
+    )
+  );
+  pillarInstances.setMatrixAt(
+    1,
+    writeRotatedInstancedScalePositionMatrix(
+      pillarMatrixScratch,
+      portalOriginX + rotateCaveLocalOffset(0.2, 0.16, entrance.rotationY).x,
+      portalOriginY + 0.16,
+      portalOriginZ + rotateCaveLocalOffset(0.2, 0.16, entrance.rotationY).z,
+      1,
+      1.9,
+      1.2,
+      entrance.rotationY
+    )
+  );
+  group.add(pillarInstances);
+
+  const sill = new three.Mesh(
+    new three.SphereGeometry(0.1, 6, 6),
+    mountainMaterial
+  );
+  const sillOffset = rotateCaveLocalOffset(0, 0.22, entrance.rotationY);
+  sill.position.set(
+    portalOriginX + sillOffset.x,
+    portalOriginY + 0.03,
+    portalOriginZ + sillOffset.z
+  );
+  sill.rotation.y = entrance.rotationY;
+  sill.scale.set(2.8, 0.55, 1.2);
+  group.add(sill);
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'arch-and-pillars',
+  };
+
+  const lanternCore = markPoiLightEmitter(
+    new three.Mesh(new three.SphereGeometry(0.035, 6, 6), lanternCoreMaterial),
+    {
+      kind: 'emissive-mesh',
+      dayIntensity: 0.02,
+      nightIntensity: 1.35,
+    }
+  );
+  const lanternCoreOffset = rotateCaveLocalOffset(
+    0.24,
+    0.18,
+    entrance.rotationY
+  );
+  lanternCore.position.set(
+    portalOriginX + lanternCoreOffset.x,
+    portalOriginY + 0.34,
+    portalOriginZ + lanternCoreOffset.z
+  );
+  group.add(lanternCore);
+
+  const lanternLight = markPoiLightEmitter(
+    new three.PointLight('#f6b85d', 0, 2.9, 1.9),
+    {
+      kind: 'point-light',
+      nightIntensity: 0.82,
+      visibleThreshold: 0.04,
+    }
+  );
+  const lanternLightOffset = rotateCaveLocalOffset(
+    0.24,
+    0.12,
+    entrance.rotationY
+  );
+  lanternLight.position.set(
+    portalOriginX + lanternLightOffset.x,
+    portalOriginY + 0.34,
+    portalOriginZ + lanternLightOffset.z
+  );
+  lanternLight.visible = false;
+  group.add(lanternLight);
+  yield {
+    completedSteps: 4,
+    totalSteps,
+    label: 'lantern',
+  };
+
+  return group;
+}
+
+function runCaveModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function getCaveEntranceDirection(
