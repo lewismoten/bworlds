@@ -85,7 +85,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       collapse their repeated side wheels into one shared `InstancedMesh`,
       full-detail roadside signs now place their lantern frame, glow, light,
       and cap directly under the tile root instead of a dedicated lantern
-      subgroup, and forest log bridges now collapse their repeated support
+      subgroup, and low-detail roadside signs now place their post, brace,
+      and placard directly under the tile root instead of a dedicated
+      silhouette subgroup, and forest log bridges now collapse their repeated support
       posts into one shared `InstancedMesh`, and standard bridge railings and covered
       bridge spans now collapse their repeated rails and posts into shared
       `InstancedMesh` sets, and stone bridges now collapse their repeated

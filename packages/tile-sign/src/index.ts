@@ -245,13 +245,12 @@ export function createSignTilePlugin(): RuntimePlugin {
           hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
 
         if (detailLevel === 'low') {
-          group.add(
-            createLowDetailSign(
-              three,
-              style,
-              placardCount,
-              getLowDetailSignHeading(nearbyPois)
-            )
+          addLowDetailSign(
+            group,
+            three,
+            style,
+            placardCount,
+            getLowDetailSignHeading(nearbyPois)
           );
           group.position.set(tileX, 0, tileY);
           return group;
@@ -429,13 +428,13 @@ function createSecondaryPost(
   return post;
 }
 
-function createLowDetailSign(
+function addLowDetailSign(
+  group: ThreeObject3DLike,
   three: ThreeHostLike,
   style: SignStyle,
   placardCount: number,
   heading: number
 ) {
-  const group = new three.Group();
   const post = new three.Mesh(
     new three.BoxGeometry(
       style.postThickness * 1.08,
@@ -445,6 +444,10 @@ function createLowDetailSign(
     style.postMaterial
   );
   post.position.y = style.postHeight * 0.41;
+  post.userData = {
+    ...(post.userData ?? {}),
+    signLowDetailPart: 'post',
+  };
   group.add(post);
 
   if (placardCount > 1) {
@@ -457,6 +460,10 @@ function createLowDetailSign(
       style.trimMaterial
     );
     brace.position.y = style.postHeight * 0.6;
+    brace.userData = {
+      ...(brace.userData ?? {}),
+      signLowDetailPart: 'brace',
+    };
     group.add(brace);
   }
 
@@ -470,9 +477,11 @@ function createLowDetailSign(
   );
   placard.position.set(0, style.postHeight * 0.72, 0);
   placard.rotation.y = -heading;
+  placard.userData = {
+    ...(placard.userData ?? {}),
+    signLowDetailPart: 'placard',
+  };
   group.add(placard);
-
-  return group;
 }
 
 function getLowDetailSignHeading(nearbyPois: NearbyPoi[]): number {

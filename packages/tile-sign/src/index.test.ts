@@ -669,11 +669,26 @@ describe('tile sign', () => {
         lowPointLightCount += 1;
       }
     });
+    const lowDetailParts = low?.children.filter(
+      (child) => typeof child.userData?.signLowDetailPart === 'string'
+    );
+    const nestedLowDetailGroups = low?.children.filter(
+      (child) =>
+        child instanceof FakeGroup &&
+        child.children.some(
+          (grandchild) =>
+            typeof grandchild.userData?.signLowDetailPart === 'string'
+        )
+    );
 
     expect(low?.children.length ?? 0).toBeLessThan(
       full?.children.length ?? Infinity
     );
     expect(lowPointLightCount).toBe(0);
+    expect(
+      lowDetailParts?.map((child) => child.userData?.signLowDetailPart).sort()
+    ).toEqual(['placard', 'post']);
+    expect(nestedLowDetailGroups).toHaveLength(0);
   });
 });
 
