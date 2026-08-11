@@ -7,3 +7,4 @@ coverage/
 !/README.md
 .runtime-performance-snapshots/
 dist-analyze*/
+.vitest-full-suite.lock
