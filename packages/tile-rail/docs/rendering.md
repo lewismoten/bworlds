@@ -14,3 +14,7 @@ Current layout:
 
 This trims repeated static `Object3D` nodes from each visible rail tile without
 changing the current scene layout.
+
+The tile now also exposes `create3DModelProgressive(...)` so the renderer can
+yield between laying the two rails and the four sleepers instead of forcing the
+entire rail tile build into one synchronous flush.

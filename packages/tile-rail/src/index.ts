@@ -7,6 +7,7 @@ import {
 } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   Kind,
   RuntimePlugin,
   ThreeMaterialLike,
@@ -44,46 +45,34 @@ export function createRailTilePlugin(): RuntimePlugin {
         fillRect(context, x + 10, y + 6, 2, 4, '#c7b299');
         return true;
       }),
-      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-        if (state.getCurrentContext().type !== 'overworld') {
-          return null;
-        }
-        return createRailGroup(three, state, tileX, tileY);
+      create3DModel(context: Create3DModelContext) {
+        return runRailModelBuildToCompletion(
+          createRailModelProgressive(context)
+        );
+      },
+      create3DModelProgressive(context: Create3DModelContext) {
+        return createRailModelProgressive(context);
       },
     },
   ]);
 }
 
-function createRailGroup(
-  three: ThreeHostLike,
-  state: Create3DModelContext['state'],
-  tileX: number,
-  tileY: number
-) {
+function* createRailModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  if (state.getCurrentContext().type !== 'overworld') {
+    return null;
+  }
+
   const group = new three.Group();
   const { sleeperMaterial, railMaterial } = getRailSharedMaterials(three);
   group.position.set(tileX, 0, tileY);
+  const totalSteps = 2;
 
-  const horizontal =
-    hasConnection(state, tileX, tileY, 'east') ||
-    hasConnection(state, tileX, tileY, 'west');
-  const vertical =
-    hasConnection(state, tileX, tileY, 'north') ||
-    hasConnection(state, tileX, tileY, 'south');
-  const diagonalSlash =
-    hasConnection(state, tileX, tileY, 'northeast') ||
-    hasConnection(state, tileX, tileY, 'southwest');
-  const diagonalBackslash =
-    hasConnection(state, tileX, tileY, 'northwest') ||
-    hasConnection(state, tileX, tileY, 'southeast');
-  const rotation =
-    diagonalSlash && !horizontal && !vertical
-      ? -Math.PI / 4
-      : diagonalBackslash && !horizontal && !vertical
-        ? Math.PI / 4
-        : vertical && !horizontal
-          ? Math.PI / 2
-          : 0;
+  const rotation = resolveRailRotation(state, tileX, tileY);
 
   const railInstances = new three.InstancedMesh(
     getSharedBoxGeometry(three, 0.92, 0.05, 0.06),
@@ -103,6 +92,11 @@ function createRailGroup(
     );
   }
   group.add(railInstances);
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'rails',
+  };
 
   const sleeperInstances = new three.InstancedMesh(
     getSharedBoxGeometry(three, 0.14, 0.04, 0.56),
@@ -131,8 +125,50 @@ function createRailGroup(
     );
   }
   group.add(sleeperInstances);
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'sleepers',
+  };
 
   return group;
+}
+
+function resolveRailRotation(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number
+) {
+  const horizontal =
+    hasConnection(state, tileX, tileY, 'east') ||
+    hasConnection(state, tileX, tileY, 'west');
+  const vertical =
+    hasConnection(state, tileX, tileY, 'north') ||
+    hasConnection(state, tileX, tileY, 'south');
+  const diagonalSlash =
+    hasConnection(state, tileX, tileY, 'northeast') ||
+    hasConnection(state, tileX, tileY, 'southwest');
+  const diagonalBackslash =
+    hasConnection(state, tileX, tileY, 'northwest') ||
+    hasConnection(state, tileX, tileY, 'southeast');
+  return diagonalSlash && !horizontal && !vertical
+    ? -Math.PI / 4
+    : diagonalBackslash && !horizontal && !vertical
+      ? Math.PI / 4
+      : vertical && !horizontal
+        ? Math.PI / 2
+        : 0;
+}
+
+function runRailModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function writeScalePositionMatrix(

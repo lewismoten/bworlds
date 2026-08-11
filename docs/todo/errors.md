@@ -27,6 +27,10 @@ Always run tests to make sure all tests pass
   - [ ] Resume unfinished generators on later frames.
   - [ ] Let generators yield progress without creating final Three.js objects yet.
   - [ ] Keep simple/cheap plugin methods synchronous where generators add no value.
+        Progress: `tile-rail` now exposes `create3DModelProgressive(...)` so the
+        renderer can yield after laying the two rails and before placing the four
+        sleepers, while the synchronous wrapper still exhausts the same generator
+        for parity.
 - [ ] Reduce unique materials and shader program variants.
       Progress: `tile-forest` now scopes its tree-family style material cache
       per Three host instead of sharing one process-wide material/texture
