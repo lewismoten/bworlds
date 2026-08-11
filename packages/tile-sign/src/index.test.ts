@@ -481,6 +481,33 @@ describe('tile sign', () => {
     expect(pointLight?.visible).toBe(true);
   });
 
+  it('places full-detail sign lantern parts directly under the sign root', () => {
+    const model = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Oakcross'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    const lanternParts = model?.children.filter(
+      (child) => typeof child.userData?.signLanternPart === 'string'
+    );
+    const nestedLanternGroups = model?.children.filter(
+      (child) =>
+        child instanceof FakeGroup &&
+        child.children.some(
+          (grandchild) =>
+            typeof grandchild.userData?.signLanternPart === 'string'
+        )
+    );
+
+    expect(
+      lanternParts?.map((child) => child.userData?.signLanternPart).sort()
+    ).toEqual(['cap', 'frame', 'glow', 'point-light']);
+    expect(nestedLanternGroups).toHaveLength(0);
+  });
+
   it('recreates sign label textures after bounded cache eviction', () => {
     getOrCreatePaintedCanvasTextureMock.mockClear();
 

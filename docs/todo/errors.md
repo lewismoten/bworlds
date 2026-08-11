@@ -83,8 +83,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       their post, main board, and label planes directly under the dock root
       instead of a dedicated sign subgroup, and dock paddle boats now
       collapse their repeated side wheels into one shared `InstancedMesh`,
-      and forest log bridges now collapse their repeated support posts into
-      one shared `InstancedMesh`, and standard bridge railings and covered
+      full-detail roadside signs now place their lantern frame, glow, light,
+      and cap directly under the tile root instead of a dedicated lantern
+      subgroup, and forest log bridges now collapse their repeated support
+      posts into one shared `InstancedMesh`, and standard bridge railings and covered
       bridge spans now collapse their repeated rails and posts into shared
       `InstancedMesh` sets, and stone bridges now collapse their repeated
       parapets into one shared `InstancedMesh`, and

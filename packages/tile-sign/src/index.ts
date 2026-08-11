@@ -28,6 +28,7 @@ import type {
   TileLike,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeObject3DLike,
   ThreeTextureLike,
   TraversalProfile3D,
   WorldStateLike,
@@ -326,13 +327,14 @@ export function createSignTilePlugin(): RuntimePlugin {
         group.add(placardEdgeCapInstances);
         group.add(placardArrowHeadInstances);
 
-        const lantern = createSignLantern(three, style);
-        lantern.position.set(
+        addSignLantern(
+          group,
+          three,
+          style,
           style.postThickness * (useSecondPost ? -0.8 : 0),
           style.postHeight * 0.88,
           style.postThickness * 1.2
         );
-        group.add(lantern);
 
         group.position.set(tileX, 0, tileY);
         return group;
@@ -565,8 +567,14 @@ function createDirectionalPlacard(
   return group;
 }
 
-function createSignLantern(three: ThreeHostLike, style: SignStyle) {
-  const group = new three.Group();
+function addSignLantern(
+  group: ThreeObject3DLike,
+  three: ThreeHostLike,
+  style: SignStyle,
+  x: number,
+  y: number,
+  z: number
+) {
   const frame = new three.Mesh(
     new three.BoxGeometry(
       style.postThickness * 1.55,
@@ -575,6 +583,11 @@ function createSignLantern(three: ThreeHostLike, style: SignStyle) {
     ),
     style.trimMaterial
   );
+  frame.position.set(x, y, z);
+  frame.userData = {
+    ...(frame.userData ?? {}),
+    signLanternPart: 'frame',
+  };
   group.add(frame);
 
   const glow = markPoiLightEmitter(
@@ -592,6 +605,11 @@ function createSignLantern(three: ThreeHostLike, style: SignStyle) {
       nightIntensity: 1.15,
     }
   );
+  glow.position.set(x, y, z);
+  glow.userData = {
+    ...(glow.userData ?? {}),
+    signLanternPart: 'glow',
+  };
   group.add(glow);
 
   const pointLight = markPoiLightEmitter(
@@ -602,8 +620,12 @@ function createSignLantern(three: ThreeHostLike, style: SignStyle) {
       visibleThreshold: 0.035,
     }
   );
-  pointLight.position.y = style.postThickness * 0.2;
+  pointLight.position.set(x, y + style.postThickness * 0.2, z);
   pointLight.visible = false;
+  pointLight.userData = {
+    ...(pointLight.userData ?? {}),
+    signLanternPart: 'point-light',
+  };
   group.add(pointLight);
 
   const cap = new three.Mesh(
@@ -614,10 +636,12 @@ function createSignLantern(three: ThreeHostLike, style: SignStyle) {
     ),
     style.trimMaterial
   );
-  cap.position.y = style.postThickness * 1.18;
+  cap.position.set(x, y + style.postThickness * 1.18, z);
+  cap.userData = {
+    ...(cap.userData ?? {}),
+    signLanternPart: 'cap',
+  };
   group.add(cap);
-
-  return group;
 }
 
 function createSignLabelSprite(
