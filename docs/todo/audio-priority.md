@@ -169,7 +169,7 @@
 
 ## Humanization
 
-- [ ] Add small timing offsets by instrument role.
+- [x] Add small timing offsets by instrument role.
 - [ ] Add small velocity changes within each phrase.
 - [ ] Keep one humanization profile per virtual performer.
 - [ ] Stagger harmony notes by a few milliseconds.
@@ -180,9 +180,11 @@
 - [ ] Change articulation at musical phrase boundaries.
 - [ ] Add subtle vibrato only to suitable sustained notes.
       Regression coverage now proves phrase-repetition analysis keeps exact
-      repeats and near matches distinguishable, and representative debug
+      repeats and near matches distinguishable, representative debug
       snapshots retain non-zero average phrase similarity instead of drifting
-      into unrelated material.
+      into unrelated material, and the shared section-note transform now
+      applies small deterministic timing offsets that differ across lead, bass,
+      harmony, and percussion roles.
 
 ## Mixing
 

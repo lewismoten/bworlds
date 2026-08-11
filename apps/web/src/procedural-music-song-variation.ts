@@ -13,6 +13,12 @@ const NEUTRAL_SECTION_LEAD_RHYTHM_IDENTITY = {
   durationMultiplier: [1, 1, 1, 1, 1, 1, 1, 1],
   releaseMultiplier: [1, 1, 1, 1, 1, 1, 1, 1],
 } as const;
+const ROLE_TIMING_OFFSET_PATTERNS = {
+  lead: [0, 0, 0, 0, 0, 0, 0, 0],
+  bass: [0, 2, 0, 2, 0, 2, 0, 2],
+  harmony: [6, 8, 5, 7, 6, 8, 5, 7],
+  percussion: [-4, 0, 3, -2, -4, 0, 3, -2],
+} as const;
 
 export function transformSongSectionNote(
   note: ProceduralMusicNote,
@@ -43,6 +49,11 @@ export function transformSongSectionNote(
           preserveRepairPitch: sectionContext.isGeneratedRepairNote,
         })
       : null;
+  const roleTimingOffsetMs = resolveRoleTimingOffsetMs({
+    role: note.role,
+    phrasePosition: sectionContext.phrasePosition,
+    preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+  });
 
   switch (section.id) {
     case 'intro':
@@ -56,7 +67,8 @@ export function transformSongSectionNote(
         releaseMultiplier:
           layerTreatment.releaseMultiplier *
           (leadRhythmOptions?.releaseMultiplier ?? 1),
-        startOffsetMs: leadRhythmOptions?.startOffsetMs,
+        startOffsetMs:
+          (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
     case 'a-prime':
       return transformAprimeSectionNote(
@@ -76,7 +88,8 @@ export function transformSongSectionNote(
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
-        startOffsetMs: leadRhythmOptions?.startOffsetMs,
+        startOffsetMs:
+          (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
     case 'variation':
       return transformVariationSectionNote(
@@ -97,7 +110,8 @@ export function transformSongSectionNote(
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
-        startOffsetMs: leadRhythmOptions?.startOffsetMs,
+        startOffsetMs:
+          (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
     case 'outro':
       return scaleSongNote(note, {
@@ -110,7 +124,8 @@ export function transformSongSectionNote(
         releaseMultiplier:
           layerTreatment.releaseMultiplier *
           (leadRhythmOptions?.releaseMultiplier ?? 1),
-        startOffsetMs: leadRhythmOptions?.startOffsetMs,
+        startOffsetMs:
+          (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
     case 'a':
     default:
@@ -120,7 +135,8 @@ export function transformSongSectionNote(
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
-        startOffsetMs: leadRhythmOptions?.startOffsetMs,
+        startOffsetMs:
+          (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
   }
 }
@@ -158,7 +174,14 @@ function transformAprimeSectionNote(
       harmonySustainMultiplier *
       (leadRhythmOptions?.durationMultiplier ?? 1),
     releaseMultiplier: leadRhythmOptions?.releaseMultiplier,
-    startOffsetMs: rhythmShiftMs + (leadRhythmOptions?.startOffsetMs ?? 0),
+    startOffsetMs:
+      rhythmShiftMs +
+      (leadRhythmOptions?.startOffsetMs ?? 0) +
+      resolveRoleTimingOffsetMs({
+        role: note.role,
+        phrasePosition,
+        preserveRepairPitch,
+      }),
     transposeSemitones: endingOffsetSemitones,
   });
 }
@@ -205,7 +228,14 @@ function transformVariationSectionNote(
     releaseMultiplier:
       layerTreatment.releaseMultiplier *
       (leadRhythmOptions?.releaseMultiplier ?? 1),
-    startOffsetMs: rhythmShiftMs + (leadRhythmOptions?.startOffsetMs ?? 0),
+    startOffsetMs:
+      rhythmShiftMs +
+      (leadRhythmOptions?.startOffsetMs ?? 0) +
+      resolveRoleTimingOffsetMs({
+        role: note.role,
+        phrasePosition,
+        preserveRepairPitch,
+      }),
     transposeSemitones,
   });
 }
@@ -313,6 +343,19 @@ function resolveLeadRhythmIdentityOptions(options: {
     releaseMultiplier:
       options.rhythmIdentity.releaseMultiplier[patternIndex] ?? 1,
   };
+}
+
+function resolveRoleTimingOffsetMs(options: {
+  role: ProceduralMusicNote['role'];
+  phrasePosition: number;
+  preserveRepairPitch: boolean;
+}): number {
+  if (options.preserveRepairPitch && options.role === 'lead') {
+    return 0;
+  }
+
+  const pattern = ROLE_TIMING_OFFSET_PATTERNS[options.role];
+  return pattern[options.phrasePosition % pattern.length] ?? 0;
 }
 
 function scaleSongNote(

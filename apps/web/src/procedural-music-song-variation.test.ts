@@ -102,6 +102,56 @@ describe('procedural music song variation', () => {
     );
   });
 
+  it('adds small timing offsets that differ by instrument role', () => {
+    const section = createSection('a');
+    const lead = transformSongSectionNote(
+      { ...BASE_NOTE, role: 'lead', instrumentId: 'deep-forest:lead:0:0' },
+      section,
+      1,
+      0
+    );
+    const bass = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      section,
+      1,
+      0
+    );
+    const harmony = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'harmony',
+        instrumentId: 'deep-forest:harmony:0:0',
+      },
+      section,
+      1,
+      0
+    );
+    const percussion = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'percussion',
+        instrumentId: 'deep-forest:percussion:0:0',
+      },
+      section,
+      1,
+      0
+    );
+
+    expect(lead).not.toBeNull();
+    expect(bass).not.toBeNull();
+    expect(harmony).not.toBeNull();
+    expect(percussion).not.toBeNull();
+    expect(lead?.startMs).toBe(BASE_NOTE.startMs);
+    expect(bass?.startMs).toBe(BASE_NOTE.startMs + 2);
+    expect(harmony?.startMs).toBe(BASE_NOTE.startMs + 8);
+    expect(percussion?.startMs).toBe(BASE_NOTE.startMs);
+  });
+
   it('assigns deterministic lead rhythm identities to each named song section', () => {
     const noteIndexInSection = 2;
     const intro = transformSongSectionNote(
