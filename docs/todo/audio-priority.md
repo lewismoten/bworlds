@@ -176,11 +176,11 @@
 
 - [x] Add small timing offsets by instrument role.
 - [x] Add small velocity changes within each phrase.
-- [ ] Keep one humanization profile per virtual performer.
-- [ ] Stagger harmony notes by a few milliseconds.
-- [ ] Let bass play slightly ahead or behind the beat.
-- [ ] Let percussion timing vary within strict limits.
-- [ ] Avoid randomizing every note independently.
+- [x] Keep one humanization profile per virtual performer.
+- [x] Stagger harmony notes by a few milliseconds.
+- [x] Let bass play slightly ahead or behind the beat.
+- [x] Let percussion timing vary within strict limits.
+- [x] Avoid randomizing every note independently.
 - [x] Keep repeated phrases similar enough to recognize.
 - [ ] Change articulation at musical phrase boundaries.
 - [ ] Add subtle vibrato only to suitable sustained notes.
@@ -188,10 +188,13 @@
       repeats and near matches distinguishable, representative debug
       snapshots retain non-zero average phrase similarity instead of drifting
       into unrelated material, and the shared section-note transform now
-      applies small deterministic timing offsets that differ across lead, bass,
-      harmony, and percussion roles while also shaping small deterministic
-      velocity changes across phrase positions instead of leaving note dynamics
-      flat within a phrase.
+      applies one repeating humanization profile per role so timing and
+      velocity choices are reused instead of randomized note-by-note, lets bass
+      notes land slightly ahead of or behind the beat, staggers harmony entries
+      by a few milliseconds, keeps percussion timing variation inside a strict
+      small-offset window, and shapes small deterministic velocity changes
+      across phrase positions instead of leaving note dynamics flat within a
+      phrase.
 
 ## Mixing
 

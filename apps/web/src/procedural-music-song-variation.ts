@@ -13,17 +13,31 @@ const NEUTRAL_SECTION_LEAD_RHYTHM_IDENTITY = {
   durationMultiplier: [1, 1, 1, 1, 1, 1, 1, 1],
   releaseMultiplier: [1, 1, 1, 1, 1, 1, 1, 1],
 } as const;
-const ROLE_TIMING_OFFSET_PATTERNS = {
-  lead: [0, 0, 0, 0, 0, 0, 0, 0],
-  bass: [0, 2, 0, 2, 0, 2, 0, 2],
-  harmony: [6, 8, 5, 7, 6, 8, 5, 7],
-  percussion: [-4, 0, 3, -2, -4, 0, 3, -2],
-} as const;
-const ROLE_VELOCITY_MULTIPLIER_PATTERNS = {
-  lead: [1.04, 0.98, 1.02, 0.97, 1.03, 0.99, 1.01, 0.96],
-  bass: [1.02, 0.99, 1.01, 0.98, 1.02, 0.99, 1, 0.97],
-  harmony: [0.99, 1.02, 0.98, 1.01, 0.99, 1.02, 0.98, 1],
-  percussion: [1.06, 0.96, 1.04, 0.98, 1.05, 0.97, 1.03, 0.99],
+type RoleHumanizationProfile = {
+  timingOffsetMs: readonly number[];
+  velocityMultiplier: readonly number[];
+};
+
+const ROLE_HUMANIZATION_PROFILES: Record<
+  ProceduralMusicNote['role'],
+  RoleHumanizationProfile
+> = {
+  lead: {
+    timingOffsetMs: [0, 0, 0, 0, 0, 0, 0, 0],
+    velocityMultiplier: [1.04, 0.98, 1.02, 0.97, 1.03, 0.99, 1.01, 0.96],
+  },
+  bass: {
+    timingOffsetMs: [-2, 2, -1, 3, -2, 2, -1, 3],
+    velocityMultiplier: [1.02, 0.99, 1.01, 0.98, 1.02, 0.99, 1, 0.97],
+  },
+  harmony: {
+    timingOffsetMs: [4, 7, 5, 8, 4, 7, 5, 8],
+    velocityMultiplier: [0.99, 1.02, 0.98, 1.01, 0.99, 1.02, 0.98, 1],
+  },
+  percussion: {
+    timingOffsetMs: [-4, 1, 3, -2, -3, 0, 2, -1],
+    velocityMultiplier: [1.06, 0.96, 1.04, 0.98, 1.05, 0.97, 1.03, 0.99],
+  },
 } as const;
 
 export function transformSongSectionNote(
@@ -382,7 +396,7 @@ function resolveRoleTimingOffsetMs(options: {
     return 0;
   }
 
-  const pattern = ROLE_TIMING_OFFSET_PATTERNS[options.role];
+  const pattern = ROLE_HUMANIZATION_PROFILES[options.role].timingOffsetMs;
   return pattern[options.phrasePosition % pattern.length] ?? 0;
 }
 
@@ -395,7 +409,7 @@ function resolveRoleVelocityMultiplier(options: {
     return 1;
   }
 
-  const pattern = ROLE_VELOCITY_MULTIPLIER_PATTERNS[options.role];
+  const pattern = ROLE_HUMANIZATION_PROFILES[options.role].velocityMultiplier;
   return pattern[options.phrasePosition % pattern.length] ?? 1;
 }
 

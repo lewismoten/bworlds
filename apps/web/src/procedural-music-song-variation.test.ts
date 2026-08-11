@@ -153,8 +153,135 @@ describe('procedural music song variation', () => {
     expect(percussion).not.toBeNull();
     expect(lead?.startMs).toBe(BASE_NOTE.startMs);
     expect(bass?.startMs).toBe(BASE_NOTE.startMs + 2);
-    expect(harmony?.startMs).toBe(BASE_NOTE.startMs + 8);
-    expect(percussion?.startMs).toBe(BASE_NOTE.startMs);
+    expect(harmony?.startMs).toBe(BASE_NOTE.startMs + 7);
+    expect(percussion?.startMs).toBe(BASE_NOTE.startMs + 1);
+  });
+
+  it('lets bass notes land slightly ahead of or behind the beat from one repeating profile', () => {
+    const section = createSection('a');
+    const earlyBass = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      section,
+      0,
+      0
+    );
+    const lateBass = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      section,
+      1,
+      0
+    );
+
+    expect(earlyBass).not.toBeNull();
+    expect(lateBass).not.toBeNull();
+    expect(earlyBass?.startMs).toBe(BASE_NOTE.startMs - 2);
+    expect(lateBass?.startMs).toBe(BASE_NOTE.startMs + 2);
+  });
+
+  it('staggeres harmony notes by a few milliseconds while keeping percussion timing tightly bounded', () => {
+    const section = createSection('a');
+    const harmonyStarts = [0, 1, 2, 3].map(
+      (phrasePosition) =>
+        transformSongSectionNote(
+          {
+            ...BASE_NOTE,
+            role: 'harmony',
+            instrumentId: 'deep-forest:harmony:0:0',
+          },
+          section,
+          phrasePosition,
+          0
+        )?.startMs ?? 0
+    );
+    const percussionOffsets = Array.from(
+      { length: 8 },
+      (_, phrasePosition) =>
+        (transformSongSectionNote(
+          {
+            ...BASE_NOTE,
+            role: 'percussion',
+            instrumentId: 'deep-forest:percussion:0:0',
+          },
+          section,
+          phrasePosition,
+          0
+        )?.startMs ?? BASE_NOTE.startMs) - BASE_NOTE.startMs
+    );
+
+    expect(harmonyStarts).toEqual([
+      BASE_NOTE.startMs + 4,
+      BASE_NOTE.startMs + 7,
+      BASE_NOTE.startMs + 5,
+      BASE_NOTE.startMs + 8,
+    ]);
+    expect(Math.min(...percussionOffsets)).toBeGreaterThanOrEqual(-4);
+    expect(Math.max(...percussionOffsets)).toBeLessThanOrEqual(3);
+    expect(new Set(percussionOffsets).size).toBeGreaterThan(3);
+  });
+
+  it('reuses the same humanization profile instead of randomizing each note independently', () => {
+    const section = createSection('a');
+    const firstBass = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      section,
+      0,
+      0
+    );
+    const repeatedBass = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      section,
+      8,
+      0
+    );
+    const firstPercussion = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'percussion',
+        instrumentId: 'deep-forest:percussion:0:0',
+      },
+      section,
+      2,
+      0
+    );
+    const repeatedPercussion = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'percussion',
+        instrumentId: 'deep-forest:percussion:0:0',
+      },
+      section,
+      10,
+      0
+    );
+
+    expect(firstBass).not.toBeNull();
+    expect(repeatedBass).not.toBeNull();
+    expect(firstPercussion).not.toBeNull();
+    expect(repeatedPercussion).not.toBeNull();
+    expect(firstBass?.startMs).toBe(repeatedBass?.startMs);
+    expect(firstBass?.velocity).toBe(repeatedBass?.velocity);
+    expect(firstPercussion?.startMs).toBe(repeatedPercussion?.startMs);
+    expect(firstPercussion?.velocity).toBe(repeatedPercussion?.velocity);
   });
 
   it('adds small velocity changes across phrase positions', () => {
