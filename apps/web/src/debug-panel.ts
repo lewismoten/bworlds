@@ -541,7 +541,7 @@ export function recordPerformanceHistorySample(
   sample: PerformanceHistorySample,
   {
     sampleIntervalMs = 1000,
-    historyWindowMs = 60000,
+    historyWindowMs = 120000,
   }: {
     sampleIntervalMs?: number;
     historyWindowMs?: number;

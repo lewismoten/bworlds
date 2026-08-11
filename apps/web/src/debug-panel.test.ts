@@ -381,7 +381,7 @@ describe('debug panel', () => {
     );
   });
 
-  it('records performance history samples on a rolling one-minute window', () => {
+  it('records performance history samples on a rolling two-minute window', () => {
     const samples = [
       {
         nowMs: 100,
@@ -476,10 +476,50 @@ describe('debug panel', () => {
 
     expect(samples).toEqual([
       expect.objectContaining({
+        nowMs: 1200,
+        fps: 55,
+        generationQueueSize: 6,
+      }),
+      expect.objectContaining({
         nowMs: 62050,
         heapUsedMb: null,
         activeLightCount: 6,
         generationQueueSize: 7,
+      }),
+    ]);
+
+    recordPerformanceHistorySample(samples, {
+      nowMs: 121250,
+      fps: 51,
+      frameMs: 19.5,
+      targetFps: 30,
+      visibilityRadius: 10,
+      renderQualityLevel: 'Minimal',
+      drawCalls: 128,
+      triangles: 2800,
+      objectCount: 325,
+      materialCount: 24,
+      geometryCount: 44,
+      heapUsedMb: 54,
+      tileBuildsPerSecond: 7,
+      lodReplacementsPerSecond: 5,
+      visibleTileCount: 108,
+      visibleTreeCount: 23,
+      activeLightCount: 6,
+      generationQueueSize: 8,
+    });
+
+    expect(samples).toEqual([
+      expect.objectContaining({
+        nowMs: 62050,
+        heapUsedMb: null,
+        activeLightCount: 6,
+        generationQueueSize: 7,
+      }),
+      expect.objectContaining({
+        nowMs: 121250,
+        fps: 51,
+        generationQueueSize: 8,
       }),
     ]);
   });
