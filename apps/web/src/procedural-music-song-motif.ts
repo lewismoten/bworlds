@@ -39,6 +39,8 @@ const FILLER_DEEMPHASIS_VOLUME_MULTIPLIER = 0.94;
 const FILLER_DEEMPHASIS_VELOCITY_PENALTY = 4;
 const MOTIF_TO_FILLER_CONNECTION_GAP_RATIO = 0.08;
 const MOTIF_TO_FILLER_CONNECTION_RELEASE_MULTIPLIER = 1.35;
+const MAX_IMMEDIATE_FILLER_NOTES_AFTER_MOTIF = 2;
+const IMMEDIATE_FILLER_CLUSTER_WINDOW_RATIO = 4;
 
 export function stateLeadMotifInFirstASection(options: {
   notes: readonly ProceduralMusicNote[];
@@ -328,6 +330,10 @@ function applyMotifToPhraseWindow(
   }
 ): void {
   const phraseEndMs = options.phraseStartMs + options.phraseDurationMs;
+  const leadIndexesInPhrase = collectLeadIndexesInPhrase(notes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs,
+  });
   const rhythmTemplate = resolveLeadMotifRhythmTemplate({
     phraseStartMs: options.phraseStartMs,
     phraseDurationMs: options.phraseDurationMs,
@@ -337,15 +343,8 @@ function applyMotifToPhraseWindow(
   });
   let motifIndex = 0;
 
-  for (let index = 0; index < notes.length; index += 1) {
+  for (const index of leadIndexesInPhrase) {
     const note = notes[index]!;
-    if (
-      note.role !== 'lead' ||
-      note.startMs < options.phraseStartMs ||
-      note.startMs >= phraseEndMs
-    ) {
-      continue;
-    }
     const motifDegree = options.leadMotif[motifIndex];
     if (motifDegree === undefined) {
       break;
@@ -580,6 +579,16 @@ function preserveLeadMotifStatementLane(
     1,
     Math.round(options.noteDurationMs * MOTIF_TO_FILLER_CONNECTION_GAP_RATIO)
   );
+  pruneExcessImmediateLeadFillers(notes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs: options.phraseEndMs,
+    protectedThroughMs: options.protectedThroughMs,
+    motifLength: options.motifLength,
+    immediateClusterWindowMs: Math.max(
+      statementGapMs,
+      Math.round(options.noteDurationMs * IMMEDIATE_FILLER_CLUSTER_WINDOW_RATIO)
+    ),
+  });
   let displacedStartMs = Math.min(
     options.phraseEndMs - 1,
     options.protectedThroughMs + statementGapMs
@@ -646,6 +655,69 @@ function preserveLeadMotifStatementLane(
       nextStartMs + statementGapMs
     );
   }
+}
+
+function pruneExcessImmediateLeadFillers(
+  notes: ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseEndMs: number;
+    protectedThroughMs: number;
+    motifLength: number;
+    immediateClusterWindowMs: number;
+  }
+): void {
+  const leadIndexesInPhrase = collectLeadIndexesInPhrase(notes, {
+    phraseStartMs: options.phraseStartMs,
+    phraseEndMs: options.phraseEndMs,
+  });
+  const immediateFillerIndexes = leadIndexesInPhrase
+    .slice(options.motifLength)
+    .filter((index) => {
+      const note = notes[index]!;
+      return (
+        note.startMs >= options.protectedThroughMs &&
+        note.startMs <
+          options.protectedThroughMs + options.immediateClusterWindowMs
+      );
+    })
+    .slice(MAX_IMMEDIATE_FILLER_NOTES_AFTER_MOTIF);
+
+  for (let index = immediateFillerIndexes.length - 1; index >= 0; index -= 1) {
+    notes.splice(immediateFillerIndexes[index]!, 1);
+  }
+}
+
+function collectLeadIndexesInPhrase(
+  notes: readonly ProceduralMusicNote[],
+  options: {
+    phraseStartMs: number;
+    phraseEndMs: number;
+  }
+): number[] {
+  const indexes: number[] = [];
+
+  for (let index = 0; index < notes.length; index += 1) {
+    const note = notes[index];
+    if (
+      note?.role === 'lead' &&
+      note.startMs >= options.phraseStartMs &&
+      note.startMs < options.phraseEndMs
+    ) {
+      indexes.push(index);
+    }
+  }
+
+  return indexes.sort((left, right) => {
+    const leftNote = notes[left]!;
+    const rightNote = notes[right]!;
+
+    if (leftNote.startMs !== rightNote.startMs) {
+      return leftNote.startMs - rightNote.startMs;
+    }
+
+    return leftNote.durationMs - rightNote.durationMs;
+  });
 }
 
 function alignMotifSemitonesToLeadRegister(options: {

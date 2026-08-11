@@ -162,6 +162,47 @@ describe('procedural music song motif', () => {
     expect(motifEndingNote.releaseMs).toBeGreaterThan(notes[3]!.releaseMs);
   });
 
+  it('limits extra filler notes after the protected motif statement in a phrase', () => {
+    const notes: ProceduralMusicNote[] = [
+      createLeadNote(8_000, 392),
+      createLeadNote(9_000, 440),
+      createLeadNote(10_000, 493.883),
+      createLeadNote(11_000, 440),
+      createLeadNote(11_100, 523.251),
+      createLeadNote(11_200, 587.33),
+      createLeadNote(11_300, 659.255),
+      createLeadNote(11_400, 698.456),
+      createLeadNote(11_500, 783.991),
+      createLeadNote(11_600, 880),
+    ];
+    const sections: ProceduralMusicSongSection[] = [
+      createSection('intro', 0, 8_000, 8),
+      createSection('a', 8_000, 16_000, 16),
+    ];
+
+    const updated = stateLeadMotifInFirstASection({
+      notes,
+      sections,
+      songStartMs: 0,
+      leadMotif: [0, 2, 4, 2],
+      theme: {
+        rootHz: 196,
+        rootMidiNote: 55,
+        scale: [0, 2, 4, 5, 7, 9, 10],
+        noteDurationMs: 360,
+      },
+    });
+
+    const fillerNotes = updated.slice(4);
+
+    expect(updated).toHaveLength(6);
+    expect(fillerNotes).toHaveLength(2);
+    expect(fillerNotes[0]!.startMs).toBeLessThanOrEqual(10_300);
+    expect(fillerNotes[1]!.startMs).toBeGreaterThanOrEqual(
+      fillerNotes[0]!.startMs
+    );
+  });
+
   it("states a transposed motif variation in the opening notes of section A'", () => {
     const notes: ProceduralMusicNote[] = [
       createLeadNote(24_100, 392),
