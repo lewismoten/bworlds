@@ -33,7 +33,42 @@ describe('tile rail', () => {
       tileY: 0,
     }) as { children?: unknown[] } | null | undefined;
 
-    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(3);
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(2);
+  });
+
+  it('instances repeated rails instead of emitting two standalone meshes', () => {
+    const plugin = createRailTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'rail');
+    const three = createFakeThree() as never;
+    const model = tile?.create3DModel?.({
+      tile: { kind: 'rail' },
+      three,
+      state: {
+        getCurrentContext() {
+          return { type: 'overworld' };
+        },
+        getCurrentTile() {
+          return { kind: 'rail' };
+        },
+      } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as
+      | {
+          children?: Array<{
+            userData?: Record<string, unknown>;
+            count?: number;
+          }>;
+        }
+      | null
+      | undefined;
+
+    const railInstances = model?.children?.filter(
+      (child) => child.userData?.railInstancedPart === 'rail'
+    );
+
+    expect(railInstances).toHaveLength(1);
+    expect(railInstances?.[0]?.count).toBe(2);
   });
 
   it('instances repeated sleepers instead of emitting four standalone meshes', () => {
@@ -118,10 +153,10 @@ describe('tile rail', () => {
       | undefined;
 
     const firstRail = first?.children?.find(
-      (child) => child.userData?.railPart === 'rail'
+      (child) => child.userData?.railInstancedPart === 'rail'
     );
     const secondRail = second?.children?.find(
-      (child) => child.userData?.railPart === 'rail'
+      (child) => child.userData?.railInstancedPart === 'rail'
     );
     const firstSleepers = first?.children?.find(
       (child) => child.userData?.railInstancedPart === 'sleeper'

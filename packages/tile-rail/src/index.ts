@@ -85,19 +85,24 @@ function createRailGroup(
           ? Math.PI / 2
           : 0;
 
-  for (const offset of [-0.22, 0.22]) {
-    const rail = new three.Mesh(
-      getSharedBoxGeometry(three, 0.92, 0.05, 0.06),
-      railMaterial
+  const railInstances = new three.InstancedMesh(
+    getSharedBoxGeometry(three, 0.92, 0.05, 0.06),
+    railMaterial,
+    2
+  );
+  railInstances.userData = {
+    ...railInstances.userData,
+    railInstancedPart: 'rail',
+  };
+  railInstances.rotation.y = rotation;
+  const railMatrixScratch = new three.Matrix4();
+  for (const [index, offset] of [-0.22, 0.22].entries()) {
+    railInstances.setMatrixAt(
+      index,
+      writeScalePositionMatrix(railMatrixScratch, 0, 0.08, offset, 1, 1, 1)
     );
-    rail.userData = {
-      ...rail.userData,
-      railPart: 'rail',
-    };
-    rail.position.set(0, 0.08, offset);
-    rail.rotation.y = rotation;
-    group.add(rail);
   }
+  group.add(railInstances);
 
   const sleeperInstances = new three.InstancedMesh(
     getSharedBoxGeometry(three, 0.14, 0.04, 0.56),
