@@ -121,6 +121,12 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-noise-mix');
     expect(normalizedMarkup).toContain('Compare to Reference Patch');
     expect(normalizedMarkup).toContain('Reference Patch Report');
+    expect(normalizedMarkup).toContain('A/B Comparison');
+    expect(normalizedMarkup).toContain('Instant A/B Phrase Preview');
+    expect(normalizedMarkup).toContain('Play A: Current Patch');
+    expect(normalizedMarkup).toContain('Play B: Reference Patch');
+    expect(normalizedMarkup).toContain('data-ab-preview-mode="current"');
+    expect(normalizedMarkup).toContain('data-ab-preview-mode="reference"');
     expect(normalizedMarkup).toContain('Reference Patch Library');
     expect(normalizedMarkup).toContain('Locked Role References');
     expect(normalizedMarkup).toContain('Locked reference');

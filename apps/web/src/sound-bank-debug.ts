@@ -1367,6 +1367,9 @@ function buildSelectedInstrumentDetailsMarkup(
         activePreviewOscillatorState
       )
     : '';
+  const comparisonPreviewControlsMarkup = effectiveInstrument
+    ? buildSoundBankDebugComparisonPreviewControlsMarkup(effectiveInstrument)
+    : '';
 
   return `
     <div class="sound-bank-debug-analysis-grid">
@@ -1391,6 +1394,7 @@ function buildSelectedInstrumentDetailsMarkup(
     ${previewEnvelopeControlsMarkup}
     ${previewTimbreControlsMarkup}
     ${referencePatchLibraryMarkup}
+    ${comparisonPreviewControlsMarkup}
     ${knownGoodPatchComparisonMarkup}
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
@@ -1782,6 +1786,48 @@ function buildSoundBankDebugKnownGoodPatchComparisonMarkup(
       <ul class="sound-bank-debug-reference-differences">
         ${leadingDifferences}
       </ul>
+    </section>
+  `;
+}
+
+function buildSoundBankDebugComparisonPreviewControlsMarkup(
+  instrument: ProceduralInstrument
+): string {
+  const referenceLabel = instrument.knownGoodPatchComparison.referenceLabel;
+
+  return `
+    <section
+      class="sound-bank-debug-preview-envelope sound-bank-debug-ab-comparison"
+      aria-label="A/B patch comparison"
+    >
+      <div class="sound-bank-debug-panel-head">
+        <div>
+          <p class="sound-bank-debug-panel-kicker">A/B Comparison</p>
+          <h3>Instant A/B Phrase Preview</h3>
+          <p>
+            Compare the live ${instrument.role} patch against the locked
+            ${referenceLabel} reference using the same generated phrase timing.
+          </p>
+        </div>
+      </div>
+      <div class="sound-bank-debug-actions sound-bank-debug-ab-actions">
+        <button
+          type="button"
+          class="music-debug-instrument-play-phrase sound-bank-debug-ab-button"
+          data-preview-id="${instrument.role}"
+          data-ab-preview-mode="current"
+        >
+          Play A: Current Patch
+        </button>
+        <button
+          type="button"
+          class="music-debug-instrument-play-phrase sound-bank-debug-ab-button"
+          data-reference-patch-role="${instrument.role}"
+          data-ab-preview-mode="reference"
+        >
+          Play B: Reference Patch
+        </button>
+      </div>
     </section>
   `;
 }

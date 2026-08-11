@@ -337,6 +337,14 @@ body {
   white-space: nowrap;
 }
 
+.sound-bank-debug-ab-actions {
+  margin-top: 0.9rem;
+}
+
+.sound-bank-debug-ab-button {
+  flex: 1 1 13rem;
+}
+
 .sound-bank-debug-reference-score {
   min-width: 5rem;
   padding: 0.7rem 0.9rem;

@@ -185,4 +185,49 @@ describe('sound bank debug preview mode', () => {
       referencePatch.timbre.noiseMix ?? 0
     );
   });
+
+  it('keeps the locked B-side reference phrase independent from live A-side preview overrides', () => {
+    const referencePatch = resolveKnownGoodInstrumentPatch('harmony');
+    const currentNotes = resolveSoundBankDebugPreviewPhraseRole(
+      FOREST_SNAPSHOT,
+      'harmony',
+      11_000,
+      {
+        envelope: {
+          attackMs: 18,
+          decayMs: 64,
+          sustainLevel: 0.58,
+          releaseMs: 122,
+        },
+        timbre: {
+          detuneCents: 14,
+          filterCutoffHz: 4_400,
+          filterQ: 1.8,
+          noiseMix: 0.26,
+        },
+      }
+    );
+    const referenceNotes = resolveSoundBankDebugReferencePreviewPhraseRole(
+      FOREST_SNAPSHOT,
+      'harmony',
+      11_000
+    );
+
+    expect(currentNotes.length).toBe(referenceNotes.length);
+    expect(currentNotes[0]?.startMs).toBe(referenceNotes[0]?.startMs);
+    expect(currentNotes[0]?.attackMs).toBe(18);
+    expect(currentNotes[0]?.releaseMs).toBe(122);
+    expect(currentNotes[0]?.detuneCents).toBe(14);
+    expect(currentNotes[0]?.timbre.filterCutoffHz).toBe(4_400);
+    expect(currentNotes[0]?.timbre.noiseMix).toBe(0.26);
+    expect(referenceNotes[0]?.attackMs).toBe(referencePatch.attackMs);
+    expect(referenceNotes[0]?.releaseMs).toBe(referencePatch.releaseMs);
+    expect(referenceNotes[0]?.detuneCents).toBe(referencePatch.detuneCents);
+    expect(referenceNotes[0]?.timbre.filterCutoffHz).toBe(
+      referencePatch.timbre.filterCutoffHz
+    );
+    expect(referenceNotes[0]?.timbre.noiseMix ?? 0).toBe(
+      referencePatch.timbre.noiseMix ?? 0
+    );
+  });
 });
