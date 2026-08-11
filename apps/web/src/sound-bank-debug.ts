@@ -1265,6 +1265,9 @@ function buildSelectedInstrumentDetailsMarkup(
   const estimatedComplexity = runtimeInstrument
     ? resolveEstimatedPatchComplexity(runtimeInstrument)
     : 'Unknown';
+  const knownGoodPatchComparisonMarkup = effectiveInstrument
+    ? buildSoundBankDebugKnownGoodPatchComparisonMarkup(effectiveInstrument)
+    : '';
   const waveformPreviewMarkup = effectiveInstrument
     ? buildMusicDebugInstrumentWaveformMarkup(effectiveInstrument)
     : '<p class="sound-bank-debug-warning" role="status">Waveform preview unavailable for this patch source.</p>';
@@ -1361,6 +1364,7 @@ function buildSelectedInstrumentDetailsMarkup(
     ${previewOscillatorControlsMarkup}
     ${previewEnvelopeControlsMarkup}
     ${previewTimbreControlsMarkup}
+    ${knownGoodPatchComparisonMarkup}
     <dl class="music-debug-instrument-stats">
       <div><dt>Instrument ID</dt><dd>${selectedEntry.id}</dd></div>
       <div><dt>GM Program</dt><dd>${selectedEntry.generalMidiProgramNumber}</dd></div>
@@ -1684,6 +1688,107 @@ function resolveEstimatedPatchComplexity(
     return 'Medium';
   }
   return 'Low';
+}
+
+function buildSoundBankDebugKnownGoodPatchComparisonMarkup(
+  instrument: ProceduralInstrument
+): string {
+  const comparison = instrument.knownGoodPatchComparison;
+  const similarityPercent = Math.round(comparison.similarityScore * 100);
+  const reportTone =
+    comparison.similarityScore >= 0.75
+      ? 'pass'
+      : comparison.similarityScore >= 0.6
+        ? 'warning'
+        : 'failure';
+  const leadingDifferences =
+    comparison.prominentDifferences.length === 0
+      ? '<li>No prominent differences detected.</li>'
+      : comparison.prominentDifferences
+          .slice(0, 4)
+          .map(
+            (difference) => `
+              <li>
+                <strong>${formatKnownGoodPatchDifferenceLabel(
+                  difference.key
+                )}</strong>
+                <span>
+                  generated ${formatKnownGoodPatchComparisonValue(
+                    difference.generatedValue
+                  )},
+                  reference ${formatKnownGoodPatchComparisonValue(
+                    difference.referenceValue
+                  )}
+                </span>
+              </li>
+            `
+          )
+          .join('');
+
+  return `
+    <section
+      class="sound-bank-debug-preview-envelope sound-bank-debug-known-good-report"
+      aria-label="Reference patch comparison"
+      data-report-tone="${reportTone}"
+    >
+      <div class="sound-bank-debug-panel-head">
+        <div>
+          <p class="sound-bank-debug-panel-kicker">Reference Patch Report</p>
+          <h3>Compare to Reference Patch</h3>
+          <p>
+            ${comparison.referenceLabel} for the ${comparison.role} role
+          </p>
+        </div>
+        <div class="sound-bank-debug-reference-score" aria-label="Reference similarity score">
+          ${similarityPercent}%
+        </div>
+      </div>
+      <div class="sound-bank-debug-audio-stats">
+        <div>
+          <dt>Family Match</dt>
+          <dd>${comparison.familyMatches ? 'Yes' : 'No'}</dd>
+        </div>
+        <div>
+          <dt>Waveform Match</dt>
+          <dd>${comparison.waveformMatches ? 'Yes' : 'No'}</dd>
+        </div>
+        <div>
+          <dt>Closest Dimensions</dt>
+          <dd>${summarizeKnownGoodPatchDimensions(comparison.dimensions)}</dd>
+        </div>
+      </div>
+      <ul class="sound-bank-debug-reference-differences">
+        ${leadingDifferences}
+      </ul>
+    </section>
+  `;
+}
+
+function summarizeKnownGoodPatchDimensions(
+  dimensions: Readonly<Record<string, number>>
+): string {
+  const strongestMatches = Object.entries(dimensions)
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 3)
+    .map(([key, similarity]) => {
+      return `${formatKnownGoodPatchDifferenceLabel(key)} ${Math.round(
+        similarity * 100
+      )}%`;
+    });
+  return strongestMatches.join(' | ');
+}
+
+function formatKnownGoodPatchDifferenceLabel(key: string): string {
+  return key
+    .replaceAll('.', ' ')
+    .replaceAll(/([a-z])([A-Z])/g, '$1 $2')
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function formatKnownGoodPatchComparisonValue(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 function formatLabel(value: string): string {

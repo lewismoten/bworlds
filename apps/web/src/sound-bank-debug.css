@@ -274,6 +274,40 @@ body {
   color: #9fc0ea;
 }
 
+.sound-bank-debug-known-good-report[data-report-tone='warning'] {
+  border-color: rgba(255, 191, 105, 0.35);
+}
+
+.sound-bank-debug-known-good-report[data-report-tone='failure'] {
+  border-color: rgba(255, 122, 122, 0.38);
+}
+
+.sound-bank-debug-reference-score {
+  min-width: 5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(172, 208, 255, 0.16);
+  background: rgba(8, 17, 27, 0.52);
+  color: #eef5ff;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.sound-bank-debug-reference-differences {
+  margin: 0.85rem 0 0;
+  padding-left: 1.15rem;
+  color: #c9d9ef;
+}
+
+.sound-bank-debug-reference-differences li + li {
+  margin-top: 0.4rem;
+}
+
+.sound-bank-debug-reference-differences span {
+  color: #9fc0ea;
+}
+
 .sound-bank-debug-oscillator-controls {
   display: grid;
   gap: 0.75rem;

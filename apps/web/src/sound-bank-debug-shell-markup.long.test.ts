@@ -119,6 +119,11 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-filter-cutoff');
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-filter-q');
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-noise-mix');
+    expect(normalizedMarkup).toContain('Compare to Reference Patch');
+    expect(normalizedMarkup).toContain('Reference Patch Report');
+    expect(normalizedMarkup).toContain('Family Match');
+    expect(normalizedMarkup).toContain('Waveform Match');
+    expect(normalizedMarkup).toContain('Closest Dimensions');
     expect(normalizedMarkup).toContain('Standard');
     expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Kick<');
