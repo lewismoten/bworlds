@@ -254,7 +254,112 @@ function createModelSignature(model: FakeGroup) {
   return signature;
 }
 
+function collectTownInstancedParts(model: FakeGroup) {
+  const parts: string[] = [];
+  model.traverse((node) => {
+    if (typeof node.userData?.townInstancedPart === 'string') {
+      parts.push(node.userData.townInstancedPart);
+    }
+  });
+  return parts.sort();
+}
+
 describe('tile town', () => {
+  it('builds the full-detail town progressively before returning the final model', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 4,
+        label: 'buildings',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 4,
+        label: 'sign',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 4,
+        label: 'banners',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 4,
+        totalSteps: 4,
+        label: 'night-lights',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous town build aligned with the progressive final model', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel!)).toEqual(
+      createModelSignature(syncModel)
+    );
+    expect(collectTownInstancedParts(progressiveModel!)).toEqual(
+      collectTownInstancedParts(syncModel)
+    );
+  });
+
   it('scales town night lights with town size', () => {
     expect(getTownNightLightCount(3)).toBe(1);
     expect(getTownNightLightCount(6)).toBe(2);

@@ -27,6 +27,7 @@ import {
 } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   Paint2DContext,
   RenderBudgetQualityLevel,
   RuntimePlugin,
@@ -271,255 +272,13 @@ export function createTownTilePlugin(): RuntimePlugin {
       fillRect(context, x + right + 2, y + 10, 2, 3, '#7c3f1d');
       return true;
     },
-    create3DModel({
-      three,
-      tile,
-      tileX,
-      tileY,
-      detailLevel = 'full',
-      renderBudget,
-    }: Create3DModelContext & { tile: TileLike }) {
-      const style = getTownStyle(three, tileX, tileY, renderBudget?.quality);
-      const descriptors = getTownDescriptors(tileX, tileY);
-      const group = new three.Group();
-      if (detailLevel === 'low') {
-        const lowBodyInstances = new three.InstancedMesh(
-          new three.BoxGeometry(1, 1, 1),
-          style.wallMaterial,
-          descriptors.length
-        );
-        lowBodyInstances.userData = {
-          ...(lowBodyInstances.userData ?? {}),
-          townInstancedPart: 'low-building-body',
-        };
-        const lowBodyMatrixScratch = new three.Matrix4();
-
-        descriptors.forEach((descriptor, index) => {
-          lowBodyInstances.setMatrixAt(
-            index,
-            writeTownRotatedInstancedScalePositionMatrix(
-              lowBodyMatrixScratch,
-              tileX + descriptor.x,
-              descriptor.height * 0.5,
-              tileY + descriptor.y,
-              descriptor.width,
-              descriptor.height,
-              descriptor.depth,
-              descriptor.rotation
-            )
-          );
-        });
-        group.add(lowBodyInstances);
-        return group;
-      }
-
-      const bodyInstances = new three.InstancedMesh(
-        new three.BoxGeometry(1, 1, 1),
-        style.wallMaterial,
-        descriptors.length
-      );
-      bodyInstances.userData = {
-        ...(bodyInstances.userData ?? {}),
-        townInstancedPart: 'building-body',
-      };
-      const roofInstances = new three.InstancedMesh(
-        new three.ConeGeometry(1, 1, 4),
-        style.roofMaterial,
-        descriptors.length
-      );
-      roofInstances.userData = {
-        ...(roofInstances.userData ?? {}),
-        townInstancedPart: 'building-roof',
-      };
-      const doorInstances = new three.InstancedMesh(
-        new three.BoxGeometry(1, 1, 1),
-        style.trimMaterial,
-        descriptors.length
-      );
-      doorInstances.userData = {
-        ...(doorInstances.userData ?? {}),
-        townInstancedPart: 'building-door',
-      };
-      const fullDetailWindowCount = descriptors.reduce(
-        (count, descriptor) => count + descriptor.windows.length,
-        0
-      );
-      const windowInstances =
-        fullDetailWindowCount > 0
-          ? markPoiLightEmitter(
-              new three.InstancedMesh(
-                new three.BoxGeometry(1, 1, 1),
-                style.windowMaterial,
-                fullDetailWindowCount
-              ),
-              {
-                kind: 'emissive-mesh',
-                dayIntensity: 0.08,
-                nightIntensity: 1.2,
-              }
-            )
-          : null;
-      if (windowInstances) {
-        windowInstances.userData = {
-          ...(windowInstances.userData ?? {}),
-          townInstancedPart: 'window-pane',
-        };
-      }
-
-      const bodyMatrixScratch = new three.Matrix4();
-      const roofMatrixScratch = new three.Matrix4();
-      const doorMatrixScratch = new three.Matrix4();
-      const windowMatrixScratch = windowInstances ? new three.Matrix4() : null;
-      let nextWindowInstanceIndex = 0;
-
-      for (let index = 0; index < descriptors.length; index += 1) {
-        const descriptor = descriptors[index]!;
-        bodyInstances.setMatrixAt(
-          index,
-          writeTownRotatedInstancedScalePositionMatrix(
-            bodyMatrixScratch,
-            tileX + descriptor.x,
-            descriptor.height * 0.5,
-            tileY + descriptor.y,
-            descriptor.width,
-            descriptor.height,
-            descriptor.depth,
-            descriptor.rotation
-          )
-        );
-        roofInstances.setMatrixAt(
-          index,
-          writeTownRotatedInstancedScalePositionMatrix(
-            roofMatrixScratch,
-            tileX + descriptor.x,
-            descriptor.height + descriptor.roofHeight * 0.5 - 0.03,
-            tileY + descriptor.y,
-            descriptor.roofRadius,
-            descriptor.roofHeight,
-            descriptor.roofRadius,
-            descriptor.rotation + Math.PI * 0.25
-          )
-        );
-        const doorPosition = rotateTownLocalOffset(
-          0,
-          descriptor.depth * 0.5 + 0.01,
-          descriptor.rotation
-        );
-        doorInstances.setMatrixAt(
-          index,
-          writeTownRotatedInstancedScalePositionMatrix(
-            doorMatrixScratch,
-            tileX + descriptor.x + doorPosition.x,
-            descriptor.height * 0.17,
-            tileY + descriptor.y + doorPosition.z,
-            descriptor.width * 0.18,
-            descriptor.height * 0.34,
-            0.04,
-            descriptor.rotation
-          )
-        );
-
-        for (const window of descriptor.windows) {
-          if (windowInstances && windowMatrixScratch) {
-            const windowPosition = rotateTownLocalOffset(
-              window.x,
-              descriptor.depth * 0.5 + 0.008,
-              descriptor.rotation
-            );
-            windowInstances.setMatrixAt(
-              nextWindowInstanceIndex,
-              writeTownRotatedInstancedScalePositionMatrix(
-                windowMatrixScratch,
-                tileX + descriptor.x + windowPosition.x,
-                window.y,
-                tileY + descriptor.y + windowPosition.z,
-                window.width,
-                window.height,
-                0.03,
-                descriptor.rotation
-              )
-            );
-            nextWindowInstanceIndex += 1;
-          }
-        }
-      }
-
-      group.add(bodyInstances);
-      group.add(roofInstances);
-      group.add(doorInstances);
-      if (windowInstances) {
-        group.add(windowInstances);
-      }
-
-      if (tile.poi?.name) {
-        addTownNameSign(group, three, tile.poi.name, tileX, tileY, style);
-      }
-      const banners = createTownBannerDescriptors(tileX, tileY);
-      if (banners.length > 0) {
-        const bannerPoleInstances = new three.InstancedMesh(
-          new three.CylinderGeometry(0.018, 0.02, 1, 5),
-          style.trimMaterial,
-          banners.length
-        );
-        bannerPoleInstances.userData = {
-          ...(bannerPoleInstances.userData ?? {}),
-          townInstancedPart: 'banner-pole',
-        };
-        const bannerCrossbarInstances = new three.InstancedMesh(
-          new three.BoxGeometry(1, 1, 1),
-          style.trimMaterial,
-          banners.length
-        );
-        bannerCrossbarInstances.userData = {
-          ...(bannerCrossbarInstances.userData ?? {}),
-          townInstancedPart: 'banner-crossbar',
-        };
-        const bannerPoleMatrixScratch = new three.Matrix4();
-        const bannerCrossbarMatrixScratch = new three.Matrix4();
-
-        banners.forEach((banner, index) => {
-          bannerPoleInstances.setMatrixAt(
-            index,
-            writeTownRotatedInstancedScalePositionMatrix(
-              bannerPoleMatrixScratch,
-              tileX + banner.x,
-              banner.y + banner.height * 0.5,
-              tileY + banner.z,
-              1,
-              banner.height,
-              1,
-              banner.rotationY
-            )
-          );
-          const crossbarOffset = rotateTownLocalOffset(
-            banner.width * 0.45,
-            0,
-            banner.rotationY
-          );
-          bannerCrossbarInstances.setMatrixAt(
-            index,
-            writeTownRotatedInstancedScalePositionMatrix(
-              bannerCrossbarMatrixScratch,
-              tileX + banner.x + crossbarOffset.x,
-              banner.y + banner.height - 0.04,
-              tileY + banner.z + crossbarOffset.z,
-              banner.width * 0.9,
-              0.025,
-              0.025,
-              banner.rotationY
-            )
-          );
-          group.add(
-            createTownBannerCloth(three, banner, style, tileX, tileY, index)
-          );
-        });
-        group.add(bannerPoleInstances);
-        group.add(bannerCrossbarInstances);
-      }
-      createTownNightLights(three, descriptors).forEach((light) => {
-        group.add(light);
-      });
-      return group;
+    create3DModel(context: Create3DModelContext & { tile: TileLike }) {
+      return runTownModelBuildToCompletion(createTownModelProgressive(context));
+    },
+    create3DModelProgressive(
+      context: Create3DModelContext & { tile: TileLike }
+    ) {
+      return createTownModelProgressive(context);
     },
     sync3DModel({ model, cycle, environment, timeMs = 0 }) {
       if (model && typeof model === 'object') {
@@ -535,6 +294,297 @@ export function createTownTilePlugin(): RuntimePlugin {
       }
     },
   });
+}
+
+function* createTownModelProgressive({
+  three,
+  tile,
+  tileX,
+  tileY,
+  detailLevel = 'full',
+  renderBudget,
+}: Create3DModelContext & { tile: TileLike }): Generator<
+  Create3DModelProgress,
+  unknown,
+  void
+> {
+  const style = getTownStyle(three, tileX, tileY, renderBudget?.quality);
+  const descriptors = getTownDescriptors(tileX, tileY);
+  const group = new three.Group();
+
+  if (detailLevel === 'low') {
+    const lowBodyInstances = new three.InstancedMesh(
+      new three.BoxGeometry(1, 1, 1),
+      style.wallMaterial,
+      descriptors.length
+    );
+    lowBodyInstances.userData = {
+      ...(lowBodyInstances.userData ?? {}),
+      townInstancedPart: 'low-building-body',
+    };
+    const lowBodyMatrixScratch = new three.Matrix4();
+
+    descriptors.forEach((descriptor, index) => {
+      lowBodyInstances.setMatrixAt(
+        index,
+        writeTownRotatedInstancedScalePositionMatrix(
+          lowBodyMatrixScratch,
+          tileX + descriptor.x,
+          descriptor.height * 0.5,
+          tileY + descriptor.y,
+          descriptor.width,
+          descriptor.height,
+          descriptor.depth,
+          descriptor.rotation
+        )
+      );
+    });
+    group.add(lowBodyInstances);
+    return group;
+  }
+
+  const totalSteps = 4;
+  const bodyInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.wallMaterial,
+    descriptors.length
+  );
+  bodyInstances.userData = {
+    ...(bodyInstances.userData ?? {}),
+    townInstancedPart: 'building-body',
+  };
+  const roofInstances = new three.InstancedMesh(
+    new three.ConeGeometry(1, 1, 4),
+    style.roofMaterial,
+    descriptors.length
+  );
+  roofInstances.userData = {
+    ...(roofInstances.userData ?? {}),
+    townInstancedPart: 'building-roof',
+  };
+  const doorInstances = new three.InstancedMesh(
+    new three.BoxGeometry(1, 1, 1),
+    style.trimMaterial,
+    descriptors.length
+  );
+  doorInstances.userData = {
+    ...(doorInstances.userData ?? {}),
+    townInstancedPart: 'building-door',
+  };
+  const fullDetailWindowCount = descriptors.reduce(
+    (count, descriptor) => count + descriptor.windows.length,
+    0
+  );
+  const windowInstances =
+    fullDetailWindowCount > 0
+      ? markPoiLightEmitter(
+          new three.InstancedMesh(
+            new three.BoxGeometry(1, 1, 1),
+            style.windowMaterial,
+            fullDetailWindowCount
+          ),
+          {
+            kind: 'emissive-mesh',
+            dayIntensity: 0.08,
+            nightIntensity: 1.2,
+          }
+        )
+      : null;
+  if (windowInstances) {
+    windowInstances.userData = {
+      ...(windowInstances.userData ?? {}),
+      townInstancedPart: 'window-pane',
+    };
+  }
+
+  const bodyMatrixScratch = new three.Matrix4();
+  const roofMatrixScratch = new three.Matrix4();
+  const doorMatrixScratch = new three.Matrix4();
+  const windowMatrixScratch = windowInstances ? new three.Matrix4() : null;
+  let nextWindowInstanceIndex = 0;
+
+  for (let index = 0; index < descriptors.length; index += 1) {
+    const descriptor = descriptors[index]!;
+    bodyInstances.setMatrixAt(
+      index,
+      writeTownRotatedInstancedScalePositionMatrix(
+        bodyMatrixScratch,
+        tileX + descriptor.x,
+        descriptor.height * 0.5,
+        tileY + descriptor.y,
+        descriptor.width,
+        descriptor.height,
+        descriptor.depth,
+        descriptor.rotation
+      )
+    );
+    roofInstances.setMatrixAt(
+      index,
+      writeTownRotatedInstancedScalePositionMatrix(
+        roofMatrixScratch,
+        tileX + descriptor.x,
+        descriptor.height + descriptor.roofHeight * 0.5 - 0.03,
+        tileY + descriptor.y,
+        descriptor.roofRadius,
+        descriptor.roofHeight,
+        descriptor.roofRadius,
+        descriptor.rotation + Math.PI * 0.25
+      )
+    );
+    const doorPosition = rotateTownLocalOffset(
+      0,
+      descriptor.depth * 0.5 + 0.01,
+      descriptor.rotation
+    );
+    doorInstances.setMatrixAt(
+      index,
+      writeTownRotatedInstancedScalePositionMatrix(
+        doorMatrixScratch,
+        tileX + descriptor.x + doorPosition.x,
+        descriptor.height * 0.17,
+        tileY + descriptor.y + doorPosition.z,
+        descriptor.width * 0.18,
+        descriptor.height * 0.34,
+        0.04,
+        descriptor.rotation
+      )
+    );
+
+    for (const window of descriptor.windows) {
+      if (windowInstances && windowMatrixScratch) {
+        const windowPosition = rotateTownLocalOffset(
+          window.x,
+          descriptor.depth * 0.5 + 0.008,
+          descriptor.rotation
+        );
+        windowInstances.setMatrixAt(
+          nextWindowInstanceIndex,
+          writeTownRotatedInstancedScalePositionMatrix(
+            windowMatrixScratch,
+            tileX + descriptor.x + windowPosition.x,
+            window.y,
+            tileY + descriptor.y + windowPosition.z,
+            window.width,
+            window.height,
+            0.03,
+            descriptor.rotation
+          )
+        );
+        nextWindowInstanceIndex += 1;
+      }
+    }
+  }
+
+  group.add(bodyInstances);
+  group.add(roofInstances);
+  group.add(doorInstances);
+  if (windowInstances) {
+    group.add(windowInstances);
+  }
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'buildings',
+  };
+
+  if (tile.poi?.name) {
+    addTownNameSign(group, three, tile.poi.name, tileX, tileY, style);
+  }
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'sign',
+  };
+
+  const banners = createTownBannerDescriptors(tileX, tileY);
+  if (banners.length > 0) {
+    const bannerPoleInstances = new three.InstancedMesh(
+      new three.CylinderGeometry(0.018, 0.02, 1, 5),
+      style.trimMaterial,
+      banners.length
+    );
+    bannerPoleInstances.userData = {
+      ...(bannerPoleInstances.userData ?? {}),
+      townInstancedPart: 'banner-pole',
+    };
+    const bannerCrossbarInstances = new three.InstancedMesh(
+      new three.BoxGeometry(1, 1, 1),
+      style.trimMaterial,
+      banners.length
+    );
+    bannerCrossbarInstances.userData = {
+      ...(bannerCrossbarInstances.userData ?? {}),
+      townInstancedPart: 'banner-crossbar',
+    };
+    const bannerPoleMatrixScratch = new three.Matrix4();
+    const bannerCrossbarMatrixScratch = new three.Matrix4();
+
+    banners.forEach((banner, index) => {
+      bannerPoleInstances.setMatrixAt(
+        index,
+        writeTownRotatedInstancedScalePositionMatrix(
+          bannerPoleMatrixScratch,
+          tileX + banner.x,
+          banner.y + banner.height * 0.5,
+          tileY + banner.z,
+          1,
+          banner.height,
+          1,
+          banner.rotationY
+        )
+      );
+      const crossbarOffset = rotateTownLocalOffset(
+        banner.width * 0.45,
+        0,
+        banner.rotationY
+      );
+      bannerCrossbarInstances.setMatrixAt(
+        index,
+        writeTownRotatedInstancedScalePositionMatrix(
+          bannerCrossbarMatrixScratch,
+          tileX + banner.x + crossbarOffset.x,
+          banner.y + banner.height - 0.04,
+          tileY + banner.z + crossbarOffset.z,
+          banner.width * 0.9,
+          0.025,
+          0.025,
+          banner.rotationY
+        )
+      );
+      group.add(
+        createTownBannerCloth(three, banner, style, tileX, tileY, index)
+      );
+    });
+    group.add(bannerPoleInstances);
+    group.add(bannerCrossbarInstances);
+  }
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'banners',
+  };
+
+  createTownNightLights(three, descriptors).forEach((light) => {
+    group.add(light);
+  });
+  yield {
+    completedSteps: 4,
+    totalSteps,
+    label: 'night-lights',
+  };
+
+  return group;
+}
+
+function runTownModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+): unknown {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
 }
 
 function createTownNightLights(
