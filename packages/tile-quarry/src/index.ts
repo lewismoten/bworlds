@@ -112,13 +112,8 @@ export function createQuarryTilePlugin(): RuntimePlugin {
       }
       group.add(stoneInstances);
 
-      const derrick = new three.Group();
-      derrick.position.set(
-        tileX + facing.dx * 0.18,
-        0,
-        tileY + facing.dy * 0.18
-      );
-      derrick.rotation.y = facing.rotationY;
+      const derrickOriginX = tileX + facing.dx * 0.18;
+      const derrickOriginZ = tileY + facing.dy * 0.18;
 
       const derrickPostInstances = new three.InstancedMesh(
         new three.BoxGeometry(0.06, 0.56, 0.06),
@@ -134,9 +129,11 @@ export function createQuarryTilePlugin(): RuntimePlugin {
         0,
         writeInstancedScalePositionMatrix(
           derrickPostMatrixScratch,
-          -0.18,
+          derrickOriginX +
+            rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).x,
           0.28,
-          0.18,
+          derrickOriginZ +
+            rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).z,
           1,
           1,
           1
@@ -146,44 +143,68 @@ export function createQuarryTilePlugin(): RuntimePlugin {
         1,
         writeInstancedScalePositionMatrix(
           derrickPostMatrixScratch,
-          0.18,
+          derrickOriginX +
+            rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).x,
           0.28,
-          0.18,
+          derrickOriginZ +
+            rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).z,
           1,
           1,
           1
         )
       );
-      derrick.add(derrickPostInstances);
+      group.add(derrickPostInstances);
 
       const beam = new three.Mesh(
         new three.BoxGeometry(0.46, 0.05, 0.05),
         timberMaterial
       );
-      beam.position.set(0, 0.54, 0.18);
-      derrick.add(beam);
+      const beamOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
+      beam.position.set(
+        derrickOriginX + beamOffset.x,
+        0.54,
+        derrickOriginZ + beamOffset.z
+      );
+      beam.rotation.y = facing.rotationY;
+      group.add(beam);
 
       const pulley = new three.Mesh(
         new three.TorusGeometry(0.06, 0.015, 6, 10),
         ropeMaterial
       );
-      pulley.position.set(0, 0.5, 0.18);
+      const pulleyOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
+      pulley.position.set(
+        derrickOriginX + pulleyOffset.x,
+        0.5,
+        derrickOriginZ + pulleyOffset.z
+      );
+      pulley.rotation.y = facing.rotationY;
       pulley.rotation.x = Math.PI / 2;
-      derrick.add(pulley);
+      group.add(pulley);
 
       const cable = new three.Mesh(
         new three.CylinderGeometry(0.008, 0.008, 0.32, 6),
         ropeMaterial
       );
-      cable.position.set(0, 0.33, 0.18);
-      derrick.add(cable);
+      const cableOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
+      cable.position.set(
+        derrickOriginX + cableOffset.x,
+        0.33,
+        derrickOriginZ + cableOffset.z
+      );
+      group.add(cable);
 
       const bucket = new three.Mesh(
         new three.BoxGeometry(0.12, 0.1, 0.12),
         rubbleMaterial
       );
-      bucket.position.set(0, 0.12, 0.18);
-      derrick.add(bucket);
+      const bucketOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
+      bucket.position.set(
+        derrickOriginX + bucketOffset.x,
+        0.12,
+        derrickOriginZ + bucketOffset.z
+      );
+      group.add(bucket);
 
       const lanternCore = markPoiLightEmitter(
         new three.Mesh(new three.SphereGeometry(0.03, 6, 6), lanternMaterial),
@@ -193,8 +214,17 @@ export function createQuarryTilePlugin(): RuntimePlugin {
           nightIntensity: 1.28,
         }
       );
-      lanternCore.position.set(0.18, 0.38, 0.18);
-      derrick.add(lanternCore);
+      const lanternCoreOffset = rotateQuarryLocalOffset(
+        0.18,
+        0.18,
+        facing.rotationY
+      );
+      lanternCore.position.set(
+        derrickOriginX + lanternCoreOffset.x,
+        0.38,
+        derrickOriginZ + lanternCoreOffset.z
+      );
+      group.add(lanternCore);
 
       const lanternLight = markPoiLightEmitter(
         new three.PointLight('#f8c36a', 0, 3.1, 1.9),
@@ -204,11 +234,18 @@ export function createQuarryTilePlugin(): RuntimePlugin {
           visibleThreshold: 0.04,
         }
       );
-      lanternLight.position.set(0.18, 0.38, 0.14);
+      const lanternLightOffset = rotateQuarryLocalOffset(
+        0.18,
+        0.14,
+        facing.rotationY
+      );
+      lanternLight.position.set(
+        derrickOriginX + lanternLightOffset.x,
+        0.38,
+        derrickOriginZ + lanternLightOffset.z
+      );
       lanternLight.visible = false;
-      derrick.add(lanternLight);
-
-      group.add(derrick);
+      group.add(lanternLight);
 
       const cart = new three.Mesh(
         new three.BoxGeometry(0.22, 0.08, 0.14),
@@ -272,6 +309,19 @@ function writeInstancedScalePositionMatrix(
   scaleZ: number
 ): ThreeMatrix4Like {
   return target.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
+}
+
+function rotateQuarryLocalOffset(
+  localX: number,
+  localZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return {
+    x: localX * cosRotation + localZ * sinRotation,
+    z: -localX * sinRotation + localZ * cosRotation,
+  };
 }
 
 function getQuarrySharedMaterials(three: Create3DModelContext['three']) {

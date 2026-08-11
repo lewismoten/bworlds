@@ -69,6 +69,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       damage now collapses its repeated marker meshes into one shared
       `InstancedMesh` per damaged tree, and full-detail forest meadow grass
       patches now collapse into one shared `InstancedMesh` per tile, and
+      full-detail quarry derricks now place their beam, pulley, cable,
+      bucket, and lantern pieces directly under the tile root instead of a
+      dedicated derrick subgroup, and
       full-detail forest beaver-cut trunks now collapse into shared
       `InstancedMesh` sets by severity, and `tile-town` now collapses its
       repeated full-detail building bodies, roofs, doors, windows, banner

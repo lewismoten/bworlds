@@ -249,7 +249,8 @@ describe('tile quarry', () => {
       (child) =>
         child instanceof FakeMesh &&
         child.material instanceof FakeMaterial &&
-        child.material.options.color === '#9c9186'
+        child.material.options.color === '#9c9186' &&
+        child.position.y < 0.1
     );
 
     expect(stoneInstances).toHaveLength(1);
@@ -305,31 +306,32 @@ describe('tile quarry', () => {
       tileY: 8,
     }) as FakeGroup | undefined;
 
-    const derrickPostInstances = model?.children
-      .flatMap((child) => child.children)
-      .filter(
-        (child) =>
-          child instanceof FakeInstancedMesh &&
-          child.userData?.quarryInstancedPart === 'derrick-post'
-      ) as FakeInstancedMesh[];
-    const standalonePosts = model?.children
-      .flatMap((child) => child.children)
-      .filter(
-        (child) =>
-          child instanceof FakeMesh &&
-          child.material instanceof FakeMaterial &&
-          child.material.options.color === '#7a573b' &&
-          child.position.y === 0.28
-      );
+    const derrickPostInstances = model?.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.quarryInstancedPart === 'derrick-post'
+    ) as FakeInstancedMesh[];
+    const standalonePosts = model?.children.filter(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.material instanceof FakeMaterial &&
+        child.material.options.color === '#7a573b' &&
+        child.position.y === 0.28
+    );
 
     expect(derrickPostInstances).toHaveLength(1);
     expect(derrickPostInstances[0]?.count).toBe(2);
     expect(derrickPostInstances[0]?.matrices).toHaveLength(2);
     expect(
-      derrickPostInstances[0]?.matrices.some((matrix) => matrix.position.x < 0)
+      derrickPostInstances[0]?.matrices[0]?.position.x !==
+        derrickPostInstances[0]?.matrices[1]?.position.x ||
+        derrickPostInstances[0]?.matrices[0]?.position.z !==
+          derrickPostInstances[0]?.matrices[1]?.position.z
     ).toBe(true);
     expect(
-      derrickPostInstances[0]?.matrices.some((matrix) => matrix.position.x > 0)
+      derrickPostInstances[0]?.matrices.every(
+        (matrix) => matrix.position.y === 0.28
+      )
     ).toBe(true);
     expect(standalonePosts).toHaveLength(0);
   });
