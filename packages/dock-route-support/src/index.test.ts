@@ -59,6 +59,33 @@ function createCircularDockRouteState() {
   };
 }
 
+function createCircularDockRouteStateWithCounters() {
+  const state = createCircularDockRouteState();
+  let totalCalls = 0;
+  let dockCalls = 0;
+
+  return {
+    state: {
+      ...state,
+      getCurrentTile(x: number, y: number) {
+        totalCalls += 1;
+        const tile = state.getCurrentTile(x, y);
+        if (tile.kind === 'dock') {
+          dockCalls += 1;
+        }
+        return tile;
+      },
+    },
+    readCounts() {
+      return { totalCalls, dockCalls };
+    },
+    resetCounts() {
+      totalCalls = 0;
+      dockCalls = 0;
+    },
+  };
+}
+
 describe('dock route support', () => {
   it('reuses deterministic boat phase seeds for repeated stop layouts', () => {
     const harborRunnerRoute = {
@@ -125,6 +152,21 @@ describe('dock route support', () => {
     expect(state.getCurrentTile(first[0]!.x, first[0]!.y).kind).toMatch(
       /^(ocean|bridge)$/
     );
+  });
+
+  it('reuses surveyed dock cluster membership across nearby route queries on the same state', () => {
+    const warmed = createCircularDockRouteStateWithCounters();
+    resolveDockBoatRoute(warmed.state as never, 0, 0);
+    warmed.resetCounts();
+    resolveDockBoatRoute(warmed.state as never, 22, 0);
+    const warmCounts = warmed.readCounts();
+
+    const cold = createCircularDockRouteStateWithCounters();
+    resolveDockBoatRoute(cold.state as never, 22, 0);
+    const coldCounts = cold.readCounts();
+
+    expect(warmCounts.dockCalls).toBeLessThan(coldCounts.dockCalls);
+    expect(warmCounts.totalCalls).toBeLessThan(coldCounts.totalCalls);
   });
 
   it('rejects docks that are too close together for a route circuit', () => {

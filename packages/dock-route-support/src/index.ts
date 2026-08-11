@@ -1,4 +1,9 @@
-import { createBoundedCache, type BoundedCache } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  createCoordinateCache,
+  type BoundedCache,
+  type CoordinateCache,
+} from '@bworlds/cache-support';
 import {
   appendHashSeedPart,
   hash2D,
@@ -76,7 +81,7 @@ type SurveyedRange = {
 type DockClusterSurveyState = {
   surveyedRows: Map<number, SurveyedRange[]>;
   clusters: Map<string, DockCluster>;
-  tileToClusterKey: Map<string, string>;
+  tileToClusterKey: CoordinateCache<string>;
 };
 
 const DEFAULT_SEARCH_RADIUS = 72;
@@ -380,14 +385,16 @@ function findOceanRouteBetweenClusters(
   from: DockCluster,
   to: DockCluster
 ): { distance: number; pathKeys: Set<string>; pathPoints: Point[] } | null {
-  const blocked = new Set<string>();
+  const blocked = createCoordinateCache<boolean>();
   const queue: RouteSearchNode[] = [];
-  const sourceKeys = new Set(
-    from.tiles.map((tile) => toPointKey(tile.x, tile.y))
-  );
-  const targetKeys = new Set(
-    to.tiles.map((tile) => toPointKey(tile.x, tile.y))
-  );
+  const sourceKeys = createCoordinateCache<boolean>();
+  const targetKeys = createCoordinateCache<boolean>();
+  for (const tile of from.tiles) {
+    sourceKeys.set(tile.x, tile.y, true);
+  }
+  for (const tile of to.tiles) {
+    targetKeys.set(tile.x, tile.y, true);
+  }
 
   for (const edgeTile of from.edgeTiles) {
     const key = toPointKey(edgeTile.x, edgeTile.y);
@@ -398,7 +405,7 @@ function findOceanRouteBetweenClusters(
       key,
       parent: null,
     });
-    blocked.add(key);
+    blocked.set(edgeTile.x, edgeTile.y, true);
   }
 
   let queueIndex = 0;
@@ -408,12 +415,15 @@ function findOceanRouteBetweenClusters(
     if (current.distance > MAX_ROUTE_DISTANCE) {
       continue;
     }
-    if (current.distance >= MIN_ROUTE_DISTANCE && targetKeys.has(current.key)) {
+    if (
+      current.distance >= MIN_ROUTE_DISTANCE &&
+      targetKeys.has(current.x, current.y)
+    ) {
       const pathKeys = new Set<string>();
       const pathPoints: Point[] = [];
       let cursor = current.parent;
       while (cursor) {
-        if (!targetKeys.has(cursor.key)) {
+        if (!targetKeys.has(cursor.x, cursor.y)) {
           pathKeys.add(cursor.key);
           pathPoints.push({ x: cursor.x, y: cursor.y });
         }
@@ -432,14 +442,17 @@ function findOceanRouteBetweenClusters(
       const neighborX = current.x + direction.x;
       const neighborY = current.y + direction.y;
       const neighborKey = toPointKey(neighborX, neighborY);
-      if (blocked.has(neighborKey) || sourceKeys.has(neighborKey)) {
+      if (
+        blocked.has(neighborX, neighborY) ||
+        sourceKeys.has(neighborX, neighborY)
+      ) {
         continue;
       }
       const kind = state.getCurrentTile(neighborX, neighborY).kind;
       if (!isBoatTravelKind(kind)) {
         continue;
       }
-      blocked.add(neighborKey);
+      blocked.set(neighborX, neighborY, true);
       queue.push({
         x: neighborX,
         y: neighborY,
@@ -476,9 +489,8 @@ function collectDockClusters(
     ) {
       const range = unsurveyedRanges[rangeIndex]!;
       for (let x = range.startX; x <= range.endX; x += 1) {
-        const key = toPointKey(x, y);
         if (
-          survey.tileToClusterKey.has(key) ||
+          survey.tileToClusterKey.has(x, y) ||
           state.getCurrentTile(x, y).kind !== 'dock'
         ) {
           continue;
@@ -491,7 +503,7 @@ function collectDockClusters(
           tileIndex += 1
         ) {
           const tile = cluster.tiles[tileIndex]!;
-          survey.tileToClusterKey.set(toPointKey(tile.x, tile.y), cluster.key);
+          survey.tileToClusterKey.set(tile.x, tile.y, cluster.key);
         }
       }
       addSurveyedRange(survey.surveyedRows, y, range.startX, range.endX);
@@ -520,7 +532,7 @@ function getDockClusterSurveyState(
     survey = {
       surveyedRows: new Map(),
       clusters: new Map(),
-      tileToClusterKey: new Map(),
+      tileToClusterKey: createCoordinateCache<string>(),
     };
     dockClusterSurveyCache.set(state, survey);
   }
@@ -609,7 +621,8 @@ function getDockClusterFromTile(
   tileY: number
 ): DockCluster {
   const queue = [{ x: tileX, y: tileY }];
-  const visited = new Set([toPointKey(tileX, tileY)]);
+  const visited = createCoordinateCache<boolean>();
+  visited.set(tileX, tileY, true);
   const tiles: Point[] = [];
 
   let queueIndex = 0;
@@ -625,14 +638,13 @@ function getDockClusterFromTile(
       const direction = CARDINAL_DIRECTIONS[directionIndex]!;
       const neighborX = current.x + direction.x;
       const neighborY = current.y + direction.y;
-      const key = toPointKey(neighborX, neighborY);
       if (
-        visited.has(key) ||
+        visited.has(neighborX, neighborY) ||
         state.getCurrentTile(neighborX, neighborY).kind !== 'dock'
       ) {
         continue;
       }
-      visited.add(key);
+      visited.set(neighborX, neighborY, true);
       queue.push({ x: neighborX, y: neighborY });
     }
   }
