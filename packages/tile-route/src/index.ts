@@ -1394,17 +1394,6 @@ function getForestLogBridgeMaterials(three: ThreeHostLike) {
   return cached;
 }
 
-function createDockGroup(
-  three: ThreeHostLike,
-  state: WorldStateLike,
-  tileX: number,
-  tileY: number
-) {
-  return runDockModelBuildToCompletion(
-    createDockGroupProgressive({ three, state, tileX, tileY })
-  );
-}
-
 function* createDockGroupProgressive({
   three,
   state,
