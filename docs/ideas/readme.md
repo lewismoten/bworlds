@@ -20,6 +20,22 @@ Do not work on this file. These are just ideas for later.
   - Allow players to compose their own songs and copy/exchange
   - Allow players to setup their own music bank
   - Allow players to invent new instruments
+- 2D map and min-map shadows/blacks out areas past visual obstructions
+- Mini map should be circular
+- Mini map should show +/- buttons on the outer rim
+- right-clicking tile (2D/3D) should support interactivity such as a radial context menu/sub-menu where clicked to perform actions either that the game supports, or that the plugin has configured/registered. Things like 
+  Debug -> Model -> Inspect -> Lab (go to lab), 
+  Debug -> Model -> Inspect -> Report (Download a PDF report), 
+  Debug -> Model -> Inspect -> Download Data (Download a JSON file), 
+  Debug -> Model -> Export... (Dialog to download as a GLB, or a PNG image of the rendered model with full transparency. If animated, option to download as frames rendered as MP4)
+  Debug -> Model -> Force LOD -> Fallback/Low/Med/High
+  Debug -> Tile -> Configure... (dialog to copy/paste/edit parameters)
+  Debug -> Tile -> Change... (dialog to change to other tyle type)
+  Debug -> Music -> Inspect -> Lab (go to lab), 
+  Debug -> Model -> Inspect -> Report (Download a PDF report), 
+  Debug -> Model -> Inspect -> Download Data (Download a JSON file), 
+  Debug -> Music -> Export... (dialog to choose format as MIDI, MP3, OGG, etc.)
+  Debug -> Music -> Configure... (Dialog to copy/paste/edit parameters via dialog)
 
 | Need            | Library        | Why                                    |
 | --------------- | -------------- | -------------------------------------- |
