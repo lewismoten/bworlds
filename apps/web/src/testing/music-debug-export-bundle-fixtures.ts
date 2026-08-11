@@ -34,9 +34,13 @@ export const TOWN_EXPORTABLE_SNAPSHOT = toExportableSnapshot(
 export function toExportableSnapshot(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
-  return withValidPercussionValidation(
-    withValidLeadContourAnalysis(
-      withValidProgressionDetections(withValidCadenceValidation(snapshot))
+  return withValidHarmonicAlignmentValidation(
+    withValidPhraseIntentValidation(
+      withValidPercussionValidation(
+        withValidLeadContourAnalysis(
+          withValidProgressionDetections(withValidCadenceValidation(snapshot))
+        )
+      )
     )
   );
 }
@@ -79,6 +83,30 @@ function withValidPercussionValidation(
   return {
     ...snapshot,
     percussionValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
+  };
+}
+
+function withValidPhraseIntentValidation(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    phraseIntentValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
+  };
+}
+
+function withValidHarmonicAlignmentValidation(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    harmonicAlignmentValidation: {
       isValidForMidiExport: true,
       messages: [],
     },

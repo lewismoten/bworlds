@@ -9,10 +9,11 @@ Always run tests to make sure all tests pass
 
 - [x] Shorten long running tests above 200ms where possible
       Progress: the fast Vitest suite no longer has any individual test above
-      `200ms`; the current slowest fast-path case is
-      `apps/web/src/procedural-music.test.ts` at `159ms` after moving
-      representative cache-churn and full-song checks into the long suite and
-      reusing file-scoped fixtures in the remaining hot audio tests.
+      `200ms`; the current slowest fast-path case is the
+      `173ms` `procedural-music-song-repair` regression after moving the
+      full-song harmony-span sweep and dock route cache-churn coverage into
+      dedicated `*.long.test.ts` files and reusing file-scoped fixtures in the
+      remaining hot audio tests.
 - [x] Move long running tests to only execute for a separate test script so development isn't slowed down
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.
   - [ ] Convert long plugin loops to generators that yield work to the scheduler.

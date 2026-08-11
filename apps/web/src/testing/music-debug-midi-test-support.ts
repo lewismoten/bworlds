@@ -67,6 +67,18 @@ export function withValidPhraseIntentValidation(
   };
 }
 
+export function withValidHarmonicAlignmentValidation(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    harmonicAlignmentValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
+  };
+}
+
 export function withValidProgressionDetections(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
@@ -90,10 +102,12 @@ export function withValidProgressionDetections(
 export function toExportableSnapshot(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
-  return withValidPercussionValidation(
-    withValidPhraseIntentValidation(
-      withValidLeadContourAnalysis(
-        withValidProgressionDetections(withValidCadenceValidation(snapshot))
+  return withValidHarmonicAlignmentValidation(
+    withValidPercussionValidation(
+      withValidPhraseIntentValidation(
+        withValidLeadContourAnalysis(
+          withValidProgressionDetections(withValidCadenceValidation(snapshot))
+        )
       )
     )
   );

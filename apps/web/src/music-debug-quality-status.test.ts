@@ -132,6 +132,14 @@ function createPassingSnapshot(
       isValidForMidiExport: true,
       messages: [],
     },
+    phraseIntentValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    harmonicAlignmentValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
     percussionValidation: {
       ...snapshot.percussionValidation,
       messages: [],

@@ -114,6 +114,14 @@ function createExportableSnapshot() {
       isValidForMidiExport: true,
       messages: [],
     },
+    phraseIntentValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
+    harmonicAlignmentValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
     leadContourAnalysis: {
       ...snapshot.leadContourAnalysis,
       finalResolvesToTonic: true,
