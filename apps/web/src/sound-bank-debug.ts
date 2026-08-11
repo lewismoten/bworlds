@@ -6,6 +6,7 @@ import {
 import {
   buildMusicDebugInstrumentWaveformMarkup,
   buildMusicDebugInstrumentPanelMarkup,
+  resolveMusicDebugInstrumentPreviewPhraseNotes,
   resolveMusicDebugInstrumentPreviewNote,
   type MusicDebugInstrumentPreviewTarget,
 } from './music-debug-instrument-panel.ts';
@@ -881,6 +882,19 @@ export function resolveSoundBankDebugPreviewNoteRole(
     ),
     options
   );
+}
+
+export function resolveSoundBankDebugPreviewPhraseRole(
+  snapshot: SoundBankDebugSnapshot,
+  role: MusicDebugInstrumentPreviewTarget,
+  nowMs: number,
+  options: { dry?: boolean } = {}
+): readonly ProceduralMusicNote[] {
+  return resolveMusicDebugInstrumentPreviewPhraseNotes(
+    snapshot.musicSnapshot,
+    role,
+    nowMs
+  ).map((note) => applySoundBankDebugPreviewMode(note, options));
 }
 
 export function createSoundBankDebugPercussionRangeAuditionNotes(

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   buildMusicDebugInstrumentPanelMarkup,
+  resolveMusicDebugInstrumentPreviewPhraseNotes,
   resolveMusicDebugInstrumentPreviewNote,
 } from './music-debug-instrument-panel.ts';
 
@@ -23,10 +24,12 @@ describe('music debug instrument panel', () => {
     expect(FOREST_MARKUP).toContain('music-debug-instrument-card');
     expect(FOREST_MARKUP).toContain('music-debug-instrument-waveform');
     expect(FOREST_MARKUP).toContain('music-debug-instrument-play');
+    expect(FOREST_MARKUP).toContain('music-debug-instrument-play-phrase');
     expect(FOREST_MARKUP).toContain('data-preview-id="lead"');
     expect(FOREST_MARKUP).toContain('data-preview-id="harmony"');
     expect(FOREST_MARKUP).toContain('data-preview-id="bass"');
     expect(FOREST_MARKUP).toContain('data-preview-id="percussion:');
+    expect(FOREST_MARKUP).toContain('Play Phrase');
     expect(FOREST_MARKUP).toContain('percussion / ');
     expect(FOREST_MARKUP).toContain('>Melody<');
     expect(FOREST_MARKUP).toContain('>Harmony<');
@@ -76,5 +79,23 @@ describe('music debug instrument panel', () => {
         startMs: 7_004,
       })
     );
+  });
+
+  it('derives a short phrase preview from the current role notes', () => {
+    const notes = resolveMusicDebugInstrumentPreviewPhraseNotes(
+      FOREST_SNAPSHOT,
+      'lead',
+      9_000
+    );
+
+    expect(notes.length).toBeGreaterThan(1);
+    expect(notes.length).toBeLessThanOrEqual(8);
+    expect(notes[0]?.instrumentId).toBe(
+      FOREST_SNAPSHOT.instrumentBank.instruments.lead.id
+    );
+    expect(notes[0]?.startMs).toBe(9_004);
+    expect(
+      notes.every((note) => note.role === 'lead' && note.startMs >= 9_004)
+    ).toBe(true);
   });
 });

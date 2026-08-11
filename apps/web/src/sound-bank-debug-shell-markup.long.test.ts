@@ -57,6 +57,7 @@ describe('sound bank debug shell markup', () => {
     expect(markup).toContain('sound-bank-debug-layout-compact');
     expect(markup).toContain('sound-bank-debug-layout-expanded');
     expect(markup).toContain('Play Melody');
+    expect(markup).toContain('Play Phrase');
     expect(markup).toContain('Play Harmony');
     expect(markup).toContain('Play Bass');
     expect(markup).toContain('Play percussion / ');

@@ -13,6 +13,7 @@ import {
   normalizeSoundBankDebugPercussionBrowserState,
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
+  resolveSoundBankDebugPreviewPhraseRole,
   resolveSoundBankDebugPreviewNoteRole,
   type SoundBankDebugGeneralMidiBrowserState,
   type SoundBankDebugLayoutMode,
@@ -507,7 +508,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
     );
 
   document
-    .querySelectorAll<HTMLButtonElement>('.music-debug-instrument-play')
+    .querySelectorAll<HTMLButtonElement>(
+      '.music-debug-instrument-play, .music-debug-instrument-play-phrase'
+    )
     .forEach((button) => {
       button.addEventListener(
         'click',
@@ -524,23 +527,40 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
             );
             return;
           }
-          const previewNote = resolveSoundBankDebugPreviewNoteRole(
-            snapshot,
-            previewTarget,
-            performance.now(),
-            { dry: previewMode === 'dry' }
-          );
-          if (!previewNote) {
+          const nowMs = performance.now();
+          const previewNotes = button.classList.contains(
+            'music-debug-instrument-play-phrase'
+          )
+            ? resolveSoundBankDebugPreviewPhraseRole(
+                snapshot,
+                previewTarget,
+                nowMs,
+                { dry: previewMode === 'dry' }
+              )
+            : (() => {
+                const previewNote = resolveSoundBankDebugPreviewNoteRole(
+                  snapshot,
+                  previewTarget,
+                  nowMs,
+                  { dry: previewMode === 'dry' }
+                );
+                return previewNote ? [previewNote] : [];
+              })();
+          if (previewNotes.length === 0) {
             setAudioFeedback(
               'Audio unavailable',
-              'No preview note could be resolved for this role.'
+              'No preview notes could be resolved for this role.'
             );
             return;
           }
           stopPreview();
-          player.play(previewNote);
+          for (const previewNote of previewNotes) {
+            player.play(previewNote);
+          }
           setAudioFeedback(
-            `Previewing ${previewTarget.replace('percussion:', 'percussion / ')} (${previewMode})`,
+            `Previewing ${previewTarget.replace('percussion:', 'percussion / ')}${
+              previewNotes.length > 1 ? ' phrase' : ''
+            } (${previewMode})`,
             null
           );
         },

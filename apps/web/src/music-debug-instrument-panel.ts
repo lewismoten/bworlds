@@ -1,6 +1,9 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { createMusicDebugPercussionVoiceCounts } from './music-debug-percussion-report.ts';
-import { createMusicDebugInstrumentPreviewPlaybackNote } from './music-debug-playback-profile.ts';
+import {
+  createMusicDebugInstrumentPreviewPlaybackNote,
+  createMusicDebugInstrumentPreviewPlaybackNotes,
+} from './music-debug-playback-profile.ts';
 import {
   formatMusicDebugDisplayRoleLabel,
   MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
@@ -81,6 +84,40 @@ export function resolveMusicDebugInstrumentPreviewNote(
   );
 }
 
+export function resolveMusicDebugInstrumentPreviewPhraseNotes(
+  snapshot: MusicDebugSnapshot,
+  target: MusicDebugInstrumentPreviewTarget,
+  nowMs: number
+): readonly ProceduralMusicNote[] {
+  if (target.startsWith('percussion:')) {
+    const voiceId = target.slice('percussion:'.length);
+    const sourceNotes = snapshot.notes.filter(
+      (note) =>
+        note.role === 'percussion' &&
+        note.instrumentId.includes(`perc-${voiceId}:`)
+    );
+    if (sourceNotes.length === 0) {
+      return [];
+    }
+    return createMusicDebugInstrumentPreviewPlaybackNotes(
+      sourceNotes,
+      sourceNotes[0]?.instrumentId ?? '',
+      nowMs
+    );
+  }
+
+  const sourceNotes = snapshot.notes.filter((note) => note.role === target);
+  if (sourceNotes.length === 0) {
+    return [];
+  }
+
+  return createMusicDebugInstrumentPreviewPlaybackNotes(
+    sourceNotes,
+    snapshot.instrumentBank.instruments[target].id,
+    nowMs
+  );
+}
+
 function buildMusicDebugInstrumentCardMarkup(options: {
   trackLabel: string;
   title: string;
@@ -103,6 +140,13 @@ function buildMusicDebugInstrumentCardMarkup(options: {
           data-preview-id="${options.previewTarget}"
         >
           Play ${options.trackLabel}
+        </button>
+        <button
+          type="button"
+          class="music-debug-instrument-play-phrase"
+          data-preview-id="${options.previewTarget}"
+        >
+          Play Phrase
         </button>
       </div>
       <div class="music-debug-instrument-waveform">

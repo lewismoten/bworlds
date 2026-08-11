@@ -3,6 +3,8 @@ import type { ProceduralMusicNote } from './procedural-music.ts';
 const MUSIC_DEBUG_INSTRUMENT_PREVIEW_LEAD_MS = 4;
 const MUSIC_DEBUG_INSTRUMENT_PREVIEW_MIN_DURATION_MS = 140;
 const MUSIC_DEBUG_INSTRUMENT_PREVIEW_MAX_DURATION_MS = 420;
+const MUSIC_DEBUG_INSTRUMENT_PREVIEW_PHRASE_MAX_NOTES = 8;
+const MUSIC_DEBUG_INSTRUMENT_PREVIEW_PHRASE_MAX_SPAN_MS = 1_800;
 export const MUSIC_DEBUG_PLAYBACK_CONTROLLER_LEAD_MS = 6;
 export const MUSIC_DEBUG_PLAYBACK_SCHEDULE_AHEAD_MS = 16;
 export const MUSIC_DEBUG_PLAYBACK_SCHEDULE_WINDOW_MS = 320;
@@ -39,6 +41,38 @@ export function createMusicDebugInstrumentPreviewPlaybackNote(
     ),
     volume: Math.min(0.072, note.volume * 1.18),
   };
+}
+
+export function createMusicDebugInstrumentPreviewPlaybackNotes(
+  notes: readonly ProceduralMusicNote[],
+  instrumentId: string,
+  nowMs: number
+): readonly ProceduralMusicNote[] {
+  const firstNote = notes[0];
+  if (!firstNote) {
+    return [];
+  }
+  const firstStartMs = firstNote.startMs;
+  const selectedNotes: ProceduralMusicNote[] = [];
+
+  for (const note of notes) {
+    const relativeStartMs = Math.max(0, note.startMs - firstStartMs);
+    if (
+      selectedNotes.length >= MUSIC_DEBUG_INSTRUMENT_PREVIEW_PHRASE_MAX_NOTES ||
+      relativeStartMs > MUSIC_DEBUG_INSTRUMENT_PREVIEW_PHRASE_MAX_SPAN_MS
+    ) {
+      break;
+    }
+    selectedNotes.push(note);
+  }
+
+  return selectedNotes.map((note) =>
+    createMusicDebugInstrumentPreviewPlaybackNote(
+      note,
+      instrumentId,
+      nowMs + Math.max(0, note.startMs - firstStartMs)
+    )
+  );
 }
 
 export function createMusicDebugScheduledPlaybackNote(
