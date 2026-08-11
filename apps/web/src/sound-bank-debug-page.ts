@@ -816,6 +816,9 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           if (!referencePatchRole && !isSoundBankPreviewRole(previewTarget)) {
             return;
           }
+          const previewRole = isSoundBankPreviewRole(previewTarget)
+            ? previewTarget
+            : null;
           const player = await ensureInstrumentPreviewPlayer();
           if (player.getAudioState() === 'unavailable') {
             setAudioFeedback(
@@ -837,7 +840,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
             : button.classList.contains('music-debug-instrument-play-phrase')
               ? resolveSoundBankDebugPreviewPhraseRole(
                   snapshot,
-                  previewTarget,
+                  previewRole,
                   nowMs,
                   {
                     dry: previewMode === 'dry',
@@ -849,7 +852,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
               : (() => {
                   const previewNote = resolveSoundBankDebugPreviewNoteRole(
                     snapshot,
-                    previewTarget,
+                    previewRole,
                     nowMs,
                     {
                       dry: previewMode === 'dry',
@@ -874,7 +877,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
           setAudioFeedback(
             referencePatchRole
               ? `Previewing reference ${referencePatchRole} phrase (${previewMode})`
-              : `Previewing ${previewTarget.replace('percussion:', 'percussion / ')}${
+              : `Previewing ${previewRole.replace('percussion:', 'percussion / ')}${
                   previewNotes.length > 1 ? ' phrase' : ''
                 } (${previewMode})`,
             null
