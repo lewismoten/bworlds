@@ -18,4 +18,7 @@ Current behavior:
 
 This complements the existing terrain-signal and route-presence caching in
 `createRoadsideRouteProfile(...)` and directly supports the route-calculation
-reduction work tracked in `docs/todo/errors.md`.
+reduction work tracked in `docs/todo/errors.md`. `tile-route` now also reuses
+the final `createConnectedRoutePathResolver(...)` result across repeated
+classifications that share the same anchor arrays, so nearby route scans avoid
+rebuilding the point-query layer on top of these cached segments.

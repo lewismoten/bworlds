@@ -185,8 +185,11 @@ Always run tests to make sure all tests pass
       pass, and `tile-route` now reuses resolved dock-footprint scans across
       repeated nearby classifications that share the same raw terrain sampler
       and `poiAnchors` array instead of rediscovering the same coastal
-      segments tile by tile, and `runtime-rail-network` now delegates directly
-      to the shared
+      segments tile by tile, and `tile-route` now reuses connected-route
+      resolvers across repeated nearby classifications that share the same
+      `townAnchors` and `bridgeAnchors` arrays instead of rebuilding the
+      point-query layer on every route classification, and
+      `runtime-rail-network` now delegates directly to the shared
       `rail-support` region and train caches instead of adding a duplicate
       per-tile runtime cache layer, and `rail-support` now caches terrain
       reads for one `buildRailConnections()` pass so overlapping candidate

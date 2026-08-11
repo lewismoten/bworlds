@@ -2,9 +2,10 @@
 
 `tile-route` now wraps `sampleTerrainSignals(...)` in a per-classification
 coordinate cache before running dock, road, bridge, and forest-log-bridge
-classification helpers, and it reuses dock-footprint scans across repeated
-route classifications that share the same raw terrain sampler and `poiAnchors`
-array.
+classification helpers, it reuses dock-footprint scans across repeated route
+classifications that share the same raw terrain sampler and `poiAnchors`
+array, and it reuses connected-route resolvers across repeated classifications
+that share the same `townAnchors` and `bridgeAnchors` arrays.
 
 The sampler cache is intentionally local to a single
 `classifyOverworldTile(...)` call:
@@ -21,6 +22,14 @@ The dock-footprint cache is intentionally a little broader:
   `poiAnchors` array identity
 - behavior stays deterministic because the cache only memoizes pure coastline
   geometry and does not mutate anchors or sampled signals
+
+The connected-route resolver cache is similarly scoped:
+
+- repeated nearby route classifications can reuse one route-presence resolver
+- the shared resolver only keys off the `townAnchors` and `bridgeAnchors`
+  array identities
+- behavior stays deterministic because the resolver still delegates to the same
+  cached route-segment calculations and only memoizes repeated point queries
 
 This reduces repeated terrain reads in hot bridge and route classification
 paths without changing the external plugin API.

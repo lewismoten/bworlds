@@ -20,8 +20,8 @@ import {
 } from '@bworlds/procedural-style';
 import {
   createBoundarySurfaceProfile,
+  createConnectedRoutePathResolver,
   createRouteTraversalProfile,
-  hasConnectedRoutePath,
   hasLinearRouteSignal,
   isBridgeWaterKind,
   isRouteTerminalKind,
@@ -137,6 +137,13 @@ const dockClassificationFootprintCache = new WeakMap<
   WeakMap<
     NonNullable<ClassifyOverworldTileContext['poiAnchors']>,
     ReturnType<typeof createCoordinateCache<true>>
+  >
+>();
+const connectedRoutePathResolverCache = new WeakMap<
+  NonNullable<ClassifyOverworldTileContext['townAnchors']>,
+  WeakMap<
+    NonNullable<ClassifyOverworldTileContext['bridgeAnchors']>,
+    ReturnType<typeof createConnectedRoutePathResolver>
   >
 >();
 const roadStyleCache = createBoundedCache<string, RoadStyleBlueprint>(
@@ -588,7 +595,13 @@ function classifyConnectedRoad({
   if (dockKind) {
     return dockKind;
   }
-  if (hasConnectedRoutePath({ x, y, townAnchors, bridgeAnchors })) {
+  const hasRoutePath = resolveConnectedRoutePathPresence({
+    x,
+    y,
+    townAnchors,
+    bridgeAnchors,
+  });
+  if (hasRoutePath) {
     if (isBridgeWaterKind(baseKind)) {
       return canClassifyBridgeWaterTile({
         x,
@@ -924,6 +937,42 @@ function createCachedTerrainSignalSampler(
     >();
   return (x: number, y: number) =>
     cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
+}
+
+function resolveConnectedRoutePathPresence({
+  x,
+  y,
+  townAnchors,
+  bridgeAnchors,
+}: Pick<
+  ClassifyOverworldTileContext,
+  'x' | 'y' | 'townAnchors' | 'bridgeAnchors'
+>) {
+  const resolver = getConnectedRoutePathResolver(townAnchors, bridgeAnchors);
+  return resolver ? resolver(x, y) : false;
+}
+
+function getConnectedRoutePathResolver(
+  townAnchors: ClassifyOverworldTileContext['townAnchors'],
+  bridgeAnchors: ClassifyOverworldTileContext['bridgeAnchors']
+) {
+  if (!townAnchors || !bridgeAnchors) {
+    return null;
+  }
+  let bridgeCache = connectedRoutePathResolverCache.get(townAnchors);
+  if (!bridgeCache) {
+    bridgeCache = new WeakMap();
+    connectedRoutePathResolverCache.set(townAnchors, bridgeCache);
+  }
+  let resolver = bridgeCache.get(bridgeAnchors);
+  if (!resolver) {
+    resolver = createConnectedRoutePathResolver({
+      townAnchors,
+      bridgeAnchors,
+    });
+    bridgeCache.set(bridgeAnchors, resolver);
+  }
+  return resolver;
 }
 
 function resolveTerrainSignalSamplerSource(

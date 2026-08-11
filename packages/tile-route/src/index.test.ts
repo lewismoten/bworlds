@@ -443,6 +443,65 @@ describe('tile route', () => {
     }
   });
 
+  it('reuses connected route resolvers across repeated classifications', () => {
+    let coordinateReads = 0;
+    const townAnchors = [
+      {
+        get x() {
+          coordinateReads += 1;
+          return 0;
+        },
+        get y() {
+          coordinateReads += 1;
+          return 0;
+        },
+        name: 'Oakcross',
+      } as { x: number; y: number; name: string },
+    ];
+    const bridgeAnchors: Array<{ x: number; y: number }> = [];
+
+    expect(
+      classifier?.(
+        createRouteClassifierPayload({
+          x: 0,
+          y: 0,
+          tile: { kind: 'plains' },
+          townAnchors,
+          bridgeAnchors,
+          poiAnchors: [],
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        kind: 'road',
+      })
+    );
+
+    const readsAfterFirstClassification = coordinateReads;
+    expect(readsAfterFirstClassification).toBeGreaterThan(0);
+
+    expect(
+      classifier?.(
+        createRouteClassifierPayload({
+          x: 0,
+          y: 0,
+          tile: { kind: 'plains' },
+          townAnchors,
+          bridgeAnchors,
+          poiAnchors: [],
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        kind: 'road',
+      })
+    );
+
+    expect(coordinateReads - readsAfterFirstClassification).toBeLessThan(
+      readsAfterFirstClassification
+    );
+  });
+
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
     expect(resolver?.(createRouteFloorPayload())).toBe('plains');
   });
