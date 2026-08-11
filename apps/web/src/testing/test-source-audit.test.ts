@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  auditRepositoryTestSources,
   findSuspiciousTestSourcePatterns,
   TEST_SOURCE_AUDIT_DISABLE_NEXT_LINE,
 } from './test-source-audit.ts';
@@ -68,9 +67,5 @@ describe('test source audit', () => {
         'apps/web/src/parser.test.ts'
       )
     ).toEqual([]);
-  });
-
-  it('keeps repository test sources free of unbounded loops and oversized fixtures', async () => {
-    await expect(auditRepositoryTestSources()).resolves.toEqual([]);
   });
 });

@@ -16,7 +16,7 @@ Related commands:
 
 - `npm test`
   Runs the supervised fast suite and excludes the known long-running files,
-  including heavy MIDI export audit coverage.
+  including heavy MIDI export audit coverage and repository-wide audit sweeps.
 - `npm run test:all`
   Runs the supervised full suite without fast-suite exclusions.
 - `npm run test:long`

@@ -6,6 +6,7 @@ export const LONG_TEST_FILES = [
   'apps/web/src/music-debug-midi.test.ts',
   'apps/web/src/music-debug-note-analysis.test.ts',
   'apps/web/src/music-debug.test.ts',
+  'apps/web/src/testing/test-source-audit-repository.test.ts',
   'apps/web/src/music-debug-track-stats.test.ts',
   'apps/web/src/procedural-music-harmony.test.ts',
   'apps/web/src/procedural-music-song.test.ts',
