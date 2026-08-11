@@ -17,6 +17,10 @@ type RoleHumanizationProfile = {
   timingOffsetMs: readonly number[];
   velocityMultiplier: readonly number[];
 };
+type SectionRoleIdentity = {
+  timingOffsetMs: readonly number[];
+  velocityMultiplier: readonly number[];
+};
 
 type PhraseBoundaryArticulation = {
   attackMultiplier: number;
@@ -51,6 +55,10 @@ const ROLE_HUMANIZATION_PROFILES: Record<
     velocityMultiplier: [1.06, 0.96, 1.04, 0.98, 1.05, 0.97, 1.03, 0.99],
   },
 } as const;
+const NEUTRAL_SECTION_ROLE_IDENTITY: SectionRoleIdentity = {
+  timingOffsetMs: [0, 0, 0, 0, 0, 0, 0, 0],
+  velocityMultiplier: [1, 1, 1, 1, 1, 1, 1, 1],
+} as const;
 
 export function transformSongSectionNote(
   note: ProceduralMusicNote,
@@ -83,11 +91,13 @@ export function transformSongSectionNote(
       : null;
   const roleTimingOffsetMs = resolveRoleTimingOffsetMs({
     role: note.role,
+    sectionId: section.id,
     phrasePosition: sectionContext.phrasePosition,
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
   const roleVelocityMultiplier = resolveRoleVelocityMultiplier({
     role: note.role,
+    sectionId: section.id,
     phrasePosition: sectionContext.phrasePosition,
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
@@ -232,6 +242,7 @@ function transformAprimeSectionNote(
       layerTreatment.velocityMultiplier *
       resolveRoleVelocityMultiplier({
         role: note.role,
+        sectionId: 'a-prime',
         phrasePosition,
         preserveRepairPitch,
       }),
@@ -256,6 +267,7 @@ function transformAprimeSectionNote(
       (leadRhythmOptions?.startOffsetMs ?? 0) +
       resolveRoleTimingOffsetMs({
         role: note.role,
+        sectionId: 'a-prime',
         phrasePosition,
         preserveRepairPitch,
       }),
@@ -300,6 +312,7 @@ function transformVariationSectionNote(
       layerTreatment.velocityMultiplier *
       resolveRoleVelocityMultiplier({
         role: note.role,
+        sectionId: 'variation',
         phrasePosition,
         preserveRepairPitch,
       }),
@@ -316,6 +329,7 @@ function transformVariationSectionNote(
       (leadRhythmOptions?.startOffsetMs ?? 0) +
       resolveRoleTimingOffsetMs({
         role: note.role,
+        sectionId: 'variation',
         phrasePosition,
         preserveRepairPitch,
       }),
@@ -430,6 +444,7 @@ function resolveLeadRhythmIdentityOptions(options: {
 
 function resolveRoleTimingOffsetMs(options: {
   role: ProceduralMusicNote['role'];
+  sectionId: ProceduralMusicSongSection['id'];
   phrasePosition: number;
   preserveRepairPitch: boolean;
 }): number {
@@ -438,11 +453,19 @@ function resolveRoleTimingOffsetMs(options: {
   }
 
   const pattern = ROLE_HUMANIZATION_PROFILES[options.role].timingOffsetMs;
-  return pattern[options.phrasePosition % pattern.length] ?? 0;
+  const sectionPattern = resolveSectionRoleIdentity(
+    options.sectionId,
+    options.role
+  ).timingOffsetMs;
+  const patternIndex = options.phrasePosition % pattern.length;
+  return (
+    (pattern[patternIndex] ?? 0) + (sectionPattern[patternIndex] ?? 0)
+  );
 }
 
 function resolveRoleVelocityMultiplier(options: {
   role: ProceduralMusicNote['role'];
+  sectionId: ProceduralMusicSongSection['id'];
   phrasePosition: number;
   preserveRepairPitch: boolean;
 }): number {
@@ -451,7 +474,52 @@ function resolveRoleVelocityMultiplier(options: {
   }
 
   const pattern = ROLE_HUMANIZATION_PROFILES[options.role].velocityMultiplier;
-  return pattern[options.phrasePosition % pattern.length] ?? 1;
+  const sectionPattern = resolveSectionRoleIdentity(
+    options.sectionId,
+    options.role
+  ).velocityMultiplier;
+  const patternIndex = options.phrasePosition % pattern.length;
+  return (
+    (pattern[patternIndex] ?? 1) * (sectionPattern[patternIndex] ?? 1)
+  );
+}
+
+function resolveSectionRoleIdentity(
+  sectionId: ProceduralMusicSongSection['id'],
+  role: ProceduralMusicNote['role']
+): SectionRoleIdentity {
+  if (role === 'lead') {
+    return NEUTRAL_SECTION_ROLE_IDENTITY;
+  }
+
+  switch (sectionId) {
+    case 'b':
+      return role === 'bass'
+        ? {
+            timingOffsetMs: [-2, 1, -1, 2, -2, 1, -1, 2],
+            velocityMultiplier: [1.04, 1, 1.02, 0.98, 1.04, 1, 1.02, 0.99],
+          }
+        : role === 'harmony'
+          ? {
+              timingOffsetMs: [3, 1, 4, 2, 3, 1, 4, 2],
+              velocityMultiplier: [1, 1.03, 0.99, 1.02, 1, 1.03, 0.99, 1.02],
+            }
+          : NEUTRAL_SECTION_ROLE_IDENTITY;
+    case 'return':
+      return role === 'bass'
+        ? {
+            timingOffsetMs: [0, 0, -1, 1, 0, 0, -1, 1],
+            velocityMultiplier: [1.02, 1, 1.01, 0.99, 1.02, 1, 1.01, 0.99],
+          }
+        : role === 'harmony'
+          ? {
+              timingOffsetMs: [2, 3, 2, 3, 2, 3, 2, 4],
+              velocityMultiplier: [1.01, 1.02, 1, 1.01, 1.01, 1.02, 1, 1.02],
+            }
+          : NEUTRAL_SECTION_ROLE_IDENTITY;
+    default:
+      return NEUTRAL_SECTION_ROLE_IDENTITY;
+  }
 }
 
 function resolvePhraseBoundaryArticulation(options: {

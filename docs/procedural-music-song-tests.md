@@ -16,6 +16,9 @@ can parallelize them and the file boundaries match the behavior under test:
   covers arrangement identity, shared DNA, and section layer-plan behavior.
 - [procedural-music-song-arrangement-dynamics.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-arrangement-dynamics.long.test.ts:1)
   covers arrangement density and motif-versus-filler emphasis.
+- [procedural-music-song-variation.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-variation.test.ts:1)
+  covers section-scoped note transforms, including lead phrase identities and
+  repeating accompaniment timing identities inside the same section.
 - [procedural-music-song-motif.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-motif.test.ts:1)
   covers opening motif restatement, variation transposition, regeneration of
   missed motif sections, the immediate post-statement filler trim, and the

@@ -284,6 +284,87 @@ describe('procedural music song variation', () => {
     expect(firstPercussion?.velocity).toBe(repeatedPercussion?.velocity);
   });
 
+  it('keeps accompaniment timing identities consistent within a section but different across sections', () => {
+    const bassInB = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      createSection('b'),
+      1,
+      0
+    );
+    const repeatedBassInB = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      createSection('b'),
+      9,
+      0
+    );
+    const bassInReturn = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'bass',
+        instrumentId: 'deep-forest:bass:0:0',
+        waveform: 'sine',
+      },
+      createSection('return'),
+      1,
+      0
+    );
+    const harmonyInB = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'harmony',
+        instrumentId: 'deep-forest:harmony:0:0',
+      },
+      createSection('b'),
+      3,
+      0
+    );
+    const repeatedHarmonyInB = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'harmony',
+        instrumentId: 'deep-forest:harmony:0:0',
+      },
+      createSection('b'),
+      11,
+      0
+    );
+    const harmonyInReturn = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'harmony',
+        instrumentId: 'deep-forest:harmony:0:0',
+      },
+      createSection('return'),
+      3,
+      0
+    );
+
+    expect(bassInB).not.toBeNull();
+    expect(repeatedBassInB).not.toBeNull();
+    expect(bassInReturn).not.toBeNull();
+    expect(harmonyInB).not.toBeNull();
+    expect(repeatedHarmonyInB).not.toBeNull();
+    expect(harmonyInReturn).not.toBeNull();
+
+    expect(repeatedBassInB?.startMs).toBe(bassInB?.startMs);
+    expect(repeatedBassInB?.velocity).toBe(bassInB?.velocity);
+    expect(repeatedHarmonyInB?.startMs).toBe(harmonyInB?.startMs);
+    expect(repeatedHarmonyInB?.velocity).toBe(harmonyInB?.velocity);
+
+    expect(bassInReturn?.startMs).not.toBe(bassInB?.startMs);
+    expect(harmonyInReturn?.startMs).not.toBe(harmonyInB?.startMs);
+  });
+
   it('changes articulation at phrase boundaries for sustained non-percussion roles', () => {
     const section = createSection('a');
     const openingLead = transformSongSectionNote(
