@@ -24,6 +24,7 @@ import type {
   Model3DResourceCostEstimate,
   RuntimePlugin,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeObject3DLike,
   WorldEnvironmentLike,
 } from '@bworlds/plugin-api';
@@ -41,6 +42,9 @@ const LIGHTHOUSE_FRAME_KEY = 'lighthouseFrame';
 const LIGHTHOUSE_BALCONY_KEY = 'lighthouseBalcony';
 const LIGHTHOUSE_BALCONY_RAIL_KEY = 'lighthouseBalconyRail';
 const LIGHTHOUSE_WALL_GLOW_KEY = 'lighthouseWallGlow';
+const LIGHTHOUSE_FRAME_POST_INSTANCED_KEY = 'lighthouseFramePostInstanced';
+const LIGHTHOUSE_BALCONY_RAIL_POST_INSTANCED_KEY =
+  'lighthouseBalconyRailPostInstanced';
 const LIGHTHOUSE_REGION_SIZE = 18;
 export const LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES = 96;
 const LIGHTHOUSE_BEAM_COLOR_SEED = registerHashLabel('lighthouse-beam-color');
@@ -80,10 +84,10 @@ const LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS = [
   { radius: 0.24, length: 1.5, opacity: 0.1, emissiveIntensity: 0.58 },
 ] as const;
 const LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
-  object3dCount: 33,
+  object3dCount: 27,
   groupCount: 2,
-  meshCount: 30,
-  geometryCount: 30,
+  meshCount: 24,
+  geometryCount: 24,
   materialCount: 9,
   lightCount: 1,
   shadowLightCount: 0,
@@ -404,26 +408,40 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
         group.add(frameRing);
       }
 
-      for (const offset of [
+      const framePostInstances = markOptionalDecorativeRenderBudgetPart(
+        new three.InstancedMesh(
+          getSharedBoxGeometry(three, 0.03, 0.28, 0.03),
+          frameMaterial,
+          4
+        ),
+        { label: 'frame-post' }
+      );
+      framePostInstances.userData = {
+        ...(framePostInstances.userData ?? {}),
+        [LIGHTHOUSE_FRAME_KEY]: true,
+        [LIGHTHOUSE_FRAME_POST_INSTANCED_KEY]: true,
+      };
+      const framePostMatrixScratch = new three.Matrix4();
+      [
         { x: 0.18, z: 0 },
         { x: -0.18, z: 0 },
         { x: 0, z: 0.18 },
         { x: 0, z: -0.18 },
-      ]) {
-        const framePost = markOptionalDecorativeRenderBudgetPart(
-          new three.Mesh(
-            getSharedBoxGeometry(three, 0.03, 0.28, 0.03),
-            frameMaterial
-          ),
-          { label: 'frame-post' }
+      ].forEach((offset, index) => {
+        framePostInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            framePostMatrixScratch,
+            tileX + offset.x,
+            1.86,
+            tileY + offset.z,
+            1,
+            1,
+            1
+          )
         );
-        framePost.userData = {
-          ...(framePost.userData ?? {}),
-          [LIGHTHOUSE_FRAME_KEY]: true,
-        };
-        framePost.position.set(tileX + offset.x, 1.86, tileY + offset.z);
-        group.add(framePost);
-      }
+      });
+      group.add(framePostInstances);
 
       for (const offset of [
         { x: 0.255, z: 0, width: 0.04, depth: 0.22 },
@@ -508,26 +526,40 @@ export function createLighthouseTilePlugin(): RuntimePlugin {
       balconyRailRing.position.set(tileX, 1.83, tileY);
       group.add(balconyRailRing);
 
-      for (const offset of [
+      const balconyRailPostInstances = markOptionalDecorativeRenderBudgetPart(
+        new three.InstancedMesh(
+          getSharedBoxGeometry(three, 0.03, 0.18, 0.03),
+          frameMaterial,
+          4
+        ),
+        { label: 'balcony-rail-post' }
+      );
+      balconyRailPostInstances.userData = {
+        ...(balconyRailPostInstances.userData ?? {}),
+        [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
+        [LIGHTHOUSE_BALCONY_RAIL_POST_INSTANCED_KEY]: true,
+      };
+      const balconyRailPostMatrixScratch = new three.Matrix4();
+      [
         { x: 0.34, z: 0 },
         { x: -0.34, z: 0 },
         { x: 0, z: 0.34 },
         { x: 0, z: -0.34 },
-      ]) {
-        const balconyRailPost = markOptionalDecorativeRenderBudgetPart(
-          new three.Mesh(
-            getSharedBoxGeometry(three, 0.03, 0.18, 0.03),
-            frameMaterial
-          ),
-          { label: 'balcony-rail-post' }
+      ].forEach((offset, index) => {
+        balconyRailPostInstances.setMatrixAt(
+          index,
+          writeInstancedScalePositionMatrix(
+            balconyRailPostMatrixScratch,
+            tileX + offset.x,
+            1.75,
+            tileY + offset.z,
+            1,
+            1,
+            1
+          )
         );
-        balconyRailPost.userData = {
-          ...(balconyRailPost.userData ?? {}),
-          [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
-        };
-        balconyRailPost.position.set(tileX + offset.x, 1.75, tileY + offset.z);
-        group.add(balconyRailPost);
-      }
+      });
+      group.add(balconyRailPostInstances);
 
       for (const offset of [
         { x: 0.22, z: 0 },
@@ -733,4 +765,16 @@ function getLighthouseBeamSegmentScale(
     return scales.mid;
   }
   return scales.far;
+}
+
+function writeInstancedScalePositionMatrix(
+  matrix: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return matrix.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }

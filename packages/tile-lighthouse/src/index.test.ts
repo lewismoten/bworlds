@@ -37,6 +37,28 @@ class FakeMaterial {
   }
 }
 
+class FakeMatrix4 {
+  position = { x: 0, y: 0, z: 0 };
+  scale = { x: 1, y: 1, z: 1 };
+
+  makeScale(x: number, y: number, z: number) {
+    this.scale = { x, y, z };
+    return this;
+  }
+
+  setPosition(x: number, y: number, z: number) {
+    this.position = { x, y, z };
+    return this;
+  }
+
+  clone() {
+    const next = new FakeMatrix4();
+    next.position = { ...this.position };
+    next.scale = { ...this.scale };
+    return next;
+  }
+}
+
 class FakeNode {
   position = {
     x: 0,
@@ -94,6 +116,22 @@ class FakeMesh extends FakeNode {
   }
 }
 
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[],
+    public count = 0
+  ) {
+    super();
+  }
+
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
+  }
+}
+
 class FakePointLight extends FakeNode {
   intensity: number;
 
@@ -114,6 +152,8 @@ class FakePointLight extends FakeNode {
 const fakeThree = {
   Group: FakeGroup,
   Mesh: FakeMesh,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
   MeshBasicMaterial: FakeMaterial,
@@ -322,10 +362,10 @@ describe('tile lighthouse', () => {
     });
 
     expect(fullEstimate).toEqual({
-      object3dCount: 33,
+      object3dCount: 27,
       groupCount: 2,
-      meshCount: 30,
-      geometryCount: 30,
+      meshCount: 24,
+      geometryCount: 24,
       materialCount: 9,
       lightCount: 1,
       shadowLightCount: 0,
@@ -373,10 +413,10 @@ describe('tile lighthouse', () => {
         model,
       })
     ).toEqual({
-      object3dCount: 33,
+      object3dCount: 27,
       groupCount: 2,
-      meshCount: 30,
-      geometryCount: 30,
+      meshCount: 24,
+      geometryCount: 24,
       materialCount: 9,
       lightCount: 1,
       shadowLightCount: 0,
@@ -444,13 +484,25 @@ describe('tile lighthouse', () => {
       'lighthouseBalconyRail'
     );
     const wallGlowMeshes = collectTaggedMeshes(model, 'lighthouseWallGlow');
+    const framePostInstances = collectTaggedInstancedMeshes(
+      model,
+      'lighthouseFramePostInstanced'
+    );
+    const balconyRailPostInstances = collectTaggedInstancedMeshes(
+      model,
+      'lighthouseBalconyRailPostInstanced'
+    );
 
     expect(glassMeshes).toHaveLength(1);
-    expect(frameMeshes).toHaveLength(6);
+    expect(frameMeshes).toHaveLength(3);
     expect(lensMeshes).toHaveLength(1);
     expect(balconyMeshes).toHaveLength(1);
-    expect(balconyRailMeshes).toHaveLength(5);
+    expect(balconyRailMeshes).toHaveLength(2);
     expect(wallGlowMeshes).toHaveLength(4);
+    expect(framePostInstances).toHaveLength(1);
+    expect(framePostInstances[0]?.count).toBe(4);
+    expect(balconyRailPostInstances).toHaveLength(1);
+    expect(balconyRailPostInstances[0]?.count).toBe(4);
     expect(
       (glassMeshes[0]?.material as FakeMaterial | undefined)?.options
         .transparent
@@ -1150,6 +1202,19 @@ function collectTaggedMeshes(
   root?.traverse((node) => {
     if (node.userData?.[key]) {
       meshes.push(node as FakeMesh);
+    }
+  });
+  return meshes;
+}
+
+function collectTaggedInstancedMeshes(
+  root: FakeNode | undefined,
+  key: string
+): FakeInstancedMesh[] {
+  const meshes: FakeInstancedMesh[] = [];
+  root?.traverse((node) => {
+    if (node instanceof FakeInstancedMesh && node.userData?.[key]) {
+      meshes.push(node);
     }
   });
   return meshes;
