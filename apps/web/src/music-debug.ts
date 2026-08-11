@@ -868,7 +868,7 @@ export function buildMusicDebugShellMarkup(
             <div id="music-debug-section-buttons" class="music-debug-section-buttons"></div>
           </div>
           <canvas id="music-debug-timeline" width="960" height="320"></canvas>
-          ${instrumentPanelMarkup}
+          <div id="music-debug-instrument-panel-root">${instrumentPanelMarkup}</div>
           <div id="music-debug-summary">${summaryMarkup}</div>
         </section>
       </section>

@@ -24,6 +24,7 @@ import { downloadMusicDebugExportBundle } from './music-debug-export-bundle.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import { saveRejectedMusicDebugReport } from './music-debug-rejection-report-storage.ts';
 import {
+  buildMusicDebugInstrumentPanelMarkup,
   resolveMusicDebugInstrumentPreviewNote,
   type MusicDebugInstrumentPreviewTarget,
 } from './music-debug-instrument-panel.ts';
@@ -75,6 +76,9 @@ if (root) {
 
 const form = document.querySelector<HTMLFormElement>('#music-debug-form');
 const summary = document.querySelector<HTMLElement>('#music-debug-summary');
+const instrumentPanelRoot = document.querySelector<HTMLElement>(
+  '#music-debug-instrument-panel-root'
+);
 const timeline = document.querySelector<HTMLCanvasElement>(
   '#music-debug-timeline'
 );
@@ -267,6 +271,16 @@ function renderSummary(
   });
 }
 
+function renderInstrumentPanel(
+  snapshot: ReturnType<typeof resolveCurrentSnapshot>
+): void {
+  if (!instrumentPanelRoot || !snapshot) {
+    return;
+  }
+  instrumentPanelRoot.innerHTML =
+    buildMusicDebugInstrumentPanelMarkup(snapshot);
+}
+
 function stopPlaybackFrameLoop(): void {
   if (playbackFrameHandle === null) {
     return;
@@ -339,6 +353,7 @@ const pageState = createMusicDebugPageState({
     return snapshot;
   },
   onSnapshot(nextSnapshot) {
+    renderInstrumentPanel(nextSnapshot);
     renderSummary(nextSnapshot);
     if (playbackController.isPlaying()) {
       playbackController.start(nextSnapshot, {
@@ -618,7 +633,35 @@ downloadBundleButton?.addEventListener('click', () => {
   });
 });
 
+function handleInstrumentPreviewClick(event: Event): boolean {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) {
+    return false;
+  }
+  const previewTarget = normalizeInstrumentPreviewTarget(
+    target.dataset.previewId
+  );
+  if (!previewTarget) {
+    return false;
+  }
+  const snapshot = pageState.refreshNow();
+  const note = resolveMusicDebugInstrumentPreviewNote(
+    snapshot,
+    previewTarget,
+    performance.now()
+  );
+  if (!note) {
+    return true;
+  }
+  instrumentPreviewPlayer.stop();
+  instrumentPreviewPlayer.play(note);
+  return true;
+}
+
 summary?.addEventListener('click', (event) => {
+  if (handleInstrumentPreviewClick(event)) {
+    return;
+  }
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) {
     return;
@@ -678,23 +721,10 @@ summary?.addEventListener('click', (event) => {
     }
     return;
   }
-  const previewTarget = normalizeInstrumentPreviewTarget(
-    target.dataset.previewId
-  );
-  if (!previewTarget) {
-    return;
-  }
-  const snapshot = pageState.refreshNow();
-  const note = resolveMusicDebugInstrumentPreviewNote(
-    snapshot,
-    previewTarget,
-    performance.now()
-  );
-  if (!note) {
-    return;
-  }
-  instrumentPreviewPlayer.stop();
-  instrumentPreviewPlayer.play(note);
+});
+
+instrumentPanelRoot?.addEventListener('click', (event) => {
+  handleInstrumentPreviewClick(event);
 });
 
 sectionButtons?.addEventListener('click', (event) => {

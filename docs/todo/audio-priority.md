@@ -19,7 +19,12 @@
 - [x] Show/Play all instrument/samples in the percussion track
 - [x] Show all percussion wave forms with other instruments rather than just one, along with a play button like the others.
 - [x] Move instrument wave form cards to appear just under the MIDI track visualizer.
-- [ ] Instruments are missing with their wave forms. Move instrument wave form cards to appear below the MIDI track visualizer.
+- [x] Instruments are missing with their wave forms. Move instrument wave form cards to appear below the MIDI track visualizer.
+      The music debug page now keeps the instrument waveform card panel mounted
+      directly below the timeline inside its own live container, refreshes the
+      cards whenever a new snapshot is generated, and routes preview-button
+      clicks from both the waveform cards and summary controls through the same
+      instrument preview handler so the visible cards stay current and usable.
 - [x] Include all graphs as images within the Export ZIP
 
 # Track Role / Color / Listing Order

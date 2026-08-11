@@ -254,11 +254,13 @@ describe('music debug', () => {
     );
     expect(markup.indexOf('>Harmony<')).toBeLessThan(markup.indexOf('>Bass<'));
     expect(markup.indexOf('id="music-debug-timeline"')).toBeLessThan(
-      markup.indexOf('music-debug-instrument-panel')
+      markup.indexOf('id="music-debug-instrument-panel-root"')
     );
-    expect(markup.indexOf('music-debug-instrument-panel')).toBeLessThan(
-      markup.indexOf('id="music-debug-summary"')
-    );
+    expect(
+      markup.indexOf('id="music-debug-instrument-panel-root"')
+    ).toBeLessThan(markup.indexOf('id="music-debug-summary"'));
+    expect(markup).toContain('id="music-debug-instrument-panel-root"');
+    expect(markup).toContain('music-debug-instrument-panel');
     expect(summary).toContain('Scheduled Notes');
     expect(summary).toContain('Percussion Voice Playback');
     expect(summary).toContain('Audition Drum Kit');
