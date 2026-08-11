@@ -645,6 +645,40 @@ describe('tile sign', () => {
     expect(arrowHeadInstances[0]?.matrices).toHaveLength(3);
   });
 
+  it('places full-detail sign post and placard parts directly under the sign root', () => {
+    const model = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    const rootTaggedParts = model?.children.filter(
+      (child) => typeof child.userData?.signFullDetailPart === 'string'
+    );
+    const nestedGroups = model?.children.filter(
+      (child) => child instanceof FakeGroup
+    );
+
+    expect(
+      rootTaggedParts?.some(
+        (child) => child.userData?.signFullDetailPart === 'post'
+      )
+    ).toBe(true);
+    expect(
+      rootTaggedParts?.some(
+        (child) => child.userData?.signFullDetailPart === 'secondary-post'
+      )
+    ).toBe(true);
+    expect(
+      rootTaggedParts?.filter(
+        (child) => child.userData?.signFullDetailPart === 'placard'
+      )
+    ).toHaveLength(3);
+    expect(nestedGroups).toHaveLength(0);
+  });
+
   it('builds a simpler low-detail sign silhouette without lantern or label sprites', () => {
     const full = signTile?.create3DModel?.({
       three: fakeThree as never,

@@ -256,8 +256,7 @@ export function createSignTilePlugin(): RuntimePlugin {
           return group;
         }
 
-        const primaryPost = createSignPost(three, style, placardCount);
-        group.add(primaryPost);
+        addSignPost(group, three, style, placardCount, 0);
 
         const placards =
           nearbyPois.length > 0
@@ -297,17 +296,13 @@ export function createSignTilePlugin(): RuntimePlugin {
         placards.forEach((poi, index) => {
           const mountOffsetX =
             useSecondPost && index === 2 ? 0.18 + style.postThickness * 0.7 : 0;
-          const mount =
-            useSecondPost && index === 2
-              ? createSecondaryPost(three, style)
-              : primaryPost;
 
           if (useSecondPost && index === 2) {
-            mount.position.x = mountOffsetX;
-            group.add(mount);
+            addSecondaryPost(group, three, style, mountOffsetX);
           }
 
-          const signArm = createDirectionalPlacard(
+          addDirectionalPlacard(
+            group,
             three,
             style,
             poi,
@@ -320,7 +315,6 @@ export function createSignTilePlugin(): RuntimePlugin {
             placardArrowHeadInstances,
             placardArrowHeadMatrixScratch
           );
-          mount.add(signArm);
         });
         group.add(placardSupportInstances);
         group.add(placardEdgeCapInstances);
@@ -377,12 +371,13 @@ function findNearestAnchor<
   return nearestAnchor;
 }
 
-function createSignPost(
+function addSignPost(
+  group: ThreeObject3DLike,
   three: ThreeHostLike,
   style: SignStyle,
-  placardCount: number
+  placardCount: number,
+  x: number
 ) {
-  const post = new three.Group();
   const postMesh = new three.Mesh(
     new three.BoxGeometry(
       style.postThickness,
@@ -391,8 +386,13 @@ function createSignPost(
     ),
     style.postMaterial
   );
+  postMesh.position.x = x;
   postMesh.position.y = style.postHeight * 0.5;
-  post.add(postMesh);
+  postMesh.userData = {
+    ...(postMesh.userData ?? {}),
+    signFullDetailPart: 'post',
+  };
+  group.add(postMesh);
 
   if (placardCount > 1) {
     const brace = new three.Mesh(
@@ -403,18 +403,22 @@ function createSignPost(
       ),
       style.trimMaterial
     );
+    brace.position.x = x;
     brace.position.y = style.postHeight * 0.78;
-    post.add(brace);
+    brace.userData = {
+      ...(brace.userData ?? {}),
+      signFullDetailPart: 'brace',
+    };
+    group.add(brace);
   }
-
-  return post;
 }
 
-function createSecondaryPost(
+function addSecondaryPost(
+  group: ThreeObject3DLike,
   three: ThreeHostLike,
-  style: SignStyle
-): ReturnType<typeof createSignPost> {
-  const post = new three.Group();
+  style: SignStyle,
+  x: number
+) {
   const mesh = new three.Mesh(
     new three.BoxGeometry(
       style.postThickness * 0.92,
@@ -423,9 +427,13 @@ function createSecondaryPost(
     ),
     style.postMaterial
   );
+  mesh.position.x = x;
   mesh.position.y = style.postHeight * 0.42;
-  post.add(mesh);
-  return post;
+  mesh.userData = {
+    ...(mesh.userData ?? {}),
+    signFullDetailPart: 'secondary-post',
+  };
+  group.add(mesh);
 }
 
 function addLowDetailSign(
@@ -492,7 +500,8 @@ function getLowDetailSignHeading(nearbyPois: NearbyPoi[]): number {
   return Math.atan2(poi.dy, poi.dx);
 }
 
-function createDirectionalPlacard(
+function addDirectionalPlacard(
+  group: ThreeObject3DLike,
   three: ThreeHostLike,
   style: SignStyle,
   poi: NearbyPoi,
@@ -505,7 +514,6 @@ function createDirectionalPlacard(
   arrowHeadInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
   arrowHeadMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>
 ) {
-  const group = new three.Group();
   const width = style.placardWidth * (poi.name.length > 12 ? 1.15 : 1);
   const height = style.placardHeight;
   const depth = style.placardDepth;
@@ -513,14 +521,25 @@ function createDirectionalPlacard(
   const rowOffset = style.postHeight * (0.68 - index * 0.14);
   const armLength = 0.14 + index * 0.035;
 
-  group.position.y = rowOffset;
-  group.rotation.y = -heading;
-
   const placard = new three.Mesh(
     new three.BoxGeometry(width, height, depth),
     style.placardMaterial
   );
-  placard.position.x = width * 0.5 + armLength;
+  const placardOffset = rotateSignLocalOffset(
+    width * 0.5 + armLength,
+    0,
+    -heading
+  );
+  placard.position.set(
+    mountOffsetX + placardOffset.x,
+    rowOffset,
+    placardOffset.z
+  );
+  placard.rotation.y = -heading;
+  placard.userData = {
+    ...(placard.userData ?? {}),
+    signFullDetailPart: 'placard',
+  };
   group.add(placard);
 
   edgeCapInstances.setMatrixAt(
@@ -565,15 +584,40 @@ function createDirectionalPlacard(
   );
 
   const textPlane = createSignLabelSprite(three, style, poi, width, height);
-  textPlane.position.set(width * 0.5 + armLength, 0, depth * 0.65);
+  const textPlaneOffset = rotateSignLocalOffset(
+    width * 0.5 + armLength,
+    depth * 0.65,
+    -heading
+  );
+  textPlane.position.set(
+    mountOffsetX + textPlaneOffset.x,
+    rowOffset,
+    textPlaneOffset.z
+  );
+  textPlane.rotation.y = -heading;
+  textPlane.userData = {
+    ...(textPlane.userData ?? {}),
+    signFullDetailPart: 'text-plane',
+  };
   group.add(textPlane);
 
   const backPlane = createSignLabelSprite(three, style, poi, width, height);
-  backPlane.position.set(width * 0.5 + armLength, 0, -depth * 0.65);
-  backPlane.rotation.y = Math.PI;
+  const backPlaneOffset = rotateSignLocalOffset(
+    width * 0.5 + armLength,
+    -depth * 0.65,
+    -heading
+  );
+  backPlane.position.set(
+    mountOffsetX + backPlaneOffset.x,
+    rowOffset,
+    backPlaneOffset.z
+  );
+  backPlane.rotation.y = Math.PI - heading;
+  backPlane.userData = {
+    ...(backPlane.userData ?? {}),
+    signFullDetailPart: 'back-plane',
+  };
   group.add(backPlane);
-
-  return group;
 }
 
 function addSignLantern(
@@ -764,6 +808,19 @@ function arrowFromVector(dx: number, dy: number): SignArrow {
   const angle = Math.atan2(dy, dx);
   const octant = Math.round(angle / (Math.PI / 4) + 8) % 8;
   return DIRECTION_ARROWS[octant];
+}
+
+function rotateSignLocalOffset(
+  localX: number,
+  localZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return {
+    x: localX * cosRotation + localZ * sinRotation,
+    z: -localX * sinRotation + localZ * cosRotation,
+  };
 }
 
 function writeSignRotatedScalePositionMatrix(
