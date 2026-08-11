@@ -3,6 +3,13 @@
 - [x] consider improving the runtime-performance-snapshots API - mainly adding an additional API to report when rendering issues occur, but limited to a few seconds so that we don't have thrasing. The goal is to have that separate API to report important issues rarely that need to be addressed, and build a failing test when an issue is reported - ie what plugins, parameters, etc. was failing along with budget and reason.
 - [ ] Extend with plugin-event-channel-system.md
 
+- [ ] Limit each tree species to 10 material variants per part type.
+- [ ] Reuse bark, foliage, and branch materials across nearby trees.
+- [ ] Prefer tinting shared materials over creating new textures.
+- [ ] Use color shifts to distinguish related tree species.
+- [ ] Avoid unique textures when color variation is sufficient.
+- [ ] Share material variants between compatible tree species.
+
 ## Fix Measurement Problems First
 
 - [x] Verify average FPS agrees with average frame duration.
