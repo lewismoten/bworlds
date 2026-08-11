@@ -29,4 +29,16 @@ describe('package scripts', () => {
         'node ./scripts/client-error-snapshot-cleanup.mjs clear',
     });
   });
+
+  it('keeps npm run check on the fast supervised test suite', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(packageJsonPath, 'utf8')
+    ) as {
+      scripts?: Record<string, string>;
+    };
+
+    expect(packageJson.scripts?.check).toContain('npm run test');
+    expect(packageJson.scripts?.check).not.toContain('npm run test:all');
+    expect(packageJson.scripts?.check).not.toContain('npm run test:long');
+  });
 });

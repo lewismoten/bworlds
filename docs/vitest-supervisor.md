@@ -17,6 +17,10 @@ Related commands:
 - `npm test`
   Runs the supervised fast suite and excludes the known long-running files,
   including heavy MIDI export audit coverage and repository-wide audit sweeps.
+  `npm run check` intentionally goes through this same fast path by invoking
+  `npm run test` rather than `npm run test:all` or `npm run test:long`, so CI
+  keeps the normal read-only gate bounded while the broader representative
+  coverage stays available behind explicit long-suite commands.
   Snapshot-heavy timeline rendering coverage now stays on the long path while
   [music-debug-timeline-fast.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-timeline-fast.test.ts:1)
   keeps the cheap timeline coordinate and label helpers in the normal check.
