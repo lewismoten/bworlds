@@ -42,7 +42,6 @@ const RUINS_ACCENT_TONE_SEED = registerHashLabel('ruins-accent-tone');
 const RUINS_COLUMNS_SEED = registerHashLabel('ruins-columns');
 const RUINS_COLUMN_RADIUS_SEED = registerHashLabel('ruins-column-radius');
 const RUINS_COLUMN_HEIGHT_SEED = registerHashLabel('ruins-column-height');
-const RUINS_COLUMN_ROTATION_SEED = registerHashLabel('ruins-column-rot');
 const RUINS_ARCH_SEED = registerHashLabel('ruins-arch');
 const RUINS_ARCH_X_SEED = registerHashLabel('ruins-arch-x');
 const RUINS_ARCH_HEIGHT_SEED = registerHashLabel('ruins-arch-h');
