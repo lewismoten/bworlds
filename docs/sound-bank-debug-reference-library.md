@@ -16,3 +16,8 @@ That keeps the reference-patch workflow simple:
 
 This makes the reference library visible in the debug UI without introducing a
 separate mutable preset system yet.
+
+Each locked reference card also exposes a `Play Reference Phrase` action. That
+preview reuses the generated role phrase timing from the current seed, but
+replaces the live patch values with the saved known-good reference patch so the
+reference anchor can be auditioned directly.

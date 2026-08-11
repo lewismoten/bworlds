@@ -13,6 +13,7 @@ import {
   normalizeSoundBankDebugPercussionBrowserState,
   normalizeSoundBankDebugOptions,
   randomizeSoundBankDebugSeed,
+  resolveSoundBankDebugReferencePreviewPhraseRole,
   resolveSoundBankDebugPreviewPhraseRole,
   resolveSoundBankDebugPreviewNoteRole,
   type SoundBankDebugGeneralMidiBrowserState,
@@ -36,6 +37,7 @@ import type {
   MusicDebugInstrumentPreviewAudioState,
   MusicDebugInstrumentPreviewPlayer,
 } from './music-debug-instrument-preview.ts';
+import type { KnownGoodInstrumentPatchRole } from './music-instrument-timbres.ts';
 import type {
   MusicDebugContextType,
   MusicDebugTileKind,
@@ -306,6 +308,17 @@ function isSoundBankPreviewRole(
     value === 'percussion' ||
     (value?.startsWith('percussion:') === true && value.length > 11)
   );
+}
+
+function normalizeReferencePatchRole(
+  value: string | undefined
+): KnownGoodInstrumentPatchRole | null {
+  return value === 'lead' ||
+    value === 'harmony' ||
+    value === 'bass' ||
+    value === 'percussion'
+    ? value
+    : null;
 }
 
 function isEditableEventTarget(target: EventTarget | null): boolean {
@@ -797,7 +810,10 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         'click',
         async () => {
           const previewTarget = button.dataset.previewId;
-          if (!isSoundBankPreviewRole(previewTarget)) {
+          const referencePatchRole = normalizeReferencePatchRole(
+            button.dataset.referencePatchRole
+          );
+          if (!referencePatchRole && !isSoundBankPreviewRole(previewTarget)) {
             return;
           }
           const player = await ensureInstrumentPreviewPlayer();
@@ -809,22 +825,17 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
             return;
           }
           const nowMs = performance.now();
-          const previewNotes = button.classList.contains(
-            'music-debug-instrument-play-phrase'
-          )
-            ? resolveSoundBankDebugPreviewPhraseRole(
+          const previewNotes = referencePatchRole
+            ? resolveSoundBankDebugReferencePreviewPhraseRole(
                 snapshot,
-                previewTarget,
+                referencePatchRole,
                 nowMs,
                 {
                   dry: previewMode === 'dry',
-                  envelope: readPreviewEnvelopeState(),
-                  oscillators: readPreviewOscillatorState(),
-                  timbre: readPreviewTimbreState(),
                 }
               )
-            : (() => {
-                const previewNote = resolveSoundBankDebugPreviewNoteRole(
+            : button.classList.contains('music-debug-instrument-play-phrase')
+              ? resolveSoundBankDebugPreviewPhraseRole(
                   snapshot,
                   previewTarget,
                   nowMs,
@@ -834,9 +845,21 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
                     oscillators: readPreviewOscillatorState(),
                     timbre: readPreviewTimbreState(),
                   }
-                );
-                return previewNote ? [previewNote] : [];
-              })();
+                )
+              : (() => {
+                  const previewNote = resolveSoundBankDebugPreviewNoteRole(
+                    snapshot,
+                    previewTarget,
+                    nowMs,
+                    {
+                      dry: previewMode === 'dry',
+                      envelope: readPreviewEnvelopeState(),
+                      oscillators: readPreviewOscillatorState(),
+                      timbre: readPreviewTimbreState(),
+                    }
+                  );
+                  return previewNote ? [previewNote] : [];
+                })();
           if (previewNotes.length === 0) {
             setAudioFeedback(
               'Audio unavailable',
@@ -849,9 +872,11 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
             player.play(previewNote);
           }
           setAudioFeedback(
-            `Previewing ${previewTarget.replace('percussion:', 'percussion / ')}${
-              previewNotes.length > 1 ? ' phrase' : ''
-            } (${previewMode})`,
+            referencePatchRole
+              ? `Previewing reference ${referencePatchRole} phrase (${previewMode})`
+              : `Previewing ${previewTarget.replace('percussion:', 'percussion / ')}${
+                  previewNotes.length > 1 ? ' phrase' : ''
+                } (${previewMode})`,
             null
           );
         },

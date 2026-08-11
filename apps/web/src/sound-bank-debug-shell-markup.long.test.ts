@@ -124,6 +124,8 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain('Reference Patch Library');
     expect(normalizedMarkup).toContain('Locked Role References');
     expect(normalizedMarkup).toContain('Locked reference');
+    expect(normalizedMarkup).toContain('Play Reference Phrase');
+    expect(normalizedMarkup).toContain('data-reference-patch-role="lead"');
     expect(normalizedMarkup).toContain('Breathy flute lead');
     expect(normalizedMarkup).toContain('Bowed string bed');
     expect(normalizedMarkup).toContain('Anchored upright bass');

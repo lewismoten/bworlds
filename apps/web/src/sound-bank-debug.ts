@@ -1,6 +1,9 @@
 import { randomizeDebugCoordinatePair } from './debug-seed.ts';
 import {
   listKnownGoodInstrumentPatches,
+  resolveKnownGoodInstrumentPatch,
+  type KnownGoodInstrumentPatch,
+  type KnownGoodInstrumentPatchRole,
   resolveVelocityShapedInstrumentTimbre,
   type MusicWaveform,
 } from './music-instrument-timbres.ts';
@@ -949,6 +952,23 @@ export function resolveSoundBankDebugPreviewPhraseRole(
   ).map((note) => applySoundBankDebugPreviewOptions(note, options));
 }
 
+export function resolveSoundBankDebugReferencePreviewPhraseRole(
+  snapshot: SoundBankDebugSnapshot,
+  role: KnownGoodInstrumentPatchRole,
+  nowMs: number,
+  options: {
+    dry?: boolean;
+  } = {}
+): readonly ProceduralMusicNote[] {
+  const notes = resolveSoundBankDebugPreviewPhraseRole(snapshot, role, nowMs, {
+    dry: options.dry,
+  });
+  const referencePatch = resolveKnownGoodInstrumentPatch(role);
+  return notes.map((note) =>
+    applyKnownGoodPatchToPreviewNote(note, referencePatch)
+  );
+}
+
 export function createSoundBankDebugPercussionRangeAuditionNotes(
   snapshot: SoundBankDebugSnapshot,
   state: Partial<SoundBankDebugPercussionBrowserState>,
@@ -1783,7 +1803,16 @@ function buildSoundBankDebugReferencePatchLibraryMarkup(
               )}</p>
               <h4>${patch.label}</h4>
             </div>
-            <span class="sound-bank-debug-reference-library-badge">Locked reference</span>
+            <div class="sound-bank-debug-reference-library-actions">
+              <span class="sound-bank-debug-reference-library-badge">Locked reference</span>
+              <button
+                type="button"
+                class="music-debug-instrument-play-phrase sound-bank-debug-reference-library-play"
+                data-reference-patch-role="${patch.role}"
+              >
+                Play Reference Phrase
+              </button>
+            </div>
           </div>
           <dl class="sound-bank-debug-audio-stats">
             <div><dt>Family</dt><dd>${formatLabel(patch.family)}</dd></div>
@@ -1830,6 +1859,25 @@ function summarizeKnownGoodPatchDimensions(
       )}%`;
     });
   return strongestMatches.join(' | ');
+}
+
+function applyKnownGoodPatchToPreviewNote(
+  note: ProceduralMusicNote,
+  patch: KnownGoodInstrumentPatch
+): ProceduralMusicNote {
+  return {
+    ...note,
+    waveform: patch.waveform,
+    attackMs: patch.attackMs,
+    releaseMs: patch.releaseMs,
+    detuneCents: patch.detuneCents,
+    harmonicGain: patch.harmonicGain,
+    pulseRate: patch.pulseRate,
+    timbre: {
+      ...note.timbre,
+      ...patch.timbre,
+    },
+  };
 }
 
 function formatKnownGoodPatchDifferenceLabel(key: string): string {
