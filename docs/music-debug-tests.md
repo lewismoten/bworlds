@@ -6,9 +6,12 @@ parallelize them and the files stay easier to maintain:
 - [music-debug-snapshot-helpers.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-helpers.test.ts:1)
   covers snapshot option normalization plus small formatting and seed helpers
   that do not need the long-suite path.
-- [music-debug-snapshot-generation.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation.test.ts:1)
-  covers deterministic snapshot generation, cache reuse, motif validation, and
-  encounter-length expectations.
+- [music-debug-snapshot-generation-baseline.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-baseline.test.ts:1)
+  covers the heaviest deterministic snapshot generation baseline plus cache
+  reuse and theme-overlay expectations.
+- [music-debug-snapshot-generation-variants.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-generation-variants.test.ts:1)
+  covers SongDNA variant exposure, motif counters, and battle-versus-boss
+  duration scenarios.
 - [music-debug-snapshot-representative.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/music-debug-snapshot-representative.test.ts:1)
   covers representative known-good snapshot prominence and section-plan
   expectations.
