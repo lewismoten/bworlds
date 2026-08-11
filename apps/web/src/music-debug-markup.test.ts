@@ -80,6 +80,7 @@ describe('music debug markup', () => {
     expect(summary).toContain('Preferred Intervals');
     expect(summary).toContain('Interval Match');
     expect(summary).toContain('Phrase Similarity');
+    expect(summary).toContain('Phrase Intent');
     expect(summary).toContain('Motif Check');
     expect(summary).toContain('semitones');
     expect(summary).toContain('Vocabulary');

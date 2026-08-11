@@ -124,6 +124,10 @@ describe('music debug snapshot generation baseline', () => {
     expect(first.phraseRepetition.averageSimilarityPercentage).toBeGreaterThan(
       0
     );
+    expect(first.phraseIntentScore.overallScore).toBeGreaterThan(0);
+    expect(first.phraseIntentScore.motif.score).toBeGreaterThanOrEqual(0);
+    expect(first.phraseIntentScore.contour.score).toBeGreaterThanOrEqual(0);
+    expect(first.phraseIntentScore.cadence.score).toBeGreaterThanOrEqual(0);
     expect(first.leadContourAnalysis.points.length).toBeGreaterThan(0);
     expect(
       first.leadContourAnalysis.inRangePointCount +

@@ -86,6 +86,11 @@ import {
   type MusicDebugPhraseRepetitionAnalysis,
 } from './music-debug-phrase-repetition.ts';
 import {
+  createMusicDebugPhraseIntentScore,
+  formatMusicDebugPhraseIntentScore,
+  type MusicDebugPhraseIntentScore,
+} from './music-debug-phrase-intent-score.ts';
+import {
   MUSIC_DEBUG_MIDI_EXPORT_VARIANTS,
   formatMusicDebugMidiExportVariantLabel,
 } from './music-debug-midi-export-variant.ts';
@@ -232,6 +237,7 @@ export type MusicDebugSnapshot = {
   trackStats: Record<ProceduralMusicNote['role'], MusicDebugTrackStats>;
   intervalComparison: MusicDebugIntervalComparison;
   phraseRepetition: MusicDebugPhraseRepetitionAnalysis;
+  phraseIntentScore: MusicDebugPhraseIntentScore;
   leadContourAnalysis: MusicDebugLeadContourAnalysis;
   sectionMotifMatches: MusicDebugSectionMotifMatch[];
   motifValidation: MusicDebugMotifValidation;
@@ -596,6 +602,11 @@ export function createMusicDebugSnapshot(
     rootMidiNote: theme.rootMidiNote,
     chordTimeline,
   });
+  const phraseIntentScore = createMusicDebugPhraseIntentScore({
+    motifValidation,
+    leadContourAnalysis,
+    cadenceValidation,
+  });
 
   const snapshotBase = {
     options,
@@ -634,6 +645,7 @@ export function createMusicDebugSnapshot(
     trackStats,
     intervalComparison,
     phraseRepetition,
+    phraseIntentScore,
     leadContourAnalysis,
     sectionMotifMatches,
     motifValidation,
@@ -1024,6 +1036,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Phrase Similarity ${formatMusicDebugPhraseRepetitionAnalysis(snapshot.phraseRepetition)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Phrase Intent ${formatMusicDebugPhraseIntentScore(snapshot.phraseIntentScore)}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Motif Matches ${formatMusicDebugSectionMotifMatches(snapshot.sectionMotifMatches)}</span>
