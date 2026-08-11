@@ -21,13 +21,13 @@ describe('music debug rejection report storage', () => {
         clusterX: snapshot.options.clusterX,
         clusterY: snapshot.options.clusterY,
         rejectionReasons: expect.arrayContaining([
-          'Variation percussion should stay thinner than Section A.',
+          'Variation answer cadence at measure 72 drifted outside the active harmony (C#, F; lead G#3, bass C2).',
         ]),
         report: expect.objectContaining({
           song: expect.objectContaining({
             leadContourAnalysis: expect.any(Object),
           }),
-          percussionValidation: expect.objectContaining({
+          cadenceValidation: expect.objectContaining({
             isValidForMidiExport: false,
           }),
         }),
@@ -60,17 +60,15 @@ describe('music debug rejection report storage', () => {
 });
 
 function createRejectedSnapshot() {
-  const snapshot = createMusicDebugSnapshot({
-    tileKind: 'forest',
-    contextType: 'overworld',
-    clusterX: 4,
-    clusterY: -1,
-  });
+  const snapshot = createExportableSnapshot();
   return {
     ...snapshot,
-    percussionValidation: {
+    cadenceValidation: {
+      ...snapshot.cadenceValidation,
       isValidForMidiExport: false,
-      messages: ['Variation percussion should stay thinner than Section A.'],
+      messages: [
+        'Variation answer cadence at measure 72 drifted outside the active harmony (C#, F; lead G#3, bass C2).',
+      ],
     },
   };
 }
@@ -123,6 +121,13 @@ function createExportableSnapshot() {
           !message.includes('climax peaked at') &&
           !message.includes('resolved to scale degree')
       ),
+    },
+    midiAudit: {
+      ...snapshot.midiAudit,
+      mismatchMessages: [],
+      criticalWarningMessages: [],
+      warningMessages: [],
+      isConsistent: true,
     },
   };
 }

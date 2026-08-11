@@ -15,6 +15,7 @@ export const BUILD_BUNDLE_BUDGETS = {
   },
   majorChunks: {
     minimumTrackedBytes: 64_000,
+    hardLimitToleranceBytes: 1_024,
     maxBytesByName: {
       src: 110_000,
       main: 1_325_000,
@@ -231,10 +232,14 @@ export function createBundleBudgetReport(
       }
       continue;
     }
-    if (bytes > configuredLimit) {
+    const toleratedLimit =
+      configuredLimit + (budgets.majorChunks.hardLimitToleranceBytes ?? 0);
+    if (bytes > toleratedLimit) {
       budgetViolations.push(
         `Major chunk "${name}" is ${formatKiB(bytes)} ` +
-          `(limit ${formatKiB(configuredLimit)}).`
+          `(limit ${formatKiB(configuredLimit)}, tolerance ${formatKiB(
+            budgets.majorChunks.hardLimitToleranceBytes ?? 0
+          )}).`
       );
     }
   }

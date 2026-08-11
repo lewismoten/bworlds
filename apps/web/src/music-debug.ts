@@ -145,6 +145,10 @@ import {
   type MusicDebugSongDnaValidation,
 } from './music-debug-song-dna-validation.ts';
 import {
+  createMusicDebugQualityStatus,
+  type MusicDebugQualityStatus,
+} from './music-debug-quality-status.ts';
+import {
   buildMusicDebugPercussionPlaybackControlsMarkup,
   normalizeMusicDebugPercussionPlaybackState,
   resolveMusicDebugPercussionVoiceId,
@@ -237,6 +241,7 @@ export type MusicDebugSnapshot = {
   midiAudit: MusicDebugMidiAudit;
   midiExportValidation: MusicDebugPitchValidation;
   timingValidation: MusicDebugTimingValidation;
+  qualityStatus: MusicDebugQualityStatus;
 };
 
 export type MusicDebugTheme = MusicDebugSnapshot['theme'];
@@ -664,9 +669,20 @@ export function createMusicDebugSnapshot(
       sectionsMatchPlannedMarkers: true,
       mismatchMessages: [],
       warningMessages: [],
+      criticalWarningMessages: [],
       isConsistent: true,
     },
+    qualityStatus: {
+      isGood: true,
+      statusLabel: 'good',
+      blockingReasons: [],
+      warningReasons: [],
+    },
   } as MusicDebugSnapshot);
+  const qualityStatus = createMusicDebugQualityStatus({
+    ...snapshotBase,
+    midiAudit,
+  });
 
   return {
     ...snapshotBase,
@@ -688,6 +704,7 @@ export function createMusicDebugSnapshot(
     sectionProminence,
     sectionLayerComparisons,
     midiAudit,
+    qualityStatus,
   };
 }
 
@@ -908,6 +925,7 @@ export function buildMusicDebugSummaryMarkup(
   );
   return `
     <div class="music-debug-summary-grid">
+      <div><dt>Quality</dt><dd>${formatMusicDebugQualityStatus(snapshot.qualityStatus)}</dd></div>
       <div><dt>Theme</dt><dd>${snapshot.theme.id}</dd></div>
       <div><dt>Root Hz</dt><dd>${snapshot.theme.rootHz.toFixed(2)}</dd></div>
       <div><dt>Root MIDI</dt><dd>${snapshot.scaleMap.rootMidiNote}</dd></div>
@@ -941,6 +959,9 @@ export function buildMusicDebugSummaryMarkup(
       <div><dt>Pitch Centers</dt><dd>B ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.bass)} / H ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.harmony)} / L ${formatMusicDebugPitchCenters(snapshot.dominantPitchClassesByRole.lead)}</dd></div>
     </div>
     ${buildMusicDebugLeadContourGraphMarkup(snapshot.leadContourAnalysis)}
+    <div class="music-debug-role-counts">
+      <span>Quality Status ${formatMusicDebugQualityStatus(snapshot.qualityStatus)}</span>
+    </div>
     <div class="music-debug-role-counts">
       <span>SongDNA ${snapshot.songDna.identityId} / ${snapshot.songDna.locationIdentityId} / ${snapshot.songDna.variantLabel} / ${snapshot.songDna.blueprintId} / ${snapshot.songDna.meterLabel}</span>
     </div>
@@ -1077,6 +1098,18 @@ function formatMusicDebugMidiAuditSummary(audit: MusicDebugMidiAudit): string {
     return `ok with warnings: ${audit.warningMessages.join(' | ')}`;
   }
   return 'ok';
+}
+
+function formatMusicDebugQualityStatus(
+  qualityStatus: MusicDebugQualityStatus
+): string {
+  if (qualityStatus.isGood) {
+    if (qualityStatus.warningReasons.length === 0) {
+      return 'good';
+    }
+    return `good with warnings: ${qualityStatus.warningReasons.join(' | ')}`;
+  }
+  return `blocked: ${qualityStatus.blockingReasons.join(' | ')}`;
 }
 
 function formatMusicDebugBassProgressionDetections(

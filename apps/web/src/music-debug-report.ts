@@ -1,4 +1,5 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { createMusicDebugQualityStatus } from './music-debug-quality-status.ts';
 import {
   createMusicDebugPercussionEventSummaries,
   createMusicDebugPercussionVoiceCounts,
@@ -17,9 +18,11 @@ export function buildMusicDebugParameterReport(
   snapshot: MusicDebugSnapshot,
   metadataOptions: MusicDebugReportMetadataOptions = {}
 ) {
+  const qualityStatus = createMusicDebugQualityStatus(snapshot);
   return {
     exportVariant: metadataOptions.variant ?? 'full',
     exportedAt: (metadataOptions.createdAt ?? new Date()).toISOString(),
+    qualityStatus,
     options: snapshot.options,
     theme: {
       id: snapshot.theme.id,
@@ -90,27 +93,5 @@ export function buildMusicDebugParameterReport(
 export function collectMusicDebugRejectedReportReasons(
   snapshot: MusicDebugSnapshot
 ): string[] {
-  const reasons = [
-    ...snapshot.midiExportValidation.messages,
-    ...snapshot.motifValidation.messages,
-    ...snapshot.timingValidation.messages,
-    ...snapshot.cadenceValidation.messages,
-    ...snapshot.percussionValidation.messages,
-    ...snapshot.songDnaValidation.messages,
-  ];
-  if (!snapshot.leadContourAnalysis.finalResolvesToTonic) {
-    reasons.push(
-      ...snapshot.leadContourAnalysis.messages.filter((message) =>
-        message.includes('resolved to scale degree')
-      )
-    );
-  }
-  if (!snapshot.leadContourAnalysis.climaxNearPlannedPeak) {
-    reasons.push(
-      ...snapshot.leadContourAnalysis.messages.filter((message) =>
-        message.includes('climax peaked at')
-      )
-    );
-  }
-  return [...new Set(reasons)];
+  return createMusicDebugQualityStatus(snapshot).blockingReasons;
 }

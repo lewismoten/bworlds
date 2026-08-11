@@ -9,7 +9,7 @@
 - [ ] Add a chord-tone score for every measure and track.
 - [ ] Add a phrase-intent score for motif, contour, cadence.
 - [ ] Show pass or fail per section, not only whole-song.
-- [ ] Block "good" status when any critical musical check fails.
+- [x] Block "good" status when any critical musical check fails.
 
 ## 2) Make melody feel intentional
 

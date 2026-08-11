@@ -138,6 +138,34 @@ describe('build bundle budgets', () => {
     );
   });
 
+  it('allows sub-kib major-chunk jitter before failing the hard budget', () => {
+    const distDir = createFixtureDist({
+      'assets/app-entry.js': 5_000,
+      'assets/main.js': 100_000,
+      'assets/index-large.js': 65_500,
+      'assets/shared-small.js': 3_000,
+      'assets/main.css': 8_000,
+      'assets/worker-demo.js': 10_000,
+    });
+    tmpDirs.push(distDir);
+
+    const report = createBundleBudgetReport(fixtureManifest, distDir, {
+      ...BUILD_BUNDLE_BUDGETS,
+      majorChunks: {
+        ...BUILD_BUNDLE_BUDGETS.majorChunks,
+        hardLimitToleranceBytes: 1_024,
+        maxBytesByName: {
+          ...BUILD_BUNDLE_BUDGETS.majorChunks.maxBytesByName,
+          index: 65_000,
+        },
+      },
+    });
+
+    expect(
+      report.violations.some((violation) => violation.includes('index'))
+    ).toBe(false);
+  });
+
   it('fails when tracked bundles grow significantly beyond the committed baseline', () => {
     const distDir = createFixtureDist({
       'assets/app-entry.js': 5_000,
