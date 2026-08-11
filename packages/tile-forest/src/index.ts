@@ -1537,12 +1537,29 @@ export function createForestTilePlugin(): RuntimePlugin {
             group.add(hollowMesh);
           }
           if (renderCloseDetails) {
-            for (const owl of scene.inhabitants.filter(
+            const owls = scene.inhabitants.filter(
               (
                 inhabitant
               ): inhabitant is Extract<ForestTreeInhabitant, { kind: 'owl' }> =>
                 inhabitant.kind === 'owl'
-            )) {
+            );
+            const owlEyeInstances =
+              owls.length > 0
+                ? new three.InstancedMesh(
+                    geometry.foliage,
+                    floorDetailStyle.owlEyeMaterial,
+                    owls.length * 2
+                  )
+                : null;
+            if (owlEyeInstances) {
+              owlEyeInstances.userData = {
+                ...(owlEyeInstances.userData ?? {}),
+                forestOwlEye: true,
+              };
+            }
+            const owlEyeMatrixScratch = new three.Matrix4();
+            let owlEyeIndex = 0;
+            for (const owl of owls) {
               const hollow = hollows[owl.hollowIndex];
               const treeDescriptor = hollow
                 ? descriptors[hollow.treeIndex]
@@ -1573,37 +1590,35 @@ export function createForestTilePlugin(): RuntimePlugin {
               };
               group.add(owlBody);
 
-              const leftEye = new three.Mesh(
-                geometry.foliage,
-                floorDetailStyle.owlEyeMaterial
+              owlEyeInstances?.setMatrixAt(
+                owlEyeIndex,
+                writeLowDetailInstancedMatrix(
+                  owlEyeMatrixScratch,
+                  owlBody.position.x + owl.eyeSpread * 0.5,
+                  owlBody.position.y + owl.bodyScale * 0.16,
+                  owlBody.position.z + owl.bodyScale * 0.68,
+                  owl.bodyScale * 0.16,
+                  owl.bodyScale * 0.16,
+                  owl.bodyScale * 0.16
+                )
               );
-              leftEye.position.set(
-                owlBody.position.x + owl.eyeSpread * 0.5,
-                owlBody.position.y + owl.bodyScale * 0.16,
-                owlBody.position.z + owl.bodyScale * 0.68
+              owlEyeIndex += 1;
+              owlEyeInstances?.setMatrixAt(
+                owlEyeIndex,
+                writeLowDetailInstancedMatrix(
+                  owlEyeMatrixScratch,
+                  owlBody.position.x - owl.eyeSpread * 0.5,
+                  owlBody.position.y + owl.bodyScale * 0.16,
+                  owlBody.position.z + owl.bodyScale * 0.68,
+                  owl.bodyScale * 0.16,
+                  owl.bodyScale * 0.16,
+                  owl.bodyScale * 0.16
+                )
               );
-              leftEye.scale.setScalar(owl.bodyScale * 0.16);
-              leftEye.userData = {
-                ...(leftEye.userData ?? {}),
-                [OWL_KEY]: true,
-              };
-              group.add(leftEye);
-
-              const rightEye = new three.Mesh(
-                geometry.foliage,
-                floorDetailStyle.owlEyeMaterial
-              );
-              rightEye.position.set(
-                owlBody.position.x - owl.eyeSpread * 0.5,
-                owlBody.position.y + owl.bodyScale * 0.16,
-                owlBody.position.z + owl.bodyScale * 0.68
-              );
-              rightEye.scale.setScalar(owl.bodyScale * 0.16);
-              rightEye.userData = {
-                ...(rightEye.userData ?? {}),
-                [OWL_KEY]: true,
-              };
-              group.add(rightEye);
+              owlEyeIndex += 1;
+            }
+            if (owlEyeInstances) {
+              group.add(owlEyeInstances);
             }
           }
           if (renderCloseDetails) {

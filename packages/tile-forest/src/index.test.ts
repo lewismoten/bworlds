@@ -3146,6 +3146,7 @@ describe('tile forest', () => {
     expect(targetTile).not.toBeNull();
     state.player.x = targetTile!.x;
     state.player.y = targetTile!.y;
+    const owlCount = getForestOwls(targetTile!.x, targetTile!.y).length;
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -3200,6 +3201,7 @@ describe('tile forest', () => {
     expect(targetTile).not.toBeNull();
     state.player.x = targetTile!.x;
     state.player.y = targetTile!.y;
+    const owlCount = getForestOwls(targetTile!.x, targetTile!.y).length;
 
     const fullModel = tile?.create3DModel?.({
       three: fakeThree as never,
@@ -3219,9 +3221,13 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     let fullOwlCount = 0;
+    const owlEyeInstances: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
       if (node.userData?.forestOwl) {
         fullOwlCount += 1;
+      }
+      if (node instanceof FakeInstancedMesh && node.userData?.forestOwlEye) {
+        owlEyeInstances.push(node);
       }
     });
 
@@ -3233,6 +3239,9 @@ describe('tile forest', () => {
     });
 
     expect(fullOwlCount).toBeGreaterThan(0);
+    expect(owlEyeInstances).toHaveLength(1);
+    expect(owlEyeInstances[0]?.count).toBe(owlCount * 2);
+    expect(owlEyeInstances[0]?.matrices).toHaveLength(owlCount * 2);
     expect(lowOwlCount).toBe(0);
   });
 
