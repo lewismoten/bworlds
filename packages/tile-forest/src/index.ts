@@ -1640,29 +1640,42 @@ export function createForestTilePlugin(): RuntimePlugin {
                 continue;
               }
 
-              for (const marker of getForestCarvingMarkers(carving)) {
-                const notch = new three.Mesh(
-                  geometry.foliage,
-                  floorDetailStyle.carvingMaterial
-                );
-                notch.position.set(
-                  tileX +
-                    treeDescriptor.x +
-                    treeDescriptor.radius * 0.74 * carving.sideOffset,
-                  carving.height + marker.y * carving.scale,
-                  tileY + treeDescriptor.y + marker.x * carving.scale
-                );
-                notch.scale.setScalar(
+              const markers = getForestCarvingMarkers(carving);
+              const notchInstances = new three.InstancedMesh(
+                geometry.foliage,
+                floorDetailStyle.carvingMaterial,
+                markers.length
+              );
+              notchInstances.userData = {
+                ...(notchInstances.userData ?? {}),
+                [CARVING_KEY]: carving.text,
+                forestCarvingAge: carving.age,
+                forestCarvingBarkCoverage: carving.barkCoverage,
+                forestCarvingInstanced: true,
+              };
+              const notchMatrixScratch = new three.Matrix4();
+              markers.forEach((marker, index) => {
+                const notchScale =
                   carving.scale *
-                    (0.94 - carving.age * 0.16 - carving.barkCoverage * 0.08)
+                  (0.94 - carving.age * 0.16 - carving.barkCoverage * 0.08);
+                notchInstances.setMatrixAt(
+                  index,
+                  writeLowDetailInstancedMatrix(
+                    notchMatrixScratch,
+                    tileX +
+                      treeDescriptor.x +
+                      treeDescriptor.radius * 0.74 * carving.sideOffset,
+                    carving.height + marker.y * carving.scale,
+                    tileY + treeDescriptor.y + marker.x * carving.scale,
+                    notchScale,
+                    notchScale,
+                    notchScale
+                  )
                 );
-                notch.userData = {
-                  ...(notch.userData ?? {}),
-                  [CARVING_KEY]: carving.text,
-                  forestCarvingAge: carving.age,
-                  forestCarvingBarkCoverage: carving.barkCoverage,
-                };
-                group.add(notch);
+              });
+              group.add(notchInstances);
+              if (markers.length === 0) {
+                continue;
               }
             }
           }

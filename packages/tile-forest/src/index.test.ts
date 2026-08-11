@@ -3286,6 +3286,7 @@ describe('tile forest', () => {
     const fullAges: number[] = [];
     const fullBarkCoverage: number[] = [];
     const fullScales: number[] = [];
+    const carvingInstances: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
       const carving = node.userData?.forestCarving;
       if (typeof carving === 'string') {
@@ -3303,6 +3304,9 @@ describe('tile forest', () => {
         node.scale?.x
       ) {
         fullScales.push(node.scale.x);
+      }
+      if (node instanceof FakeInstancedMesh && node.userData?.forestCarvingInstanced) {
+        carvingInstances.push(node);
       }
     });
 
@@ -3331,6 +3335,8 @@ describe('tile forest', () => {
     expect(lowCarvingCount).toBe(0);
     expect(fullAges.length).toBeGreaterThan(0);
     expect(fullBarkCoverage.length).toBeGreaterThan(0);
+    expect(carvingInstances.length).toBeGreaterThan(0);
+    expect(carvingInstances.every((mesh) => mesh.count > 0)).toBe(true);
     expect(fullScales.every((scale) => scale > 0)).toBe(true);
 
     let datedTile: { x: number; y: number } | null = null;
