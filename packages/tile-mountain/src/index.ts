@@ -8,6 +8,7 @@ import {
 import { createMountainTerrainMaterials } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   Paint2DContext,
   RuntimePlugin,
   ThreeHostLike,
@@ -71,94 +72,133 @@ export function createMountainTilePlugin(): RuntimePlugin {
           fillRect(context, x + rightPeak - 1, y + 4, 2, 2, '#f8fafc');
           return true;
         },
-        create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
-          const group = new three.Group();
-          const style = getMountainStyle(three);
-          const peakScale = getMountainPeakScale(state, tileX, tileY);
-          const height = 1.4 * peakScale;
-          const width = 0.9 + hash2D(MOUNTAIN_WIDTH_SEED, tileX, tileY) * 0.22;
-          const depth = 0.9 + hash2D(MOUNTAIN_DEPTH_SEED, tileX, tileY) * 0.22;
-          const upperHeight =
-            height * (0.5 + hash2D(MOUNTAIN_UPPER_SEED, tileX, tileY) * 0.16);
-          const lowerHeight = height - upperHeight * 0.45;
-
-          const base = new three.Mesh(
-            new three.ConeGeometry(
-              Math.max(width, depth) * 0.72,
-              lowerHeight,
-              4
-            ),
-            style.mountainMaterial
+        create3DModel(context: Create3DModelContext) {
+          return runMountainModelBuildToCompletion(
+            createMountainModelProgressive(context)
           );
-          base.position.set(tileX, lowerHeight * 0.5, tileY);
-          base.rotation.y =
-            hash2D(MOUNTAIN_ROTATION_A_SEED, tileX, tileY) * Math.PI;
-          base.scale.z = depth / width;
-          group.add(base);
-
-          const upper = new three.Mesh(
-            new three.ConeGeometry(
-              Math.max(width, depth) * 0.44,
-              upperHeight,
-              4
-            ),
-            style.mountainMaterial
-          );
-          upper.position.set(
-            tileX + (hash2D(MOUNTAIN_OFFSET_X_SEED, tileX, tileY) - 0.5) * 0.12,
-            lowerHeight * 0.62 + upperHeight * 0.5,
-            tileY + (hash2D(MOUNTAIN_OFFSET_Y_SEED, tileX, tileY) - 0.5) * 0.12
-          );
-          upper.rotation.y =
-            hash2D(MOUNTAIN_ROTATION_B_SEED, tileX, tileY) * Math.PI;
-          upper.scale.z = depth / width;
-          group.add(upper);
-
-          if (peakScale > 1.3) {
-            const crown = new three.Mesh(
-              new three.ConeGeometry(
-                Math.max(width, depth) * 0.26,
-                upperHeight * 0.68,
-                4
-              ),
-              style.mountainMaterial
-            );
-            crown.position.set(
-              upper.position.x,
-              upper.position.y + upperHeight * 0.42,
-              upper.position.z
-            );
-            crown.rotation.y =
-              hash2D(MOUNTAIN_ROTATION_C_SEED, tileX, tileY) * Math.PI;
-            crown.scale.z = depth / width;
-            group.add(crown);
-          }
-
-          if (peakScale > 1.55) {
-            const snow = new three.Mesh(
-              new three.ConeGeometry(
-                Math.max(width, depth) * 0.16,
-                upperHeight * 0.3,
-                4
-              ),
-              style.snowMaterial
-            );
-            snow.position.set(
-              upper.position.x,
-              upper.position.y + upperHeight * 0.56,
-              upper.position.z
-            );
-            snow.rotation.y = upper.rotation.y;
-            snow.scale.z = depth / width;
-            group.add(snow);
-          }
-
-          return group;
+        },
+        create3DModelProgressive(context: Create3DModelContext) {
+          return createMountainModelProgressive(context);
         },
       },
       classifyMountainTile
     )
   );
+}
+
+function runMountainModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+) {
+  while (true) {
+    const next = build.next();
+    if (next.done) {
+      return next.value;
+    }
+  }
+}
+
+function* createMountainModelProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+}: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
+  const group = new three.Group();
+  const style = getMountainStyle(three);
+  const peakScale = getMountainPeakScale(state, tileX, tileY);
+  const height = 1.4 * peakScale;
+  const width = 0.9 + hash2D(MOUNTAIN_WIDTH_SEED, tileX, tileY) * 0.22;
+  const depth = 0.9 + hash2D(MOUNTAIN_DEPTH_SEED, tileX, tileY) * 0.22;
+  const upperHeight =
+    height * (0.5 + hash2D(MOUNTAIN_UPPER_SEED, tileX, tileY) * 0.16);
+  const lowerHeight = height - upperHeight * 0.45;
+  const totalSteps = 4;
+
+  const base = new three.Mesh(
+    new three.ConeGeometry(Math.max(width, depth) * 0.72, lowerHeight, 4),
+    style.mountainMaterial
+  );
+  base.position.set(tileX, lowerHeight * 0.5, tileY);
+  base.rotation.y = hash2D(MOUNTAIN_ROTATION_A_SEED, tileX, tileY) * Math.PI;
+  base.scale.z = depth / width;
+  group.add(base);
+
+  yield {
+    completedSteps: 1,
+    totalSteps,
+    label: 'base',
+  };
+
+  const upper = new three.Mesh(
+    new three.ConeGeometry(Math.max(width, depth) * 0.44, upperHeight, 4),
+    style.mountainMaterial
+  );
+  upper.position.set(
+    tileX + (hash2D(MOUNTAIN_OFFSET_X_SEED, tileX, tileY) - 0.5) * 0.12,
+    lowerHeight * 0.62 + upperHeight * 0.5,
+    tileY + (hash2D(MOUNTAIN_OFFSET_Y_SEED, tileX, tileY) - 0.5) * 0.12
+  );
+  upper.rotation.y = hash2D(MOUNTAIN_ROTATION_B_SEED, tileX, tileY) * Math.PI;
+  upper.scale.z = depth / width;
+  group.add(upper);
+
+  yield {
+    completedSteps: 2,
+    totalSteps,
+    label: 'upper',
+  };
+
+  if (peakScale > 1.3) {
+    const crown = new three.Mesh(
+      new three.ConeGeometry(
+        Math.max(width, depth) * 0.26,
+        upperHeight * 0.68,
+        4
+      ),
+      style.mountainMaterial
+    );
+    crown.position.set(
+      upper.position.x,
+      upper.position.y + upperHeight * 0.42,
+      upper.position.z
+    );
+    crown.rotation.y = hash2D(MOUNTAIN_ROTATION_C_SEED, tileX, tileY) * Math.PI;
+    crown.scale.z = depth / width;
+    group.add(crown);
+  }
+
+  yield {
+    completedSteps: 3,
+    totalSteps,
+    label: 'crown',
+  };
+
+  if (peakScale > 1.55) {
+    const snow = new three.Mesh(
+      new three.ConeGeometry(
+        Math.max(width, depth) * 0.16,
+        upperHeight * 0.3,
+        4
+      ),
+      style.snowMaterial
+    );
+    snow.position.set(
+      upper.position.x,
+      upper.position.y + upperHeight * 0.56,
+      upper.position.z
+    );
+    snow.rotation.y = upper.rotation.y;
+    snow.scale.z = depth / width;
+    group.add(snow);
+  }
+
+  yield {
+    completedSteps: 4,
+    totalSteps,
+    label: 'snowcap',
+  };
+
+  return group;
 }
 
 function getMountainPeakScale(

@@ -18,7 +18,10 @@ Always run tests to make sure all tests pass
         for parity, and `tile-forest` now exposes `create3DModelProgressive(...)`
         for its full-detail path so the renderer can resume after tree trunks and
         canopies, hollows and bark markings, ground clutter, and close firefly
-        effects without forcing the whole forest tile to finish in one frame.
+        effects without forcing the whole forest tile to finish in one frame, and
+        `tile-mountain` now exposes `create3DModelProgressive(...)` so the
+        renderer can resume between the base cone, upper peak, crown, and snowcap
+        layers instead of building the full stack in one frame.
 - [ ] Reduce unique materials and shader program variants.
       Progress: `tile-forest` now scopes its tree-family style material cache
       per Three host instead of sharing one process-wide material/texture

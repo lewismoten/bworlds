@@ -126,6 +126,101 @@ function createModelSignature(model: FakeNode | undefined) {
 }
 
 describe('tile mountain', () => {
+  it('builds mountain models progressively before returning the final model', () => {
+    const plugin = createMountainTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'mountain');
+    const state = createMountainState((x, y) => {
+      const distance = Math.abs(x) + Math.abs(y);
+      return distance <= 2 ? 'mountain' : 'plains';
+    });
+
+    const build = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'mountain' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 4,
+        label: 'base',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 4,
+        label: 'upper',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 4,
+        label: 'crown',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 4,
+        totalSteps: 4,
+        label: 'snowcap',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous mountain build aligned with the progressive final model', () => {
+    const plugin = createMountainTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'mountain');
+    const state = createMountainState((x, y) => {
+      const distance = Math.abs(x) + Math.abs(y);
+      return distance <= 2 ? 'mountain' : 'plains';
+    });
+
+    const syncModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'mountain' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+    const progressiveBuild = tile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'mountain' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    expect(createModelSignature(progressiveModel)).toEqual(
+      createModelSignature(syncModel)
+    );
+  });
+
   it('creates deterministic mountain model signatures for the same tile', () => {
     const plugin = createMountainTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'mountain');
