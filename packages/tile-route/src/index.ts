@@ -1519,24 +1519,45 @@ function createDockRouteSign(
   mainLabel.position.set(0, 0.46, 0.03);
   group.add(mainLabel);
 
-  destinations.slice(0, 3).forEach((destination, index) => {
-    const placard = new three.Mesh(
+  const visibleDestinations = destinations.slice(0, 3);
+  if (visibleDestinations.length > 0) {
+    const placardInstances = new three.InstancedMesh(
       new three.BoxGeometry(0.38, 0.1, 0.035),
-      style.deckMaterial
+      style.deckMaterial,
+      visibleDestinations.length
     );
-    placard.position.set(0, 0.32 - index * 0.12, 0);
-    group.add(placard);
+    placardInstances.userData = {
+      ...(placardInstances.userData ?? {}),
+      dockRouteSignPart: 'stop-placard',
+    };
+    const placardMatrixScratch = new three.Matrix4();
 
-    const label = createDockRouteLabelPlane(three, {
-      boatName: route.boatName,
-      stopName: destination.name,
-      width: 0.34,
-      height: 0.075,
-      key: `stop:${route.boatName}:${destination.name}`,
+    visibleDestinations.forEach((destination, index) => {
+      placardInstances.setMatrixAt(
+        index,
+        writeRouteInstancedScalePositionMatrix(
+          placardMatrixScratch,
+          0,
+          0.32 - index * 0.12,
+          0,
+          1,
+          1,
+          1
+        )
+      );
+
+      const label = createDockRouteLabelPlane(three, {
+        boatName: route.boatName,
+        stopName: destination.name,
+        width: 0.34,
+        height: 0.075,
+        key: `stop:${route.boatName}:${destination.name}`,
+      });
+      label.position.set(0, 0.32 - index * 0.12, 0.025);
+      group.add(label);
     });
-    label.position.set(0, 0.32 - index * 0.12, 0.025);
-    group.add(label);
-  });
+    group.add(placardInstances);
+  }
 
   group.userData = {
     ...(group.userData ?? {}),

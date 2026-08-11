@@ -727,9 +727,16 @@ describe('tile route', () => {
     }) as FakeGroup;
 
     let signData: Record<string, unknown> | null = null;
+    const signPlacardInstances: FakeInstancedMesh[] = [];
     model.traverse((node) => {
       if (node.userData?.dockRouteSign) {
         signData = node.userData;
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.dockRouteSignPart === 'stop-placard'
+      ) {
+        signPlacardInstances.push(node);
       }
     });
 
@@ -740,6 +747,9 @@ describe('tile route', () => {
         dockRouteStops: ['Crescent Watch', 'Harbor Market'],
       })
     );
+    expect(signPlacardInstances).toHaveLength(1);
+    expect(signPlacardInstances[0]?.count).toBe(2);
+    expect(signPlacardInstances[0]?.matrices).toHaveLength(2);
   });
 
   it('keeps deterministic dock and bridge visuals stable after bounded cache eviction churn', () => {
