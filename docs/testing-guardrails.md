@@ -65,6 +65,11 @@ keeps deterministic roster, schedule, and one-step quest smoke coverage in the
 fast suite, while
 [packages/town-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/town-support/src/index.long.test.ts:1)
 holds the broad coordinate-and-time quest availability sweeps.
+Rail support now follows it too: [packages/rail-support/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/rail-support/src/index.test.ts:1)
+keeps the local deterministic connection and cache reuse checks in the fast
+suite, while
+[packages/rail-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/rail-support/src/index.long.test.ts:1)
+holds the broader nearby-station anchor sweep.
 
 When a fast-path assertion only needs one derived field from a large generated
 object, prefer a tiny purpose-built fixture over a full snapshot bootstrap.
