@@ -32,6 +32,10 @@ Current behavior:
   the exported SVG note bars carry the same labels through `<title>` metadata.
 - Planned question and answer cadence markers now appear on the timeline header
   and in the exported SVG timeline.
+- Harmony drift now marks the exact offending measure windows with red header
+  overlays and `H` badges, using the same `measureWindows` diagnostics that
+  feed the audit output so the timeline points to the same planned-versus-
+  detected chord mismatch text.
 - The active playhead also renders the current planned chord in a dedicated
   badge, using the same cue source as the exported SVG timeline.
 - Chord cues are grouped across repeated measures so long tonic spans render as

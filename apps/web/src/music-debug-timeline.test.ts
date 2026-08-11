@@ -11,6 +11,7 @@ import {
 import {
   buildMusicDebugTimelineSvgMarkup,
   resolveMusicDebugTimelineChordLabels,
+  resolveMusicDebugTimelineHarmonyDriftMarkers,
   resolveMusicDebugTimelineHoverDetail,
   resolveMusicDebugTimelineNoteBarFill,
   resolveMusicDebugTimelineNoteBarColor,
@@ -109,6 +110,42 @@ const CADENCE_WARNING_TIMELINE_SNAPSHOT = {
     },
   ],
 };
+const HARMONY_DRIFT_TIMELINE_SNAPSHOT = (() => {
+  const detection = FOREST_SNAPSHOT.harmonyChordDetections.find(
+    (entry) => entry.measureWindows.length > 0
+  )!;
+  const driftWindow = detection.measureWindows[0]!;
+  return {
+    ...FOREST_SNAPSHOT,
+    harmonyChordDetections: FOREST_SNAPSHOT.harmonyChordDetections.map(
+      (entry) =>
+        entry.sectionId === detection.sectionId
+          ? {
+              ...entry,
+              driftWindows: [
+                {
+                  startMeasure: driftWindow.startMeasure,
+                  endMeasure: driftWindow.endMeasure,
+                  plannedLabel: 'C-E-G',
+                  detectedLabel: 'D-F-A',
+                  detectedNoteLabels: ['D4', 'F4', 'A4'],
+                },
+              ],
+              measureWindows: entry.measureWindows.map((window, index) =>
+                index === 0
+                  ? {
+                      ...window,
+                      plannedLabel: 'C-E-G',
+                      detectedLabel: 'D-F-A',
+                      detectedNoteLabels: ['D4', 'F4', 'A4'],
+                    }
+                  : window
+              ),
+            }
+          : entry
+    ),
+  };
+})();
 const NON_CHORD_TONE_TIMELINE_SNAPSHOT = (() => {
   const leadIndex = DEFAULT_SNAPSHOT.notes.findIndex(
     (note) => note.role === 'lead'
@@ -547,6 +584,39 @@ describe('music debug timeline', () => {
     );
   });
 
+  it('surfaces harmony drift details when hovering a drift marker', () => {
+    const marker =
+      resolveMusicDebugTimelineHarmonyDriftMarkers(
+        HARMONY_DRIFT_TIMELINE_SNAPSHOT
+      )[0]!;
+
+    const hoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot: HARMONY_DRIFT_TIMELINE_SNAPSHOT,
+      canvas: { width: 960, height: 320 },
+      clientX: resolveMusicDebugTimelineXForOffset(
+        DEFAULT_LAYOUT,
+        HARMONY_DRIFT_TIMELINE_SNAPSHOT.durationMs,
+        marker.centerOffsetMs
+      ),
+      clientY: 66,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(hoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: expect.stringMatching(
+          /harmony drift at measure .*D-F-A vs C-E-G/
+        ),
+        hoverDurationLabel: expect.stringContaining('harmony drift'),
+      })
+    );
+  });
+
   it('renders a standalone svg export for the timeline graph', () => {
     const markup = buildMusicDebugTimelineSvgMarkup(FOREST_SNAPSHOT, {
       playheadOffsetMs: 1_500,
@@ -610,5 +680,15 @@ describe('music debug timeline', () => {
 
     expect(markup).toContain('class="music-debug-timeline-cadence-warning"');
     expect(markup).toContain('failed target and harmony checks');
+  });
+
+  it('renders harmony drift markers in svg exports', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(
+      HARMONY_DRIFT_TIMELINE_SNAPSHOT
+    );
+
+    expect(markup).toContain('class="music-debug-timeline-harmony-drift-marker"');
+    expect(markup).toContain('D-F-A vs C-E-G');
+    expect(markup).toContain('harmony drift');
   });
 });
