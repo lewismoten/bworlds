@@ -98,7 +98,7 @@
 - [x] The playhead should only cover the tracks and not extend past them
 - [x] Hovering over letters like "Q" and "A" above the tracks should show some details
 - [x] Text appears at the top that says "1 min" but is vauge on what that means, as the song is only 2 minutes where 1 min appears 11 times.
-- [ ] Do not play tracks when they are muted
+- [x] Do not play tracks when they are muted
 
 ## 8) Add better diagnostics to the timeline
 

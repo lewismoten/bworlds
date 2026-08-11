@@ -34,6 +34,7 @@ import {
   normalizeMusicDebugPlaybackVariant,
   resolveMusicDebugPlaybackRoles,
 } from './music-debug-playback-variant.ts';
+import { resolveMusicDebugAudiblePlaybackRoles } from './music-debug-page-playback-roles.ts';
 import {
   clampMusicDebugPreviewOffset,
   resolveMusicDebugDisplayedOffsetMs,
@@ -286,9 +287,10 @@ function syncPlaybackControls(
 function resolveSelectedPlaybackRoles(
   value = playbackVariantSelect?.value
 ): ReturnType<typeof resolveMusicDebugPlaybackRoles> {
-  return resolveMusicDebugPlaybackRoles(
-    normalizeMusicDebugPlaybackVariant(value)
-  );
+  return resolveMusicDebugAudiblePlaybackRoles({
+    variant: normalizeMusicDebugPlaybackVariant(value),
+    hiddenRoles,
+  });
 }
 
 function resolveSelectedDryPlaybackEnabled(
@@ -307,6 +309,27 @@ function resolveSelectedPercussionVoiceIds(
     snapshot,
     percussionPlaybackState
   );
+}
+
+function restartPlaybackForCurrentState(
+  snapshot = pageState.refreshNow(),
+  nowMs = performance.now()
+): void {
+  if (!playbackController.isPlaying()) {
+    return;
+  }
+  playbackController.start(snapshot, {
+    ...resolveMusicDebugLivePlaybackIntent({
+      snapshot,
+      playback: playbackVisualState,
+      previewOffsetMs,
+      loopEnabled: loopInput?.checked === true,
+      nowMs,
+    }),
+    roles: resolveSelectedPlaybackRoles(),
+    percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
+    dry: resolveSelectedDryPlaybackEnabled(),
+  });
 }
 
 function renderSummary(
@@ -796,19 +819,7 @@ loopInput?.addEventListener('change', () => {
 
 playbackVariantSelect?.addEventListener('change', () => {
   if (playbackController.isPlaying()) {
-    const snapshot = pageState.refreshNow();
-    playbackController.start(snapshot, {
-      ...resolveMusicDebugLivePlaybackIntent({
-        snapshot,
-        playback: playbackVisualState,
-        previewOffsetMs,
-        loopEnabled: loopInput?.checked === true,
-        nowMs: performance.now(),
-      }),
-      roles: resolveSelectedPlaybackRoles(),
-      percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
-      dry: resolveSelectedDryPlaybackEnabled(),
-    });
+    restartPlaybackForCurrentState();
     persistPageState(true, resolveDisplayedOffsetMs());
     return;
   }
@@ -817,19 +828,7 @@ playbackVariantSelect?.addEventListener('change', () => {
 
 playbackDryInput?.addEventListener('change', () => {
   if (playbackController.isPlaying()) {
-    const snapshot = pageState.refreshNow();
-    playbackController.start(snapshot, {
-      ...resolveMusicDebugLivePlaybackIntent({
-        snapshot,
-        playback: playbackVisualState,
-        previewOffsetMs,
-        loopEnabled: loopInput?.checked === true,
-        nowMs: performance.now(),
-      }),
-      roles: resolveSelectedPlaybackRoles(),
-      percussionVoiceIds: resolveSelectedPercussionVoiceIds(snapshot),
-      dry: resolveSelectedDryPlaybackEnabled(),
-    });
+    restartPlaybackForCurrentState();
     persistPageState(true, resolveDisplayedOffsetMs());
     return;
   }
@@ -856,6 +855,7 @@ timeline?.addEventListener('click', (event) => {
       ? hiddenRoles.filter((entry) => entry !== trackLabelRole)
       : [...hiddenRoles, trackLabelRole];
     renderTrackVisibilityControls();
+    restartPlaybackForCurrentState();
     renderPlaybackUi();
     hideTimelineHover();
     persistPageState(
@@ -1016,6 +1016,7 @@ trackVisibilityRoot?.addEventListener('click', (event) => {
     ? hiddenRoles.filter((entry) => entry !== role)
     : [...hiddenRoles, role];
   renderTrackVisibilityControls();
+  restartPlaybackForCurrentState();
   renderPlaybackUi();
   persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
 });
