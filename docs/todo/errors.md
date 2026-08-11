@@ -212,6 +212,11 @@ Always run tests to make sure all tests pass
       per-call coordinate cache for `sampleTerrainSignals()` so overlapping
       mountain-pass probes between nearby cave entrances stop re-sampling the
       same terrain coordinates within one cave-system resolution, and
+      `watercraft-support` now routes navigation and landing searches through
+      the shared map tile cache instead of calling the uncached global
+      overworld classifier directly, so repeated launch and exit checks stop
+      re-running terrain/overworld classification for the same nearby tiles,
+      and
       `overworld-support` now caches fully composed overworld tiles for
       repeated generation requests that share the same plugin registry, terrain
       sampler, world-state revision, seed, coordinates, and starting tile kind

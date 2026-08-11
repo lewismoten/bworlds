@@ -98,11 +98,15 @@ export function createWatercraftMap({
     );
   }
 
+  function getGlobalTile(x: number, y: number, state?: WorldStateLike) {
+    return getTile(x - context.origin.x, y - context.origin.y, state);
+  }
+
   function canWalk(localX: number, localY: number, state?: WorldStateLike) {
     return isNavigableTile({
       x: context.origin.x + Math.round(localX),
       y: context.origin.y + Math.round(localY),
-      sampleTile: classifyGlobalTile,
+      sampleTile: getGlobalTile,
       state,
     });
   }
@@ -115,7 +119,7 @@ export function createWatercraftMap({
     const landing = findNearestWatercraftLandingPoint({
       x: context.origin.x + localX,
       y: context.origin.y + localY,
-      sampleTile: classifyGlobalTile,
+      sampleTile: getGlobalTile,
       isWalkable(kind) {
         return Boolean(plugins.getTileDefinition(kind)?.walkable);
       },

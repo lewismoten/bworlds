@@ -157,4 +157,83 @@ describe('watercraft support', () => {
 
     expect(map.getTile(2, 3)).toEqual(baseline);
   });
+
+  it('reuses cached overworld tile classification across navigation and landing checks', () => {
+    const classifyCounts = new Map<string, number>();
+    const map = createWatercraftMap({
+      seed: 'cache-spec',
+      context: {
+        id: 'boat:cache',
+        label: 'Boat',
+        type: 'boat',
+        depth: 1,
+        origin: { x: 10, y: -5 },
+      },
+      plugins: {
+        getDefaultTileKind() {
+          return 'plains';
+        },
+        getTileDefinition(kind: string) {
+          return {
+            name: kind,
+            color: '#000',
+            miniColor: '#111',
+            walkable: kind !== 'ocean' && kind !== 'river',
+            wallHeight: 0,
+          };
+        },
+        resolveOverworldTile() {
+          return null;
+        },
+        resolveOverworldAnchors() {
+          return {
+            townAnchors: [],
+            bridgeAnchors: [],
+            poiAnchors: [],
+          };
+        },
+        classifyTerrainTile() {
+          return null;
+        },
+        classifyOverworldTile({ x, y }: { x: number; y: number }) {
+          const key = `${x}:${y}`;
+          classifyCounts.set(key, (classifyCounts.get(key) ?? 0) + 1);
+          if (x === 10 && y === -5) {
+            return { kind: 'river' };
+          }
+          if (x === 11 && y === -5) {
+            return { kind: 'shore' };
+          }
+          return { kind: 'forest' };
+        },
+        decorateOverworldTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+        decorateTownTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+        decorateBuildingTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+        decorateDepthTile({ tile }: { tile: TileLike }) {
+          return tile;
+        },
+      } as never,
+      isNavigableTile({ sampleTile, x, y, state }) {
+        const kind = sampleTile(x, y, state).kind;
+        return kind === 'river' || kind === 'shore';
+      },
+      landingSearchRadius: 2,
+      canLandTileKind(kind) {
+        return kind === 'shore';
+      },
+    });
+
+    expect(map.canWalk(0, 0)).toBe(true);
+    expect(map.canWalk(0, 0)).toBe(true);
+    expect(map.getExit(0, 0)).toEqual({ spawn: { x: 11, y: -5 } });
+    expect(map.getExit(0, 0)).toEqual({ spawn: { x: 11, y: -5 } });
+    expect(classifyCounts.get('10:-5')).toBe(1);
+    expect(classifyCounts.get('11:-5')).toBe(1);
+  });
 });
