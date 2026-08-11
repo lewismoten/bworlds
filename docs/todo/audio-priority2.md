@@ -1,5 +1,50 @@
 # Music Quality and Debug Priorities
 
+## 0) Musical Expression and Track Dynamics
+
+- [ ] Give every track a section-level volume curve.
+- [ ] Give every phrase a small dynamic rise and fall.
+- [ ] Increase velocity range for harmony notes.
+- [ ] Increase velocity range for bass notes.
+- [ ] Keep velocity changes related to phrase position.
+- [ ] Make strong beats slightly louder than weak beats.
+- [ ] Accent motif notes above nearby filler notes.
+- [ ] Reduce accompaniment volume while lead phrases play.
+- [ ] Add crescendos approaching important section peaks.
+- [ ] Add diminuendos after climaxes and near endings.
+- [ ] Add MIDI expression changes within sustained phrases.
+- [ ] Add modulation control for suitable sustained instruments.
+- [ ] Add subtle vibrato to sustained strings and winds.
+- [ ] Add controlled pitch bends for suitable articulations.
+- [ ] Add note attack differences by articulation type.
+- [ ] Add release differences by articulation type.
+- [ ] Add legato behavior for connected melodic notes.
+- [ ] Add staccato behavior for short detached notes.
+- [ ] Add accents for structurally important notes.
+- [ ] Add sustained-note swells for strings and pads.
+- [ ] Change filter brightness with note velocity.
+- [ ] Change filter brightness across a phrase.
+- [ ] Make louder notes slightly brighter when appropriate.
+- [ ] Give each track its own expressive performance profile.
+- [ ] Keep one performer profile consistent through a song.
+- [ ] Add small pan motion only where musically appropriate.
+- [ ] Give percussion hits wider velocity variation.
+- [ ] Add ghost notes to suitable percussion grooves.
+- [ ] Give fills stronger dynamics than normal groove hits.
+- [ ] Add cymbal swells before major transitions.
+- [ ] Add track automation lanes to the MIDI debug view.
+- [ ] Show note velocity as height or brightness in the timeline.
+- [ ] Show track volume automation below each track.
+- [ ] Show expression automation below each track.
+- [ ] Show modulation automation below each track.
+- [ ] Show pitch bends as curves over the note lane.
+- [ ] Add toggles to hide automation lanes when too busy.
+- [ ] Show articulation names when hovering over notes.
+- [ ] Report velocity min, max, and average by section.
+- [ ] Report dynamic range by track and section.
+- [ ] Warn when a track uses too few velocity levels.
+- [ ] Warn when sustained tracks have no expression changes.
+
 ## 1) Enforce musical correctness first
 
 - [ ] Fail export when harmony notes miss planned chord tones.
