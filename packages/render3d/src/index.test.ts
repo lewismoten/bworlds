@@ -138,6 +138,7 @@ import {
   countRecentMetricEvents,
   countEquivalentShareableMaterials,
   createTilePluginModelFromCostEstimate,
+  resumeProgressiveTileModelBuild,
   disposeObject3DResources,
   applyObjectDistanceFade,
   clampCameraPitch,
@@ -1824,6 +1825,88 @@ describe('render3d visibility helpers', () => {
           limit: 16,
         },
       ],
+    });
+  });
+
+  it('starts progressive plugin model builds without constructing the final model immediately', () => {
+    const create3DModelProgressive = vi.fn(function* () {
+      yield { completedSteps: 1, totalSteps: 2, label: 'branches' };
+      return { type: 'Mesh' };
+    });
+
+    const result = createTilePluginModelFromCostEstimate(
+      {
+        create3DModelProgressive,
+      },
+      {
+        three: {} as never,
+        tile: { kind: 'forest' },
+        state: {} as never,
+        tileX: 12,
+        tileY: 8,
+        detailLevel: 'low',
+      } as never,
+      getTileModelCostEstimateLimits('low')
+    );
+
+    expect(create3DModelProgressive).toHaveBeenCalledTimes(1);
+    expect(result.pluginModel).toBeNull();
+    expect(result.progressiveBuild).toEqual({
+      generator: expect.any(Object),
+      lastProgress: null,
+    });
+  });
+
+  it('resumes progressive plugin model builds one yield at a time until complete', () => {
+    const build = createTilePluginModelFromCostEstimate(
+      {
+        create3DModelProgressive: function* () {
+          yield { completedSteps: 1, totalSteps: 3, label: 'layout' };
+          yield { completedSteps: 2, totalSteps: 3, label: 'foliage' };
+          return { type: 'Mesh', name: 'done' };
+        },
+      },
+      {
+        three: {} as never,
+        tile: { kind: 'forest' },
+        state: {} as never,
+        tileX: 12,
+        tileY: 8,
+        detailLevel: 'low',
+      } as never,
+      getTileModelCostEstimateLimits('low')
+    ).progressiveBuild;
+
+    expect(build).not.toBeNull();
+    expect(resumeProgressiveTileModelBuild(build!)).toEqual({
+      done: false,
+      model: null,
+      progress: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'layout',
+      },
+      stepsProcessed: 1,
+    });
+    expect(resumeProgressiveTileModelBuild(build!)).toEqual({
+      done: false,
+      model: null,
+      progress: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'foliage',
+      },
+      stepsProcessed: 1,
+    });
+    expect(resumeProgressiveTileModelBuild(build!)).toEqual({
+      done: true,
+      model: { type: 'Mesh', name: 'done' },
+      progress: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'foliage',
+      },
+      stepsProcessed: 1,
     });
   });
 

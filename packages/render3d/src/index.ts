@@ -65,6 +65,7 @@ import {
 import {
   createTilePluginModelFromCostEstimate,
   getTileModelCostEstimateLimitsForDetailLevel,
+  resumeProgressiveTileModelBuild,
   validateTileModelCostEstimateAgainstLimits,
 } from './tile-model-cost-estimate-budget.ts';
 import { getTileModelPerformanceWarnings } from './tile-model-performance-warnings.ts';
@@ -184,6 +185,7 @@ export { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 export {
   createTilePluginModelFromCostEstimate,
   getTileModelCostEstimateLimitsForDetailLevel,
+  resumeProgressiveTileModelBuild,
   validateTileModelCostEstimateAgainstLimits,
 } from './tile-model-cost-estimate-budget.ts';
 export {

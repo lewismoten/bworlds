@@ -825,6 +825,12 @@ export interface CreateWorldActionContext extends SeededPoint {
   state?: WorldStateLike;
 }
 
+export interface Create3DModelProgress {
+  completedSteps: number;
+  totalSteps?: number;
+  label?: string;
+}
+
 export interface TilePlugin extends Pick<TileLike, 'kind'> {
   definition?: TileDefinitionLike;
   isDefaultTile?: boolean;
@@ -843,6 +849,9 @@ export interface TilePlugin extends Pick<TileLike, 'kind'> {
     context: Report3DModelCostContext
   ) => Model3DResourceCostEstimate | null | void;
   create3DModel?: (context: Create3DModelContext) => unknown;
+  create3DModelProgressive?: (
+    context: Create3DModelContext
+  ) => Generator<Create3DModelProgress, unknown, void>;
   sync3DModel?: (context: Sync3DModelContext) => void;
   canOccupy3D?: (context: CanOccupy3DContext) => boolean | null | void;
   getSurfaceProfile3D?: (

@@ -1,5 +1,6 @@
 import type {
   Create3DModelContext,
+  Create3DModelProgress,
   Model3DResourceCostEstimate,
   RenderBudgetDetailLevel,
   TilePlugin,
@@ -65,6 +66,11 @@ function getTileModelCostEstimateLimits(
   };
 }
 
+export type ProgressiveTileModelBuildState = {
+  generator: Generator<Create3DModelProgress, unknown, void>;
+  lastProgress: Create3DModelProgress | null;
+};
+
 export function validateTileModelCostEstimateAgainstLimits(
   estimate: Model3DResourceCostEstimate,
   limits: TileModelCostEstimateLimits
@@ -85,7 +91,10 @@ export function validateTileModelCostEstimateAgainstLimits(
 
 export function createTilePluginModelFromCostEstimate(
   tilePlugin:
-    | Pick<TilePlugin, 'estimate3DModelCost' | 'create3DModel'>
+    | Pick<
+        TilePlugin,
+        'estimate3DModelCost' | 'create3DModel' | 'create3DModelProgressive'
+      >
     | null
     | undefined,
   renderContext: Create3DModelContext,
@@ -101,6 +110,7 @@ export function createTilePluginModelFromCostEstimate(
   pluginBuildStartMs: number;
   pluginBuildDurationMs: number;
   pluginModel: unknown;
+  progressiveBuild: ProgressiveTileModelBuildState | null;
 } {
   const estimatedCostResult = tilePlugin?.estimate3DModelCost?.(renderContext);
   const estimatedCost: Model3DResourceCostEstimate | null =
@@ -111,16 +121,59 @@ export function createTilePluginModelFromCostEstimate(
     ? validateTileModelCostEstimateAgainstLimits(estimatedCost, limits)
     : null;
   const pluginBuildStartMs = performance.now();
-  const pluginModel =
-    estimateValidation && !estimateValidation.accepted
-      ? null
-      : tilePlugin?.create3DModel?.(renderContext);
+  let pluginModel: unknown = null;
+  let progressiveBuild: ProgressiveTileModelBuildState | null = null;
+  if (!(estimateValidation && !estimateValidation.accepted)) {
+    if (tilePlugin?.create3DModelProgressive) {
+      progressiveBuild = {
+        generator: tilePlugin.create3DModelProgressive(renderContext),
+        lastProgress: null,
+      };
+    } else {
+      pluginModel = tilePlugin?.create3DModel?.(renderContext);
+    }
+  }
   return {
     estimatedCost,
     estimateValidation,
     pluginBuildStartMs,
     pluginBuildDurationMs: performance.now() - pluginBuildStartMs,
     pluginModel,
+    progressiveBuild,
+  };
+}
+
+export function resumeProgressiveTileModelBuild(
+  build: ProgressiveTileModelBuildState,
+  maxSteps = 1
+): {
+  done: boolean;
+  model: unknown;
+  progress: Create3DModelProgress | null;
+  stepsProcessed: number;
+} {
+  const stepLimit = Math.max(1, Math.floor(maxSteps));
+  let stepsProcessed = 0;
+
+  while (stepsProcessed < stepLimit) {
+    const next = build.generator.next();
+    stepsProcessed += 1;
+    if (next.done) {
+      return {
+        done: true,
+        model: next.value,
+        progress: build.lastProgress,
+        stepsProcessed,
+      };
+    }
+    build.lastProgress = next.value as Create3DModelProgress;
+  }
+
+  return {
+    done: false,
+    model: null,
+    progress: build.lastProgress,
+    stepsProcessed,
   };
 }
 
