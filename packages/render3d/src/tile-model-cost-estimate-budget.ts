@@ -177,6 +177,55 @@ export function resumeProgressiveTileModelBuild(
   };
 }
 
+export function resumeProgressiveTileModelBuildWithinBudget(
+  build: ProgressiveTileModelBuildState,
+  options: {
+    flushStartMs: number;
+    pendingBuildBudgetMs: number;
+    maxSteps?: number;
+    minimumSteps?: number;
+    getCurrentMs?: () => number;
+  }
+): {
+  done: boolean;
+  model: unknown;
+  progress: Create3DModelProgress | null;
+  stepsProcessed: number;
+} {
+  const stepLimit = Math.max(1, Math.floor(options.maxSteps ?? 1));
+  const minimumSteps = Math.max(
+    0,
+    Math.min(stepLimit, Math.floor(options.minimumSteps ?? 1))
+  );
+  const getCurrentMs = options.getCurrentMs ?? (() => performance.now());
+  let stepsProcessed = 0;
+
+  while (stepsProcessed < stepLimit) {
+    if (
+      stepsProcessed >= minimumSteps &&
+      getCurrentMs() - options.flushStartMs >= options.pendingBuildBudgetMs
+    ) {
+      break;
+    }
+
+    const resumed = resumeProgressiveTileModelBuild(build);
+    stepsProcessed += resumed.stepsProcessed;
+    if (resumed.done) {
+      return {
+        ...resumed,
+        stepsProcessed,
+      };
+    }
+  }
+
+  return {
+    done: false,
+    model: null,
+    progress: build.lastProgress,
+    stepsProcessed,
+  };
+}
+
 export function getTileModelCostEstimateLimitsForDetailLevel(
   detailLevel: RenderBudgetDetailLevel,
   getHardLimits: (

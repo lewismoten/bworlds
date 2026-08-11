@@ -66,6 +66,7 @@ import {
   createTilePluginModelFromCostEstimate,
   getTileModelCostEstimateLimitsForDetailLevel,
   resumeProgressiveTileModelBuild,
+  resumeProgressiveTileModelBuildWithinBudget,
   type ProgressiveTileModelBuildState,
   validateTileModelCostEstimateAgainstLimits,
 } from './tile-model-cost-estimate-budget.ts';
@@ -2486,8 +2487,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     if (activePendingTileBuild) {
       const resumeStartMs = performance.now();
-      const resumed = resumeProgressiveTileModelBuild(
-        activePendingTileBuild.progressiveBuild
+      const resumed = resumeProgressiveTileModelBuildWithinBudget(
+        activePendingTileBuild.progressiveBuild,
+        {
+          flushStartMs,
+          pendingBuildBudgetMs:
+            effectivePendingWorldBuildBudget.pendingBuildBudgetMs,
+          maxSteps: effectivePendingWorldBuildBudget.maxPendingBuildTiles,
+          minimumSteps: 1,
+          getCurrentMs: () => performance.now(),
+        }
       );
       activePendingTileBuild.pluginBuildDurationMs +=
         performance.now() - resumeStartMs;
