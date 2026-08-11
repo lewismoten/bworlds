@@ -36,3 +36,6 @@ Material lifetime:
 - It also prevents one host from reusing textures or materials that were
   created by a different host, which keeps material/shader ownership aligned
   with the renderer that will actually dispose them.
+- Low-detail forest trees also reuse one shared trunk material and one shared
+  foliage material across tree varieties, which keeps distant forest tiles
+  inside the renderer's per-tile material budget.

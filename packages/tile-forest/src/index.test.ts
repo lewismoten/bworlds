@@ -191,6 +191,36 @@ describe('tile forest', () => {
     ).toBe(true);
   });
 
+  it('keeps the low-detail forest material set within a small shared budget', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const lowModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const materials = new Set<unknown>();
+    lowModel.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.renderStatKind === 'tree' &&
+        node.material
+      ) {
+        const nodeMaterials = Array.isArray(node.material)
+          ? node.material
+          : [node.material];
+        nodeMaterials.forEach((material) => materials.add(material));
+      }
+    });
+
+    expect(materials.size).toBeLessThanOrEqual(3);
+  });
+
   it('renders meadow grass only in full-detail forest models', () => {
     const tile = getForestTile();
     const state = createForestTestState();

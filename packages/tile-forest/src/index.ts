@@ -363,6 +363,10 @@ const forestFireflyMaterialCache = new WeakMap<
   ThreeHostLike,
   ThreeMaterialLike
 >();
+const forestLowDetailTreeStyleCache = new WeakMap<
+  ThreeHostLike,
+  Pick<ForestTreeStyle, 'trunkMaterial' | 'foliageMaterial'>
+>();
 const forestFireflyTextureCache = new WeakMap<
   ThreeHostLike,
   ThreeTextureLike
@@ -3843,6 +3847,31 @@ function getTreeStyle(
   return treeStyleCache.get(key)!;
 }
 
+function getLowDetailTreeStyle(
+  three: ThreeHostLike
+): Pick<ForestTreeStyle, 'trunkMaterial' | 'foliageMaterial'> {
+  const cached = forestLowDetailTreeStyleCache.get(three);
+  if (cached) {
+    return cached;
+  }
+
+  const next = {
+    trunkMaterial: new three.MeshStandardMaterial({
+      color: tintHexColor(TREE_BARK_COLOR, 0.94),
+      roughness: 0.97,
+      metalness: 0.01,
+    }),
+    foliageMaterial: new three.MeshStandardMaterial({
+      color: tintHexColor(TREE_FOLIAGE_COLOR, 0.94),
+      roughness: 0.99,
+      metalness: 0.01,
+      flatShading: true,
+    }),
+  };
+  forestLowDetailTreeStyleCache.set(three, next);
+  return next;
+}
+
 function getTreeStyleCache(three: ThreeHostLike) {
   const cached = treeStyleCacheByHost.get(three);
   if (cached) {
@@ -4142,7 +4171,7 @@ function addLowDetailForestTreeInstances(
   const trunkBuckets = new Map<string, ForestTreeDescriptor[]>();
 
   for (const descriptor of descriptors) {
-    const styleKey = String(descriptor.variety);
+    const styleKey = descriptor.form;
     if (!trunkBuckets.has(styleKey)) {
       trunkBuckets.set(styleKey, []);
     }
@@ -4150,9 +4179,9 @@ function addLowDetailForestTreeInstances(
   }
 
   const lowDetailMatrixScratch = new three.Matrix4();
+  const style = getLowDetailTreeStyle(three);
   for (const [styleKey, bucket] of trunkBuckets.entries()) {
-    const style = getTreeStyle(three, tileX, tileY, Number(styleKey));
-    const form = bucket[0]?.form ?? 'broadleaf';
+    const form = (bucket[0]?.form ?? styleKey) as ForestTreeDescriptor['form'];
     const trunkInstances = new three.InstancedMesh(
       geometry.trunk,
       style.trunkMaterial,
