@@ -90,6 +90,48 @@ describe('procedural music lead motion', () => {
     );
   });
 
+  it('prefers stepwise recovery after a larger leap', () => {
+    const recoveringStepPenalty = scoreProceduralLeadMotionPenalty({
+      distance: 2,
+      isPrimaryCandidate: false,
+      strongLeadBeat: false,
+      structuralAccent: false,
+      candidateSemitones: 9,
+      previousLeapDistance: 5,
+    });
+    const repeatedLeapPenalty = scoreProceduralLeadMotionPenalty({
+      distance: 5,
+      isPrimaryCandidate: false,
+      strongLeadBeat: false,
+      structuralAccent: false,
+      candidateSemitones: 12,
+      previousLeapDistance: 5,
+    });
+
+    expect(recoveringStepPenalty).toBeLessThan(repeatedLeapPenalty);
+  });
+
+  it('keeps the post-leap recovery bias softer on structural accents', () => {
+    const neutralPenalty = scoreProceduralLeadMotionPenalty({
+      distance: 4,
+      isPrimaryCandidate: false,
+      strongLeadBeat: false,
+      structuralAccent: false,
+      candidateSemitones: 11,
+      previousLeapDistance: 5,
+    });
+    const accentedPenalty = scoreProceduralLeadMotionPenalty({
+      distance: 4,
+      isPrimaryCandidate: false,
+      strongLeadBeat: true,
+      structuralAccent: true,
+      candidateSemitones: 11,
+      previousLeapDistance: 5,
+    });
+
+    expect(accentedPenalty).toBeLessThan(neutralPenalty);
+  });
+
   it('penalizes repeated same-pitch runs more than nearby stepwise motion', () => {
     const repeatedPitchPenalty = scoreProceduralLeadMotionPenalty({
       distance: 0,

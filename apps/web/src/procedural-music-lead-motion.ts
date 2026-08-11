@@ -19,6 +19,7 @@ export type ProceduralLeadMotionPenaltyOptions = {
 
 const PROCEDURAL_MINOR_SIXTH_INTERVAL = 8;
 const PROCEDURAL_ORDINARY_LEAP_LIMIT = 3;
+const PROCEDURAL_STEPWISE_RECOVERY_LIMIT = 2;
 
 export function scoreProceduralLeadMotionPenalty(
   options: ProceduralLeadMotionPenaltyOptions
@@ -54,6 +55,7 @@ export function scoreProceduralLeadMotionPenalty(
     !options.structuralAccent
       ? 12
       : 0;
+  const recoveryPenalty = resolvePostLeapRecoveryPenalty(options);
   const isStepOrThird = options.distance <= PROCEDURAL_ORDINARY_LEAP_LIMIT;
 
   if (isStepOrThird) {
@@ -64,6 +66,7 @@ export function scoreProceduralLeadMotionPenalty(
       repeatedMinorSixthPenalty +
       repeatedLargeLeapPenalty +
       repeatedPitchPenalty +
+      recoveryPenalty +
       (options.isPrimaryCandidate ? -0.75 : 0)
     );
   }
@@ -82,6 +85,7 @@ export function scoreProceduralLeadMotionPenalty(
       repeatedLargeLeapPenalty +
       repeatedPitchPenalty +
       ordinaryLeapPenalty +
+      recoveryPenalty +
       (options.isPrimaryCandidate ? -0.1 : 0)
     );
   }
@@ -95,8 +99,26 @@ export function scoreProceduralLeadMotionPenalty(
     repeatedLargeLeapPenalty +
     repeatedPitchPenalty +
     ordinaryLeapPenalty +
+    recoveryPenalty +
     (options.isPrimaryCandidate ? -0.05 : 0)
   );
+}
+
+function resolvePostLeapRecoveryPenalty(
+  options: ProceduralLeadMotionPenaltyOptions
+): number {
+  if (
+    (options.previousLeapDistance ?? 0) <= PROCEDURAL_ORDINARY_LEAP_LIMIT ||
+    options.distance <= PROCEDURAL_STEPWISE_RECOVERY_LIMIT
+  ) {
+    return 0;
+  }
+
+  if (options.structuralAccent && options.strongLeadBeat) {
+    return 6 + (options.distance - PROCEDURAL_STEPWISE_RECOVERY_LIMIT) * 4;
+  }
+
+  return 24 + (options.distance - PROCEDURAL_STEPWISE_RECOVERY_LIMIT) * 12;
 }
 
 function resolveRepeatedPitchPenalty(

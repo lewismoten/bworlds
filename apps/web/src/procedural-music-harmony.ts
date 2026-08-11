@@ -1194,6 +1194,7 @@ function selectPreferredLeadSemitoneClass(options: {
         contourRange: options.contourRange,
         preferredIntervals: options.preferredIntervals,
         previousLeapDistance: options.previousLeapDistance,
+        priorLargeLeapCount: options.priorLargeLeapCount,
         repeatedPitchRunLength: options.repeatedPitchRunLength,
       });
       const rightPenalty = scoreProceduralLeadMotionPenalty({
@@ -1205,6 +1206,7 @@ function selectPreferredLeadSemitoneClass(options: {
         contourRange: options.contourRange,
         preferredIntervals: options.preferredIntervals,
         previousLeapDistance: options.previousLeapDistance,
+        priorLargeLeapCount: options.priorLargeLeapCount,
         repeatedPitchRunLength: options.repeatedPitchRunLength,
       });
       return leftPenalty - rightPenalty || left.index - right.index;

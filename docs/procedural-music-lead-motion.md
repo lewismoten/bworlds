@@ -11,6 +11,11 @@ motion is biased away from flat repeated-note strings, while structural cadence
 windows can still keep deliberate reiteration when they need to reinforce a
 question or answer cadence.
 
+The same scoring path now also biases lead recovery toward stepwise motion
+after a larger leap. Candidate ranking keeps structural accents flexible, but
+neutral phrase motion now pays an extra penalty when it chains one large jump
+into another instead of resolving through a smaller recovery step.
+
 Regression coverage lives in:
 
 - [apps/web/src/procedural-music-lead-motion.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-lead-motion.test.ts:1)
