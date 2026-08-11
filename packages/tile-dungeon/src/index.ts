@@ -188,21 +188,22 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       group.add(towerInstances);
       group.add(towerCaps);
 
-      const gate = new three.Group();
-      gate.position.set(
-        tileX + entrance.dx * (baseDepth * 0.42),
-        0,
-        tileY + entrance.dy * (baseDepth * 0.42)
-      );
-      gate.rotation.y = entrance.rotationY;
+      const gateOriginX = tileX + entrance.dx * (baseDepth * 0.42);
+      const gateOriginZ = tileY + entrance.dy * (baseDepth * 0.42);
 
       const arch = new three.Mesh(
         new three.TorusGeometry(0.18, 0.04, 6, 12, Math.PI),
         style.trimMaterial
       );
-      arch.position.set(0, 0.33, 0.03);
+      const archOffset = rotateDungeonLocalOffset(0, 0.03, entrance.rotationY);
+      arch.position.set(
+        gateOriginX + archOffset.x,
+        0.33,
+        gateOriginZ + archOffset.z
+      );
+      arch.rotation.y = entrance.rotationY;
       arch.rotation.z = Math.PI;
-      gate.add(arch);
+      group.add(arch);
 
       const gatePostInstances = new three.InstancedMesh(
         new three.BoxGeometry(0.08, 0.34, 0.08),
@@ -216,61 +217,97 @@ export function createDungeonTilePlugin(): RuntimePlugin {
       const gatePostMatrixScratch = new three.Matrix4();
       gatePostInstances.setMatrixAt(
         0,
-        writeInstancedScalePositionMatrix(
+        writeRotatedInstancedScalePositionMatrix(
           gatePostMatrixScratch,
-          -0.16,
+          gateOriginX +
+            rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).x,
           0.17,
-          0.03,
+          gateOriginZ +
+            rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).z,
           1,
           1,
-          1
+          1,
+          entrance.rotationY
         )
       );
       gatePostInstances.setMatrixAt(
         1,
-        writeInstancedScalePositionMatrix(
+        writeRotatedInstancedScalePositionMatrix(
           gatePostMatrixScratch,
-          0.16,
+          gateOriginX +
+            rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).x,
           0.17,
-          0.03,
+          gateOriginZ +
+            rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).z,
           1,
           1,
-          1
+          1,
+          entrance.rotationY
         )
       );
-      gate.add(gatePostInstances);
+      group.add(gatePostInstances);
 
       const portcullis = new three.Mesh(
         new three.PlaneGeometry(0.24, 0.28),
         style.gateVoidMaterial
       );
-      portcullis.position.set(0, 0.17, 0.08);
-      gate.add(portcullis);
+      const portcullisOffset = rotateDungeonLocalOffset(
+        0,
+        0.08,
+        entrance.rotationY
+      );
+      portcullis.position.set(
+        gateOriginX + portcullisOffset.x,
+        0.17,
+        gateOriginZ + portcullisOffset.z
+      );
+      portcullis.rotation.y = entrance.rotationY;
+      group.add(portcullis);
 
       const bars = new three.Mesh(
         new three.BoxGeometry(0.22, 0.26, 0.02),
         style.barMaterial
       );
-      bars.position.set(0, 0.17, 0.02);
-      gate.add(bars);
+      const barsOffset = rotateDungeonLocalOffset(0, 0.02, entrance.rotationY);
+      bars.position.set(
+        gateOriginX + barsOffset.x,
+        0.17,
+        gateOriginZ + barsOffset.z
+      );
+      bars.rotation.y = entrance.rotationY;
+      group.add(bars);
 
       const darkness = new three.Mesh(
         new three.CircleGeometry(0.12, 18),
         style.gateVoidMaterial
       );
-      darkness.position.set(0, 0.15, -0.1);
-      gate.add(darkness);
+      const darknessOffset = rotateDungeonLocalOffset(
+        0,
+        -0.1,
+        entrance.rotationY
+      );
+      darkness.position.set(
+        gateOriginX + darknessOffset.x,
+        0.15,
+        gateOriginZ + darknessOffset.z
+      );
+      darkness.rotation.y = entrance.rotationY;
+      group.add(darkness);
 
       createDungeonBeacon(
         three,
-        gate,
+        group,
         {
-          x: 0,
+          x: gateOriginX,
           y: 0.42,
-          z: 0.06,
+          z:
+            gateOriginZ +
+            rotateDungeonLocalOffset(0, 0.06, entrance.rotationY).z,
           glowScale: 0.04,
           pointLightY: 0.4,
-          pointLightZ: 0.03,
+          pointLightZ:
+            gateOriginZ +
+            rotateDungeonLocalOffset(0, 0.03, entrance.rotationY).z,
           glowDayIntensity: 0.02,
           glowNightIntensity: 1.45,
           pointLightIntensity: 0.95,
@@ -280,8 +317,6 @@ export function createDungeonTilePlugin(): RuntimePlugin {
         },
         style
       );
-
-      group.add(gate);
 
       const towerBeacons = getDungeonTowerBeaconDescriptors(
         tileX,
@@ -484,6 +519,51 @@ function writeInstancedScalePositionMatrix(
   scaleZ: number
 ): ThreeMatrix4Like {
   return target.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
+}
+
+function writeRotatedInstancedScalePositionMatrix(
+  target: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number,
+  rotationY: number
+): ThreeMatrix4Like {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return target.set(
+    cosRotation * scaleX,
+    0,
+    sinRotation * scaleZ,
+    x,
+    0,
+    scaleY,
+    0,
+    y,
+    -sinRotation * scaleX,
+    0,
+    cosRotation * scaleZ,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
+}
+
+function rotateDungeonLocalOffset(
+  localX: number,
+  localZ: number,
+  rotationY: number
+) {
+  const cosRotation = Math.cos(rotationY);
+  const sinRotation = Math.sin(rotationY);
+  return {
+    x: localX * cosRotation + localZ * sinRotation,
+    z: -localX * sinRotation + localZ * cosRotation,
+  };
 }
 
 function getDungeonEntranceDirection(

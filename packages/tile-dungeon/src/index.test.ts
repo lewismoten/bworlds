@@ -96,6 +96,40 @@ class FakeMatrix4 {
     this.position = { x, y, z };
     return this;
   }
+  set(
+    n11: number,
+    n12: number,
+    n13: number,
+    n14: number,
+    n21: number,
+    n22: number,
+    n23: number,
+    n24: number,
+    n31: number,
+    n32: number,
+    n33: number,
+    n34: number,
+    n41: number,
+    n42: number,
+    n43: number,
+    n44: number
+  ) {
+    void n11;
+    void n12;
+    void n13;
+    void n21;
+    void n22;
+    void n23;
+    void n31;
+    void n32;
+    void n33;
+    void n41;
+    void n42;
+    void n43;
+    void n44;
+    this.position = { x: n14, y: n24, z: n34 };
+    return this;
+  }
   clone() {
     const next = new FakeMatrix4();
     next.scale = { ...this.scale };

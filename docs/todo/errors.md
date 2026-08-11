@@ -41,7 +41,10 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       cave obstacle tiles now collapse their repeated fallen-rock boulders
       into one `InstancedMesh`, and full-detail dungeons now collapse their
       repeated tower bodies, caps, gate posts, tower beacon braziers, banner
-      poles, and banner crossbars into instanced sets, and `tile-ruins` now
+      poles, and banner crossbars into instanced sets, and full-detail
+      dungeons now place their gate arch, portcullis, bars, darkness, and
+      gate beacon pieces directly under the tile root instead of a dedicated
+      gate subgroup, and `tile-ruins` now
       collapses its repeated rubble fragments into one `InstancedMesh`, its
       repeated column ring into one `InstancedMesh`, and taller column caps
       into one `InstancedMesh`, tall ships now collapse their repeated masts,
