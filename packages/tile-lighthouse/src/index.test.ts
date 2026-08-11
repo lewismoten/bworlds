@@ -341,6 +341,37 @@ describe('tile lighthouse', () => {
     expect(beamColors.size).toBeGreaterThan(1);
   });
 
+  it('reuses lighthouse appearance materials across different regions with matching colors', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const models: FakeNode[] = [];
+
+    for (let regionY = 0; regionY < 8; regionY += 1) {
+      for (let regionX = 0; regionX < 8; regionX += 1) {
+        const model = tile?.create3DModel?.({
+          three: fakeThree as never,
+          state: {} as never,
+          tile: { kind: 'lighthouse' } as never,
+          tileX: regionX * 18,
+          tileY: regionY * 18,
+        }) as FakeNode | undefined;
+        if (model) {
+          models.push(model);
+        }
+      }
+    }
+
+    let highestSharedCount = 0;
+    for (let index = 1; index < models.length; index += 1) {
+      highestSharedCount = Math.max(
+        highestSharedCount,
+        countSharedMaterialReferences(models[index - 1], models[index])
+      );
+    }
+
+    expect(highestSharedCount).toBeGreaterThanOrEqual(8);
+  });
+
   it('varies lighthouse sweep configuration by region while keeping local settings shared', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');

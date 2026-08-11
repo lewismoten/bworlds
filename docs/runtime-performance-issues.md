@@ -27,6 +27,11 @@ Recent mitigation work:
   a bounded shared regional variant set instead of generating a distinct sign
   style for every region coordinate. Sign text textures still vary by message,
   but the underlying material set is now reused across compatible regions.
+- `tile-lighthouse` now separates lighthouse appearance sharing from per-region
+  sweep timing. Regions still keep their own rotation speed and direction, but
+  matching beam and pane color combinations now reuse one shared emissive
+  material bundle instead of recreating identical lighthouse appearance
+  materials for every region.
 
 Captured issue reports currently include:
 

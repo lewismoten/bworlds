@@ -117,6 +117,14 @@ const lighthouseStyleCache = createBoundedCache<
     ): LighthouseStyleMaterials;
   }
 >(LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES);
+const lighthouseAppearanceCache = createBoundedCache<
+  string,
+  {
+    createMaterials(
+      three: Create3DModelContext['three']
+    ): LighthouseAppearanceMaterials;
+  }
+>(LIGHTHOUSE_STYLE_CACHE_MAX_ENTRIES);
 
 type BeamMaterialLike = ThreeMaterialLike & {
   opacity?: number;
@@ -146,6 +154,11 @@ type LighthouseStyleMaterials = {
   >;
 };
 
+type LighthouseAppearanceMaterials = Omit<
+  LighthouseStyleMaterials,
+  'rotationDurationMs' | 'rotationDirection'
+>;
+
 const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
   lighthouseStyleCache,
   LIGHTHOUSE_REGION_SIZE,
@@ -166,95 +179,112 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
       hash2D(LIGHTHOUSE_ROTATION_DIRECTION_SEED, regionX, regionY) >= 0.5
         ? 1
         : -1;
+    const appearanceKey = `${beamColor}:${paneColor}`;
 
-    return createHostMaterialResolver(
-      (three: Create3DModelContext['three']): LighthouseStyleMaterials => ({
-        wallMaterial: new three.MeshStandardMaterial({
-          color: '#f7f0e1',
-          roughness: 0.88,
-          metalness: 0.02,
-        }),
-        stripeMaterial: new three.MeshStandardMaterial({
-          color: '#c2410c',
-          roughness: 0.82,
-          metalness: 0.02,
-        }),
-        stoneMaterial: new three.MeshStandardMaterial({
-          color: '#9aa4b2',
-          roughness: 0.96,
-          metalness: 0.02,
-        }),
-        paneMaterial: new three.MeshStandardMaterial({
-          color: paneColor,
-          emissive: paneColor,
-          emissiveIntensity: 0.08,
-          roughness: 0.3,
-          metalness: 0.02,
-          side: three.DoubleSide,
-        }),
-        glassMaterial: new three.MeshStandardMaterial({
-          color: '#d7eefc',
-          emissive: paneColor,
-          emissiveIntensity: 0.02,
-          transparent: true,
-          opacity: 0.42,
-          roughness: 0.08,
-          metalness: 0.06,
-          side: three.DoubleSide,
-        }),
-        frameMaterial: new three.MeshStandardMaterial({
-          color: '#5d6673',
-          roughness: 0.64,
-          metalness: 0.28,
-        }),
-        lensMaterial: new three.MeshStandardMaterial({
-          color: beamColor,
-          emissive: beamColor,
-          emissiveIntensity: 0.12,
-          transparent: true,
-          opacity: 0.96,
-          roughness: 0.18,
-          metalness: 0.04,
-        }),
-        balconyMaterial: new three.MeshStandardMaterial({
-          color: '#8b7358',
-          roughness: 0.84,
-          metalness: 0.08,
-        }),
-        wallGlowMaterial: new three.MeshStandardMaterial({
-          color: '#f8d7a1',
-          emissive: '#f8d7a1',
-          emissiveIntensity: 0.03,
-          transparent: true,
-          opacity: 0.68,
-          roughness: 0.4,
-          metalness: 0.02,
-          side: three.DoubleSide,
-        }),
-        beamColor,
-        rotationDurationMs,
-        rotationDirection,
-        beamMaterials: Object.fromEntries(
-          LIGHTHOUSE_BEAM_SEGMENTS.map((segment) => [
-            segment.key,
-            new three.MeshStandardMaterial({
-              color: beamColor,
-              emissive: beamColor,
-              emissiveIntensity: 0,
-              transparent: true,
-              opacity: 0,
-              depthWrite: false,
-              roughness: 0.18,
-              metalness: 0,
-              side: three.DoubleSide,
-            }),
-          ])
-        ) as Record<
-          (typeof LIGHTHOUSE_BEAM_SEGMENTS)[number]['key'],
-          ThreeMaterialLike
-        >,
-      })
-    );
+    return {
+      createMaterials(
+        three: Create3DModelContext['three']
+      ): LighthouseStyleMaterials {
+        const appearance = lighthouseAppearanceCache
+          .getOrCreate(appearanceKey, () =>
+            createHostMaterialResolver(
+              (
+                host: Create3DModelContext['three']
+              ): LighthouseAppearanceMaterials => ({
+                wallMaterial: new host.MeshStandardMaterial({
+                  color: '#f7f0e1',
+                  roughness: 0.88,
+                  metalness: 0.02,
+                }),
+                stripeMaterial: new host.MeshStandardMaterial({
+                  color: '#c2410c',
+                  roughness: 0.82,
+                  metalness: 0.02,
+                }),
+                stoneMaterial: new host.MeshStandardMaterial({
+                  color: '#9aa4b2',
+                  roughness: 0.96,
+                  metalness: 0.02,
+                }),
+                paneMaterial: new host.MeshStandardMaterial({
+                  color: paneColor,
+                  emissive: paneColor,
+                  emissiveIntensity: 0.08,
+                  roughness: 0.3,
+                  metalness: 0.02,
+                  side: host.DoubleSide,
+                }),
+                glassMaterial: new host.MeshStandardMaterial({
+                  color: '#d7eefc',
+                  emissive: paneColor,
+                  emissiveIntensity: 0.02,
+                  transparent: true,
+                  opacity: 0.42,
+                  roughness: 0.08,
+                  metalness: 0.06,
+                  side: host.DoubleSide,
+                }),
+                frameMaterial: new host.MeshStandardMaterial({
+                  color: '#5d6673',
+                  roughness: 0.64,
+                  metalness: 0.28,
+                }),
+                lensMaterial: new host.MeshStandardMaterial({
+                  color: beamColor,
+                  emissive: beamColor,
+                  emissiveIntensity: 0.12,
+                  transparent: true,
+                  opacity: 0.96,
+                  roughness: 0.18,
+                  metalness: 0.04,
+                }),
+                balconyMaterial: new host.MeshStandardMaterial({
+                  color: '#8b7358',
+                  roughness: 0.84,
+                  metalness: 0.08,
+                }),
+                wallGlowMaterial: new host.MeshStandardMaterial({
+                  color: '#f8d7a1',
+                  emissive: '#f8d7a1',
+                  emissiveIntensity: 0.03,
+                  transparent: true,
+                  opacity: 0.68,
+                  roughness: 0.4,
+                  metalness: 0.02,
+                  side: host.DoubleSide,
+                }),
+                beamColor,
+                beamMaterials: Object.fromEntries(
+                  LIGHTHOUSE_BEAM_SEGMENTS.map((segment) => [
+                    segment.key,
+                    new host.MeshStandardMaterial({
+                      color: beamColor,
+                      emissive: beamColor,
+                      emissiveIntensity: 0,
+                      transparent: true,
+                      opacity: 0,
+                      depthWrite: false,
+                      roughness: 0.18,
+                      metalness: 0,
+                      side: host.DoubleSide,
+                    }),
+                  ])
+                ) as Record<
+                  (typeof LIGHTHOUSE_BEAM_SEGMENTS)[number]['key'],
+                  ThreeMaterialLike
+                >,
+              })
+            )
+          )
+          .createMaterials(three);
+
+        return {
+          ...appearance,
+          rotationDurationMs,
+          rotationDirection,
+        };
+      },
+    };
   }
 );
 
