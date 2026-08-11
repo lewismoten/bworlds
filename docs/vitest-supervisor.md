@@ -40,6 +40,7 @@ Related commands:
   [procedural-music-integration.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-integration.long.test.ts:1),
   [procedural-music-song-repair.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-song-repair.long.test.ts:1),
   [test-source-audit-repository.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/testing/test-source-audit-repository.long.test.ts:1),
+  [packages/render3d/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/render3d/src/index.long.test.ts:1),
   [packages/runtime-overworld-anchors/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/runtime-overworld-anchors/src/index.long.test.ts:1),
   [packages/dock-route-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/dock-route-support/src/index.long.test.ts:1),
   [packages/town-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/town-support/src/index.long.test.ts:1),

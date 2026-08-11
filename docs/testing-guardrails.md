@@ -70,6 +70,13 @@ keeps the local deterministic connection and cache reuse checks in the fast
 suite, while
 [packages/rail-support/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/rail-support/src/index.long.test.ts:1)
 holds the broader nearby-station anchor sweep.
+Render-budget validation follows the same split now:
+[packages/render3d/src/index.test.ts](/Users/lewismoten/dev/bworlds/packages/render3d/src/index.test.ts:1)
+keeps the unit-level resource, budget, and visibility checks on the fast path,
+while
+[packages/render3d/src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/render3d/src/index.long.test.ts:1)
+holds the representative tile-plugin model acceptance checks that instantiate
+real forest, town, lighthouse, and dungeon renderers.
 
 When a fast-path assertion only needs one derived field from a large generated
 object, prefer a tiny purpose-built fixture over a full snapshot bootstrap.
