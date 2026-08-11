@@ -22,9 +22,15 @@ when bass and lead would otherwise travel in parallel on an ordinary step, the
 lead selector now reuses its ranked candidate list to pick an opposite-direction
 option first when one is available.
 
+Question-cadence handling now also distinguishes meter strength explicitly:
+strong question beats stay on unstable chord tones, while weak question beats
+can still use the passing tone that leans into the answer.
+
 Regression coverage lives in:
 
 - [apps/web/src/procedural-music-lead-motion.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-lead-motion.test.ts:1)
   for direct scoring behavior
+- [apps/web/src/procedural-music-harmony-question-cadence.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-harmony-question-cadence.test.ts:1)
+  for the strong-beat versus weak-beat question-cadence split
 - [apps/web/src/procedural-music-harmony-lead.long.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/procedural-music-harmony-lead.long.test.ts:1)
   for generated lead-note runs across sampled phrases

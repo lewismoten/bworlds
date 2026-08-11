@@ -973,6 +973,7 @@ function resolveLeadSemitonesCached(
   }
 
   if (
+    current.cadence === 'neutral' &&
     leapMagnitude > ORDINARY_LEAD_MOTION_LIMIT_SEMITONES &&
     priorLargeLeapCount > 0 &&
     !current.structuralAccent
@@ -1003,6 +1004,14 @@ function resolveLeadSemitonesCached(
   }
 
   if (current.cadence !== 'neutral') {
+    if (current.cadence === 'question' && current.strongLeadBeat) {
+      selectedCurrentSemitones = keepStrongQuestionCadenceOnChordTone({
+        selectedSemitones: selectedCurrentSemitones,
+        previousSemitones: previous.semitones,
+        chord,
+        contourRange: current.contourRange,
+      });
+    }
     return commit(selectedCurrentSemitones);
   }
 
@@ -1095,9 +1104,14 @@ function resolveLeadSemitonePlan(
     composition.contourStep.stage === 'climax';
 
   if (composition.cadence === 'question') {
+    const questionCadenceSemitones = strongLeadBeat
+      ? chord.fifthSemitones
+      : chord.passingSemitones;
     return {
-      semitones: chord.passingSemitones,
-      candidateSemitones: [chord.passingSemitones],
+      semitones: questionCadenceSemitones,
+      candidateSemitones: strongLeadBeat
+        ? [chord.fifthSemitones, chord.thirdSemitones]
+        : [chord.passingSemitones, chord.thirdSemitones],
       contourRange: contourTargetRange,
       cadence: composition.cadence,
       contourStage: composition.contourStep.stage,
@@ -1659,6 +1673,51 @@ function shapeLeadSemitonesForContourStage(options: {
   }
 
   return selectedSemitones;
+}
+
+function keepStrongQuestionCadenceOnChordTone(options: {
+  selectedSemitones: number;
+  previousSemitones: number;
+  chord: ProceduralChord;
+  contourRange: {
+    minSemitones: number;
+    targetSemitones: number;
+    maxSemitones: number;
+  };
+}): number {
+  const normalizedSelectedSemitones =
+    ((options.selectedSemitones % 12) + 12) % 12;
+  const supportedPitchClasses = new Set([
+    ((options.chord.thirdSemitones % 12) + 12) % 12,
+    ((options.chord.fifthSemitones % 12) + 12) % 12,
+  ]);
+
+  if (supportedPitchClasses.has(normalizedSelectedSemitones)) {
+    return options.selectedSemitones;
+  }
+
+  const candidates = [
+    ...resolveLeadOctaveCandidates(
+      options.previousSemitones,
+      options.chord.thirdSemitones,
+      options.contourRange
+    ),
+    ...resolveLeadOctaveCandidates(
+      options.previousSemitones,
+      options.chord.fifthSemitones,
+      options.contourRange
+    ),
+  ];
+
+  candidates.sort(
+    (left, right) =>
+      Math.abs(left - options.selectedSemitones) -
+        Math.abs(right - options.selectedSemitones) ||
+      Math.abs(left - options.previousSemitones) -
+        Math.abs(right - options.previousSemitones)
+  );
+
+  return candidates[0] ?? options.selectedSemitones;
 }
 
 function resolveLeadPhraseStepCount(theme: ProceduralHarmonyTheme): number {
