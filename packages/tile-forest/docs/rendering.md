@@ -39,3 +39,7 @@ Material lifetime:
 - Low-detail forest trees also reuse one shared trunk material and one shared
   foliage material across tree varieties, which keeps distant forest tiles
   inside the renderer's per-tile material budget.
+- Full-detail forest also reuses one shared accessory palette for invariant
+  hollow, owl-eye, web, carving, and meadow flower materials across varieties,
+  so repeated nearby forest tiles stop minting duplicate detail materials for
+  the same visual treatment.

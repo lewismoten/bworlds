@@ -221,6 +221,70 @@ describe('tile forest', () => {
     expect(materials.size).toBeLessThanOrEqual(3);
   });
 
+  it('reuses invariant full-detail forest accessory materials across tiles on one host', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    const markerToMaterials = new Map<string, Set<unknown>>();
+    const expectedMarkers = new Set([
+      'forestHollowInstanced',
+      'forestOwlEye',
+      'forestCarvingInstanced',
+      'forestWeb',
+      'forestMeadow:flower-stem',
+      'forestMeadow:white',
+      'forestMeadow:yellow',
+    ]);
+
+    outer: for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const model = tile.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: { kind: 'forest' },
+          tileX,
+          tileY,
+          detailLevel: 'full',
+        }) as FakeGroup;
+
+        model.traverse((node) => {
+          const materialOwner = node as FakeNode & {
+            material?: unknown | unknown[];
+          };
+          if (!materialOwner.material) {
+            return;
+          }
+          const marker = getForestAccessoryMaterialMarker(node);
+          if (!marker) {
+            return;
+          }
+          if (!markerToMaterials.has(marker)) {
+            markerToMaterials.set(marker, new Set());
+          }
+          const materials = Array.isArray(materialOwner.material)
+            ? materialOwner.material
+            : [materialOwner.material];
+          materials.forEach((material) =>
+            markerToMaterials.get(marker)!.add(material)
+          );
+        });
+
+        const allMarkersFound = [...expectedMarkers].every((marker) =>
+          markerToMaterials.has(marker)
+        );
+        if (allMarkersFound) {
+          break outer;
+        }
+      }
+    }
+
+    expect([...expectedMarkers].every((marker) => markerToMaterials.has(marker))).toBe(
+      true
+    );
+    expectedMarkers.forEach((marker) => {
+      expect(markerToMaterials.get(marker)?.size).toBe(1);
+    });
+  });
+
   it('renders meadow grass only in full-detail forest models', () => {
     const tile = getForestTile();
     const state = createForestTestState();
@@ -270,3 +334,27 @@ describe('tile forest', () => {
     expect(lowGrassInstances).toHaveLength(0);
   });
 });
+
+function getForestAccessoryMaterialMarker(node: FakeNode): string | null {
+  if (node.userData?.forestHollowInstanced) {
+    return 'forestHollowInstanced';
+  }
+  if (node.userData?.forestOwlEye) {
+    return 'forestOwlEye';
+  }
+  if (node.userData?.forestCarvingInstanced) {
+    return 'forestCarvingInstanced';
+  }
+  if (node.userData?.forestWeb) {
+    return 'forestWeb';
+  }
+  const meadowMarker = node.userData?.forestMeadow;
+  if (
+    meadowMarker === 'flower-stem' ||
+    meadowMarker === 'white' ||
+    meadowMarker === 'yellow'
+  ) {
+    return `forestMeadow:${meadowMarker}`;
+  }
+  return null;
+}

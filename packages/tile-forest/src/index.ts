@@ -367,6 +367,19 @@ const forestLowDetailTreeStyleCache = new WeakMap<
   ThreeHostLike,
   Pick<ForestTreeStyle, 'trunkMaterial' | 'foliageMaterial'>
 >();
+const forestSharedAccessoryStyleCache = new WeakMap<
+  ThreeHostLike,
+  Pick<
+    ForestTreeStyle,
+    | 'hollowMaterial'
+    | 'owlEyeMaterial'
+    | 'webMaterial'
+    | 'carvingMaterial'
+    | 'meadowStemMaterial'
+    | 'meadowFlowerWhiteMaterial'
+    | 'meadowFlowerYellowMaterial'
+  >
+>();
 const forestFireflyTextureCache = new WeakMap<
   ThreeHostLike,
   ThreeTextureLike
@@ -3665,6 +3678,7 @@ function getTreeStyle(
   const styleSeedY = 73 + variety * 19;
   const key = `tree-family:${variety}`;
   const treeStyleCache = getTreeStyleCache(three);
+  const sharedAccessoryStyle = getSharedForestAccessoryStyle(three);
 
   if (!treeStyleCache.has(key)) {
     const barkBase = tintHexColor(
@@ -3747,11 +3761,7 @@ function getTreeStyle(
         roughness: 0.94,
         metalness: 0.01,
       }),
-      hollowMaterial: new three.MeshStandardMaterial({
-        color: '#120b07',
-        roughness: 1,
-        metalness: 0,
-      }),
+      hollowMaterial: sharedAccessoryStyle.hollowMaterial,
       owlBodyMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#6b4d31',
@@ -3762,11 +3772,7 @@ function getTreeStyle(
         roughness: 0.98,
         metalness: 0.01,
       }),
-      owlEyeMaterial: new three.MeshStandardMaterial({
-        color: '#f6e6a0',
-        roughness: 0.82,
-        metalness: 0.02,
-      }),
+      owlEyeMaterial: sharedAccessoryStyle.owlEyeMaterial,
       spiderMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#2c211d',
@@ -3781,18 +3787,8 @@ function getTreeStyle(
         roughness: 0.98,
         metalness: 0.01,
       }),
-      webMaterial: new three.MeshStandardMaterial({
-        color: '#d9dfdf',
-        roughness: 0.96,
-        metalness: 0,
-        transparent: true,
-        opacity: 0.68,
-      }),
-      carvingMaterial: new three.MeshStandardMaterial({
-        color: '#d3a06d',
-        roughness: 0.96,
-        metalness: 0.01,
-      }),
+      webMaterial: sharedAccessoryStyle.webMaterial,
+      carvingMaterial: sharedAccessoryStyle.carvingMaterial,
       meadowGrassMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#79a85a',
@@ -3807,21 +3803,11 @@ function getTreeStyle(
         roughness: 0.98,
         metalness: 0.01,
       }),
-      meadowStemMaterial: new three.MeshStandardMaterial({
-        color: '#5f8d41',
-        roughness: 0.98,
-        metalness: 0.01,
-      }),
-      meadowFlowerWhiteMaterial: new three.MeshStandardMaterial({
-        color: '#fff5df',
-        roughness: 0.9,
-        metalness: 0.01,
-      }),
-      meadowFlowerYellowMaterial: new three.MeshStandardMaterial({
-        color: '#f3cf62',
-        roughness: 0.9,
-        metalness: 0.01,
-      }),
+      meadowStemMaterial: sharedAccessoryStyle.meadowStemMaterial,
+      meadowFlowerWhiteMaterial:
+        sharedAccessoryStyle.meadowFlowerWhiteMaterial,
+      meadowFlowerYellowMaterial:
+        sharedAccessoryStyle.meadowFlowerYellowMaterial,
       breadcrumbMaterial: new three.MeshStandardMaterial({
         color: tintHexColor(
           '#e6d6a8',
@@ -3845,6 +3831,66 @@ function getTreeStyle(
   }
 
   return treeStyleCache.get(key)!;
+}
+
+function getSharedForestAccessoryStyle(
+  three: ThreeHostLike
+): Pick<
+  ForestTreeStyle,
+  | 'hollowMaterial'
+  | 'owlEyeMaterial'
+  | 'webMaterial'
+  | 'carvingMaterial'
+  | 'meadowStemMaterial'
+  | 'meadowFlowerWhiteMaterial'
+  | 'meadowFlowerYellowMaterial'
+> {
+  const cached = forestSharedAccessoryStyleCache.get(three);
+  if (cached) {
+    return cached;
+  }
+
+  const next = {
+    hollowMaterial: new three.MeshStandardMaterial({
+      color: '#120b07',
+      roughness: 1,
+      metalness: 0,
+    }),
+    owlEyeMaterial: new three.MeshStandardMaterial({
+      color: '#f6e6a0',
+      roughness: 0.82,
+      metalness: 0.02,
+    }),
+    webMaterial: new three.MeshStandardMaterial({
+      color: '#d9dfdf',
+      roughness: 0.96,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.68,
+    }),
+    carvingMaterial: new three.MeshStandardMaterial({
+      color: '#d3a06d',
+      roughness: 0.96,
+      metalness: 0.01,
+    }),
+    meadowStemMaterial: new three.MeshStandardMaterial({
+      color: '#5f8d41',
+      roughness: 0.98,
+      metalness: 0.01,
+    }),
+    meadowFlowerWhiteMaterial: new three.MeshStandardMaterial({
+      color: '#fff5df',
+      roughness: 0.9,
+      metalness: 0.01,
+    }),
+    meadowFlowerYellowMaterial: new three.MeshStandardMaterial({
+      color: '#f3cf62',
+      roughness: 0.9,
+      metalness: 0.01,
+    }),
+  };
+  forestSharedAccessoryStyleCache.set(three, next);
+  return next;
 }
 
 function getLowDetailTreeStyle(
