@@ -1110,6 +1110,9 @@ function buildSelectedInstrumentDetailsMarkup(
   );
   const usesSamples = runtimeInstrument ? 'No' : 'Unknown';
   const usesSynthesis = runtimeInstrument ? 'Yes' : 'Unknown';
+  const patchVariant = runtimeInstrument
+    ? formatLabel(snapshot.musicSnapshot.songDna.variantLabel)
+    : 'Unknown';
   const polyphonyLimit = runtimeInstrument
     ? `${resolvePreviewPolyphonyLimit()} voices`
     : 'Unknown';
@@ -1165,6 +1168,7 @@ function buildSelectedInstrumentDetailsMarkup(
       <div><dt>Supported Roles</dt><dd>${selectedEntry.supportedRoles.join(', ')}</dd></div>
       <div><dt>Preferred Range</dt><dd>${formatMidiRange(selectedEntry.preferredMidiRange)}</dd></div>
       <div><dt>Playable Range</dt><dd>${formatMidiRange(selectedEntry.recommendedMidiRange)}</dd></div>
+      <div><dt>Patch Variant</dt><dd>${patchVariant}</dd></div>
       <div><dt>Patch Source</dt><dd>${selectedEntry.sourcePlugin}</dd></div>
       <div><dt>Generated</dt><dd>${selectedEntry.sourcePlugin === 'core-generated-bank' ? 'Yes' : 'No'}</dd></div>
       <div><dt>Attack</dt><dd>${attackMs}</dd></div>

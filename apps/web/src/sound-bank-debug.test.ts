@@ -100,6 +100,7 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Supported Roles');
     expect(normalizedMarkup).toContain('Preferred Range');
     expect(normalizedMarkup).toContain('Playable Range');
+    expect(normalizedMarkup).toContain('Patch Variant');
     expect(normalizedMarkup).toContain('music-debug-instrument-waveform');
     expect(normalizedMarkup).toContain('Patch Source');
     expect(normalizedMarkup).toContain('Generated');
@@ -117,6 +118,7 @@ describe('sound bank debug page', () => {
     expect(normalizedMarkup).toContain('Polyphony Limit');
     expect(normalizedMarkup).toContain('Estimated Complexity');
     expect(normalizedMarkup).toContain('Validation Warnings');
+    expect(normalizedMarkup).toContain('Standard');
     expect(normalizedMarkup).toContain('Placeholder patch');
     expect(normalizedMarkup).toContain('>Kick<');
     expect(normalizedMarkup).toContain('>36<');
@@ -226,6 +228,48 @@ describe('sound bank debug page', () => {
       'Browser audio is unavailable. Web Audio previews cannot start here.'
     );
     expect(unavailableMarkup).toContain('Unavailable until audio starts');
+  });
+
+  it('shows the current generated patch variant for selected programs', () => {
+    const standardMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot({
+        tileKind: 'plains',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      }),
+      {
+        audioStatus: 'Audio idle',
+      }
+    ).replace(/\s+/g, ' ');
+    const historicalMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot({
+        tileKind: 'observatory',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      }),
+      {
+        audioStatus: 'Audio idle',
+      }
+    ).replace(/\s+/g, ' ');
+    const ruinedMarkup = buildSoundBankDebugMarkup(
+      createSoundBankDebugSnapshot({
+        tileKind: 'ruins',
+        contextType: 'overworld',
+        clusterX: 0,
+        clusterY: 0,
+      }),
+      {
+        audioStatus: 'Audio idle',
+      }
+    ).replace(/\s+/g, ' ');
+
+    expect(standardMarkup).toContain('<dt>Patch Variant</dt><dd>Standard</dd>');
+    expect(historicalMarkup).toContain(
+      '<dt>Patch Variant</dt><dd>Historical</dd>'
+    );
+    expect(ruinedMarkup).toContain('<dt>Patch Variant</dt><dd>Ruined</dd>');
   });
 
   it('shows master gain controls and muted warnings when audio output is muted', () => {

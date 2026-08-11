@@ -107,7 +107,7 @@
 - [x] Show supported musical roles.
 - [x] Show the preferred note range.
 - [x] Show the full playable note range.
-- [ ] Show the current patch variant.
+- [x] Show the current patch variant.
 - [x] Show the patch source plugin.
 - [x] Show whether the patch is generated.
 - [x] Show whether the patch uses samples.
