@@ -10,6 +10,19 @@ export type MusicDebugKnownGoodSeed = {
 export const MUSIC_DEBUG_KNOWN_GOOD_SEEDS: readonly MusicDebugKnownGoodSeed[] =
   [
     {
+      id: 'plains-midi-audit-baseline',
+      label: 'Plains MIDI Audit Baseline',
+      purpose:
+        'Regression baseline for the exact-duration plains MIDI audit export checks.',
+      options: {
+        tileKind: 'plains',
+        contextType: 'overworld',
+        encounterMode: 'ambient',
+        clusterX: -6,
+        clusterY: -6,
+      },
+    },
+    {
       id: 'plains-motif-baseline',
       label: 'Plains Motif Baseline',
       purpose:

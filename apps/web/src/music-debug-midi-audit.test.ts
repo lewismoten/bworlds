@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { resolveMusicDebugKnownGoodSeed } from './music-debug-known-good-seeds.ts';
 import { createMusicDebugSnapshot } from './music-debug.ts';
 import {
   createMusicDebugMidiExportAudit,
@@ -9,7 +10,9 @@ import { createMusicDebugMidiFileUnchecked } from './music-debug-midi.ts';
 
 describe('music debug midi audit', () => {
   it('exports all 88 planned measures for the easy plains audit snapshot', () => {
-    const snapshot = findSnapshotWithDuration(138_000);
+    const snapshot = createMusicDebugSnapshot(
+      resolveMusicDebugKnownGoodSeed('plains-midi-audit-baseline').options
+    );
 
     expect(snapshot.measureCount).toBe(88);
     expect(snapshot.midiAudit.exportedMeasureCount).toBe(88);
@@ -38,7 +41,9 @@ describe('music debug midi audit', () => {
   });
 
   it('keeps the easy plains export aligned with the reported 2:18 duration and bpm', () => {
-    const snapshot = findSnapshotWithDuration(138_000);
+    const snapshot = createMusicDebugSnapshot(
+      resolveMusicDebugKnownGoodSeed('plains-midi-audit-baseline').options
+    );
 
     const audit = createMusicDebugMidiExportAudit(
       withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
@@ -555,38 +560,6 @@ describe('music debug midi audit', () => {
     ).toBe(true);
   });
 });
-
-function findSnapshotWithDuration(targetDurationMs: number) {
-  if (
-    cachedSnapshotWithDuration &&
-    cachedSnapshotWithDuration.durationMs === targetDurationMs
-  ) {
-    return cachedSnapshotWithDuration;
-  }
-
-  for (let clusterY = -8; clusterY <= 8; clusterY += 1) {
-    for (let clusterX = -8; clusterX <= 8; clusterX += 1) {
-      const snapshot = createMusicDebugSnapshot({
-        tileKind: 'plains',
-        contextType: 'overworld',
-        clusterX,
-        clusterY,
-      });
-      if (snapshot.durationMs === targetDurationMs) {
-        cachedSnapshotWithDuration = snapshot;
-        return snapshot;
-      }
-    }
-  }
-
-  throw new Error(
-    `Unable to find a plains overworld snapshot with duration ${targetDurationMs}.`
-  );
-}
-
-let cachedSnapshotWithDuration: ReturnType<
-  typeof createMusicDebugSnapshot
-> | null = null;
 
 function withValidLeadContourAnalysis(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>

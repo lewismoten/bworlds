@@ -5,6 +5,9 @@ debug seeds that regression-style tests rely on.
 
 Current baselines:
 
+- `plains-midi-audit-baseline`
+  Captures the fixed plains export used for exact-duration MIDI audit checks,
+  so those tests do not scan a large seed grid at runtime.
 - `plains-motif-baseline`
   Captures the stable plains motif case used for exact and varied motif checks.
 - `forest-structure-baseline`
