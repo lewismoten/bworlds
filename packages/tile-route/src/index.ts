@@ -348,7 +348,15 @@ export function createRouteTilePlugin(): RuntimePlugin {
         if (state.getCurrentContext().type !== 'overworld') {
           return null;
         }
-        return createRoadGroup(three, state, tileX, tileY);
+        return runRoadModelBuildToCompletion(
+          createRoadGroupProgressive({ three, state, tileX, tileY })
+        );
+      },
+      create3DModelProgressive({ three, state, tileX, tileY }) {
+        if (state.getCurrentContext().type !== 'overworld') {
+          return null;
+        }
+        return createRoadGroupProgressive({ three, state, tileX, tileY });
       },
       resolveFloorKind3D(context) {
         if (context.state.getCurrentContext().type !== 'overworld') {
@@ -516,6 +524,17 @@ function runDockModelBuildToCompletion(
 }
 
 function runBridgeModelBuildToCompletion(
+  build: Generator<Create3DModelProgress, unknown, void>
+) {
+  while (true) {
+    const step = build.next();
+    if (step.done) {
+      return step.value;
+    }
+  }
+}
+
+function runRoadModelBuildToCompletion(
   build: Generator<Create3DModelProgress, unknown, void>
 ) {
   while (true) {
@@ -922,12 +941,15 @@ function createCachedTerrainSignalSampler(
     cache.getOrCreate(x, y, () => sampleTerrainSignals(x, y));
 }
 
-function createRoadGroup(
-  three: ThreeHostLike,
-  state: WorldStateLike,
-  tileX: number,
-  tileY: number
-) {
+function* createRoadGroupProgressive({
+  three,
+  state,
+  tileX,
+  tileY,
+}: Pick<
+  Create3DModelContext,
+  'three' | 'state' | 'tileX' | 'tileY'
+>): Generator<Create3DModelProgress, unknown, void> {
   const style = getRoadStyle(three, tileX, tileY);
   const connections = getRoadConnections(state, tileX, tileY);
   const tileSeed = createRoadTileSeed(tileX, tileY);
@@ -952,6 +974,11 @@ function createRoadGroup(
         0.04
       )
     );
+    yield {
+      completedSteps: 1,
+      totalSteps: 2,
+      label: 'stub-shoulder',
+    };
     group.add(
       createRoadRibbonMesh(
         three,
@@ -966,9 +993,16 @@ function createRoadGroup(
         0.028
       )
     );
+    yield {
+      completedSteps: 2,
+      totalSteps: 2,
+      label: 'stub-road',
+    };
     return group;
   }
 
+  const totalSteps = connections.length === 2 ? 3 : 1 + connections.length;
+  let completedSteps = 0;
   const centerPatch = new three.Mesh(
     new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
     style.shoulderMaterial
@@ -976,6 +1010,12 @@ function createRoadGroup(
   centerPatch.position.y = ROAD_SURFACE_HEIGHT;
   centerPatch.scale.z = 0.85;
   group.add(centerPatch);
+  completedSteps += 1;
+  yield {
+    completedSteps,
+    totalSteps,
+    label: 'center-patch',
+  };
 
   if (connections.length === 2) {
     const curve = createRoadCurve(
@@ -995,6 +1035,12 @@ function createRoadGroup(
         0.045
       )
     );
+    completedSteps += 1;
+    yield {
+      completedSteps,
+      totalSteps,
+      label: 'shoulder-ribbon',
+    };
     group.add(
       createRoadRibbonMesh(
         three,
@@ -1005,10 +1051,17 @@ function createRoadGroup(
         0.03
       )
     );
+    completedSteps += 1;
+    yield {
+      completedSteps,
+      totalSteps,
+      label: 'road-ribbon',
+    };
     return group;
   }
 
-  connections.forEach((connection: RoadConnection, index: number) => {
+  for (let index = 0; index < connections.length; index += 1) {
+    const connection = connections[index]!;
     const branch = createRoadBranch(three, tileX, tileY, connection, index);
     const branchSeed = appendHashSeedLabel(
       appendHashSeedLabel(tileSeed, ROAD_RIBBON_BRANCH_SEED),
@@ -1034,7 +1087,13 @@ function createRoadGroup(
         0.026
       )
     );
-  });
+    completedSteps += 1;
+    yield {
+      completedSteps,
+      totalSteps,
+      label: `branch-${index + 1}`,
+    };
+  }
 
   return group;
 }

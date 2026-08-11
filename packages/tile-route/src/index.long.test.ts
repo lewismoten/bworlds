@@ -380,6 +380,40 @@ function createStandardBridgeState(centerX: number, centerY: number) {
   };
 }
 
+function createRoadModelState(
+  kinds: Record<string, string>
+): {
+  player: { x: number; y: number; facing: number };
+  getCurrentContext(): { id: string; depth: number; type: 'overworld' };
+  getCurrentTile(x: number, y: number): { kind: string };
+  getTileDefinition(kind: string): {
+    name: string;
+    color: string;
+    miniColor: string;
+    walkable: boolean;
+    wallHeight: number;
+  };
+} {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', depth: 0, type: 'overworld' as const };
+    },
+    getCurrentTile(x: number, y: number) {
+      return { kind: kinds[`${x}:${y}`] ?? 'plains' };
+    },
+    getTileDefinition(kind: string) {
+      return {
+        name: kind,
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: kind !== 'river' && kind !== 'ocean',
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
 describe('tile route', () => {
   it('does not overwrite point-of-interest or sign tiles with roads', () => {
     expect(classifier?.(createRouteClassifierPayload())).toBeNull();
@@ -671,6 +705,136 @@ describe('tile route', () => {
 
   it('resolves the 3D road floor kind from dominant neighboring terrain', () => {
     expect(resolver?.(createRouteFloorPayload())).toBe('plains');
+  });
+
+  it('builds straight road segments progressively before returning the final model', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+    });
+    const build = roadTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+
+    expect(build).toBeDefined();
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 1,
+        totalSteps: 3,
+        label: 'center-patch',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 2,
+        totalSteps: 3,
+        label: 'shoulder-ribbon',
+      },
+    });
+    expect(build?.next()).toEqual({
+      done: false,
+      value: {
+        completedSteps: 3,
+        totalSteps: 3,
+        label: 'road-ribbon',
+      },
+    });
+
+    const completed = build?.next();
+    expect(completed?.done).toBe(true);
+    expect(
+      ((completed?.value as { children?: unknown[] } | undefined)?.children
+        ?.length ?? 0) > 0
+    ).toBe(true);
+  });
+
+  it('keeps the synchronous straight-road build aligned with the progressive final model', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+    });
+    const syncModel = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+    const progressiveBuild = roadTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+    let progressiveModel: FakeGroup | undefined;
+
+    while (true) {
+      const next = progressiveBuild?.next();
+      if (next?.done) {
+        progressiveModel = next.value as FakeGroup | undefined;
+        break;
+      }
+    }
+
+    const captureRoadSignature = (model: FakeGroup | undefined) =>
+      model?.children.map((child) => ({
+        material: child instanceof FakeMesh ? child.material : undefined,
+      })) ?? [];
+
+    expect(captureRoadSignature(progressiveModel)).toEqual(
+      captureRoadSignature(syncModel)
+    );
+  });
+
+  it('builds road junctions progressively one branch at a time', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+      '0:-1': 'road',
+    });
+    const build = roadTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    });
+    const progress: Array<{
+      completedSteps: number;
+      totalSteps: number;
+      label: string;
+    }> = [];
+
+    expect(build).toBeDefined();
+
+    while (true) {
+      const next = build?.next();
+      if (next?.done) {
+        expect(
+          ((next.value as { children?: unknown[] } | undefined)?.children
+            ?.length ?? 0) > 0
+        ).toBe(true);
+        break;
+      }
+      progress.push(next.value as (typeof progress)[number]);
+    }
+
+    expect(progress).toEqual([
+      { completedSteps: 1, totalSteps: 4, label: 'center-patch' },
+      { completedSteps: 2, totalSteps: 4, label: 'branch-1' },
+      { completedSteps: 3, totalSteps: 4, label: 'branch-2' },
+      { completedSteps: 4, totalSteps: 4, label: 'branch-3' },
+    ]);
   });
 
   it('renders isolated forest bridges as fallen logs with the matching traversal axis', () => {

@@ -8,6 +8,6 @@ dock sweeps stay on the long suite:
   keeps cheap smoke coverage for route classification, floor resolution, dock
   rendering, and route boarding actions.
 - [src/index.long.test.ts](/Users/lewismoten/dev/bworlds/packages/tile-route/src/index.long.test.ts:1)
-  keeps the exhaustive bridge, dock, instancing, and cache-churn coverage on
-  the dedicated long-test path, including dock progressive-build parity
-  coverage.
+  keeps the exhaustive road, bridge, dock, instancing, and cache-churn
+  coverage on the dedicated long-test path, including progressive-build parity
+  coverage for all three route-crossing model builders.

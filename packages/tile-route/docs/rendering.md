@@ -1,9 +1,15 @@
 # Route Rendering
 
 The route package now supports progressive model builds through
-`create3DModelProgressive(...)` on the `bridge` and `dock` tiles so the
+`create3DModelProgressive(...)` on the `road`, `bridge`, and `dock` tiles so the
 renderer can spread heavier crossing work across multiple frames instead of
 building every route crossing in one flush.
+
+Current road progressive phases:
+
+- isolated stubs: `stub-shoulder`, `stub-road`
+- straight runs: `center-patch`, `shoulder-ribbon`, `road-ribbon`
+- junctions: `center-patch`, then one `branch-N` phase per connected branch
 
 Current bridge progressive phases:
 
