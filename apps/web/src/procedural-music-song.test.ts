@@ -1210,6 +1210,42 @@ describe('procedural music song', () => {
     expect(new Set(openingPhraseLeadVelocities).size).toBeGreaterThan(1);
   });
 
+  it('keeps opening motif notes more prominent than nearby filler notes in Section A', () => {
+    const song = createProceduralMusicSong({
+      nowMs: 1_000,
+      tileKind: 'forest',
+      contextType: 'overworld',
+      dayProgress: 0.45,
+      yearProgress: 0.25,
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const sectionA = song.sections.find((section) => section.id === 'a');
+
+    expect(sectionA).toBeDefined();
+
+    const phraseEndMs =
+      song.startMs + sectionA!.startOffsetMs + sectionA!.durationMs / 2;
+    const openingPhraseLeadNotes = song.notes.filter(
+      (note): note is ProceduralMusicNote & { velocity: number } =>
+        note.role === 'lead' &&
+        note.velocity !== undefined &&
+        note.startMs >= song.startMs + sectionA!.startOffsetMs &&
+        note.startMs < phraseEndMs
+    );
+    const motifNotes = openingPhraseLeadNotes.slice(0, 4);
+    const fillerNotes = openingPhraseLeadNotes.slice(4);
+
+    expect(motifNotes.length).toBe(4);
+    expect(fillerNotes.length).toBeGreaterThan(0);
+    expect(averageNoteVelocity(motifNotes)).toBeGreaterThan(
+      averageNoteVelocity(fillerNotes)
+    );
+    expect(averageNoteVolume(motifNotes)).toBeGreaterThan(
+      averageNoteVolume(fillerNotes)
+    );
+  });
+
   it('keeps transformed notes fully inside their assigned section windows', () => {
     const song = createProceduralMusicSong({
       nowMs: 1_000,
@@ -1538,6 +1574,16 @@ function collectMeasurePulseInWindow(
       };
     }
   );
+}
+
+function averageNoteVelocity(
+  notes: ReadonlyArray<ProceduralMusicNote & { velocity: number }>
+): number {
+  return averageCounts(notes.map((note) => note.velocity));
+}
+
+function averageNoteVolume(notes: readonly ProceduralMusicNote[]): number {
+  return averageCounts(notes.map((note) => note.volume));
 }
 
 function averageCounts(values: readonly number[]): number {

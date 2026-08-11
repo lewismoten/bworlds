@@ -41,8 +41,8 @@
 - [ ] Allow some songs to have Atmosphere track
 - [ ] Allow some songs to have Effects track
 - [ ] Allow some songs to have Ambience track
-- [ ] Show "Missing" legend in Lead Contour Graph
-- [ ] Show "Drift" legend in Lead Contour Graph
+- [x] Show "Missing" legend in Lead Contour Graph
+- [x] Show "Drift" legend in Lead Contour Graph
 
 ## Instrument Patch Foundation
 
@@ -97,7 +97,7 @@
 - [x] Build each melody from two or more related phrases.
 - [x] Give every phrase a clear opening gesture.
 - [x] Give every phrase a clear closing gesture.
-- [ ] Make motif notes more prominent than filler notes.
+- [x] Make motif notes more prominent than filler notes.
 - [x] Repeat the motif before introducing a variation.
 - [x] Change only one motif feature in each variation.
 - [ ] Keep filler notes connected to nearby motif notes.

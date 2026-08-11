@@ -33,6 +33,11 @@ type ProceduralMusicSongPhraseWindow = {
   phraseStartMeasure: number;
 };
 
+const MOTIF_PROMINENCE_VOLUME_MULTIPLIER = 1.12;
+const MOTIF_PROMINENCE_VELOCITY_BONUS = 8;
+const FILLER_DEEMPHASIS_VOLUME_MULTIPLIER = 0.94;
+const FILLER_DEEMPHASIS_VELOCITY_PENALTY = 4;
+
 export function stateLeadMotifInFirstASection(options: {
   notes: readonly ProceduralMusicNote[];
   sections: readonly ProceduralMusicSongSection[];
@@ -356,6 +361,13 @@ function applyMotifToPhraseWindow(
         options.theme.rootMidiNote + targetSemitones
       ),
       durationMs: rhythmStep.durationMs,
+      volume: clampNormalizedScalar(
+        note.volume * MOTIF_PROMINENCE_VOLUME_MULTIPLIER
+      ),
+      velocity:
+        note.velocity === undefined
+          ? undefined
+          : clampMidiVelocity(note.velocity + MOTIF_PROMINENCE_VELOCITY_BONUS),
     };
     motifIndex += 1;
   }
@@ -591,6 +603,15 @@ function preserveLeadMotifStatementLane(
         note.durationMs,
         Math.max(1, Math.floor(options.phraseEndMs - nextStartMs))
       ),
+      volume: clampNormalizedScalar(
+        note.volume * FILLER_DEEMPHASIS_VOLUME_MULTIPLIER
+      ),
+      velocity:
+        note.velocity === undefined
+          ? undefined
+          : clampMidiVelocity(
+              note.velocity - FILLER_DEEMPHASIS_VELOCITY_PENALTY
+            ),
     };
     displacedStartMs = Math.min(
       options.phraseEndMs - 1,
@@ -803,4 +824,12 @@ function mod(value: number, divisor: number): number {
     return value;
   }
   return ((value % divisor) + divisor) % divisor;
+}
+
+function clampNormalizedScalar(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function clampMidiVelocity(value: number): number {
+  return Math.max(1, Math.min(127, Math.round(value)));
 }
