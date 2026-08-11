@@ -37,6 +37,10 @@ Current behavior:
   for each tile key and uses that cached level as a pending-build hint, so a
   tile that last succeeded on low detail can come back quickly before it tries
   to climb back to full detail again.
+- Visible tiles that are currently showing only a shell fallback are now
+  allowed back into `syncTileModelDetailLevels()` even when the requested
+  detail level has not changed, so those fallback-only entries can retry a real
+  build instead of getting stuck permanently.
 
 This is the current mechanism behind progressive loading in the renderer. It
 does not yet move deterministic world generation into workers, but it does keep

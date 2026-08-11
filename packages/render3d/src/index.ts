@@ -3028,9 +3028,6 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         break;
       }
       processedEntryCount += 1;
-      if (!entry.modelRoot) {
-        continue;
-      }
       const dx = entry.tileX - state.player.x;
       const dy = entry.tileY - state.player.y;
       const distanceSquared = dx * dx + dy * dy;
@@ -3054,7 +3051,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         entry.tile,
         frameBudget
       );
-      if ((entry.detailLevel ?? 'full') === requestedDetailLevel) {
+      if (!shouldRebuildVisibleTileModelDetailEntry(entry, requestedDetailLevel)) {
         continue;
       }
 
@@ -3989,6 +3986,19 @@ export function shouldReplaceVisibleTileModelDetailEntry(
   nextEntry: { modelRoot?: THREE.Object3D | null }
 ): boolean {
   return !currentEntry.modelRoot || Boolean(nextEntry.modelRoot);
+}
+
+export function shouldRebuildVisibleTileModelDetailEntry(
+  currentEntry: {
+    detailLevel?: RenderBudgetDetailLevel;
+    modelRoot?: THREE.Object3D | null;
+  },
+  requestedDetailLevel: RenderBudgetDetailLevel
+): boolean {
+  return (
+    !currentEntry.modelRoot ||
+    (currentEntry.detailLevel ?? 'full') !== requestedDetailLevel
+  );
 }
 
 export function buildRecoverableVisibleTileModelDetailEntry<

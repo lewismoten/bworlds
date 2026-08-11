@@ -191,6 +191,7 @@ import {
   getVisibleWorldTileBuildOrder,
   getFallbackBoxReason,
   getPreferredVisibleTileBuildDetailLevel,
+  shouldRebuildVisibleTileModelDetailEntry,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   buildRecoverableVisibleTileModelDetailEntry,
@@ -4881,6 +4882,33 @@ describe('render3d visibility helpers', () => {
       shouldReplaceVisibleTileModelDetailEntry(
         { modelRoot: null },
         { modelRoot: null }
+      )
+    ).toBe(true);
+  });
+
+  it('rebuilds visible fallback-only entries even when the requested detail level is unchanged', () => {
+    expect(
+      shouldRebuildVisibleTileModelDetailEntry(
+        { detailLevel: 'full', modelRoot: null },
+        'full'
+      )
+    ).toBe(true);
+  });
+
+  it('skips visible lod rebuilds when a valid model already matches the requested detail level', () => {
+    expect(
+      shouldRebuildVisibleTileModelDetailEntry(
+        { detailLevel: 'low', modelRoot: { type: 'Group' } as never },
+        'low'
+      )
+    ).toBe(false);
+  });
+
+  it('rebuilds visible entries when the requested detail level changes', () => {
+    expect(
+      shouldRebuildVisibleTileModelDetailEntry(
+        { detailLevel: 'full', modelRoot: { type: 'Group' } as never },
+        'low'
       )
     ).toBe(true);
   });
