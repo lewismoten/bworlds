@@ -53,7 +53,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       full-detail historical forest trees now collapse their repeated marker
       stones into one shared `InstancedMesh` per landmark tree, and full-
       detail forest carvings now collapse their repeated notch meshes into
-      one shared `InstancedMesh` per carving, and `tile-town` now collapses its
+      one shared `InstancedMesh` per carving, and full-detail forest bark
+      damage now collapses its repeated marker meshes into one shared
+      `InstancedMesh` per damaged tree, and `tile-town` now collapses its
       repeated full-detail building bodies, roofs, doors, windows, banner
       poles, and banner crossbars into shared `InstancedMesh` sets, and dock
       tiles now collapse their repeated rails, support piles, and dock route
@@ -98,7 +100,9 @@ at HTMLButtonElement.<anonymous> (music-debug-page.ts:612:19
       detail historical forest trees now instance their repeated marker
       stones instead of emitting one mesh per landmark marker, and full-
       detail forest carvings now instance their repeated notch meshes instead
-      of emitting one mesh per carving notch, and town
+      of emitting one mesh per carving notch, and full-detail forest bark
+      damage now instances its repeated marker meshes instead of emitting one
+      mesh per damage marker, and town
       tiles now instance their repeated full-detail building bodies, roofs,
       doors, windows, banner poles, and banner
       crossbars instead of emitting one mesh per building part, window pane,

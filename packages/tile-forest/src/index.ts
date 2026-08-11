@@ -1440,29 +1440,38 @@ export function createForestTilePlugin(): RuntimePlugin {
             tree.add(foliage);
           }
 
-          for (const barkMark of damage.barkMarks) {
-            const mark = new three.Mesh(
+          if (damage.barkMarks.length > 0) {
+            const barkDamageInstances = new three.InstancedMesh(
               geometry.foliage,
-              style.carvingMaterial
+              style.carvingMaterial,
+              damage.barkMarks.length
             );
-            mark.position.set(
-              barkMark.x,
-              barkMark.y,
-              structure.radius *
-                (barkMark.kind === 'crack' ? 0.92 : 0.82) *
-                (barkMark.x >= 0 ? 1 : -1)
-            );
-            mark.scale.set(
-              barkMark.scale * (barkMark.kind === 'crack' ? 0.35 : 0.48),
-              barkMark.scale * (0.9 + barkMark.severity * 0.6),
-              barkMark.scale * (barkMark.kind === 'crack' ? 0.18 : 0.26)
-            );
-            mark.userData = {
-              ...(mark.userData ?? {}),
-              [BARK_DAMAGE_KEY]: barkMark.kind,
-              forestBarkDamageSeverity: barkMark.severity,
+            barkDamageInstances.userData = {
+              ...(barkDamageInstances.userData ?? {}),
+              [BARK_DAMAGE_KEY]: damage.barkMarks[0]?.kind,
+              forestBarkDamageSeverity: Math.max(
+                ...damage.barkMarks.map((barkMark) => barkMark.severity)
+              ),
+              forestBarkDamageInstanced: true,
             };
-            tree.add(mark);
+            const barkDamageMatrixScratch = new three.Matrix4();
+            damage.barkMarks.forEach((barkMark, index) => {
+              barkDamageInstances.setMatrixAt(
+                index,
+                writeLowDetailInstancedMatrix(
+                  barkDamageMatrixScratch,
+                  barkMark.x,
+                  barkMark.y,
+                  structure.radius *
+                    (barkMark.kind === 'crack' ? 0.92 : 0.82) *
+                    (barkMark.x >= 0 ? 1 : -1),
+                  barkMark.scale * (barkMark.kind === 'crack' ? 0.35 : 0.48),
+                  barkMark.scale * (0.9 + barkMark.severity * 0.6),
+                  barkMark.scale * (barkMark.kind === 'crack' ? 0.18 : 0.26)
+                )
+              );
+            });
+            tree.add(barkDamageInstances);
           }
 
           if (historical.landmark) {

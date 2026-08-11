@@ -3649,12 +3649,19 @@ describe('tile forest', () => {
 
     const fullKinds = new Set<string>();
     const severities: number[] = [];
+    const barkDamageInstances: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
       if (typeof node.userData?.forestBarkDamageSeverity === 'number') {
         severities.push(node.userData.forestBarkDamageSeverity);
       }
       if (typeof node.userData?.forestBarkDamage === 'string') {
         fullKinds.add(node.userData.forestBarkDamage);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestBarkDamageInstanced
+      ) {
+        barkDamageInstances.push(node);
       }
     });
 
@@ -3666,6 +3673,8 @@ describe('tile forest', () => {
     });
 
     expect(severities.length).toBeGreaterThan(0);
+    expect(barkDamageInstances.length).toBeGreaterThan(0);
+    expect(barkDamageInstances.every((mesh) => mesh.count > 0)).toBe(true);
     expect(severities.some((severity) => severity >= 0.62)).toBe(true);
     expect(fullKinds.has('crack')).toBe(true);
     expect(lowDamageCount).toBe(0);
