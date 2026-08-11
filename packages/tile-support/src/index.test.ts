@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canRouteConnectionSegmentAffectPoint,
   createBoundarySurfaceProfile,
   hasConnectedRoutePath,
   createRoadsideRouteProfile,
@@ -8,6 +9,7 @@ import {
   isBridgeWaterKind,
   isWaterKind,
   isWaterOrCrossingKind,
+  resolveConnectedRouteSegments,
   resolveDominantNeighborFloorKind3D,
   withTerrainTileClassifier,
 } from './index.ts';
@@ -94,6 +96,35 @@ describe('tile support', () => {
         bridgeAnchors: [{ x: 8, y: 0 }],
       })
     ).toBe(true);
+  });
+
+  it('reuses cached connected route segments and rejects distant points by bounds', () => {
+    const townAnchors = [
+      { x: 0, y: 0 },
+      { x: 20, y: 0 },
+      { x: 60, y: 60 },
+    ];
+    const bridgeAnchors = [{ x: 8, y: 0 }];
+
+    const first = resolveConnectedRouteSegments({
+      townAnchors,
+      bridgeAnchors,
+    });
+    const second = resolveConnectedRouteSegments({
+      townAnchors,
+      bridgeAnchors,
+    });
+
+    expect(second).toBe(first);
+    expect(first.townPairSegments).toHaveLength(1);
+    expect(first.townBridgeSegments[0]).not.toBeNull();
+    expect(first.townBridgeSegments[2]).toBeNull();
+    expect(
+      canRouteConnectionSegmentAffectPoint(first.townPairSegments[0]!, 10, 0)
+    ).toBe(true);
+    expect(
+      canRouteConnectionSegmentAffectPoint(first.townPairSegments[0]!, 10, 5)
+    ).toBe(false);
   });
 
   it('creates reusable boundary surface profiles for 3D terrain transitions', () => {

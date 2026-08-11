@@ -172,6 +172,9 @@ Always run tests to make sure all tests pass
       terrain signals and predicted route-presence lookups inside
       `createRoadsideRouteProfile()` so repeated local junction/span scans
       stop rediscovering the same nearby coordinates, and
+      `tile-support` now caches reusable town-pair and town-bridge route
+      segments with expanded bounds so repeated route-path checks can skip
+      distant points before calling `distanceToLineSegment()`, and
       `overworld-support` now caches one bounds object per river curve or
       fork path so distant terrain samples can skip segment-distance scans
       before walking the sampled path arrays.

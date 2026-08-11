@@ -15,6 +15,28 @@ import type {
   WaterTileKind,
 } from '@bworlds/plugin-api';
 
+export type RouteConnectionSegment = {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  tolerance: number;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+};
+
+export type ConnectedRouteSegments = {
+  townPairSegments: RouteConnectionSegment[];
+  townBridgeSegments: Array<RouteConnectionSegment | null>;
+};
+
+const connectedRouteSegmentCaches = new WeakMap<
+  readonly OverworldAnchorLike[],
+  WeakMap<readonly OverworldAnchorLike[], Map<string, ConnectedRouteSegments>>
+>();
+
 export function createRouteTraversalProfile(
   overrides: Partial<TraversalProfile3D> = {}
 ): TraversalProfile3D {
@@ -125,6 +147,14 @@ export function hasConnectedRoutePath({
   townPairPathTolerance?: number;
   bridgeAnchorSnapDistance?: number;
 }) {
+  const connectedSegments = resolveConnectedRouteSegments({
+    townAnchors,
+    bridgeAnchors,
+    maxTownPairDistance,
+    townBridgeMaxDistance,
+    townPairPathTolerance,
+    townBridgePathTolerance,
+  });
   const nearestTown = findNearestAnchorDistance(townAnchors, x, y);
 
   if (
@@ -136,39 +166,39 @@ export function hasConnectedRoutePath({
     return true;
   }
 
-  for (let index = 0; index < townAnchors.length; index += 1) {
-    for (let next = index + 1; next < townAnchors.length; next += 1) {
-      const a = townAnchors[index];
-      const b = townAnchors[next];
-      if (Math.hypot(a.x - b.x, a.y - b.y) > maxTownPairDistance) {
-        continue;
-      }
-      if (
-        distanceToLineSegment(x, y, a.x, a.y, b.x, b.y) < townPairPathTolerance
-      ) {
-        return true;
-      }
+  for (const segment of connectedSegments.townPairSegments) {
+    if (!canRouteConnectionSegmentAffectPoint(segment, x, y)) {
+      continue;
+    }
+    if (
+      distanceToLineSegment(
+        x,
+        y,
+        segment.startX,
+        segment.startY,
+        segment.endX,
+        segment.endY
+      ) < segment.tolerance
+    ) {
+      return true;
     }
   }
 
   if (nearestTown) {
-    const nearestBridge = findNearestAnchorDistance(
-      bridgeAnchors,
-      nearestTown.anchor.x,
-      nearestTown.anchor.y
-    );
+    const nearestBridgeSegment =
+      connectedSegments.townBridgeSegments[nearestTown.index] ?? null;
 
     if (
-      nearestBridge &&
-      nearestBridge.distance <= townBridgeMaxDistance &&
+      nearestBridgeSegment &&
+      canRouteConnectionSegmentAffectPoint(nearestBridgeSegment, x, y) &&
       distanceToLineSegment(
         x,
         y,
-        nearestTown.anchor.x,
-        nearestTown.anchor.y,
-        nearestBridge.anchor.x,
-        nearestBridge.anchor.y
-      ) < townBridgePathTolerance
+        nearestBridgeSegment.startX,
+        nearestBridgeSegment.startY,
+        nearestBridgeSegment.endX,
+        nearestBridgeSegment.endY
+      ) < nearestBridgeSegment.tolerance
     ) {
       return true;
     }
@@ -177,6 +207,96 @@ export function hasConnectedRoutePath({
   return bridgeAnchors.some(
     (bridge) =>
       Math.hypot(x - bridge.x, y - bridge.y) < bridgeAnchorSnapDistance
+  );
+}
+
+export function resolveConnectedRouteSegments({
+  townAnchors,
+  bridgeAnchors,
+  maxTownPairDistance = 28,
+  townBridgeMaxDistance = 16,
+  townPairPathTolerance = 0.42,
+  townBridgePathTolerance = 0.38,
+}: {
+  townAnchors: readonly OverworldAnchorLike[];
+  bridgeAnchors: readonly OverworldAnchorLike[];
+  maxTownPairDistance?: number;
+  townBridgeMaxDistance?: number;
+  townPairPathTolerance?: number;
+  townBridgePathTolerance?: number;
+}): ConnectedRouteSegments {
+  const cacheKey = `${maxTownPairDistance}:${townBridgeMaxDistance}:${townPairPathTolerance}:${townBridgePathTolerance}`;
+  const cached = getConnectedRouteSegmentCache(
+    townAnchors,
+    bridgeAnchors,
+    cacheKey
+  );
+  if (cached) {
+    return cached;
+  }
+
+  const townPairSegments: RouteConnectionSegment[] = [];
+  for (let index = 0; index < townAnchors.length; index += 1) {
+    const start = townAnchors[index];
+    if (!start) {
+      continue;
+    }
+    for (let next = index + 1; next < townAnchors.length; next += 1) {
+      const end = townAnchors[next];
+      if (!end) {
+        continue;
+      }
+      if (Math.hypot(start.x - end.x, start.y - end.y) > maxTownPairDistance) {
+        continue;
+      }
+      townPairSegments.push(
+        createRouteConnectionSegment(
+          start.x,
+          start.y,
+          end.x,
+          end.y,
+          townPairPathTolerance
+        )
+      );
+    }
+  }
+
+  const townBridgeSegments = townAnchors.map((townAnchor) => {
+    const nearestBridge = findNearestAnchorDistance(
+      bridgeAnchors,
+      townAnchor.x,
+      townAnchor.y
+    );
+    if (!nearestBridge || nearestBridge.distance > townBridgeMaxDistance) {
+      return null;
+    }
+    return createRouteConnectionSegment(
+      townAnchor.x,
+      townAnchor.y,
+      nearestBridge.anchor.x,
+      nearestBridge.anchor.y,
+      townBridgePathTolerance
+    );
+  });
+
+  const resolved = {
+    townPairSegments,
+    townBridgeSegments,
+  };
+  setConnectedRouteSegmentCache(townAnchors, bridgeAnchors, cacheKey, resolved);
+  return resolved;
+}
+
+export function canRouteConnectionSegmentAffectPoint(
+  segment: RouteConnectionSegment,
+  x: number,
+  y: number
+): boolean {
+  return (
+    x >= segment.minX &&
+    x <= segment.maxX &&
+    y >= segment.minY &&
+    y <= segment.maxY
   );
 }
 
@@ -374,6 +494,56 @@ function getCachedRoutePresence(
   return resolved;
 }
 
+function createRouteConnectionSegment(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  tolerance: number
+): RouteConnectionSegment {
+  return {
+    startX,
+    startY,
+    endX,
+    endY,
+    tolerance,
+    minX: Math.min(startX, endX) - tolerance,
+    maxX: Math.max(startX, endX) + tolerance,
+    minY: Math.min(startY, endY) - tolerance,
+    maxY: Math.max(startY, endY) + tolerance,
+  };
+}
+
+function getConnectedRouteSegmentCache(
+  townAnchors: readonly OverworldAnchorLike[],
+  bridgeAnchors: readonly OverworldAnchorLike[],
+  cacheKey: string
+): ConnectedRouteSegments | undefined {
+  return connectedRouteSegmentCaches
+    .get(townAnchors)
+    ?.get(bridgeAnchors)
+    ?.get(cacheKey);
+}
+
+function setConnectedRouteSegmentCache(
+  townAnchors: readonly OverworldAnchorLike[],
+  bridgeAnchors: readonly OverworldAnchorLike[],
+  cacheKey: string,
+  value: ConnectedRouteSegments
+): void {
+  let bridgeCache = connectedRouteSegmentCaches.get(townAnchors);
+  if (!bridgeCache) {
+    bridgeCache = new WeakMap();
+    connectedRouteSegmentCaches.set(townAnchors, bridgeCache);
+  }
+  let optionCache = bridgeCache.get(bridgeAnchors);
+  if (!optionCache) {
+    optionCache = new Map();
+    bridgeCache.set(bridgeAnchors, optionCache);
+  }
+  optionCache.set(cacheKey, value);
+}
+
 export function createBoundarySurfaceProfile({
   surfaceHeight,
   boundaryRole,
@@ -434,9 +604,10 @@ function findNearestAnchorDistance<TAnchor extends { x: number; y: number }>(
   anchors: readonly TAnchor[],
   x: number,
   y: number
-): { anchor: TAnchor; distance: number } | undefined {
+): { anchor: TAnchor; distance: number; index: number } | undefined {
   let nearestAnchor: TAnchor | undefined;
   let nearestDistance = Number.POSITIVE_INFINITY;
+  let nearestIndex = -1;
 
   for (let index = 0; index < anchors.length; index += 1) {
     const anchor = anchors[index];
@@ -451,6 +622,7 @@ function findNearestAnchorDistance<TAnchor extends { x: number; y: number }>(
 
     nearestAnchor = anchor;
     nearestDistance = distance;
+    nearestIndex = index;
   }
 
   if (!nearestAnchor) {
@@ -460,6 +632,7 @@ function findNearestAnchorDistance<TAnchor extends { x: number; y: number }>(
   return {
     anchor: nearestAnchor,
     distance: nearestDistance,
+    index: nearestIndex,
   };
 }
 
