@@ -23,6 +23,10 @@ Recent mitigation work:
   palette and texture-pattern set instead of painting a separate wall and roof
   texture for every town region. Town placement and building geometry still vary
   by tile, but compatible regions now reuse the same material bundles.
+- `tile-sign` now resolves sign dimensions and core placard/post materials from
+  a bounded shared regional variant set instead of generating a distinct sign
+  style for every region coordinate. Sign text textures still vary by message,
+  but the underlying material set is now reused across compatible regions.
 
 Captured issue reports currently include:
 

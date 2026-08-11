@@ -10,7 +10,6 @@ import {
 import { createTilePlugin } from '@bworlds/plugin-api';
 import {
   createHostMaterialResolver,
-  createRegionalMaterialResolver,
   pickThresholdColor,
 } from '@bworlds/procedural-style';
 import {
@@ -45,91 +44,53 @@ const LONG_ROAD_MIN_SPAN = 8;
 const LONG_ROAD_POI_DISTANCE = 28;
 const SIGN_STYLE_CACHE_LIMIT = 96;
 const SIGN_LABEL_CACHE_LIMIT = 192;
+const SIGN_STYLE_VARIANTS = [
+  {
+    postHeight: 1.12,
+    postThickness: 0.07,
+    placardWidth: 0.54,
+    placardHeight: 0.16,
+    placardDepth: 0.035,
+    postColor: '#5a3418',
+    placardColor: '#f0c979',
+    trimColor: '#7c4a1a',
+  },
+  {
+    postHeight: 1.28,
+    postThickness: 0.08,
+    placardWidth: 0.62,
+    placardHeight: 0.19,
+    placardDepth: 0.045,
+    postColor: TREE_BARK_COLOR,
+    placardColor: '#e2b762',
+    trimColor: '#8c5b24',
+  },
+  {
+    postHeight: 1.42,
+    postThickness: 0.09,
+    placardWidth: 0.68,
+    placardHeight: 0.21,
+    placardDepth: 0.05,
+    postColor: '#5a3418',
+    placardColor: '#e7bb68',
+    trimColor: '#7c4a1a',
+  },
+  {
+    postHeight: 1.22,
+    postThickness: 0.075,
+    placardWidth: 0.58,
+    placardHeight: 0.17,
+    placardDepth: 0.04,
+    postColor: TREE_BARK_COLOR,
+    placardColor: '#f0c979',
+    trimColor: '#8c5b24',
+  },
+] as const;
 const DIRECTION_ARROWS = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'] as const;
-const SIGN_POST_HEIGHT_SEED = registerHashLabel('sign-post-height');
-const SIGN_POST_THICKNESS_SEED = registerHashLabel('sign-post-thickness');
-const SIGN_PLACARD_WIDTH_SEED = registerHashLabel('sign-placard-width');
-const SIGN_PLACARD_HEIGHT_SEED = registerHashLabel('sign-placard-height');
-const SIGN_PLACARD_DEPTH_SEED = registerHashLabel('sign-placard-depth');
-const SIGN_BARK_SEED = registerHashLabel('sign-bark');
-const SIGN_PLACARD_SEED = registerHashLabel('sign-placard');
-const SIGN_TRIM_SEED = registerHashLabel('sign-trim');
+const SIGN_STYLE_VARIANT_SEED = registerHashLabel('sign-style-variant');
 const SIGN_SECOND_POST_SEED = registerHashLabel('sign-second-post');
 const signStyleCache = createBoundedCache<string, SignStyleBlueprint>(
   SIGN_STYLE_CACHE_LIMIT
-);
-const resolveRegionalSignStyle = createRegionalMaterialResolver(
-  signStyleCache,
-  SIGN_REGION_SIZE,
-  ({ regionX, regionY, key }) => {
-    const postHeight =
-      1.12 + hash2D(SIGN_POST_HEIGHT_SEED, regionX, regionY) * 0.42;
-    const postThickness =
-      0.07 + hash2D(SIGN_POST_THICKNESS_SEED, regionX, regionY) * 0.04;
-    const placardWidth =
-      0.54 + hash2D(SIGN_PLACARD_WIDTH_SEED, regionX, regionY) * 0.16;
-    const placardHeight =
-      0.16 + hash2D(SIGN_PLACARD_HEIGHT_SEED, regionX, regionY) * 0.05;
-    const placardDepth =
-      0.035 + hash2D(SIGN_PLACARD_DEPTH_SEED, regionX, regionY) * 0.02;
-    const barkTint = hash2D(SIGN_BARK_SEED, regionX, regionY);
-    const placardTint = hash2D(SIGN_PLACARD_SEED, regionX, regionY);
-    const trimTint = hash2D(SIGN_TRIM_SEED, regionX, regionY);
-    const postColor = pickThresholdColor(
-      barkTint,
-      0.5,
-      '#5a3418',
-      TREE_BARK_COLOR
-    );
-    const placardColor = pickThresholdColor(
-      placardTint,
-      0.45,
-      '#f0c979',
-      '#e2b762'
-    );
-    const trimColor = pickThresholdColor(trimTint, 0.5, '#7c4a1a', '#8c5b24');
-    const textColor = '#24150c';
-
-    return createHostMaterialResolver((three: ThreeHostLike): SignStyle => {
-      const style = {
-        key,
-        postHeight,
-        postThickness,
-        placardWidth,
-        placardHeight,
-        placardDepth,
-        placardColor,
-        trimColor,
-        textColor,
-        labelCache: createBoundedCache<string, ThreeTextureLike>(
-          SIGN_LABEL_CACHE_LIMIT
-        ),
-        postMaterial: new three.MeshStandardMaterial({
-          color: postColor,
-          roughness: 0.94,
-          metalness: 0.02,
-        }),
-        placardMaterial: new three.MeshStandardMaterial({
-          color: placardColor,
-          roughness: 0.88,
-          metalness: 0.02,
-        }),
-        trimMaterial: new three.MeshStandardMaterial({
-          color: trimColor,
-          roughness: 0.86,
-          metalness: 0.03,
-        }),
-        lanternMaterial: new three.MeshStandardMaterial({
-          color: '#f7d38a',
-          emissive: '#f7d38a',
-          emissiveIntensity: 0.04,
-          roughness: 0.52,
-          metalness: 0.02,
-        }),
-      };
-      return style;
-    });
-  }
 );
 
 export function createSignTilePlugin(): RuntimePlugin {
@@ -837,7 +798,69 @@ function getRegionalSignStyle(
   tileX: number,
   tileY: number
 ): SignStyle {
-  return resolveRegionalSignStyle(three, tileX, tileY);
+  const regionX = Math.floor(tileX / SIGN_REGION_SIZE);
+  const regionY = Math.floor(tileY / SIGN_REGION_SIZE);
+  const styleVariant = getSignStyleVariant(regionX, regionY);
+
+  return signStyleCache
+    .getOrCreate(styleVariant.key, () =>
+      createHostMaterialResolver((host: ThreeHostLike): SignStyle => ({
+        key: styleVariant.key,
+        postHeight: styleVariant.variant.postHeight,
+        postThickness: styleVariant.variant.postThickness,
+        placardWidth: styleVariant.variant.placardWidth,
+        placardHeight: styleVariant.variant.placardHeight,
+        placardDepth: styleVariant.variant.placardDepth,
+        placardColor: styleVariant.variant.placardColor,
+        trimColor: styleVariant.variant.trimColor,
+        textColor: '#24150c',
+        labelCache: createBoundedCache<string, ThreeTextureLike>(
+          SIGN_LABEL_CACHE_LIMIT
+        ),
+        postMaterial: new host.MeshStandardMaterial({
+          color: styleVariant.variant.postColor,
+          roughness: 0.94,
+          metalness: 0.02,
+        }),
+        placardMaterial: new host.MeshStandardMaterial({
+          color: styleVariant.variant.placardColor,
+          roughness: 0.88,
+          metalness: 0.02,
+        }),
+        trimMaterial: new host.MeshStandardMaterial({
+          color: styleVariant.variant.trimColor,
+          roughness: 0.86,
+          metalness: 0.03,
+        }),
+        lanternMaterial: new host.MeshStandardMaterial({
+          color: '#f7d38a',
+          emissive: '#f7d38a',
+          emissiveIntensity: 0.04,
+          roughness: 0.52,
+          metalness: 0.02,
+        }),
+      }))
+    )
+    .createMaterials(three);
+}
+
+function getSignStyleVariant(
+  regionX: number,
+  regionY: number
+): {
+  key: string;
+  variant: (typeof SIGN_STYLE_VARIANTS)[number];
+} {
+  const variantIndex = Math.floor(
+    hash2D(SIGN_STYLE_VARIANT_SEED, regionX, regionY) *
+      SIGN_STYLE_VARIANTS.length
+  );
+  const variant = SIGN_STYLE_VARIANTS[variantIndex] ?? SIGN_STYLE_VARIANTS[0];
+
+  return {
+    key: `variant:${variantIndex}`,
+    variant,
+  };
 }
 
 function arrowFromVector(dx: number, dy: number): SignArrow {

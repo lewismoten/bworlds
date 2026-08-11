@@ -615,6 +615,34 @@ describe('tile sign', () => {
     );
   });
 
+  it('reuses bounded sign style materials across different regions', () => {
+    const models: Array<FakeGroup | undefined> = [];
+
+    for (let regionY = 0; regionY < 8; regionY += 1) {
+      for (let regionX = 0; regionX < 8; regionX += 1) {
+        models.push(
+          signTile?.create3DModel?.({
+            three: fakeThree as never,
+            state: createSignState(`Town ${regionX}:${regionY}`),
+            tile: { kind: 'sign' },
+            tileX: regionX * 10,
+            tileY: regionY * 10,
+          }) as FakeGroup | undefined
+        );
+      }
+    }
+
+    let highestSharedCount = 0;
+    for (let index = 1; index < models.length; index += 1) {
+      highestSharedCount = Math.max(
+        highestSharedCount,
+        countSharedMaterialReferences(models[index - 1], models[index])
+      );
+    }
+
+    expect(highestSharedCount).toBeGreaterThanOrEqual(4);
+  });
+
   it('instances repeated full-detail placard support hardware', () => {
     const model = signTile?.create3DModel?.({
       three: fakeThree as never,
