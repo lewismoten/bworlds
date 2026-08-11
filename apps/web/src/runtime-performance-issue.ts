@@ -226,7 +226,61 @@ function collectRuntimePerformanceIssueReasons(
   }
 
   reasons.push(...debugSnapshot.resourceWarnings);
+  if (reasons.length > 0) {
+    reasons.push(...describeRuntimePerformanceHotspots(debugSnapshot));
+  }
   return [...new Set(reasons.map((reason) => reason.trim()).filter(Boolean))];
+}
+
+function describeRuntimePerformanceHotspots(
+  debugSnapshot: DebugSnapshot
+): string[] {
+  return [
+    formatRuntimePerformanceHotspot(
+      'Top draw-call plugins',
+      debugSnapshot.drawCallSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top object plugins',
+      debugSnapshot.objectSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top mesh plugins',
+      debugSnapshot.meshSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top unique-material plugins',
+      debugSnapshot.materialSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top cloned-material plugins',
+      debugSnapshot.clonedMaterialSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top LOD-swap plugins',
+      debugSnapshot.lodReplacementSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top fallback-model plugins',
+      debugSnapshot.fallbackBoxSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top static-matrix-update plugins',
+      debugSnapshot.staticMatrixUpdateSummary
+    ),
+  ].filter((reason): reason is string => reason !== null);
+}
+
+function formatRuntimePerformanceHotspot(
+  label: string,
+  summary: string | undefined
+): string | null {
+  const trimmed = summary?.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const normalized = trimmed.replace(/[.!?]+$/u, '');
+  return `${label}: ${normalized}.`;
 }
 
 function splitRuntimePerformanceLimiters(value: string): string[] {

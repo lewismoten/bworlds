@@ -38,4 +38,5 @@ Tests:
   covers issue-report file naming and retention.
 - [runtime-performance-issue-latest.test.ts](/Users/lewismoten/dev/bworlds/apps/web/src/runtime-performance-issue-latest.test.ts:1)
   fails when saved local runtime issue reports still exist and prints the
-  summaries that must be cleared after the underlying regression is fixed.
+  summaries, plugin hotspots, current-tile context, and latest quality-change
+  details that must be cleared after the underlying regression is fixed.

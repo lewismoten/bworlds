@@ -261,6 +261,15 @@ describe('runtime performance tracking', () => {
     expect(issue?.reasons).toContain(
       'Latest quality change was triggered by Scene materials 467 exceeded hard cap 48.'
     );
+    expect(issue?.reasons).toContain(
+      'Top draw-call plugins: tile-forest dominates draw calls.'
+    );
+    expect(issue?.reasons).toContain(
+      'Top unique-material plugins: tile-water dominates materials.'
+    );
+    expect(issue?.reasons).toContain(
+      'Top static-matrix-update plugins: tile-sign keeps static matrices hot.'
+    );
     expect(issue?.performanceSnapshot.violations).toEqual(
       expect.arrayContaining([
         expect.stringContaining('Maximum frame time'),
