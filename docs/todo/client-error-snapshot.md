@@ -21,8 +21,8 @@
 - [x] Capture explicit `console.error` calls.
 - [x] Prevent the reporter from reporting its own failures.
 - [x] Keep original `console.error` output visible.
-- [ ] Rethrow unhandled errors after reporting them.
-- [ ] Preserve the original stack when rethrowing errors.
+- [x] Rethrow unhandled errors after reporting them.
+- [x] Preserve the original stack when rethrowing errors.
 - [x] Add a helper to list all saved error snapshots.
 - [x] Sort saved snapshots by most recent timestamp.
 - [x] Add a test that fails when any snapshot exists.

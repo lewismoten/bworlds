@@ -94,24 +94,31 @@ describe('client error snapshots', () => {
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
     const consoleError = vi.fn();
     const consoleRef = { error: consoleError };
+    const scheduleRethrow = vi.fn();
     const cleanup = installClientErrorSnapshotReporter({
       tracking: true,
       eventTarget: target,
       fetchImpl,
       getPageUrl: () => 'https://example.com/play',
       consoleRef,
+      scheduleRethrow,
     });
 
+    const windowError = new Error('window broke');
+    const preventWindowDefault = vi.fn();
     target.dispatchEvent({
       type: 'error',
-      error: new Error('window broke'),
+      error: windowError,
       filename: '/src/main.ts',
       lineno: 1,
       colno: 2,
+      preventDefault: preventWindowDefault,
     });
+    const preventRejectionDefault = vi.fn();
     target.dispatchEvent({
       type: 'unhandledrejection',
       reason: 'promise broke',
+      preventDefault: preventRejectionDefault,
     });
     consoleError.mockClear();
     consoleRef.error(new Error('console broke'));
@@ -120,6 +127,11 @@ describe('client error snapshots', () => {
 
     expect(consoleError).toHaveBeenCalledTimes(1);
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(preventWindowDefault).toHaveBeenCalledTimes(1);
+    expect(preventRejectionDefault).toHaveBeenCalledTimes(1);
+    expect(scheduleRethrow).toHaveBeenCalledTimes(2);
+    expect(scheduleRethrow).toHaveBeenNthCalledWith(1, windowError);
+    expect(scheduleRethrow).toHaveBeenNthCalledWith(2, 'promise broke');
     const payloads = fetchImpl.mock.calls
       .map((call) => {
         const requestInit = (call as unknown[])[1];
@@ -146,6 +158,62 @@ describe('client error snapshots', () => {
         }),
       ])
     );
+
+    cleanup();
+  });
+
+  it('skips reporting the same error value when it is rethrown through the reporter scheduler', async () => {
+    const target = createFakeEventTarget();
+    const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
+    const scheduledRethrows: unknown[] = [];
+    const cleanup = installClientErrorSnapshotReporter({
+      tracking: true,
+      eventTarget: target,
+      fetchImpl,
+      getPageUrl: () => 'https://example.com/play',
+      consoleRef: { error: vi.fn() },
+      scheduleRethrow(value) {
+        scheduledRethrows.push(value);
+      },
+    });
+
+    const rethrownError = new Error('rethrow me');
+    target.dispatchEvent({
+      type: 'error',
+      error: rethrownError,
+      filename: '/src/main.ts',
+      lineno: 2,
+      colno: 3,
+      preventDefault: vi.fn(),
+    });
+    await flushMicrotasks();
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(scheduledRethrows).toEqual([rethrownError]);
+
+    target.dispatchEvent({
+      type: 'error',
+      error: rethrownError,
+      filename: '/src/main.ts',
+      lineno: 2,
+      colno: 3,
+      preventDefault: vi.fn(),
+    });
+    await flushMicrotasks();
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+
+    target.dispatchEvent({
+      type: 'error',
+      error: rethrownError,
+      filename: '/src/main.ts',
+      lineno: 2,
+      colno: 3,
+      preventDefault: vi.fn(),
+    });
+    await flushMicrotasks();
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
 
     cleanup();
   });

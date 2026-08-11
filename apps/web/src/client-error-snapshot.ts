@@ -48,6 +48,7 @@ type ClientErrorSnapshotReporterOptions = {
   consoleRef?: Pick<typeof console, 'error'>;
   getPageUrl?: () => string;
   abortSignal?: AbortSignal | null;
+  scheduleRethrow?: (value: unknown) => void;
 };
 
 type NormalizedClientErrorValue = {
@@ -144,10 +145,19 @@ export function installClientErrorSnapshotReporter(
   const consoleRef = options.consoleRef ?? console;
   const getPageUrl =
     options.getPageUrl ?? (() => globalThis.location?.href ?? 'about:blank');
+  const scheduleRethrow =
+    options.scheduleRethrow ??
+    ((value: unknown) => {
+      queueMicrotask(() => {
+        throw value;
+      });
+    });
   const originalConsoleError = consoleRef.error.bind(consoleRef);
   let cleanedUp = false;
   let reporting = false;
   let reportQueue = Promise.resolve();
+  const suppressedRethrowObjects = new WeakSet<object>();
+  const suppressedRethrowPrimitives: unknown[] = [];
 
   const resolveTracking = (): RuntimePerformanceTrackingPreferences => {
     const trackingValue =
@@ -225,6 +235,44 @@ export function installClientErrorSnapshotReporter(
     await queued;
   };
 
+  const isSuppressibleRethrowValue = (
+    value: unknown
+  ): value is object | ((...args: never[]) => unknown) =>
+    (typeof value === 'object' && value !== null) ||
+    typeof value === 'function';
+
+  const suppressNextRethrow = (value: unknown): void => {
+    if (isSuppressibleRethrowValue(value)) {
+      suppressedRethrowObjects.add(value);
+      return;
+    }
+    suppressedRethrowPrimitives.push(value);
+  };
+
+  const consumeSuppressedRethrow = (value: unknown): boolean => {
+    if (isSuppressibleRethrowValue(value)) {
+      if (!suppressedRethrowObjects.has(value)) {
+        return false;
+      }
+      suppressedRethrowObjects.delete(value);
+      return true;
+    }
+
+    const index = suppressedRethrowPrimitives.findIndex((entry) =>
+      Object.is(entry, value)
+    );
+    if (index < 0) {
+      return false;
+    }
+    suppressedRethrowPrimitives.splice(index, 1);
+    return true;
+  };
+
+  const scheduleUnhandledRethrow = (value: unknown): void => {
+    suppressNextRethrow(value);
+    scheduleRethrow(value);
+  };
+
   const handleErrorEvent = (event: unknown): void => {
     const errorEvent = event as {
       error?: unknown;
@@ -232,24 +280,45 @@ export function installClientErrorSnapshotReporter(
       filename?: unknown;
       lineno?: unknown;
       colno?: unknown;
+      preventDefault?: () => void;
     };
+    const errorValue =
+      typeof errorEvent.error !== 'undefined'
+        ? errorEvent.error
+        : errorEvent.message;
+    if (consumeSuppressedRethrow(errorValue)) {
+      return;
+    }
+    if (!resolveTracking().enabled) {
+      return;
+    }
     const location =
       typeof errorEvent.filename === 'string' && errorEvent.filename.length > 0
         ? `${errorEvent.filename}:${typeof errorEvent.lineno === 'number' ? errorEvent.lineno : 0}:${typeof errorEvent.colno === 'number' ? errorEvent.colno : 0}`
         : 'window.error';
-    void reportErrorValue(
-      typeof errorEvent.error !== 'undefined'
-        ? errorEvent.error
-        : errorEvent.message,
-      location
-    );
+    errorEvent.preventDefault?.();
+    void reportErrorValue(errorValue, location).finally(() => {
+      scheduleUnhandledRethrow(errorValue);
+    });
   };
 
   const handleUnhandledRejection = (event: unknown): void => {
     const rejectionEvent = event as {
       reason?: unknown;
+      preventDefault?: () => void;
     };
-    void reportErrorValue(rejectionEvent.reason, 'unhandledrejection');
+    if (consumeSuppressedRethrow(rejectionEvent.reason)) {
+      return;
+    }
+    if (!resolveTracking().enabled) {
+      return;
+    }
+    rejectionEvent.preventDefault?.();
+    void reportErrorValue(rejectionEvent.reason, 'unhandledrejection').finally(
+      () => {
+        scheduleUnhandledRethrow(rejectionEvent.reason);
+      }
+    );
   };
 
   consoleRef.error = ((...args: unknown[]) => {

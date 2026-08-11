@@ -16,6 +16,11 @@ Captured snapshots currently include:
 - the current page URL
 - readable details for non-`Error` thrown values
 
+Unhandled `window.error` and `unhandledrejection` events are prevented from
+finishing their first browser-default path, reported to the snapshot endpoint,
+then rethrown. When the original value is an `Error`, the reporter rethrows the
+same object so the original stack stays intact.
+
 Saved files use the stable hash of the normalized message as the file name, so
 repeated errors overwrite the same JSON file and update its timestamp.
 
