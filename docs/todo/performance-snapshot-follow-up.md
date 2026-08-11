@@ -1,5 +1,7 @@
 # Performance Snapshot Follow-Up
 
+- [ ] consider improving the runtime-performance-snapshots API - mainly adding an additional API to report when rendering issues occur, but limited to a few seconds so that we don't have thrasing. The goal is to have that separate API to report important issues rarely that need to be addressed, and build a failing test when an issue is reported - ie what plugins, parameters, etc. was failing along with budget and reason.
+
 ## Fix Measurement Problems First
 
 - [ ] Verify average FPS agrees with average frame duration.
@@ -96,7 +98,7 @@
 - [ ] Add top Object3D-producing plugins to the snapshot.
 - [ ] Add top mesh-producing plugins to the snapshot.
 - [ ] Add top draw-call-producing plugins to the snapshot.
-- [ ] Add top LOD-swapping plugins to the snapshot.
-- [ ] Add top fallback-model plugins to the snapshot.
+- [x] Add top LOD-swapping plugins to the snapshot.
+- [x] Add top fallback-model plugins to the snapshot.
 - [ ] Add top matrix-update plugins to the snapshot.
 - [ ] Include cache hit rates for geometry and materials.
