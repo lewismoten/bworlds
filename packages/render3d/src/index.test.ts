@@ -367,6 +367,7 @@ class FakePluginPointLight extends FakePluginNode {
 }
 
 class FakePluginMatrix4 {
+  elements = Array<number>(16).fill(0);
   scale = { x: 1, y: 1, z: 1 };
   position = { x: 0, y: 0, z: 0 };
 
@@ -377,6 +378,51 @@ class FakePluginMatrix4 {
 
   setPosition(x: number, y: number, z: number) {
     this.position = { x, y, z };
+    return this;
+  }
+
+  set(
+    n11: number,
+    n12: number,
+    n13: number,
+    n14: number,
+    n21: number,
+    n22: number,
+    n23: number,
+    n24: number,
+    n31: number,
+    n32: number,
+    n33: number,
+    n34: number,
+    n41: number,
+    n42: number,
+    n43: number,
+    n44: number
+  ) {
+    this.elements = [
+      n11,
+      n12,
+      n13,
+      n14,
+      n21,
+      n22,
+      n23,
+      n24,
+      n31,
+      n32,
+      n33,
+      n34,
+      n41,
+      n42,
+      n43,
+      n44,
+    ];
+    this.scale = {
+      x: Math.hypot(n11, n12, n13),
+      y: Math.hypot(n21, n22, n23),
+      z: Math.hypot(n31, n32, n33),
+    };
+    this.position = { x: n14, y: n24, z: n34 };
     return this;
   }
 }
