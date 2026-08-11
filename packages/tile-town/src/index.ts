@@ -281,6 +281,34 @@ export function createTownTilePlugin(): RuntimePlugin {
       const style = getTownStyle(three, tileX, tileY, renderBudget?.quality);
       const descriptors = getTownDescriptors(tileX, tileY);
       const group = new three.Group();
+      const fullDetailWindowCount = descriptors.reduce(
+        (count, descriptor) => count + descriptor.windows.length,
+        0
+      );
+      const windowInstances =
+        detailLevel === 'full' && fullDetailWindowCount > 0
+          ? markPoiLightEmitter(
+              new three.InstancedMesh(
+                new three.BoxGeometry(1, 1, 1),
+                style.windowMaterial,
+                fullDetailWindowCount
+              ),
+              {
+                kind: 'emissive-mesh',
+                dayIntensity: 0.08,
+                nightIntensity: 1.2,
+              }
+            )
+          : null;
+      const windowMatrixScratch = windowInstances ? new three.Matrix4() : null;
+      let nextWindowInstanceIndex = 0;
+
+      if (windowInstances) {
+        windowInstances.userData = {
+          ...(windowInstances.userData ?? {}),
+          townInstancedPart: 'window-pane',
+        };
+      }
 
       for (const descriptor of descriptors) {
         const building = new three.Group();
@@ -332,22 +360,33 @@ export function createTownTilePlugin(): RuntimePlugin {
         building.add(door);
 
         for (const window of descriptor.windows) {
-          const pane = markPoiLightEmitter(
-            new three.Mesh(
-              new three.BoxGeometry(window.width, window.height, 0.03),
-              style.windowMaterial
-            ),
-            {
-              kind: 'emissive-mesh',
-              dayIntensity: 0.08,
-              nightIntensity: 1.2,
-            }
-          );
-          pane.position.set(window.x, window.y, descriptor.depth * 0.5 + 0.008);
-          building.add(pane);
+          if (windowInstances && windowMatrixScratch) {
+            const localZ = descriptor.depth * 0.5 + 0.008;
+            const cosRotation = Math.cos(descriptor.rotation);
+            const sinRotation = Math.sin(descriptor.rotation);
+            const rotatedX = window.x * cosRotation + localZ * sinRotation;
+            const rotatedZ = -window.x * sinRotation + localZ * cosRotation;
+            windowInstances.setMatrixAt(
+              nextWindowInstanceIndex,
+              writeTownInstancedScalePositionMatrix(
+                windowMatrixScratch,
+                tileX + descriptor.x + rotatedX,
+                window.y,
+                tileY + descriptor.y + rotatedZ,
+                window.width,
+                window.height,
+                0.03
+              )
+            );
+            nextWindowInstanceIndex += 1;
+          }
         }
 
         group.add(building);
+      }
+
+      if (windowInstances) {
+        group.add(windowInstances);
       }
 
       if (detailLevel === 'low') {
@@ -724,6 +763,35 @@ function paintTownRoofTexture(
 
 function getTownDescriptors(tileX: number, tileY: number): TownDescriptor[] {
   return resolveTownDescriptors(tileX, tileY);
+}
+
+function writeTownInstancedScalePositionMatrix(
+  target: InstanceType<ThreeHostLike['Matrix4']>,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+) {
+  return target.set(
+    scaleX,
+    0,
+    0,
+    x,
+    0,
+    scaleY,
+    0,
+    y,
+    0,
+    0,
+    scaleZ,
+    z,
+    0,
+    0,
+    0,
+    1
+  );
 }
 
 interface TownStyle {

@@ -120,12 +120,39 @@ class FakeNode {
 }
 
 class FakeGroup extends FakeNode {}
+class FakeMatrix4 {
+  elements = Array<number>(16).fill(0);
+
+  set(...elements: number[]) {
+    this.elements = [...elements];
+    return this;
+  }
+
+  clone() {
+    return new FakeMatrix4().set(...this.elements);
+  }
+}
 class FakeMesh extends FakeNode {
   constructor(
     public geometry?: object,
     public material?: FakeMaterial | FakeMaterial[]
   ) {
     super();
+  }
+}
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial | FakeMaterial[],
+    public count = 1
+  ) {
+    super();
+  }
+
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
   }
 }
 class FakeLight extends FakeNode {
@@ -142,8 +169,10 @@ class FakeLight extends FakeNode {
 const fakeThree = {
   Group: FakeGroup,
   Mesh: FakeMesh,
+  InstancedMesh: FakeInstancedMesh,
   PointLight: FakeLight,
   MeshStandardMaterial: FakeMaterial,
+  Matrix4: FakeMatrix4,
   BoxGeometry: FakeGeometry,
   ConeGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
@@ -203,7 +232,7 @@ function createModelSignature(model: FakeGroup) {
       visible: node.visible,
       childCount: node.children.length,
       material:
-        node instanceof FakeMesh
+        node instanceof FakeMesh || node instanceof FakeInstancedMesh
           ? Array.isArray(node.material)
             ? node.material.map((material) =>
                 normalizeMaterialOptions(material.options)
@@ -357,6 +386,81 @@ describe('tile town', () => {
 
     expect(lights.every((light) => light.intensity >= 0.9)).toBe(true);
     expect(lights.every((light) => light.visible === true)).toBe(true);
+  });
+
+  it('instances repeated full-detail town window panes instead of emitting one mesh per window', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const windowInstances: FakeInstancedMesh[] = [];
+    const standaloneWindowPanes: FakeMesh[] = [];
+    model.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.townInstancedPart === 'window-pane'
+      ) {
+        windowInstances.push(node);
+      }
+      if (
+        node instanceof FakeMesh &&
+        node.userData?.poiNightLightEmitter &&
+        node.userData?.townInstancedPart !== 'window-pane'
+      ) {
+        standaloneWindowPanes.push(node);
+      }
+    });
+
+    expect(windowInstances).toHaveLength(1);
+    expect(windowInstances[0]?.count).toBeGreaterThan(0);
+    expect(windowInstances[0]?.matrices).toHaveLength(
+      windowInstances[0]?.count ?? 0
+    );
+    expect(standaloneWindowPanes).toHaveLength(0);
+
+    const windowMaterial = windowInstances[0]?.material;
+    expect(windowMaterial).toBeInstanceOf(FakeMaterial);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'town' },
+      tileX: 3,
+      tileY: 7,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 1, twilight: 0, night: 0 },
+      environment: {},
+    });
+
+    expect(
+      (windowMaterial as FakeMaterial).emissiveIntensity
+    ).toBeLessThanOrEqual(0.08);
+
+    tile?.sync3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'town' },
+      tileX: 3,
+      tileY: 7,
+      model,
+      timeMs: 0,
+      cycle: { daylight: 0, twilight: 0, night: 1 },
+      environment: {},
+    });
+
+    expect((windowMaterial as FakeMaterial).emissiveIntensity).toBeGreaterThan(
+      0.08
+    );
   });
 
   it('adds windy banners to full-detail town models and sways them with weather strength', () => {
@@ -559,7 +663,7 @@ function countSharedMaterialReferences(
 function collectMeshMaterials(root: FakeGroup): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root.traverse((node) => {
-    if (node instanceof FakeMesh) {
+    if (node instanceof FakeMesh || node instanceof FakeInstancedMesh) {
       if (Array.isArray(node.material)) {
         node.material.forEach((material) => materials.add(material));
       } else if (node.material) {
