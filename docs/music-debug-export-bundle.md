@@ -6,8 +6,8 @@ standalone SVG graph images.
 Current graph exports:
 
 - `*-timeline.svg`
-  Full song timeline with section bands, role lanes, note bars, guides, and
-  optional playback markers.
+  Full song timeline with section bands, planned chord cues, role lanes, note
+  bars, guides, and optional playback markers.
 - `*-lead-contour.svg`
   Standalone lead contour graph showing the planned range, target contour, and
   actual melody checkpoints.

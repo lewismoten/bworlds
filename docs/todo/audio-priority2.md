@@ -80,7 +80,7 @@
 - [ ] Keep a fixed playhead in rolling-window mode.
 - [ ] Add zoom for song, section, bar, and beat levels.
 - [ ] Show measure numbers and beat subdivisions.
-- [ ] Show chord labels above the timeline.
+- [x] Show chord labels above the timeline.
 - [ ] Show section labels and cadence markers.
 - [ ] Show note name and duration on hover.
 - [ ] Show drum voice name on percussion hover.
@@ -100,7 +100,7 @@
 - [ ] Mark bass root drift at exact measures.
 - [ ] Mark motif matches and motif variations.
 - [ ] Mark the planned and actual climax positions.
-- [ ] Show current chord under the playhead.
+- [x] Show current chord under the playhead.
 - [ ] Show current scale under the playhead.
 - [ ] Add density heatmaps behind each lane.
 - [ ] Add a legend toggle so overlays can be hidden.

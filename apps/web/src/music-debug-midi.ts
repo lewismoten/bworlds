@@ -8,7 +8,6 @@ import {
   resolveMusicDebugMidiExportRoles,
   type MusicDebugMidiExportVariant,
 } from './music-debug-midi-export-variant.ts';
-import { describeProceduralChordQuality } from './procedural-music-chord-progression.ts';
 import {
   msToMusicDebugTicks,
   MUSIC_DEBUG_MIDI_TICKS_PER_QUARTER,
@@ -21,6 +20,7 @@ import {
 } from './procedural-music-percussion.ts';
 import { resolveMusicStereoPan } from './procedural-music-mix.ts';
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import { formatMusicDebugChordCueLabel } from './music-debug-chord-cues.ts';
 
 const MIDI_HEADER_CHUNK_ID = [0x4d, 0x54, 0x68, 0x64];
 const MIDI_TRACK_CHUNK_ID = [0x4d, 0x54, 0x72, 0x6b];
@@ -318,7 +318,7 @@ function formatChordCueLabel(
   scale: readonly number[],
   degreeIndex: number
 ): string {
-  return `Chord ${degreeIndex + 1} ${describeProceduralChordQuality(scale, degreeIndex)}`;
+  return formatMusicDebugChordCueLabel(scale, degreeIndex);
 }
 
 function resolveSongMeasureStartTick(

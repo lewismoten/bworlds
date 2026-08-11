@@ -15,16 +15,22 @@ import {
   MUSIC_DEBUG_DISPLAY_ROLE_ORDER,
   resolveMusicDebugDisplayRoleColor,
 } from './music-debug-role-display.ts';
+import {
+  resolveMusicDebugChordCueAtOffset,
+  resolveMusicDebugChordCues,
+} from './music-debug-chord-cues.ts';
 
 const MUSIC_DEBUG_TIMELINE_LEFT_PAD = 84;
 const MUSIC_DEBUG_TIMELINE_RIGHT_PAD = 24;
-const MUSIC_DEBUG_TIMELINE_TOP_PAD = 34;
+const MUSIC_DEBUG_TIMELINE_TOP_PAD = 52;
 const MUSIC_DEBUG_TIMELINE_BOTTOM_PAD = 24;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_WIDTH = 2;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MAX_HEIGHT = 8;
 const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT = 5;
 const MUSIC_DEBUG_TIMELINE_EXPORT_WIDTH = 960;
 const MUSIC_DEBUG_TIMELINE_EXPORT_HEIGHT = 320;
+const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 16;
+const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 32;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -123,6 +129,11 @@ export function drawMusicDebugTimeline(
   const layout = resolveMusicDebugTimelineLayout(width, height);
   const durationMs = Math.max(snapshot.durationMs, 1);
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
+  const chordCues = resolveMusicDebugChordCues(snapshot);
+  const activeChordCue =
+    typeof options.playheadOffsetMs === 'number'
+      ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
+      : null;
 
   context.clearRect(0, 0, width, height);
   context.fillStyle = '#071019';
@@ -150,6 +161,27 @@ export function drawMusicDebugTimeline(
       layout.topPad + layout.trackHeight * index + 18
     );
   });
+  context.fillStyle = '#d8e5ef';
+  context.font = '11px Trebuchet MS';
+  context.textAlign = 'center';
+  for (const cue of chordCues) {
+    const startX = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      cue.startOffsetMs
+    );
+    const endX = resolveMusicDebugTimelineXForOffset(
+      layout,
+      durationMs,
+      cue.endOffsetMs
+    );
+    context.fillText(
+      cue.label,
+      (startX + endX) * 0.5,
+      MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y
+    );
+  }
+  context.textAlign = 'start';
 
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
   for (const noteBar of noteBars) {
@@ -180,6 +212,14 @@ export function drawMusicDebugTimeline(
     context.moveTo(playheadX, 12);
     context.lineTo(playheadX, height - layout.bottomPad + 6);
     context.stroke();
+    if (activeChordCue) {
+      drawMusicDebugTimelinePlayheadChordLabel(
+        context,
+        layout,
+        playheadX,
+        activeChordCue.label
+      );
+    }
   }
 }
 
@@ -198,13 +238,19 @@ export function buildMusicDebugTimelineSvgMarkup(
   const durationMs = Math.max(snapshot.durationMs, 1);
   const scaleOverlay = createMusicDebugScaleOverlay(snapshot, layout);
   const noteBars = resolveMusicDebugTimelineNoteBars(snapshot, layout);
+  const chordCues = resolveMusicDebugChordCues(snapshot);
+  const activeChordCue =
+    typeof options.playheadOffsetMs === 'number'
+      ? resolveMusicDebugChordCueAtOffset(snapshot, options.playheadOffsetMs)
+      : null;
   const playheadMarkup =
     typeof options.playheadOffsetMs === 'number'
       ? buildMusicDebugTimelinePlayheadSvgMarkup(
           layout,
           durationMs,
           options.playheadOffsetMs,
-          height
+          height,
+          activeChordCue?.label ?? null
         )
       : '';
 
@@ -233,6 +279,26 @@ export function buildMusicDebugTimelineSvgMarkup(
           return `<text x="16" y="${y.toFixed(2)}" fill="#9db2bd" font-family="Trebuchet MS, sans-serif" font-size="13">${formatMusicDebugDisplayRoleLabel(
             role
           ).toUpperCase()}</text>`;
+        })
+        .join('')}
+      ${chordCues
+        .map((cue) => {
+          const startX = resolveMusicDebugTimelineXForOffset(
+            layout,
+            durationMs,
+            cue.startOffsetMs
+          );
+          const endX = resolveMusicDebugTimelineXForOffset(
+            layout,
+            durationMs,
+            cue.endOffsetMs
+          );
+          return `<text class="music-debug-timeline-chord-cue" x="${(
+            (startX + endX) *
+            0.5
+          ).toFixed(2)}" y="${MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y.toFixed(
+            2
+          )}" fill="#d8e5ef" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${cue.label}</text>`;
         })
         .join('')}
       ${noteBars
@@ -514,18 +580,81 @@ function buildMusicDebugTimelinePlayheadSvgMarkup(
   layout: MusicDebugTimelineLayout,
   durationMs: number,
   playheadOffsetMs: number,
-  height: number
+  height: number,
+  chordLabel: string | null
 ): string {
   const playheadX = resolveMusicDebugTimelineXForOffset(
     layout,
     durationMs,
     playheadOffsetMs
   );
-  return `<path d="M${playheadX.toFixed(2)} 12 V${(
+  const playheadPath = `<path d="M${playheadX.toFixed(2)} 12 V${(
     height -
     layout.bottomPad +
     6
   ).toFixed(2)}" fill="none" stroke="#f5f7fb" stroke-width="2"></path>`;
+  if (!chordLabel) {
+    return playheadPath;
+  }
+  const labelWidth = Math.max(58, chordLabel.length * 6.2 + 18);
+  const labelCenterX = clampMusicDebugTimelineLabelCenterX(
+    layout,
+    playheadX,
+    labelWidth * 0.5
+  );
+  return `${playheadPath}<rect class="music-debug-timeline-playhead-chord" x="${(
+    labelCenterX -
+    labelWidth * 0.5
+  ).toFixed(2)}" y="${(
+    MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y - 11
+  ).toFixed(
+    2
+  )}" width="${labelWidth.toFixed(2)}" height="16" rx="8" ry="8" fill="#f5f7fb"></rect><text x="${labelCenterX.toFixed(
+    2
+  )}" y="${MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y.toFixed(
+    2
+  )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${chordLabel}</text>`;
+}
+
+function drawMusicDebugTimelinePlayheadChordLabel(
+  context: CanvasRenderingContext2D,
+  layout: MusicDebugTimelineLayout,
+  playheadX: number,
+  chordLabel: string
+): void {
+  const labelWidth = Math.max(58, chordLabel.length * 6.2 + 18);
+  const labelCenterX = clampMusicDebugTimelineLabelCenterX(
+    layout,
+    playheadX,
+    labelWidth * 0.5
+  );
+  context.fillStyle = '#f5f7fb';
+  context.fillRect(
+    labelCenterX - labelWidth * 0.5,
+    MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y - 11,
+    labelWidth,
+    16
+  );
+  context.fillStyle = '#071019';
+  context.font = '11px Trebuchet MS';
+  context.textAlign = 'center';
+  context.fillText(
+    chordLabel,
+    labelCenterX,
+    MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y
+  );
+  context.textAlign = 'start';
+}
+
+function clampMusicDebugTimelineLabelCenterX(
+  layout: MusicDebugTimelineLayout,
+  centerX: number,
+  halfWidth: number
+): number {
+  return Math.min(
+    layout.width - layout.rightPad - halfWidth,
+    Math.max(layout.leftPad + halfWidth, centerX)
+  );
 }
 
 function createMarkerQueueByRole(
