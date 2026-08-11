@@ -33,7 +33,8 @@ export function createPlainsTilePlugin(): RuntimePlugin {
         getSharedPlainsGeometry(three, detailLevel),
         getSharedPlainsMaterial(three)
       );
-      mesh.position.set(tileX, detailLevel === 'low' ? 0.018 : 0.024, tileY);
+      mesh.position.set(tileX, detailLevel === 'low' ? 0.004 : 0.006, tileY);
+      mesh.rotation.x = -Math.PI * 0.5;
       (mesh as typeof mesh & { receiveShadow?: boolean }).receiveShadow = true;
       mesh.userData = {
         ...(mesh.userData ?? {}),
@@ -52,8 +53,8 @@ function getSharedPlainsMaterial(three: ThreeHostLike): ThreeMaterialLike {
   }
 
   const next = {
-    fullGeometry: new three.BoxGeometry(0.94, 0.048, 0.94),
-    lowGeometry: new three.BoxGeometry(0.88, 0.036, 0.88),
+    fullGeometry: new three.PlaneGeometry(0.94, 0.94),
+    lowGeometry: new three.PlaneGeometry(0.88, 0.88),
     material: new three.MeshStandardMaterial({
       color: '#7fb069',
       roughness: 0.98,

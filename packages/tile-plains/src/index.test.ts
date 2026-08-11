@@ -25,6 +25,7 @@ class FakeMesh {
       this.position.z = z;
     },
   };
+  rotation = { x: 0, y: 0, z: 0 };
   receiveShadow = false;
   userData?: Record<string, unknown>;
 
@@ -35,7 +36,7 @@ class FakeMesh {
 }
 
 const fakeThree = {
-  BoxGeometry: FakeGeometry,
+  PlaneGeometry: FakeGeometry,
   Mesh: FakeMesh,
   MeshStandardMaterial: FakeMaterial,
 } as const;
@@ -91,10 +92,12 @@ describe('tile plains', () => {
       detailLevel: 'low',
     }) as FakeMesh;
 
-    expect(fullModel.geometry?.args).toEqual([0.94, 0.048, 0.94]);
-    expect(lowModel.geometry?.args).toEqual([0.88, 0.036, 0.88]);
-    expect(fullModel.position).toMatchObject({ x: 4, y: 0.024, z: -3 });
-    expect(lowModel.position).toMatchObject({ x: 4, y: 0.018, z: -3 });
+    expect(fullModel.geometry?.args).toEqual([0.94, 0.94]);
+    expect(lowModel.geometry?.args).toEqual([0.88, 0.88]);
+    expect(fullModel.position).toMatchObject({ x: 4, y: 0.006, z: -3 });
+    expect(lowModel.position).toMatchObject({ x: 4, y: 0.004, z: -3 });
+    expect(fullModel.rotation.x).toBeCloseTo(-Math.PI * 0.5, 5);
+    expect(lowModel.rotation.x).toBeCloseTo(-Math.PI * 0.5, 5);
     expect(fullModel.userData).toMatchObject({
       renderStatKind: 'ground',
       plainsDetailLevel: 'full',
