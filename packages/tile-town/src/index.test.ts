@@ -867,6 +867,41 @@ describe('tile town', () => {
       5
     );
   });
+
+  it('reuses bounded town style materials across different regions', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+    const models: FakeGroup[] = [];
+
+    for (let regionY = 0; regionY < 8; regionY += 1) {
+      for (let regionX = 0; regionX < 8; regionX += 1) {
+        models.push(
+          tile?.create3DModel?.({
+            three: fakeThree as never,
+            state,
+            tile: {
+              kind: 'town',
+              poi: { type: 'town', name: `Town ${regionX}:${regionY}` },
+            } as never,
+            tileX: regionX * 18,
+            tileY: regionY * 18,
+            detailLevel: 'full',
+          }) as FakeGroup
+        );
+      }
+    }
+
+    let highestSharedCount = 0;
+    for (let index = 1; index < models.length; index += 1) {
+      highestSharedCount = Math.max(
+        highestSharedCount,
+        countSharedMaterialReferences(models[index - 1]!, models[index]!)
+      );
+    }
+
+    expect(highestSharedCount).toBeGreaterThanOrEqual(4);
+  });
 });
 
 function countSharedMaterialReferences(

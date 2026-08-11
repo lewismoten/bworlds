@@ -19,6 +19,10 @@ Recent mitigation work:
   for every bridge cluster. Bridge layout jitter still varies per bridge, but
   nearby bridges no longer inflate scene-unique material counts just to change
   local geometry.
+- `tile-town` full-detail building styles now resolve through a bounded shared
+  palette and texture-pattern set instead of painting a separate wall and roof
+  texture for every town region. Town placement and building geometry still vary
+  by tile, but compatible regions now reuse the same material bundles.
 
 Captured issue reports currently include:
 

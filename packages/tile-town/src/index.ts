@@ -14,7 +14,6 @@ import {
 } from '@bworlds/poi-support';
 import {
   createCoordinateValueResolver,
-  createRegionalValueResolver,
   createHostVariantMaterialResolver,
   createHostVariantValueResolver,
   pickThresholdColor,
@@ -46,12 +45,69 @@ const TOWN_BANNER_KEY = 'townBanner';
 const TOWN_DESCRIPTOR_CACHE_LIMIT = 256;
 const TOWN_STYLE_CACHE_LIMIT = 96;
 const TOWN_SIGN_LABEL_CACHE_LIMIT = 192;
+const TOWN_STYLE_PALETTE_VARIANTS = [
+  {
+    wallColor: '#ece6dc',
+    roofColor: '#b64b3b',
+    trimColor: '#73563f',
+    windowColor: '#d9f4ff',
+    signBaseColor: '#f0d9a6',
+  },
+  {
+    wallColor: '#ece6dc',
+    roofColor: '#7b4032',
+    trimColor: '#54402f',
+    windowColor: '#fef3c7',
+    signBaseColor: '#e8c889',
+  },
+  {
+    wallColor: '#d8cfbf',
+    roofColor: '#b64b3b',
+    trimColor: '#54402f',
+    windowColor: '#d9f4ff',
+    signBaseColor: '#f0d9a6',
+  },
+  {
+    wallColor: '#d8cfbf',
+    roofColor: '#7b4032',
+    trimColor: '#73563f',
+    windowColor: '#fef3c7',
+    signBaseColor: '#e8c889',
+  },
+  {
+    wallColor: '#ece6dc',
+    roofColor: '#a35643',
+    trimColor: '#6a4d37',
+    windowColor: '#d9f4ff',
+    signBaseColor: '#e8c889',
+  },
+  {
+    wallColor: '#ddd4c7',
+    roofColor: '#8c4c3b',
+    trimColor: '#5b4634',
+    windowColor: '#fef3c7',
+    signBaseColor: '#efd49d',
+  },
+  {
+    wallColor: '#e7dfd2',
+    roofColor: '#914536',
+    trimColor: '#6f543d',
+    windowColor: '#e6f7ff',
+    signBaseColor: '#efcf95',
+  },
+  {
+    wallColor: '#d4cab9',
+    roofColor: '#744236',
+    trimColor: '#4f3d30',
+    windowColor: '#f5eac2',
+    signBaseColor: '#dfbc79',
+  },
+] as const;
+const TOWN_TEXTURE_PATTERN_VARIANT_COUNT = 3;
 const TOWN_BUILDING_SEED = registerHashLabel('town-building');
-const TOWN_WALL_TONE_SEED = registerHashLabel('town-wall-tone');
-const TOWN_ROOF_TONE_SEED = registerHashLabel('town-roof-tone');
-const TOWN_TRIM_TONE_SEED = registerHashLabel('town-trim-tone');
-const TOWN_WINDOW_TONE_SEED = registerHashLabel('town-window-tone');
-const TOWN_SIGN_BASE_SEED = registerHashLabel('town-sign-base');
+const TOWN_STYLE_VARIANT_SEED = registerHashLabel('town-style-variant');
+const TOWN_WALL_PATTERN_SEED = registerHashLabel('town-wall-pattern');
+const TOWN_ROOF_PATTERN_SEED = registerHashLabel('town-roof-pattern');
 const TOWN_SIGN_ROTATION_SEED = registerHashLabel('town-sign-rotation');
 const TOWN_BANNER_SPEED_SEED = registerHashLabel('town-banner-speed');
 const TOWN_BANNER_GUST_SPEED_SEED = registerHashLabel('town-banner-gust-speed');
@@ -134,42 +190,12 @@ const resolveTownDescriptors = createCoordinateValueResolver(
 export function getTownBuildingCount(tileX: number, tileY: number): number {
   return getTownProfile(tileX, tileY).buildingCount;
 }
-const resolveTownStyle = createRegionalValueResolver(
-  townStyleCache,
-  TOWN_REGION_SIZE,
-  ({ regionX, regionY, key }) => {
-    const wallColor = pickThresholdColor(
-      hash2D(TOWN_WALL_TONE_SEED, regionX, regionY),
-      0.5,
-      '#ece6dc',
-      '#d8cfbf'
-    );
-    const roofColor = pickThresholdColor(
-      hash2D(TOWN_ROOF_TONE_SEED, regionX, regionY),
-      0.5,
-      '#b64b3b',
-      '#7b4032'
-    );
-    const trimColor = pickThresholdColor(
-      hash2D(TOWN_TRIM_TONE_SEED, regionX, regionY),
-      0.45,
-      '#73563f',
-      '#54402f'
-    );
-    const windowColor = pickThresholdColor(
-      hash2D(TOWN_WINDOW_TONE_SEED, regionX, regionY),
-      0.55,
-      '#d9f4ff',
-      '#fef3c7'
-    );
-    const signBaseColor = pickThresholdColor(
-      hash2D(TOWN_SIGN_BASE_SEED, regionX, regionY),
-      0.5,
-      '#f0d9a6',
-      '#e8c889'
-    );
-
-    return createHostVariantValueResolver(
+function resolveTownStyle(tileX: number, tileY: number): TownStyleBlueprint {
+  const regionX = Math.floor(tileX / TOWN_REGION_SIZE);
+  const regionY = Math.floor(tileY / TOWN_REGION_SIZE);
+  const variant = getTownStyleVariant(regionX, regionY);
+  return townStyleCache.getOrCreate(variant.key, () =>
+    createHostVariantValueResolver(
       (three: ThreeHostLike, quality: RenderBudgetQualityLevel) => {
         const bannerMaterials = createHostVariantMaterialResolver(
           (host: ThreeHostLike, color: string): ThreeMaterialLike =>
@@ -183,9 +209,9 @@ const resolveTownStyle = createRegionalValueResolver(
             })
         );
         const style = {
-          key,
-          trimColor,
-          signBaseColor,
+          key: variant.key,
+          trimColor: variant.palette.trimColor,
+          signBaseColor: variant.palette.signBaseColor,
           signTextColor: '#2f2218',
           wallMaterial: createPaintedStandardMaterial(three, {
             color: '#ffffff',
@@ -200,10 +226,10 @@ const resolveTownStyle = createRegionalValueResolver(
               paintTownWallTexture(
                 context,
                 canvas,
-                wallColor,
-                trimColor,
-                regionX,
-                regionY
+                variant.palette.wallColor,
+                variant.palette.trimColor,
+                variant.paletteIndex,
+                variant.wallPatternVariant
               );
             },
           }),
@@ -220,21 +246,21 @@ const resolveTownStyle = createRegionalValueResolver(
               paintTownRoofTexture(
                 context,
                 canvas,
-                roofColor,
-                trimColor,
-                regionX,
-                regionY
+                variant.palette.roofColor,
+                variant.palette.trimColor,
+                variant.paletteIndex,
+                variant.roofPatternVariant
               );
             },
           }),
           trimMaterial: new three.MeshStandardMaterial({
-            color: trimColor,
+            color: variant.palette.trimColor,
             roughness: 0.84,
             metalness: 0.04,
           }),
           windowMaterial: new three.MeshStandardMaterial({
-            color: windowColor,
-            emissive: windowColor,
+            color: variant.palette.windowColor,
+            emissive: variant.palette.windowColor,
             emissiveIntensity: 0.08,
             roughness: 0.4,
             metalness: 0.02,
@@ -245,9 +271,9 @@ const resolveTownStyle = createRegionalValueResolver(
         };
         return style;
       }
-    );
-  }
-);
+    )
+  );
+}
 
 export function createTownTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -1012,29 +1038,34 @@ function paintTownWallTexture(
   canvas: HTMLCanvasElement,
   baseColor: string,
   trimColor: string,
-  regionX: number,
-  regionY: number
+  paletteIndex: number,
+  wallPatternVariant: number
 ) {
+  const patternSeedX = paletteIndex * 17 + wallPatternVariant * 11;
+  const patternSeedY = paletteIndex * 13 + wallPatternVariant * 7;
   context.fillStyle = baseColor;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   for (let row = 0; row < canvas.height; row += 8) {
-    const shade = 210 + ((row * 9 + regionX * 7) % 24);
+    const shade = 210 + ((row * 9 + patternSeedX * 7) % 24);
     context.fillStyle = `rgba(${shade}, ${shade - 8}, ${shade - 18}, 0.22)`;
     context.fillRect(0, row, canvas.width, 2);
   }
 
   for (let index = 0; index < 24; index += 1) {
     const x = Math.floor(
-      hash2D(TOWN_WALL_CRACK_X_SEED, regionX + index, regionY) * canvas.width
+      hash2D(TOWN_WALL_CRACK_X_SEED, patternSeedX + index, patternSeedY) *
+        canvas.width
     );
     const y = Math.floor(
-      hash2D(TOWN_WALL_CRACK_Y_SEED, regionY + index, regionX) * canvas.height
+      hash2D(TOWN_WALL_CRACK_Y_SEED, patternSeedY + index, patternSeedX) *
+        canvas.height
     );
     const width =
       2 +
       Math.floor(
-        hash2D(TOWN_WALL_CRACK_WIDTH_SEED, regionX, regionY + index) * 4
+        hash2D(TOWN_WALL_CRACK_WIDTH_SEED, patternSeedX, patternSeedY + index) *
+          4
       );
     context.fillStyle = 'rgba(90, 72, 58, 0.18)';
     context.fillRect(x, y, width, 1);
@@ -1042,7 +1073,8 @@ function paintTownWallTexture(
 
   for (let index = 0; index < 12; index += 1) {
     const x = Math.floor(
-      hash2D(TOWN_WALL_BEAM_X_SEED, regionX + index, regionY) * canvas.width
+      hash2D(TOWN_WALL_BEAM_X_SEED, patternSeedX + index, patternSeedY) *
+        canvas.width
     );
     context.fillStyle = trimColor;
     context.fillRect(x, 0, 2, canvas.height);
@@ -1054,9 +1086,11 @@ function paintTownRoofTexture(
   canvas: HTMLCanvasElement,
   baseColor: string,
   trimColor: string,
-  regionX: number,
-  regionY: number
+  paletteIndex: number,
+  roofPatternVariant: number
 ) {
+  const patternSeedX = paletteIndex * 19 + roofPatternVariant * 13;
+  const patternSeedY = paletteIndex * 11 + roofPatternVariant * 17;
   context.fillStyle = baseColor;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1067,14 +1101,56 @@ function paintTownRoofTexture(
 
   for (let index = 0; index < 36; index += 1) {
     const x = Math.floor(
-      hash2D(TOWN_ROOF_CHIP_X_SEED, regionX + index, regionY) * canvas.width
+      hash2D(TOWN_ROOF_CHIP_X_SEED, patternSeedX + index, patternSeedY) *
+        canvas.width
     );
     const y = Math.floor(
-      hash2D(TOWN_ROOF_CHIP_Y_SEED, regionY + index, regionX) * canvas.height
+      hash2D(TOWN_ROOF_CHIP_Y_SEED, patternSeedY + index, patternSeedX) *
+        canvas.height
     );
     context.fillStyle = 'rgba(30, 20, 18, 0.16)';
     context.fillRect(x, y, 2, 1);
   }
+}
+
+function getTownStyleVariant(
+  regionX: number,
+  regionY: number
+): {
+  key: string;
+  paletteIndex: number;
+  palette: (typeof TOWN_STYLE_PALETTE_VARIANTS)[number];
+  wallPatternVariant: number;
+  roofPatternVariant: number;
+} {
+  const paletteIndex = Math.floor(
+    hash2D(TOWN_STYLE_VARIANT_SEED, regionX, regionY) *
+      TOWN_STYLE_PALETTE_VARIANTS.length
+  );
+  const wallPatternVariant = Math.min(
+    TOWN_TEXTURE_PATTERN_VARIANT_COUNT - 1,
+    Math.floor(
+      hash2D(TOWN_WALL_PATTERN_SEED, regionX, regionY) *
+        TOWN_TEXTURE_PATTERN_VARIANT_COUNT
+    )
+  );
+  const roofPatternVariant = Math.min(
+    TOWN_TEXTURE_PATTERN_VARIANT_COUNT - 1,
+    Math.floor(
+      hash2D(TOWN_ROOF_PATTERN_SEED, regionX, regionY) *
+        TOWN_TEXTURE_PATTERN_VARIANT_COUNT
+    )
+  );
+  const resolvedPalette =
+    TOWN_STYLE_PALETTE_VARIANTS[paletteIndex] ?? TOWN_STYLE_PALETTE_VARIANTS[0];
+
+  return {
+    key: `palette:${paletteIndex}:wall:${wallPatternVariant}:roof:${roofPatternVariant}`,
+    paletteIndex,
+    palette: resolvedPalette,
+    wallPatternVariant,
+    roofPatternVariant,
+  };
 }
 
 function getTownDescriptors(tileX: number, tileY: number): TownDescriptor[] {
