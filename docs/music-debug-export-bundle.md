@@ -7,8 +7,8 @@ Current graph exports:
 
 - `*-timeline.svg`
   Full song timeline with section bands, planned chord cues, planned cadence
-  markers, adaptive measure numbers, beat guides, role lanes, note bars,
-  guides, and optional playback markers.
+  markers, centered section-label pills, adaptive measure numbers, beat
+  guides, role lanes, note bars, guides, and optional playback markers.
 - `*-lead-contour.svg`
   Standalone lead contour graph showing the planned range, target contour, and
   actual melody checkpoints.

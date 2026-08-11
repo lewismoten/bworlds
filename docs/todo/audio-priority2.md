@@ -82,7 +82,7 @@
 - [x] Show measure numbers and beat subdivisions.
 - [x] Show chord labels above the timeline.
 - [x] Show section labels and cadence markers.
-- [ ] Section labels should be less overwealming
+- [x] Section labels should be less overwealming
 - [ ] Show note name and duration on hover.
 - [ ] Show drum voice name on percussion hover.
 - [ ] Add per-track eye icons to hide tracks.

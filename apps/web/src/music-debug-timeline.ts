@@ -35,6 +35,9 @@ const MUSIC_DEBUG_TIMELINE_NOTE_BAR_MIN_HEIGHT = 5;
 const MUSIC_DEBUG_TIMELINE_EXPORT_WIDTH = 960;
 const MUSIC_DEBUG_TIMELINE_EXPORT_HEIGHT = 320;
 const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y = 16;
+const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_PADDING_X = 8;
+const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_MIN_WIDTH = 30;
+const MUSIC_DEBUG_TIMELINE_SECTION_LABEL_HEIGHT = 16;
 const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_Y = 32;
 const MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y = 48;
 const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 64;
@@ -572,12 +575,7 @@ function drawMusicDebugSectionBands(
       Math.max(1, endX - startX),
       layout.height - layout.bottomPad + 8
     );
-    context.fillStyle = '#d5e3ea';
-    context.fillText(
-      section.label,
-      startX + 6,
-      MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y
-    );
+    drawMusicDebugSectionLabel(context, section.label, startX, endX);
   }
 }
 
@@ -634,6 +632,11 @@ function buildMusicDebugSectionBandSvgMarkup(
       );
       const fill =
         index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+      const labelMarkup = buildMusicDebugSectionLabelSvgMarkup(
+        section.label,
+        startX,
+        endX
+      );
       return `
         <rect
           x="${startX.toFixed(2)}"
@@ -642,16 +645,95 @@ function buildMusicDebugSectionBandSvgMarkup(
           height="${(layout.height - layout.bottomPad + 8).toFixed(2)}"
           fill="${fill}"
         ></rect>
-        <text
-          x="${(startX + 6).toFixed(2)}"
-          y="${MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y}"
-          fill="#d5e3ea"
-          font-family="Trebuchet MS, sans-serif"
-          font-size="11"
-        >${section.label}</text>
+        ${labelMarkup}
       `;
     })
     .join('');
+}
+
+function drawMusicDebugSectionLabel(
+  context: CanvasRenderingContext2D,
+  label: string,
+  startX: number,
+  endX: number
+): void {
+  const labelWidth = Math.max(
+    MUSIC_DEBUG_TIMELINE_SECTION_LABEL_MIN_WIDTH,
+    context.measureText(label).width +
+      MUSIC_DEBUG_TIMELINE_SECTION_LABEL_PADDING_X * 2
+  );
+  const clampedCenterX = Math.min(
+    endX - labelWidth * 0.5,
+    Math.max(startX + labelWidth * 0.5, (startX + endX) * 0.5)
+  );
+  const labelX = clampedCenterX - labelWidth * 0.5;
+  const labelY =
+    MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y -
+    MUSIC_DEBUG_TIMELINE_SECTION_LABEL_HEIGHT +
+    2;
+
+  context.fillStyle = 'rgba(7,16,25,0.72)';
+  context.strokeStyle = 'rgba(213,227,234,0.2)';
+  context.lineWidth = 1;
+  context.beginPath();
+  context.roundRect(
+    labelX,
+    labelY,
+    labelWidth,
+    MUSIC_DEBUG_TIMELINE_SECTION_LABEL_HEIGHT,
+    6
+  );
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = '#a8bcc7';
+  context.textAlign = 'center';
+  context.fillText(label, clampedCenterX, MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y);
+  context.textAlign = 'start';
+}
+
+function buildMusicDebugSectionLabelSvgMarkup(
+  label: string,
+  startX: number,
+  endX: number
+): string {
+  const labelWidth = Math.max(
+    MUSIC_DEBUG_TIMELINE_SECTION_LABEL_MIN_WIDTH,
+    label.length * 6.6 + MUSIC_DEBUG_TIMELINE_SECTION_LABEL_PADDING_X * 2
+  );
+  const clampedCenterX = Math.min(
+    endX - labelWidth * 0.5,
+    Math.max(startX + labelWidth * 0.5, (startX + endX) * 0.5)
+  );
+  const labelX = clampedCenterX - labelWidth * 0.5;
+  const labelY =
+    MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y -
+    MUSIC_DEBUG_TIMELINE_SECTION_LABEL_HEIGHT +
+    2;
+
+  return `
+    <rect
+      class="music-debug-timeline-section-label-pill"
+      x="${labelX.toFixed(2)}"
+      y="${labelY.toFixed(2)}"
+      width="${labelWidth.toFixed(2)}"
+      height="${MUSIC_DEBUG_TIMELINE_SECTION_LABEL_HEIGHT.toFixed(2)}"
+      rx="6"
+      ry="6"
+      fill="rgba(7,16,25,0.72)"
+      stroke="rgba(213,227,234,0.2)"
+      stroke-width="1"
+    ></rect>
+    <text
+      class="music-debug-timeline-section-label"
+      x="${clampedCenterX.toFixed(2)}"
+      y="${MUSIC_DEBUG_TIMELINE_SECTION_LABEL_Y.toFixed(2)}"
+      fill="#a8bcc7"
+      font-family="Trebuchet MS, sans-serif"
+      font-size="11"
+      text-anchor="middle"
+    >${label}</text>
+  `;
 }
 
 function buildMusicDebugMeasureGuideSvgMarkup(

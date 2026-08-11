@@ -7,6 +7,8 @@ Current behavior:
 
 - Section labels stay on their own header row, with chord cues and cadence
   markers stacked underneath instead of sharing the same line.
+- Section labels now sit in centered low-contrast pills so section boundaries
+  stay readable without dominating the header.
 - Adaptive measure numbers and quarter-note subdivision guides now render from
   the same measure timing data as the rest of the timeline.
 - The timeline header shows contiguous chord cues such as `Chord 1 major` and

@@ -140,6 +140,8 @@ describe('music debug timeline', () => {
     expect(markup).toContain('aria-label="Music debug timeline"');
     expect(markup).toContain('fill="#071019"');
     expect(markup).toContain('>MELODY<');
+    expect(markup).toContain('class="music-debug-timeline-section-label-pill"');
+    expect(markup).toContain('class="music-debug-timeline-section-label"');
     expect(markup).toContain('class="music-debug-timeline-chord-cue"');
     expect(markup).toContain('>Chord 1 minor<');
     expect(markup).toContain('class="music-debug-timeline-cadence-marker"');
