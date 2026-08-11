@@ -2403,10 +2403,10 @@ function collectCurrentDebugSnapshot(
     'fallback-box'
   );
   debugSnapshot.lastLodFailureReason = lastLodFailureEvent
-    ? formatRecentDebugEventReason(lastLodFailureEvent) ?? undefined
+    ? (formatRecentDebugEventReason(lastLodFailureEvent) ?? undefined)
     : undefined;
   debugSnapshot.lastFallbackReason = lastFallbackEvent
-    ? formatRecentDebugEventReason(lastFallbackEvent) ?? undefined
+    ? (formatRecentDebugEventReason(lastFallbackEvent) ?? undefined)
     : undefined;
   debugSnapshot.resourceWarnings = [
     ...getPerformanceWarnings(debugSnapshot),
