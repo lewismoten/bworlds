@@ -180,7 +180,11 @@ export type DebugSnapshotExport = {
   };
   summary: {
     currentFps: number;
+    liveAverageFps: number;
     averageFps: number;
+    liveAverageFpsSource: string;
+    averageFpsSource: string;
+    averageFrameMsSource: string;
     minimumFps: number;
     frameSampleCount: number;
     averageFrameMs: number;
@@ -449,7 +453,13 @@ export function buildDebugSnapshotExport(
     },
     summary: {
       currentFps: options.snapshot.fps,
+      liveAverageFps: roundTenths(options.snapshot.averageFps),
       averageFps: roundTenths(1000 / Math.max(1, rawAverageFrameMs)),
+      liveAverageFpsSource:
+        'render-budget rolling per-frame window (latest frame loop state)',
+      averageFpsSource:
+        'exported debug snapshot history samples (same sample set as averageFrameMs)',
+      averageFrameMsSource: 'exported debug snapshot history samples',
       minimumFps:
         fpsSamples.length > 0 ? Math.min(...fpsSamples) : options.snapshot.fps,
       frameSampleCount: frameSamples.length,

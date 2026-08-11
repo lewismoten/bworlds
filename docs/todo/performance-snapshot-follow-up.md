@@ -8,7 +8,7 @@
 - [x] Verify p50, p95, and p99 use enough frame samples.
 - [x] Do not report every percentile from one frame sample.
 - [x] Record a longer frame history before exporting snapshots.
-- [ ] Explain why 59 FPS reports a 33.3 ms average frame.
+- [x] Explain why 59 FPS reports a 33.3 ms average frame.
 - [ ] Do not report performance as healthy with critical limits.
 - [ ] Derive performance tier from all active budget limits.
 - [ ] Validate soft and hard threshold ordering by metric type.
