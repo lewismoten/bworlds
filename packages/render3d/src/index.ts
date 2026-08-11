@@ -24,6 +24,7 @@ import {
 import { isWaterKind } from '@bworlds/tile-support';
 import {
   getActivePluginRegistry,
+  type Kind,
   getRenderAnimationMixerMetadata,
   getRenderAudioEmitterMetadata,
   getRenderCollisionShapeMetadata,
@@ -1695,8 +1696,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const atlasTexture = new THREE.CanvasTexture(getTileAtlasCanvas());
   atlasTexture.colorSpace = THREE.SRGBColorSpace;
   applyPixelArtTextureSampling(atlasTexture);
-
-  const materialCache = new Map();
+  const sharedTileAtlasMaterial = new THREE.MeshStandardMaterial({
+    map: atlasTexture,
+    roughness: 0.92,
+    metalness: 0.04,
+  });
+  const tileAtlasGeometryCache = new WeakMap<
+    THREE.BufferGeometry,
+    Map<string, THREE.BufferGeometry>
+  >();
   const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
   const lastSuccessfulVisibleTileDetailLevels = new Map<
@@ -3408,29 +3416,33 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   }
 
   function getTileMaterial(kind, variant) {
-    const key = `${kind}:${variant}`;
-    return getOrCreateMapValue(materialCache, key, () => {
-      const rect = getTileSpriteRect(kind, variant);
-      const pixelSize = getTilePixelSize();
-      const texture = atlasTexture.clone();
-      texture.needsUpdate = true;
-      texture.repeat.set(
-        (1 / atlasTexture.image.width) * pixelSize,
-        (1 / atlasTexture.image.height) * pixelSize
-      );
-      texture.offset.set(
-        rect.x / atlasTexture.image.width,
-        1 - (rect.y + pixelSize) / atlasTexture.image.height
-      );
-      texture.wrapS = THREE.ClampToEdgeWrapping;
-      texture.wrapT = THREE.ClampToEdgeWrapping;
-      applyPixelArtTextureSampling(texture);
+    void kind;
+    void variant;
+    return sharedTileAtlasMaterial;
+  }
 
-      return new THREE.MeshStandardMaterial({
-        map: texture,
-        roughness: 0.92,
-        metalness: 0.04,
-      });
+  function getTileAtlasGeometry(
+    baseGeometry: THREE.BufferGeometry,
+    kind: Kind,
+    variant: number
+  ): THREE.BufferGeometry {
+    let variantCache = tileAtlasGeometryCache.get(baseGeometry);
+    if (!variantCache) {
+      variantCache = new Map<string, THREE.BufferGeometry>();
+      tileAtlasGeometryCache.set(baseGeometry, variantCache);
+    }
+
+    const key = `${kind}:${variant}`;
+    return getOrCreateMapValue(variantCache, key, () => {
+      const geometry = baseGeometry.clone();
+      remapGeometryUvsToTileAtlasSprite(
+        geometry,
+        kind,
+        variant,
+        atlasTexture.image.width,
+        atlasTexture.image.height
+      );
+      return geometry;
     });
   }
 
@@ -3459,10 +3471,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         tileX,
         tileY,
       }) ?? tile.kind;
-    const material = getTileMaterial(
-      floorKind,
-      getTileVariantIndex(floorKind, tileX, tileY)
-    );
+    const floorVariant = getTileVariantIndex(floorKind, tileX, tileY);
+    const material = getTileMaterial(floorKind, floorVariant);
     const surfaceHeight = surfaceProfile.surfaceHeight;
     const riverNeighbors = getAdjacentBoundaryNeighbors(
       state,
@@ -3489,7 +3499,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         ? WATER_FLOOR_THICKNESS
         : FLOOR_THICKNESS;
       const floorMesh = new THREE.Mesh(
-        getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
+        getTileAtlasGeometry(
+          getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
+          floorKind,
+          floorVariant
+        ),
         material
       );
       floorMesh.position.set(
@@ -3553,6 +3567,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       new THREE.BufferAttribute(positions, 3)
     );
     topGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    remapGeometryUvsToTileAtlasSprite(
+      topGeometry,
+      floorKind,
+      floorVariant,
+      atlasTexture.image.width,
+      atlasTexture.image.height
+    );
     topGeometry.setIndex([0, 2, 1, 2, 3, 1]);
     topGeometry.computeVertexNormals();
     const topMesh = new THREE.Mesh(topGeometry, material);
@@ -3580,6 +3601,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       addRiverEdgeWall(
         group,
         material,
+        floorKind,
+        floorVariant,
         'north',
         northWallHeight,
         riverNeighbors.north.surfaceHeight
@@ -3589,6 +3612,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       addRiverEdgeWall(
         group,
         material,
+        floorKind,
+        floorVariant,
         'east',
         eastWallHeight,
         riverNeighbors.east.surfaceHeight
@@ -3598,6 +3623,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       addRiverEdgeWall(
         group,
         material,
+        floorKind,
+        floorVariant,
         'south',
         southWallHeight,
         riverNeighbors.south.surfaceHeight
@@ -3607,6 +3634,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       addRiverEdgeWall(
         group,
         material,
+        floorKind,
+        floorVariant,
         'west',
         westWallHeight,
         riverNeighbors.west.surfaceHeight
@@ -3620,12 +3649,17 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     if (isWaterKind(kind)) {
       return createWaterFloorMesh(tileX, tileY, kind, surfaceHeight, null);
     }
+    const tileVariant = getTileVariantIndex(kind, tileX, tileY);
     const floorThickness = isWaterKind(kind)
       ? WATER_FLOOR_THICKNESS
       : FLOOR_THICKNESS;
     const floorMesh = new THREE.Mesh(
-      getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
-      getTileMaterial(kind, getTileVariantIndex(kind, tileX, tileY))
+      getTileAtlasGeometry(
+        getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
+        kind,
+        tileVariant
+      ),
+      getTileMaterial(kind, tileVariant)
     );
     floorMesh.position.set(
       tileX * TILE_SIZE,
@@ -3643,17 +3677,19 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     surfaceHeight,
     buildCache: TileBuildCache | null
   ) {
-    const material = getTileMaterial(
-      kind,
-      getTileVariantIndex(kind, tileX, tileY)
-    );
+    const tileVariant = getTileVariantIndex(kind, tileX, tileY);
+    const material = getTileMaterial(kind, tileVariant);
     const body = getWaterFloorBodyProfile(
       getWaterBodyInset(tileX, tileY, kind, buildCache)
     );
 
     if (body.fillsTile) {
       const floorMesh = new THREE.Mesh(
-        getSharedBoxGeometry(TILE_SIZE, WATER_FLOOR_THICKNESS, TILE_SIZE),
+        getTileAtlasGeometry(
+          getSharedBoxGeometry(TILE_SIZE, WATER_FLOOR_THICKNESS, TILE_SIZE),
+          kind,
+          tileVariant
+        ),
         material
       );
       floorMesh.position.set(
@@ -3669,7 +3705,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.position.set(tileX * TILE_SIZE, 0, tileY * TILE_SIZE);
 
     const surfaceMesh = new THREE.Mesh(
-      getSharedPlaneGeometry(TILE_SIZE, TILE_SIZE),
+      getTileAtlasGeometry(
+        getSharedPlaneGeometry(TILE_SIZE, TILE_SIZE),
+        kind,
+        tileVariant
+      ),
       material
     );
     surfaceMesh.rotation.x = -Math.PI / 2;
@@ -3678,7 +3718,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     group.add(surfaceMesh);
 
     const bodyMesh = new THREE.Mesh(
-      getSharedBoxGeometry(body.width, WATER_FLOOR_THICKNESS, body.depth),
+      getTileAtlasGeometry(
+        getSharedBoxGeometry(body.width, WATER_FLOOR_THICKNESS, body.depth),
+        kind,
+        tileVariant
+      ),
       material
     );
     bodyMesh.position.set(
@@ -3692,17 +3736,23 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return group;
   }
 
-  function addRiverEdgeWall(group, material, edge, wallHeight, baseHeight) {
-    const mesh =
+  function addRiverEdgeWall(
+    group,
+    material,
+    kind,
+    variant,
+    edge,
+    wallHeight,
+    baseHeight
+  ) {
+    const wallGeometry = getTileAtlasGeometry(
       edge === 'north' || edge === 'south'
-        ? new THREE.Mesh(
-            getSharedBoxGeometry(TILE_SIZE, wallHeight, RIVER_WALL_THICKNESS),
-            material
-          )
-        : new THREE.Mesh(
-            getSharedBoxGeometry(RIVER_WALL_THICKNESS, wallHeight, TILE_SIZE),
-            material
-          );
+        ? getSharedBoxGeometry(TILE_SIZE, wallHeight, RIVER_WALL_THICKNESS)
+        : getSharedBoxGeometry(RIVER_WALL_THICKNESS, wallHeight, TILE_SIZE),
+      kind,
+      variant
+    );
+    const mesh = new THREE.Mesh(wallGeometry, material);
 
     if (edge === 'north') {
       mesh.position.set(0, baseHeight + wallHeight * 0.5, -0.5);
@@ -4696,6 +4746,61 @@ export function getSharedPlaneGeometry(
     key,
     () => new THREE.PlaneGeometry(width, height)
   );
+}
+
+export function getTileAtlasUvBounds(
+  kind: Kind,
+  variant: number,
+  atlasWidth: number,
+  atlasHeight: number,
+  pixelSize = getTilePixelSize()
+): {
+  minU: number;
+  maxU: number;
+  minV: number;
+  maxV: number;
+} {
+  const rect = getTileSpriteRect(kind, variant);
+  return {
+    minU: rect.x / atlasWidth,
+    maxU: (rect.x + pixelSize) / atlasWidth,
+    minV: 1 - (rect.y + pixelSize) / atlasHeight,
+    maxV: 1 - rect.y / atlasHeight,
+  };
+}
+
+export function remapGeometryUvsToTileAtlasSprite(
+  geometry: THREE.BufferGeometry,
+  kind: Kind,
+  variant: number,
+  atlasWidth: number,
+  atlasHeight: number,
+  pixelSize = getTilePixelSize()
+): void {
+  const uvAttribute = geometry.getAttribute('uv');
+  if (
+    !uvAttribute ||
+    !('array' in uvAttribute) ||
+    !(uvAttribute.array instanceof Float32Array)
+  ) {
+    return;
+  }
+
+  const bounds = getTileAtlasUvBounds(
+    kind,
+    variant,
+    atlasWidth,
+    atlasHeight,
+    pixelSize
+  );
+  const remappedUvs = new Float32Array(uvAttribute.array.length);
+  for (let index = 0; index < uvAttribute.array.length; index += 2) {
+    const u = uvAttribute.array[index] ?? 0;
+    const v = uvAttribute.array[index + 1] ?? 0;
+    remappedUvs[index] = lerp(bounds.minU, bounds.maxU, u);
+    remappedUvs[index + 1] = lerp(bounds.minV, bounds.maxV, v);
+  }
+  geometry.setAttribute('uv', new THREE.BufferAttribute(remappedUvs, 2));
 }
 
 function getDistanceFadeTargets(root: THREE.Object3D): DistanceFadeTargets {

@@ -45,6 +45,11 @@ Recent mitigation work:
   the visible world on context resets. That closes the gap where route or
   world changes could leave hundreds of detached tile materials counted in the
   scene after `visibleTileCount` had already dropped to zero.
+- `render3d` floor and water surfaces now share one atlas-backed floor
+  material instead of cloning one textured `MeshStandardMaterial` per tile
+  sprite variant. Variant selection now lives in cached per-geometry UV
+  remaps, which reduces scene material churn without flattening the visible
+  floor art variety.
 
 Captured issue reports currently include:
 

@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@bworlds/three-support', () => ({
@@ -142,6 +143,7 @@ import {
   createTilePluginRenderBudget,
   DEFAULT_CAMERA_PITCH,
   getTileModelHardLimits,
+  getTileAtlasUvBounds,
   getRecentRenderDebugEvents,
   getRecentLabeledCountStats,
   getRecentCountStats,
@@ -199,6 +201,7 @@ import {
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
   buildRecoverableVisibleTileModelDetailEntry,
+  remapGeometryUvsToTileAtlasSprite,
   reconcilePendingWorldBuildQueue,
   recordRenderDebugEvent,
   recordRecentCountMetric,
@@ -445,6 +448,55 @@ describe('render3d visibility helpers', () => {
         clonedMaterialCount: 0,
         colorVariantMaterialCount: 3,
       })
+    );
+  });
+
+  it('supports sharing one atlas floor material across tile variants by remapping geometry uvs', () => {
+    const sharedMaterial = createMockMaterial();
+    const plainsGeometry = new THREE.PlaneGeometry(1, 1);
+    const forestGeometry = new THREE.PlaneGeometry(1, 1);
+    const atlasWidth = 256;
+    const atlasHeight = 256;
+
+    remapGeometryUvsToTileAtlasSprite(
+      plainsGeometry,
+      'plains',
+      0,
+      atlasWidth,
+      atlasHeight
+    );
+    remapGeometryUvsToTileAtlasSprite(
+      forestGeometry,
+      'forest',
+      1,
+      atlasWidth,
+      atlasHeight
+    );
+
+    const root = createMockObject3D(undefined, [
+      createMockObject3D(sharedMaterial, [], plainsGeometry),
+      createMockObject3D(sharedMaterial, [], forestGeometry),
+    ]);
+
+    expect(collectSceneResourceStats(root as never)).toEqual(
+      expect.objectContaining({
+        materialCount: 1,
+        sharedMaterialCount: 1,
+        geometryCount: 2,
+      })
+    );
+
+    expect(
+      getTileAtlasUvBounds('plains', 0, atlasWidth, atlasHeight)
+    ).not.toEqual(getTileAtlasUvBounds('forest', 1, atlasWidth, atlasHeight));
+    expect(
+      Array.from(
+        plainsGeometry.getAttribute('uv').array as ArrayLike<number>
+      )
+    ).not.toEqual(
+      Array.from(
+        forestGeometry.getAttribute('uv').array as ArrayLike<number>
+      )
     );
   });
 
