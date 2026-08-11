@@ -51,6 +51,7 @@ const MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y = 48;
 const MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y = 64;
 const MUSIC_DEBUG_TIMELINE_MEASURE_LABEL_Y = 78;
 const MUSIC_DEBUG_TIMELINE_CHORD_LABEL_GAP = 8;
+const MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS = 6;
 
 export type MusicDebugTimelineNoteBar = {
   role: ProceduralMusicNote['role'];
@@ -281,9 +282,13 @@ function resolveMusicDebugTimelineCadenceMarkerHoverDetail(options: {
   const hoverHeight = 16;
   const hoverX = markerX - hoverWidth * 0.5;
   const hoverY = MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y - 11;
+  const hoverWidthWithWarning =
+    options.marker.warningKind === null
+      ? hoverWidth
+      : hoverWidth + MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS * 2 + 6;
   if (
     options.canvasX < hoverX ||
-    options.canvasX > hoverX + hoverWidth ||
+    options.canvasX > hoverX + hoverWidthWithWarning ||
     options.canvasY < hoverY ||
     options.canvasY > hoverY + hoverHeight
   ) {
@@ -292,11 +297,11 @@ function resolveMusicDebugTimelineCadenceMarkerHoverDetail(options: {
   return {
     noteIndex: null,
     role: null,
-    hoverLabel: options.marker.label,
-    hoverDurationLabel: `Phrase ${options.marker.phraseIndex + 1} • ${options.marker.shortLabel} cadence`,
+    hoverLabel: options.marker.warningLabel ?? options.marker.label,
+    hoverDurationLabel: `${`Phrase ${options.marker.phraseIndex + 1} • ${options.marker.shortLabel} cadence`}${options.marker.warningKind === null ? '' : ` • ${options.marker.warningKind} warning`}`,
     x: hoverX,
     y: hoverY,
-    width: hoverWidth,
+    width: hoverWidthWithWarning,
     height: hoverHeight,
   };
 }
@@ -452,6 +457,7 @@ export function drawMusicDebugTimeline(
       x,
       MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y
     );
+    drawMusicDebugTimelineCadenceWarningBadge(context, marker, x);
   }
   context.fillStyle = '#8fa4af';
   for (const measure of measureMarkers) {
@@ -634,7 +640,10 @@ export function buildMusicDebugTimelineSvgMarkup(
             2
           )}" y="${MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y.toFixed(
             2
-          )}" fill="${fill}" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${marker.shortLabel}</text>`;
+          )}" fill="${fill}" font-family="Trebuchet MS, sans-serif" font-size="11" text-anchor="middle">${marker.shortLabel}</text>${buildMusicDebugTimelineCadenceWarningBadgeSvgMarkup(
+            marker,
+            x
+          )}`;
         })
         .join('')}
       ${measureMarkers
@@ -1320,6 +1329,60 @@ function drawMusicDebugTimelinePlayheadChordLabel(
     MUSIC_DEBUG_TIMELINE_PLAYHEAD_CHORD_LABEL_Y
   );
   context.textAlign = 'start';
+}
+
+function drawMusicDebugTimelineCadenceWarningBadge(
+  context: CanvasRenderingContext2D,
+  marker: MusicDebugCadenceMarker,
+  markerX: number
+): void {
+  if (marker.warningKind === null) {
+    return;
+  }
+
+  const centerX =
+    markerX + MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS + 5;
+  const centerY = MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y - 6;
+  context.fillStyle =
+    marker.warningKind === 'harmony' ? '#ffb86b' : '#ff7b72';
+  context.beginPath();
+  context.arc(
+    centerX,
+    centerY,
+    MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS,
+    0,
+    Math.PI * 2
+  );
+  context.fill();
+  context.fillStyle = '#071019';
+  context.fillText('!', centerX, centerY + 3);
+}
+
+function buildMusicDebugTimelineCadenceWarningBadgeSvgMarkup(
+  marker: MusicDebugCadenceMarker,
+  markerX: number
+): string {
+  if (marker.warningKind === null) {
+    return '';
+  }
+
+  const centerX =
+    markerX + MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS + 5;
+  const centerY = MUSIC_DEBUG_TIMELINE_CADENCE_MARKER_Y - 6;
+  const fill = marker.warningKind === 'harmony' ? '#ffb86b' : '#ff7b72';
+  return `<g class="music-debug-timeline-cadence-warning"><circle cx="${centerX.toFixed(
+    2
+  )}" cy="${centerY.toFixed(
+    2
+  )}" r="${MUSIC_DEBUG_TIMELINE_CADENCE_WARNING_BADGE_RADIUS.toFixed(
+    2
+  )}" fill="${fill}"></circle><text x="${centerX.toFixed(
+    2
+  )}" y="${(centerY + 3).toFixed(
+    2
+  )}" fill="#071019" font-family="Trebuchet MS, sans-serif" font-size="10" text-anchor="middle">!</text><title>${escapeMusicDebugTimelineSvgText(
+    marker.warningLabel ?? marker.label
+  )}</title></g>`;
 }
 
 function resolveMusicDebugTimelinePlayheadScaleLabel(

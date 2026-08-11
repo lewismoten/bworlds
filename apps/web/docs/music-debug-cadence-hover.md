@@ -8,3 +8,4 @@ labels before scanning note bars, so the page can surface:
 
 - section and measure details for cadence checkpoints
 - phrase identity for each cadence marker
+- cadence failure summaries when a marker also carries a warning badge

@@ -104,7 +104,7 @@
 
 - [x] Mark out-of-scale notes with a warning color.
 - [x] Mark non-chord tones with a warning color.
-- [ ] Mark failed cadence notes with icons.
+- [x] Mark failed cadence notes with icons.
 - [ ] Mark harmony drift at exact measures.
 - [ ] Mark bass root drift at exact measures.
 - [ ] Mark motif matches and motif variations.

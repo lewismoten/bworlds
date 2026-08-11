@@ -2,6 +2,11 @@ import { PROCEDURAL_MUSIC_PHRASE_MEASURE_COUNT } from './procedural-music-phrase
 import type { MusicDebugSnapshot } from './music-debug.ts';
 import { resolveMusicDebugMeasureStartOffsetMs } from './music-debug-chord-cues.ts';
 
+export type MusicDebugCadenceMarkerWarningKind =
+  | 'target'
+  | 'harmony'
+  | 'target+harmony';
+
 export type MusicDebugCadenceMarker = {
   sectionId: string;
   sectionLabel: string;
@@ -11,6 +16,8 @@ export type MusicDebugCadenceMarker = {
   offsetMs: number;
   shortLabel: 'Q' | 'A';
   label: string;
+  warningKind: MusicDebugCadenceMarkerWarningKind | null;
+  warningLabel: string | null;
 };
 
 export function resolveMusicDebugCadenceMarkers(
@@ -76,6 +83,14 @@ function createCadenceMarker(
   }
 ): MusicDebugCadenceMarker {
   const shortLabel = options.kind === 'question' ? 'Q' : 'A';
+  const detection =
+    snapshot.cadenceDetections.find(
+      (candidate) =>
+        candidate.sectionId === sectionId &&
+        candidate.kind === options.kind &&
+        candidate.measureNumber === options.measureNumber
+    ) ?? null;
+  const warningKind = resolveCadenceMarkerWarningKind(detection);
   return {
     sectionId,
     sectionLabel,
@@ -88,5 +103,28 @@ function createCadenceMarker(
     ),
     shortLabel,
     label: `${sectionLabel} ${options.kind} cadence at measure ${options.measureNumber}`,
+    warningKind,
+    warningLabel:
+      warningKind === null
+        ? null
+        : `${sectionLabel} ${options.kind} cadence at measure ${options.measureNumber} failed ${warningKind === 'target+harmony' ? 'target and harmony checks' : warningKind === 'target' ? 'its target-tone check' : 'its harmony check'}.`,
   };
+}
+
+function resolveCadenceMarkerWarningKind(
+  detection: MusicDebugSnapshot['cadenceDetections'][number] | null
+): MusicDebugCadenceMarkerWarningKind | null {
+  if (!detection) {
+    return null;
+  }
+  if (!detection.matchesCadenceTarget && !detection.matchesHarmony) {
+    return 'target+harmony';
+  }
+  if (!detection.matchesCadenceTarget) {
+    return 'target';
+  }
+  if (!detection.matchesHarmony) {
+    return 'harmony';
+  }
+  return null;
 }

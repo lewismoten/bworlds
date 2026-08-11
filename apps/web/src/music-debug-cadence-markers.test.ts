@@ -19,6 +19,7 @@ const FOREST_SNAPSHOT = createMusicDebugSnapshot({
 
 const TOWN_MARKERS = resolveMusicDebugCadenceMarkers(TOWN_SNAPSHOT);
 const FOREST_MARKERS = resolveMusicDebugCadenceMarkers(FOREST_SNAPSHOT);
+const FOREST_WARNING_MARKER = FOREST_MARKERS[0]!;
 
 describe('music debug cadence markers', () => {
   it('builds planned question and answer markers across section phrases', () => {
@@ -30,6 +31,7 @@ describe('music debug cadence markers', () => {
         kind: 'question',
         measureNumber: 4,
         shortLabel: 'Q',
+        warningKind: null,
       })
     );
     expect(TOWN_MARKERS.some((marker) => marker.kind === 'answer')).toBe(true);
@@ -43,5 +45,40 @@ describe('music debug cadence markers', () => {
           marker.offsetMs >= 0 && marker.offsetMs <= FOREST_SNAPSHOT.durationMs
       )
     ).toBe(true);
+  });
+
+  it('annotates markers when cadence validation fails at the same checkpoint', () => {
+    const snapshot = {
+      ...FOREST_SNAPSHOT,
+      cadenceDetections: [
+        ...FOREST_SNAPSHOT.cadenceDetections,
+        {
+          sectionId: FOREST_WARNING_MARKER.sectionId,
+          sectionLabel: FOREST_WARNING_MARKER.sectionLabel,
+          kind: FOREST_WARNING_MARKER.kind,
+          measureNumber: FOREST_WARNING_MARKER.measureNumber,
+          leadPitchLabel: 'F',
+          bassPitchLabel: 'C',
+          leadNoteLabel: 'F4',
+          bassNoteLabel: 'C3',
+          harmonyPitchLabels: ['C', 'E', 'G'],
+          matchesCadenceTarget: false,
+          matchesHarmony: false,
+        },
+      ],
+    };
+    const marker = resolveMusicDebugCadenceMarkers(snapshot).find(
+      (entry) =>
+        entry.sectionId === FOREST_WARNING_MARKER.sectionId &&
+        entry.kind === FOREST_WARNING_MARKER.kind &&
+        entry.measureNumber === FOREST_WARNING_MARKER.measureNumber
+    );
+
+    expect(marker).toEqual(
+      expect.objectContaining({
+        warningKind: 'target+harmony',
+        warningLabel: expect.stringContaining('failed target and harmony checks'),
+      })
+    );
   });
 });

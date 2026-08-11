@@ -31,6 +31,7 @@ const FOREST_SNAPSHOT = createMusicDebugSnapshot({
   clusterX: 4,
   clusterY: -1,
 });
+const FOREST_WARNING_MARKER = resolveMusicDebugCadenceMarkers(FOREST_SNAPSHOT)[0]!;
 const DEFAULT_NOTE_BARS = resolveMusicDebugTimelineNoteBars(
   DEFAULT_SNAPSHOT,
   DEFAULT_LAYOUT
@@ -89,6 +90,25 @@ const OUT_OF_SCALE_TIMELINE_SNAPSHOT = (() => {
     ),
   };
 })();
+const CADENCE_WARNING_TIMELINE_SNAPSHOT = {
+  ...FOREST_SNAPSHOT,
+  cadenceDetections: [
+    ...FOREST_SNAPSHOT.cadenceDetections,
+    {
+      sectionId: FOREST_WARNING_MARKER.sectionId,
+      sectionLabel: FOREST_WARNING_MARKER.sectionLabel,
+      kind: FOREST_WARNING_MARKER.kind,
+      measureNumber: FOREST_WARNING_MARKER.measureNumber,
+      leadPitchLabel: 'F',
+      bassPitchLabel: 'C',
+      leadNoteLabel: 'F4',
+      bassNoteLabel: 'C3',
+      harmonyPitchLabels: ['C', 'E', 'G'],
+      matchesCadenceTarget: false,
+      matchesHarmony: false,
+    },
+  ],
+};
 const NON_CHORD_TONE_TIMELINE_SNAPSHOT = (() => {
   const leadIndex = DEFAULT_SNAPSHOT.notes.findIndex(
     (note) => note.role === 'lead'
@@ -491,6 +511,42 @@ describe('music debug timeline', () => {
     );
   });
 
+  it('surfaces cadence warning details when hovering a failed cadence marker', () => {
+    const warningMarker = resolveMusicDebugCadenceMarkers(
+      CADENCE_WARNING_TIMELINE_SNAPSHOT
+    ).find(
+      (marker) =>
+        marker.sectionId === FOREST_WARNING_MARKER.sectionId &&
+        marker.kind === FOREST_WARNING_MARKER.kind &&
+        marker.measureNumber === FOREST_WARNING_MARKER.measureNumber
+    )!;
+
+    const hoverDetail = resolveMusicDebugTimelineHoverDetail({
+      snapshot: CADENCE_WARNING_TIMELINE_SNAPSHOT,
+      canvas: { width: 960, height: 320 },
+      clientX:
+        resolveMusicDebugTimelineXForOffset(
+          DEFAULT_LAYOUT,
+          CADENCE_WARNING_TIMELINE_SNAPSHOT.durationMs,
+          warningMarker.offsetMs
+        ) + 10,
+      clientY: 48,
+      boundsLeft: 0,
+      boundsTop: 0,
+      boundsWidth: 960,
+      boundsHeight: 320,
+    });
+
+    expect(hoverDetail).toEqual(
+      expect.objectContaining({
+        noteIndex: null,
+        role: null,
+        hoverLabel: expect.stringContaining('failed target and harmony checks'),
+        hoverDurationLabel: 'Phrase 1 • Q cadence • target+harmony warning',
+      })
+    );
+  });
+
   it('renders a standalone svg export for the timeline graph', () => {
     const markup = buildMusicDebugTimelineSvgMarkup(FOREST_SNAPSHOT, {
       playheadOffsetMs: 1_500,
@@ -545,5 +601,14 @@ describe('music debug timeline', () => {
     );
 
     expect(markup).toContain('fill="#ff7b72"');
+  });
+
+  it('renders cadence warning badges in svg exports', () => {
+    const markup = buildMusicDebugTimelineSvgMarkup(
+      CADENCE_WARNING_TIMELINE_SNAPSHOT
+    );
+
+    expect(markup).toContain('class="music-debug-timeline-cadence-warning"');
+    expect(markup).toContain('failed target and harmony checks');
   });
 });
