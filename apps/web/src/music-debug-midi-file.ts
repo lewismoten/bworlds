@@ -18,6 +18,7 @@ export function createMusicDebugMidiFile(
     ...snapshot.timingValidation.messages,
     ...snapshot.percussionValidation.messages,
     ...snapshot.songDnaValidation.messages,
+    ...snapshot.phraseIntentValidation.messages,
     ...snapshot.harmonicAlignmentValidation.messages,
   ];
   if (
@@ -26,6 +27,7 @@ export function createMusicDebugMidiFile(
     !snapshot.timingValidation.isValidForMidiExport ||
     !snapshot.percussionValidation.isValidForMidiExport ||
     !snapshot.songDnaValidation.isValidForMidiExport ||
+    !snapshot.phraseIntentValidation.isValidForMidiExport ||
     !snapshot.harmonicAlignmentValidation.isValidForMidiExport
   ) {
     throw new Error(`Cannot export MIDI: ${validationMessages.join(' ')}`);

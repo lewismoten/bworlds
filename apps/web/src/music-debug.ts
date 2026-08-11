@@ -91,6 +91,10 @@ import {
   type MusicDebugPhraseIntentScore,
 } from './music-debug-phrase-intent-score.ts';
 import {
+  validateMusicDebugPhraseIntent,
+  type MusicDebugPhraseIntentValidation,
+} from './music-debug-phrase-intent-validation.ts';
+import {
   validateMusicDebugHarmonicAlignment,
   type MusicDebugHarmonicAlignmentValidation,
 } from './music-debug-harmonic-alignment-validation.ts';
@@ -242,6 +246,7 @@ export type MusicDebugSnapshot = {
   intervalComparison: MusicDebugIntervalComparison;
   phraseRepetition: MusicDebugPhraseRepetitionAnalysis;
   phraseIntentScore: MusicDebugPhraseIntentScore;
+  phraseIntentValidation: MusicDebugPhraseIntentValidation;
   leadContourAnalysis: MusicDebugLeadContourAnalysis;
   sectionMotifMatches: MusicDebugSectionMotifMatch[];
   motifValidation: MusicDebugMotifValidation;
@@ -612,6 +617,8 @@ export function createMusicDebugSnapshot(
     leadContourAnalysis,
     cadenceValidation,
   });
+  const phraseIntentValidation =
+    validateMusicDebugPhraseIntent(phraseIntentScore);
   const harmonicAlignmentValidation = validateMusicDebugHarmonicAlignment({
     chordToneScores,
     bassProgressionDetections,
@@ -655,6 +662,7 @@ export function createMusicDebugSnapshot(
     intervalComparison,
     phraseRepetition,
     phraseIntentScore,
+    phraseIntentValidation,
     leadContourAnalysis,
     sectionMotifMatches,
     motifValidation,
@@ -1049,6 +1057,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Phrase Intent ${formatMusicDebugPhraseIntentScore(snapshot.phraseIntentScore)}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Phrase Intent Check ${snapshot.phraseIntentValidation.isValidForMidiExport ? 'ok' : snapshot.phraseIntentValidation.messages.join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Motif Matches ${formatMusicDebugSectionMotifMatches(snapshot.sectionMotifMatches)}</span>

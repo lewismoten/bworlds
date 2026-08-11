@@ -55,6 +55,18 @@ export function withValidLeadContourAnalysis(
   };
 }
 
+export function withValidPhraseIntentValidation(
+  snapshot: ReturnType<typeof createMusicDebugSnapshot>
+): ReturnType<typeof createMusicDebugSnapshot> {
+  return {
+    ...snapshot,
+    phraseIntentValidation: {
+      isValidForMidiExport: true,
+      messages: [],
+    },
+  };
+}
+
 export function withValidProgressionDetections(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
@@ -79,8 +91,10 @@ export function toExportableSnapshot(
   snapshot: ReturnType<typeof createMusicDebugSnapshot>
 ): ReturnType<typeof createMusicDebugSnapshot> {
   return withValidPercussionValidation(
-    withValidLeadContourAnalysis(
-      withValidProgressionDetections(withValidCadenceValidation(snapshot))
+    withValidPhraseIntentValidation(
+      withValidLeadContourAnalysis(
+        withValidProgressionDetections(withValidCadenceValidation(snapshot))
+      )
     )
   );
 }

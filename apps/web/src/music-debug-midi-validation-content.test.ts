@@ -4,6 +4,7 @@ import { createMusicDebugMidiFile } from './music-debug-midi-file.ts';
 import {
   toExportableSnapshot,
   withValidLeadContourAnalysis,
+  withValidPhraseIntentValidation,
   withValidProgressionDetections,
 } from './testing/music-debug-midi-test-support.ts';
 
@@ -34,14 +35,16 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when chromatic-note validation fails', () => {
-    const snapshot = withValidProgressionDetections(
-      withValidLeadContourAnalysis(
-        createMusicDebugSnapshot({
-          tileKind: 'forest',
-          contextType: 'overworld',
-          clusterX: 0,
-          clusterY: 0,
-        })
+    const snapshot = withValidPhraseIntentValidation(
+      withValidProgressionDetections(
+        withValidLeadContourAnalysis(
+          createMusicDebugSnapshot({
+            tileKind: 'forest',
+            contextType: 'overworld',
+            clusterX: 0,
+            clusterY: 0,
+          })
+        )
       )
     );
 
@@ -58,14 +61,16 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when timing validation fails', () => {
-    const snapshot = withValidProgressionDetections(
-      withValidLeadContourAnalysis(
-        createMusicDebugSnapshot({
-          tileKind: 'forest',
-          contextType: 'overworld',
-          clusterX: 0,
-          clusterY: 0,
-        })
+    const snapshot = withValidPhraseIntentValidation(
+      withValidProgressionDetections(
+        withValidLeadContourAnalysis(
+          createMusicDebugSnapshot({
+            tileKind: 'forest',
+            contextType: 'overworld',
+            clusterX: 0,
+            clusterY: 0,
+          })
+        )
       )
     );
 
@@ -89,14 +94,16 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when the configured motif never appears', () => {
-    const snapshot = withValidProgressionDetections(
-      withValidLeadContourAnalysis(
-        createMusicDebugSnapshot({
-          tileKind: 'forest',
-          contextType: 'overworld',
-          clusterX: 0,
-          clusterY: 0,
-        })
+    const snapshot = withValidPhraseIntentValidation(
+      withValidProgressionDetections(
+        withValidLeadContourAnalysis(
+          createMusicDebugSnapshot({
+            tileKind: 'forest',
+            contextType: 'overworld',
+            clusterX: 0,
+            clusterY: 0,
+          })
+        )
       )
     );
 
@@ -117,14 +124,16 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when harmony chord-tone fit falls below the minimum', () => {
-    const snapshot = withValidProgressionDetections(
-      withValidLeadContourAnalysis(
-        createMusicDebugSnapshot({
-          tileKind: 'forest',
-          contextType: 'overworld',
-          clusterX: 0,
-          clusterY: 0,
-        })
+    const snapshot = withValidPhraseIntentValidation(
+      withValidProgressionDetections(
+        withValidLeadContourAnalysis(
+          createMusicDebugSnapshot({
+            tileKind: 'forest',
+            contextType: 'overworld',
+            clusterX: 0,
+            clusterY: 0,
+          })
+        )
       )
     );
 
@@ -144,14 +153,16 @@ describe('music debug midi validation content', () => {
   });
 
   it('rejects MIDI export when bass roots drift from the planned progression', () => {
-    const snapshot = withValidProgressionDetections(
-      withValidLeadContourAnalysis(
-        createMusicDebugSnapshot({
-          tileKind: 'forest',
-          contextType: 'overworld',
-          clusterX: 0,
-          clusterY: 0,
-        })
+    const snapshot = withValidPhraseIntentValidation(
+      withValidProgressionDetections(
+        withValidLeadContourAnalysis(
+          createMusicDebugSnapshot({
+            tileKind: 'forest',
+            contextType: 'overworld',
+            clusterX: 0,
+            clusterY: 0,
+          })
+        )
       )
     );
 
@@ -164,5 +175,34 @@ describe('music debug midi validation content', () => {
         },
       })
     ).toThrow('Cannot export MIDI: Bass root drifted at measure 12 (A vs G).');
+  });
+
+  it('rejects MIDI export when phrase-intent coherence falls below the minimum', () => {
+    const snapshot = withValidPhraseIntentValidation(
+      withValidProgressionDetections(
+        withValidLeadContourAnalysis(
+          createMusicDebugSnapshot({
+            tileKind: 'forest',
+            contextType: 'overworld',
+            clusterX: 0,
+            clusterY: 0,
+          })
+        )
+      )
+    );
+
+    expect(() =>
+      createMusicDebugMidiFile({
+        ...snapshot,
+        phraseIntentValidation: {
+          isValidForMidiExport: false,
+          messages: [
+            'Phrase-intent score 32% stayed below the export minimum 60%.',
+          ],
+        },
+      })
+    ).toThrow(
+      'Cannot export MIDI: Phrase-intent score 32% stayed below the export minimum 60%.'
+    );
   });
 });
