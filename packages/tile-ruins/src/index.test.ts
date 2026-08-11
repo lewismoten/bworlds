@@ -32,6 +32,28 @@ class FakeMaterial {
   }
 }
 
+class FakeMatrix4 {
+  position = { x: 0, y: 0, z: 0 };
+  scale = { x: 1, y: 1, z: 1 };
+
+  makeScale(x: number, y: number, z: number) {
+    this.scale = { x, y, z };
+    return this;
+  }
+
+  setPosition(x: number, y: number, z: number) {
+    this.position = { x, y, z };
+    return this;
+  }
+
+  clone() {
+    const next = new FakeMatrix4();
+    next.position = { ...this.position };
+    next.scale = { ...this.scale };
+    return next;
+  }
+}
+
 class FakeNode {
   position = {
     x: 0,
@@ -67,6 +89,21 @@ class FakeMesh extends FakeNode {
     super();
   }
 }
+class FakeInstancedMesh extends FakeNode {
+  matrices: FakeMatrix4[] = [];
+
+  constructor(
+    public geometry?: object,
+    public material?: FakeMaterial,
+    public count = 0
+  ) {
+    super();
+  }
+
+  setMatrixAt(index: number, matrix: FakeMatrix4) {
+    this.matrices[index] = matrix.clone();
+  }
+}
 class FakePointLight extends FakeNode {
   constructor(
     public color?: string,
@@ -81,6 +118,8 @@ class FakePointLight extends FakeNode {
 const fakeThree = {
   Group: FakeGroup,
   Mesh: FakeMesh,
+  InstancedMesh: FakeInstancedMesh,
+  Matrix4: FakeMatrix4,
   PointLight: FakePointLight,
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
@@ -289,6 +328,36 @@ describe('tile ruins', () => {
     expect(createModelSignature(resolved)).toEqual(
       createModelSignature(baseline)
     );
+  });
+
+  it('instances repeated rubble stones instead of emitting one standalone mesh per fragment', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createRuinsState(),
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup;
+
+    const rubbleInstances = model.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.ruinsInstancedPart === 'rubble-stone'
+    ) as FakeInstancedMesh[];
+    const rubbleMeshes = model.children.filter(
+      (child) =>
+        child instanceof FakeMesh &&
+        child.userData?.ruinsInstancedPart === 'rubble-stone'
+    ) as FakeMesh[];
+
+    expect(rubbleInstances).toHaveLength(1);
+    expect(rubbleInstances[0]?.count).toBeGreaterThanOrEqual(4);
+    expect(rubbleInstances[0]?.matrices).toHaveLength(
+      rubbleInstances[0]?.count ?? 0
+    );
+    expect(rubbleMeshes).toHaveLength(0);
   });
 
   it('reuses the cached glow material for ruins in the same region', () => {

@@ -78,8 +78,9 @@ Always run tests to make sure all tests pass
       into one `InstancedMesh`, and full-detail cave mouths now collapse their
       repeated entrance boulders into one `InstancedMesh`, and full-detail
       dungeons now collapse their repeated tower bodies and caps into two
-      `InstancedMesh` nodes, which removes small clusters of redundant static
-      child nodes from each visible landmark or track tile.
+      `InstancedMesh` nodes, and `tile-ruins` now collapses its repeated rubble
+      fragments into one `InstancedMesh`, which removes small clusters of
+      redundant static child nodes from each visible landmark or track tile.
 - [x] Disable matrix updates for static objects and static subtrees.
 - [x] Remove has() + get() double cache lookups.
 - [x] Cache nearby overworld anchor queries by region or tile.

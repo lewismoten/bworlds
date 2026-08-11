@@ -33,6 +33,7 @@ import type {
   RuntimePlugin,
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
 } from '@bworlds/plugin-api';
 
 const RUINS_REGION_SIZE = 16;
@@ -281,28 +282,38 @@ export function createRuinsTilePlugin(): RuntimePlugin {
 
           const rubbleCount =
             4 + Math.floor(hash2D(RUINS_RUBBLE_COUNT_SEED, tileX, tileY) * 4);
+          const rubbleInstances = new three.InstancedMesh(
+            new three.BoxGeometry(1, 1, 1),
+            style.stoneMaterial,
+            rubbleCount
+          );
+          rubbleInstances.userData = {
+            ...rubbleInstances.userData,
+            ruinsInstancedPart: 'rubble-stone',
+          };
+          const rubbleMatrixScratch = new three.Matrix4();
           for (let index = 0; index < rubbleCount; index += 1) {
-            const rubble = new three.Mesh(
-              new three.BoxGeometry(
+            rubbleInstances.setMatrixAt(
+              index,
+              writeInstancedScalePositionMatrix(
+                rubbleMatrixScratch,
+                tileX +
+                  (hash2D(RUINS_RUBBLE_X_SEED, tileX + index, tileY) - 0.5) *
+                    0.6,
+                0.11,
+                tileY +
+                  (hash2D(RUINS_RUBBLE_Z_SEED, tileX, tileY + index) - 0.5) *
+                    0.6,
                 0.08 +
                   hash2D(RUINS_RUBBLE_WIDTH_SEED, tileX + index, tileY) * 0.08,
                 0.05 +
                   hash2D(RUINS_RUBBLE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
                 0.08 +
                   hash2D(RUINS_RUBBLE_DEPTH_SEED, tileX - index, tileY) * 0.08
-              ),
-              style.stoneMaterial
+              )
             );
-            rubble.position.set(
-              (hash2D(RUINS_RUBBLE_X_SEED, tileX + index, tileY) - 0.5) * 0.6,
-              0.11,
-              (hash2D(RUINS_RUBBLE_Z_SEED, tileX, tileY + index) - 0.5) * 0.6
-            );
-            rubble.rotation.y =
-              hash2D(RUINS_RUBBLE_ROTATION_SEED, tileX + index, tileY - index) *
-              Math.PI;
-            group.add(rubble);
           }
+          group.add(rubbleInstances);
 
           const glowCore = markPoiLightEmitter(
             new three.Mesh(
@@ -411,6 +422,18 @@ function withAlpha(hex: string, alpha: number): string {
   const green = Number.parseInt(normalized.slice(2, 4), 16);
   const blue = Number.parseInt(normalized.slice(4, 6), 16);
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function writeInstancedScalePositionMatrix(
+  matrix: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+): ThreeMatrix4Like {
+  return matrix.makeScale(scaleX, scaleY, scaleZ).setPosition(x, y, z);
 }
 
 type RuinsStyle = {
