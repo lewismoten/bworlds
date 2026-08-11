@@ -1688,18 +1688,36 @@ export function createForestTilePlugin(): RuntimePlugin {
               }
             }
           }
-          for (const meadow of getForestMeadows(tileX, tileY)) {
-            const patch = new three.Mesh(
+          const meadows = getForestMeadows(tileX, tileY);
+          if (meadows.length > 0) {
+            const meadowInstances = new three.InstancedMesh(
               geometry.foliage,
-              floorDetailStyle.meadowGrassMaterial
+              floorDetailStyle.meadowGrassMaterial,
+              meadows.length
             );
-            patch.position.set(tileX + meadow.x, 0.03, tileY + meadow.y);
-            patch.scale.set(meadow.radiusX, 0.08, meadow.radiusY);
-            patch.userData = {
-              ...(patch.userData ?? {}),
+            meadowInstances.userData = {
+              ...(meadowInstances.userData ?? {}),
               [MEADOW_KEY]: 'grass',
+              forestMeadowInstanced: true,
             };
-            group.add(patch);
+            const meadowMatrixScratch = new three.Matrix4();
+            meadows.forEach((meadow, index) => {
+              meadowInstances.setMatrixAt(
+                index,
+                writeLowDetailInstancedMatrix(
+                  meadowMatrixScratch,
+                  tileX + meadow.x,
+                  0.03,
+                  tileY + meadow.y,
+                  meadow.radiusX,
+                  0.08,
+                  meadow.radiusY
+                )
+              );
+            });
+            group.add(meadowInstances);
+          }
+          for (const meadow of meadows) {
             addForestMeadowFlowerInstances(
               three,
               group,

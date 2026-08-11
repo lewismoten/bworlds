@@ -3829,22 +3829,20 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    let fullMeadowCount = 0;
-    fullModel.traverse((node) => {
-      if (node.userData?.forestMeadow) {
-        fullMeadowCount += 1;
-      }
-    });
+    const fullGrassInstances = fullModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestMeadow === 'grass'
+    ) as FakeInstancedMesh[];
+    const lowGrassInstances = lowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestMeadow === 'grass'
+    ) as FakeInstancedMesh[];
 
-    let lowMeadowCount = 0;
-    lowModel.traverse((node) => {
-      if (node.userData?.forestMeadow) {
-        lowMeadowCount += 1;
-      }
-    });
-
-    expect(fullMeadowCount).toBeGreaterThan(0);
-    expect(lowMeadowCount).toBe(0);
+    expect(fullGrassInstances.length).toBeGreaterThan(0);
+    expect(fullGrassInstances.every((mesh) => mesh.count > 0)).toBe(true);
+    expect(lowGrassInstances).toHaveLength(0);
   });
 
   it('instances meadow flower stems and blooms in full-detail forest models', () => {
