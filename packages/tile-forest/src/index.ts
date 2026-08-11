@@ -79,6 +79,7 @@ const FIREFLY_KEY = 'forestFirefly';
 const FLOOR_DETAIL_KEY = 'forestFloorDetail';
 const BUSH_KEY = 'forestBush';
 const LANDMARK_KEY = 'forestLandmark';
+const LANDMARK_INSTANCED_PART_KEY = 'forestLandmarkInstancedPart';
 const HOLLOW_KEY = 'forestHollow';
 const OWL_KEY = 'forestOwl';
 const CARVING_KEY = 'forestCarving';
@@ -4628,31 +4629,45 @@ function createForestLandmarkMeshes(
   landmark: ForestLandmarkDescriptor,
   style: ForestTreeStyle
 ) {
+  if (landmark.kind === 'stone-ring') {
+    const stoneInstances = new three.InstancedMesh(
+      new three.SphereGeometry(0.12, 6, 6),
+      style.stoneMaterial,
+      landmark.memberCount
+    );
+    const stoneMatrixScratch = new three.Matrix4();
+    stoneInstances.userData = {
+      ...(stoneInstances.userData ?? {}),
+      [LANDMARK_KEY]: landmark.kind,
+      [LANDMARK_INSTANCED_PART_KEY]: landmark.kind,
+    };
+    for (let index = 0; index < landmark.memberCount; index += 1) {
+      const angle =
+        landmark.rotation + (index / landmark.memberCount) * Math.PI * 2;
+      const x = tileX + landmark.x + Math.cos(angle) * landmark.ringRadius;
+      const z = tileY + landmark.y + Math.sin(angle) * landmark.ringRadius;
+      stoneInstances.setMatrixAt(
+        index,
+        writeLowDetailInstancedMatrix(
+          stoneMatrixScratch,
+          x,
+          0.12,
+          z,
+          0.7 * landmark.scale,
+          1 + (index % 2) * 0.25,
+          0.58 * landmark.scale
+        )
+      );
+    }
+    group.add(stoneInstances);
+    return;
+  }
+
   for (let index = 0; index < landmark.memberCount; index += 1) {
     const angle =
       landmark.rotation + (index / landmark.memberCount) * Math.PI * 2;
     const x = tileX + landmark.x + Math.cos(angle) * landmark.ringRadius;
     const z = tileY + landmark.y + Math.sin(angle) * landmark.ringRadius;
-
-    if (landmark.kind === 'stone-ring') {
-      const stone = new three.Mesh(
-        new three.SphereGeometry(0.12, 6, 6),
-        style.stoneMaterial
-      );
-      stone.position.set(x, 0.12, z);
-      stone.scale.set(
-        0.7 * landmark.scale,
-        1 + (index % 2) * 0.25,
-        0.58 * landmark.scale
-      );
-      stone.rotation.y = angle;
-      stone.userData = {
-        ...(stone.userData ?? {}),
-        [LANDMARK_KEY]: landmark.kind,
-      };
-      group.add(stone);
-      continue;
-    }
 
     const stem = new three.Mesh(
       new three.CylinderGeometry(0.03, 0.05, 0.18, 6),

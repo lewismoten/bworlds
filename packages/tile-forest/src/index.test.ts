@@ -2699,6 +2699,57 @@ describe('tile forest', () => {
     expect(lowLandmarks.size).toBe(0);
   });
 
+  it('instances repeated stone-ring landmark meshes in full-detail forest models', () => {
+    const plugin = createForestTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
+    const state = createForestTestState();
+    let targetTile: {
+      x: number;
+      y: number;
+      landmark: NonNullable<ReturnType<typeof getForestLandmark>>;
+    } | null = null;
+
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const landmark = getForestLandmark(tileX, tileY);
+        if (landmark?.kind === 'stone-ring') {
+          targetTile = { x: tileX, y: tileY, landmark };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const stoneInstances = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestLandmark === 'stone-ring' &&
+        node.userData?.forestLandmarkInstancedPart === 'stone-ring'
+    ) as FakeInstancedMesh[];
+    const standaloneStoneMeshes = fullModel.children.filter(
+      (node) =>
+        node instanceof FakeMesh &&
+        node.userData?.forestLandmark === 'stone-ring'
+    );
+
+    expect(stoneInstances).toHaveLength(1);
+    expect(stoneInstances[0]?.count).toBe(targetTile!.landmark.memberCount);
+    expect(stoneInstances[0]?.matrices).toHaveLength(
+      targetTile!.landmark.memberCount
+    );
+    expect(standaloneStoneMeshes).toHaveLength(0);
+  });
+
   it('renders bushes only in full-detail forest models', () => {
     const plugin = createForestTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'forest');
