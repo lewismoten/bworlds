@@ -178,6 +178,13 @@ describe('debug snapshot', () => {
           summary: 'vertexCount 10000>8000',
         },
         {
+          nowMs: 1925,
+          type: 'fallback-box',
+          tileKey: '15:-9',
+          plugin: 'tile-forest',
+          summary: 'low failed',
+        },
+        {
           nowMs: 1950,
           type: 'model-rejected',
           tileKey: '15:-9',
@@ -607,6 +614,13 @@ describe('debug snapshot', () => {
         tileKey: '15:-9',
         plugin: 'tile-forest',
         summary: 'vertexCount 10000>8000',
+      },
+      {
+        t: -0.1,
+        type: 'fallback-box',
+        tileKey: '15:-9',
+        plugin: 'tile-forest',
+        summary: 'low failed',
       },
       {
         t: 0,

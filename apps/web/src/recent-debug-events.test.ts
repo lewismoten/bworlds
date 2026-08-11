@@ -12,6 +12,7 @@ describe('recent debug events', () => {
         ],
         [
           { nowMs: 200, type: 'lod-changed' },
+          { nowMs: 275, type: 'fallback-box' },
           { nowMs: 300, type: 'model-rejected' },
         ],
         350,
@@ -24,6 +25,7 @@ describe('recent debug events', () => {
       { nowMs: 100, type: 'graphics-quality-changed' },
       { nowMs: 200, type: 'lod-changed' },
       { nowMs: 250, type: 'graphics-quality-changed' },
+      { nowMs: 275, type: 'fallback-box' },
       { nowMs: 300, type: 'model-rejected' },
     ]);
   });
@@ -37,6 +39,7 @@ describe('recent debug events', () => {
         ],
         [
           { nowMs: 200, type: 'lod-changed' },
+          { nowMs: 275, type: 'fallback-box' },
           { nowMs: 300, type: 'model-rejected' },
         ],
         350,
@@ -46,7 +49,7 @@ describe('recent debug events', () => {
         }
       )
     ).toEqual([
-      { nowMs: 250, type: 'graphics-quality-changed' },
+      { nowMs: 275, type: 'fallback-box' },
       { nowMs: 300, type: 'model-rejected' },
     ]);
   });

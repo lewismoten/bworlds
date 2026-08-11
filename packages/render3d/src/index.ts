@@ -3065,7 +3065,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         entry.tile,
         frameBudget
       );
-      if (!shouldRebuildVisibleTileModelDetailEntry(entry, requestedDetailLevel)) {
+      if (
+        !shouldRebuildVisibleTileModelDetailEntry(entry, requestedDetailLevel)
+      ) {
         continue;
       }
 
@@ -4035,7 +4037,7 @@ export function buildRecoverableVisibleTileModelDetailEntry<
   Entry extends {
     modelRoot?: THREE.Object3D | null;
     fallbackReason?: string;
-  }
+  },
 >(
   requestedDetailLevel: RenderBudgetDetailLevel,
   buildEntry: (detailLevel: RenderBudgetDetailLevel) => Entry,

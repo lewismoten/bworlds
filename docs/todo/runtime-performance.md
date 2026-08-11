@@ -1,46 +1,46 @@
 # Runtime Performance Snapshot Tests
 
-* [ ] Validate every snapshot against a runtime schema.
-* [ ] Require a supported schema version.
-* [ ] Require a valid ISO timestamp.
-* [ ] Require a known snapshot source.
-* [ ] Require a known trigger value.
-* [ ] Require a world seed.
-* [ ] Require a valid world context.
-* [ ] Reject negative performance limits.
-* [ ] Reject negative performance metrics.
-* [ ] Require finite numeric metric values.
-* [ ] Define which metrics are allowed to be null.
-* [ ] Fail when a required metric is null.
-* [ ] Treat null as not measured, not zero.
-* [ ] Keep limit fields aligned with metric fields.
-* [ ] Fail when measured values exceed hard limits.
-* [ ] Add a violation for every failed hard limit.
-* [ ] Include expected and actual values in violations.
-* [ ] Include the metric name in every violation.
-* [ ] Ensure passing metrics create no violations.
-* [ ] Ensure multiple failures create multiple violations.
-* [ ] Test exact values at each configured limit.
-* [ ] Test values just below each configured limit.
-* [ ] Test values just above each configured limit.
-* [ ] Test maximum frame duration enforcement.
-* [ ] Test visible tile average duration enforcement.
-* [ ] Test visible tile maximum duration enforcement.
-* [ ] Add a pending tile count limit.
-* [ ] Test pending tile count enforcement.
-* [ ] Add a minimum tile build rate if useful.
-* [ ] Test minimum tile build rate enforcement.
-* [ ] Test active Three.js object count enforcement.
-* [ ] Test draw call count enforcement.
-* [ ] Test audio node count enforcement.
-* [ ] Test memory usage enforcement when measured.
-* [ ] Test song generation duration enforcement.
-* [ ] Test MIDI export duration enforcement.
-* [ ] Test WAV export duration enforcement.
-* [ ] Reject impossible object or draw-call counts.
-* [ ] Warn when expected startup metrics are missing.
-* [ ] Warn when suspicious metrics are near zero.
-* [ ] Keep warnings separate from hard violations.
-* [ ] Test snapshot JSON can round-trip without data loss.
-* [ ] Test old schema versions can be migrated.
-* [ ] Test unknown schema versions are rejected.
+- [ ] Validate every snapshot against a runtime schema.
+- [ ] Require a supported schema version.
+- [ ] Require a valid ISO timestamp.
+- [ ] Require a known snapshot source.
+- [ ] Require a known trigger value.
+- [ ] Require a world seed.
+- [ ] Require a valid world context.
+- [ ] Reject negative performance limits.
+- [ ] Reject negative performance metrics.
+- [ ] Require finite numeric metric values.
+- [ ] Define which metrics are allowed to be null.
+- [ ] Fail when a required metric is null.
+- [ ] Treat null as not measured, not zero.
+- [ ] Keep limit fields aligned with metric fields.
+- [ ] Fail when measured values exceed hard limits.
+- [ ] Add a violation for every failed hard limit.
+- [ ] Include expected and actual values in violations.
+- [ ] Include the metric name in every violation.
+- [ ] Ensure passing metrics create no violations.
+- [ ] Ensure multiple failures create multiple violations.
+- [ ] Test exact values at each configured limit.
+- [ ] Test values just below each configured limit.
+- [ ] Test values just above each configured limit.
+- [ ] Test maximum frame duration enforcement.
+- [ ] Test visible tile average duration enforcement.
+- [ ] Test visible tile maximum duration enforcement.
+- [ ] Add a pending tile count limit.
+- [ ] Test pending tile count enforcement.
+- [ ] Add a minimum tile build rate if useful.
+- [ ] Test minimum tile build rate enforcement.
+- [ ] Test active Three.js object count enforcement.
+- [ ] Test draw call count enforcement.
+- [ ] Test audio node count enforcement.
+- [ ] Test memory usage enforcement when measured.
+- [ ] Test song generation duration enforcement.
+- [ ] Test MIDI export duration enforcement.
+- [ ] Test WAV export duration enforcement.
+- [ ] Reject impossible object or draw-call counts.
+- [ ] Warn when expected startup metrics are missing.
+- [ ] Warn when suspicious metrics are near zero.
+- [ ] Keep warnings separate from hard violations.
+- [ ] Test snapshot JSON can round-trip without data loss.
+- [ ] Test old schema versions can be migrated.
+- [ ] Test unknown schema versions are rejected.

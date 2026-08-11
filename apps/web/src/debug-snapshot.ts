@@ -27,6 +27,7 @@ export type DebugSnapshotRecentEvent = {
   nowMs: number;
   type:
     | 'graphics-quality-changed'
+    | 'fallback-box'
     | 'lod-changed'
     | 'model-rejected'
     | 'plugin-exceeded-budget'
