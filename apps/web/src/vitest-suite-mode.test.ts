@@ -39,4 +39,13 @@ describe('vitest suite mode', () => {
       ])
     );
   });
+
+  it('keeps already-split support package behavior tests on the fast path', () => {
+    expect(LONG_TEST_FILES).not.toContain(
+      'packages/dock-route-support/src/index.test.ts'
+    );
+    expect(LONG_TEST_FILES).not.toContain(
+      'packages/town-support/src/index.test.ts'
+    );
+  });
 });

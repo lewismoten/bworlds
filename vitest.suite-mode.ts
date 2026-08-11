@@ -48,7 +48,6 @@ export const LONG_TEST_FILES = [
   'apps/web/src/sound-bank-debug-shell-markup.test.ts',
   'apps/web/src/sound-bank-debug-shell-options.test.ts',
   'apps/web/src/tree-debug-quality.test.ts',
-  'packages/dock-route-support/src/index.test.ts',
   'packages/map-overworld/src/index.test.ts',
   'packages/map-station/src/index.test.ts',
   'packages/map-town/src/index.test.ts',
@@ -57,7 +56,6 @@ export const LONG_TEST_FILES = [
   'packages/runtime-rail-network/src/index.test.ts',
   'packages/tile-forest/src/index.test.ts',
   'packages/tile-route/src/index.test.ts',
-  'packages/town-support/src/index.test.ts',
   'packages/worldgen/src/index.test.ts',
 ] as const;
 

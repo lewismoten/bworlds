@@ -32,6 +32,8 @@ Related commands:
 - `npm run test:long`
   Runs only the known long-running suites behind the same supervisor path.
   Files named `*.long.test.ts` automatically stay off the normal fast path.
+  Once a suite has that companion file, its short `*.test.ts` file should come
+  back onto the fast path instead of staying in the manual long-file list.
   The slowest audio/browser suites can be split into multiple long-suite files
   so Vitest can parallelize them without putting those checks back into the
   fast path.

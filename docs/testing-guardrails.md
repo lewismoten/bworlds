@@ -44,6 +44,13 @@ behavior checks, while `procedural-music.long.test.ts` and
 `packages/dock-route-support/src/index.long.test.ts` hold the representative
 full-song and cache-rollover coverage.
 
+After that split exists, remove the short `*.test.ts` file from
+`LONG_TEST_FILES` in
+[vitest.suite-mode.ts](/Users/lewismoten/dev/bworlds/vitest.suite-mode.ts:1).
+That manual allowlist should only carry heavyweight files that have not been
+split yet. Leaving an already-split short file on the list quietly drops its
+normal behavior coverage from `npm run test`.
+
 When a long-running music or world-generation test needs representative
 snapshots, prefer module-level shared fixtures or named known-good seeds over
 rebuilding the same deterministic snapshots inside multiple assertions. That
