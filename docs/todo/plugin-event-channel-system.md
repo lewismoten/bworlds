@@ -2,63 +2,63 @@
 
 ## Core Event Model
 
-- [ ] Create a generic plugin event channel system.
-- [ ] Keep the event system independent from specific plugins.
-- [ ] Define one shared plugin event interface.
-- [ ] Give every event a type.
-- [ ] Give every event a source.
-- [ ] Give every event a short message.
-- [ ] Limit event messages to 80 characters.
-- [ ] Allow an optional details object.
-- [ ] Add an optional event timestamp.
-- [ ] Add an optional event severity.
-- [ ] Keep event details serializable when possible.
+- [x] Create a generic plugin event channel system.
+- [x] Keep the event system independent from specific plugins.
+- [x] Define one shared plugin event interface.
+- [x] Give every event a type.
+- [x] Give every event a source.
+- [x] Give every event a short message.
+- [x] Limit event messages to 80 characters.
+- [x] Allow an optional details object.
+- [x] Add an optional event timestamp.
+- [x] Add an optional event severity.
+- [x] Keep event details serializable when possible.
 
 ## Event Types
 
-- [ ] Support `error` as the first event type.
-- [ ] Keep event types extensible for future use.
-- [ ] Avoid hard-coding logic around only error events.
-- [ ] Define shared constants for common event types.
-- [ ] Allow plugins to define namespaced event types.
-- [ ] Prevent event type name collisions where practical.
+- [x] Support `error` as the first event type.
+- [x] Keep event types extensible for future use.
+- [x] Avoid hard-coding logic around only error events.
+- [x] Define shared constants for common event types.
+- [x] Allow plugins to define namespaced event types.
+- [x] Prevent event type name collisions where practical.
 
 ## Event Sources
 
-- [ ] Use the plugin ID as the default event source.
-- [ ] Allow subsystems to append a source name.
-- [ ] Keep source names stable across runs.
-- [ ] Include the source in every reported error.
-- [ ] Reject events without a valid source.
+- [x] Use the plugin ID as the default event source.
+- [x] Allow subsystems to append a source name.
+- [x] Keep source names stable across runs.
+- [x] Include the source in every reported error.
+- [x] Reject events without a valid source.
 
 ## Publishing Events
 
-- [ ] Add a shared function for publishing plugin events.
-- [ ] Let plugins publish without knowing any listeners.
-- [ ] Keep publishing synchronous and lightweight.
-- [ ] Prevent one listener failure from stopping others.
-- [ ] Prevent event handlers from changing the event object.
-- [ ] Avoid expensive work inside the publish path.
+- [x] Add a shared function for publishing plugin events.
+- [x] Let plugins publish without knowing any listeners.
+- [x] Keep publishing synchronous and lightweight.
+- [x] Prevent one listener failure from stopping others.
+- [x] Prevent event handlers from changing the event object.
+- [x] Avoid expensive work inside the publish path.
 
 ## Subscribing to Events
 
-- [ ] Add a function to subscribe to all events.
-- [ ] Add a function to subscribe by event type.
-- [ ] Add a function to subscribe by source.
-- [ ] Return an unsubscribe function from subscriptions.
-- [ ] Remove listeners cleanly during plugin shutdown.
-- [ ] Prevent duplicate listener registration.
-- [ ] Keep listener ordering deterministic when needed.
+- [x] Add a function to subscribe to all events.
+- [x] Add a function to subscribe by event type.
+- [x] Add a function to subscribe by source.
+- [x] Return an unsubscribe function from subscriptions.
+- [x] Remove listeners cleanly during plugin shutdown.
+- [x] Prevent duplicate listener registration.
+- [x] Keep listener ordering deterministic when needed.
 
 ## Error Events
 
-- [ ] Add a helper for publishing plugin errors.
-- [ ] Require a short error message.
-- [ ] Allow the original Error in event details.
-- [ ] Convert Error objects into serializable details.
-- [ ] Preserve stack traces when available.
-- [ ] Preserve error names when available.
-- [ ] Include plugin context in error details when useful.
+- [x] Add a helper for publishing plugin errors.
+- [x] Require a short error message.
+- [x] Allow the original Error in event details.
+- [x] Convert Error objects into serializable details.
+- [x] Preserve stack traces when available.
+- [x] Preserve error names when available.
+- [x] Include plugin context in error details when useful.
 - [ ] Avoid swallowing the original plugin error.
 
 ## Performance Snapshot Integration
@@ -86,25 +86,25 @@
 
 ## Event Details
 
-- [ ] Define a safe event details serialization helper.
-- [ ] Remove functions from event details.
-- [ ] Avoid serializing Three.js objects directly.
-- [ ] Avoid serializing AudioNodes directly.
-- [ ] Avoid circular object references.
-- [ ] Limit event detail depth.
-- [ ] Limit event detail size.
-- [ ] Truncate oversized strings in event details.
-- [ ] Mark details when values were truncated.
+- [x] Define a safe event details serialization helper.
+- [x] Remove functions from event details.
+- [x] Avoid serializing Three.js objects directly.
+- [x] Avoid serializing AudioNodes directly.
+- [x] Avoid circular object references.
+- [x] Limit event detail depth.
+- [x] Limit event detail size.
+- [x] Truncate oversized strings in event details.
+- [x] Mark details when values were truncated.
 
 ## Event History
 
-- [ ] Keep a bounded in-memory event history.
-- [ ] Configure the maximum history size.
-- [ ] Drop oldest events when the history is full.
-- [ ] Allow debug tools to read recent events.
-- [ ] Allow debug tools to filter events by type.
-- [ ] Allow debug tools to filter events by source.
-- [ ] Allow debug tools to clear event history.
+- [x] Keep a bounded in-memory event history.
+- [x] Configure the maximum history size.
+- [x] Drop oldest events when the history is full.
+- [x] Allow debug tools to read recent events.
+- [x] Allow debug tools to filter events by type.
+- [x] Allow debug tools to filter events by source.
+- [x] Allow debug tools to clear event history.
 
 ## Event Debug Page
 
@@ -151,17 +151,30 @@
 
 ## Tests
 
-- [ ] Test publishing an event with no listeners.
-- [ ] Test publishing an event to one listener.
-- [ ] Test publishing an event to multiple listeners.
-- [ ] Test subscribing by event type.
-- [ ] Test subscribing by source.
-- [ ] Test listener unsubscribe behavior.
-- [ ] Test one broken listener does not stop others.
-- [ ] Test event messages over 80 characters are rejected.
-- [ ] Test error details preserve the stack trace.
-- [ ] Test circular details serialize safely.
-- [ ] Test history never exceeds its configured limit.
+- [x] Test publishing an event with no listeners.
+- [x] Test publishing an event to one listener.
+- [x] Test publishing an event to multiple listeners.
+- [x] Test subscribing by event type.
+- [x] Test subscribing by source.
+- [x] Test listener unsubscribe behavior.
+- [x] Test one broken listener does not stop others.
+- [x] Test event messages over 80 characters are rejected.
+- [x] Test error details preserve the stack trace.
+- [x] Test circular details serialize safely.
+- [x] Test history never exceeds its configured limit.
 - [ ] Test error events appear in debug snapshots.
 - [ ] Test disabled tracking does not persist errors.
 - [ ] Test recursive event loops are prevented.
+
+## Progress Notes
+
+- Added `@bworlds/plugin-event-channel` with a shared `PluginEvent`
+  interface, stable event/source validation, bounded newest-first in-memory
+  history, synchronous publish/subscribe helpers, duplicate listener
+  prevention, and a `publishError(...)` helper.
+- Added safe event-details serialization that removes functions, converts
+  `Error` objects into serializable detail payloads, avoids circular object
+  references, truncates oversized values, and marks truncation.
+- Added focused tests for publish ordering, scoped subscriptions,
+  unsubscribe behavior, listener isolation, message-length validation,
+  detail serialization, and bounded history behavior.

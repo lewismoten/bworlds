@@ -59,6 +59,12 @@
       conifer distinction come from material tint rather than painting
       separate bark and leaf texture variants for each family.
 - [ ] Extend with plugin-event-channel-system.md
+      Progress: `@bworlds/plugin-event-channel` now provides the first shared
+      foundation package for plugin events with a validated event shape,
+      synchronous publish/subscribe helpers, bounded newest-first history,
+      duplicate-listener prevention, and safe detail serialization for `Error`
+      objects and other event payloads. Runtime snapshot and reporting
+      integration is still pending.
 
 ## Fix Measurement Problems First
 
