@@ -14,6 +14,7 @@ point that turns a tile resolver into packed splat chunk data.
 
 - `buildTerrainSplatChunkData(...)`
 - `buildTerrainSplatChunkDataFromTerrainState(...)`
+- `buildTerrainSplatChunkDataInWorker(...)`
 
 ## Behavior
 
@@ -23,6 +24,8 @@ point that turns a tile resolver into packed splat chunk data.
 - computes a terrain-state cache key when a cache is supplied
 - returns a packed splat result ready for worker transfer or later attribute
   upload
+- the async worker entry point preserves the same request shape, cache key, and
+  packed result contract while dispatching the build through a Worker-like host
 - reports whether the chunk data came from cache through `fromCache`
 
 ## Current limits

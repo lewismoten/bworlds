@@ -16,6 +16,9 @@ request/result shape for worker-side terrain splat generation.
 - `createTerrainSplatWorkerBuildRequest(...)`
 - `buildTerrainSplatWorkerResult(...)`
 - `listTerrainSplatWorkerResultTransferables(...)`
+- `createTerrainSplatWorkerBuildRequestMessage(...)`
+- `buildTerrainSplatWorkerResponseMessage(...)`
+- `runTerrainSplatWorkerBuild(...)`
 
 ## Request shape
 
@@ -34,7 +37,15 @@ request/result shape for worker-side terrain splat generation.
 
 ## Current limits
 
-- worker code still needs to provide or import the shared terrain kind and
-  layer catalogs
-- the request serializes explicit tile inputs instead of a transferable terrain
-  source or plugin callback
+- the request still serializes explicit tile inputs instead of a transferable
+  terrain source or plugin callback
+
+## Worker runtime
+
+- `@bworlds/terrain-splat-support/worker-runtime` wraps the existing request and
+  result contract in one small request/response message protocol
+- build messages serialize the terrain kind and layer catalogs directly so one
+  worker can build packed chunk data without reaching back into gameplay state
+- `runTerrainSplatWorkerBuild(...)` accepts any Worker-like host object that
+  supports `postMessage(...)` plus `message` / `error` listeners, so app code
+  can use a browser `Worker` while tests can use a fake in-process adapter

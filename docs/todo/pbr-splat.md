@@ -450,7 +450,7 @@
 - [x] Add snow accumulation blending.
 - [x] Add mud accumulation blending.
 - [x] Add seasonal terrain tinting.
-- [ ] Add worker-based splat generation.
+- [x] Add worker-based splat generation.
 - [ ] Add performance limits and regression tests.
 
 Progress: `@bworlds/terrain-splat-support` now provides the first shared PBR
@@ -507,7 +507,12 @@ deterministic weather overlays so rain, snow accumulation, melting, and
 sustained wetness can adjust terrain splat weights and wetness metadata
 without changing the shared base sample identity, plus deterministic seasonal
 tint overlays so spring, summer, autumn, and winter can shift shared layer
-color metadata without changing material identity.
+color metadata without changing material identity, plus one Worker-like
+runtime path that serializes chunk requests together with terrain kind and
+layer catalogs, builds packed splat chunk data asynchronously through the same
+request/result contract, and preserves the existing chunk cache semantics for
+worker-backed generation. The worker runtime notes live in
+`packages/terrain-splat-support/docs/worker-runtimes.md`.
 
 # Roads and Paths as Terrain Splats
 

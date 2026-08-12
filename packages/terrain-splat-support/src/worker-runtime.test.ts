@@ -4,39 +4,67 @@ import {
   createTerrainKindSplatCatalog,
   createTerrainMaterialLayerCatalog,
 } from './index.ts';
-import { buildTerrainSplatChunkData } from './chunk-build.ts';
-import { createTerrainSplatChunkBuildCache } from './chunk-cache.ts';
-import { createTerrainSplatGridTileResolver } from './sample-grid.ts';
-import type { TerrainSplatWorkerBuildResult } from './worker-contract.ts';
+import { createTerrainSplatWorkerBuildRequest } from './worker-contract.ts';
 import {
   buildTerrainSplatWorkerResponseMessage,
   createTerrainSplatWorkerBuildRequestMessage,
+  listTerrainSplatWorkerMessageTransferables,
+  runTerrainSplatWorkerBuild,
   type TerrainSplatWorkerErrorEvent,
   type TerrainSplatWorkerEvent,
   type TerrainSplatWorkerLike,
   type TerrainSplatWorkerMessage,
 } from './worker-runtime.ts';
-import { buildTerrainSplatChunkDataInWorker } from './chunk-build.ts';
+import { createTerrainSplatGridTileResolver } from './sample-grid.ts';
 
-describe('terrain splat chunk build', () => {
-  it('builds packed splat chunk data from one tile resolver', () => {
-    const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
-
-    const built = buildTerrainSplatChunkData({
-      seed: 'chunk-build-seed',
+describe('terrain splat worker runtime', () => {
+  it('serializes catalogs into one worker build request message', () => {
+    const { kindCatalog, layerCatalog } = createWorkerRuntimeCatalogs();
+    const request = createTerrainSplatWorkerBuildRequest({
+      seed: 'worker-runtime-message-seed',
       bounds: {
         minX: 0,
         maxX: 2,
         minY: 0,
         maxY: 2,
       },
+      resolveTile: createTerrainSplatGridTileResolver(() => ({
+        kind: 'plains',
+      })),
+      fallbackLayerId: 'grass-a',
+    });
+
+    const message = createTerrainSplatWorkerBuildRequestMessage({
+      request,
       kindCatalog,
       layerCatalog,
+      jobId: 'job-1',
+    });
+
+    expect(message).toMatchObject({
+      type: 'terrain-splat-build-request',
+      jobId: 'job-1',
+    });
+    expect(message.kindCatalogEntries.length).toBeGreaterThan(0);
+    expect(message.layerCatalogEntries.length).toBeGreaterThan(0);
+  });
+
+  it('runs one worker build and resolves the packed result from the worker reply', async () => {
+    const { kindCatalog, layerCatalog } = createWorkerRuntimeCatalogs();
+    const worker = new FakeTerrainSplatWorker();
+    const request = createTerrainSplatWorkerBuildRequest({
+      seed: 'worker-runtime-run-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
       resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
-        kind: x >= 1 ? 'forest' : y >= 1 ? 'road' : 'plains',
+        kind: x >= 1 ? 'road' : y >= 1 ? 'forest' : 'plains',
         signals: {
-          moisture: 0.58,
-          roadSignal: y >= 1 ? 0.8 : 0,
+          roadSignal: x >= 1 ? 0.82 : 0,
+          moisture: 0.6,
           season: 'summer',
           temperature: 0.68,
         },
@@ -45,179 +73,85 @@ describe('terrain splat chunk build', () => {
       blendWidth: 1,
     });
 
-    expect(built.fromCache).toBe(false);
-    expect(built.request.tiles.length).toBeGreaterThan(9);
-    expect(built.result.packedGrid.width).toBe(3);
-    expect(built.result.packedGrid.height).toBe(3);
-    expect(built.result.packedGrid.layerIndices).toHaveLength(36);
-    expect(built.result.metrics).toBeNull();
+    const result = await runTerrainSplatWorkerBuild({
+      worker,
+      message: createTerrainSplatWorkerBuildRequestMessage({
+        request,
+        kindCatalog,
+        layerCatalog,
+        jobId: 'job-2',
+      }),
+    });
+
+    expect(result.packedGrid.width).toBe(3);
+    expect(result.packedGrid.height).toBe(3);
+    expect(result.metrics).toBeNull();
   });
 
-  it('reuses cached chunk splat data until the terrain state changes', () => {
-    const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
-    const cache =
-      createTerrainSplatChunkBuildCache<TerrainSplatWorkerBuildResult>(8);
-    let resolveTileCalls = 0;
-    const resolveTile = createTerrainSplatGridTileResolver(({ x }) => {
-      resolveTileCalls += 1;
-      return {
-        kind: x >= 1 ? 'forest' : 'plains',
-        signals: {
-          moisture: 0.6,
+  it('surfaces worker-side build errors as rejected promises', async () => {
+    const worker = new FakeTerrainSplatWorker({
+      handleMessage: (message) => {
+        void message;
+        return {
+          type: 'terrain-splat-build-error',
+          jobId: 'job-3',
+          error: 'synthetic worker failure',
+        };
+      },
+    });
+
+    await expect(
+      runTerrainSplatWorkerBuild({
+        worker,
+        message: {
+          type: 'terrain-splat-build-request',
+          jobId: 'job-3',
+          request: {
+            seed: 'worker-runtime-error-seed',
+            bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 },
+            tiles: [],
+          },
+          kindCatalogEntries: [],
+          layerCatalogEntries: [],
         },
-      };
-    });
-
-    const first = buildTerrainSplatChunkData({
-      seed: 'chunk-build-cache-seed',
-      bounds: {
-        minX: 0,
-        maxX: 2,
-        minY: 0,
-        maxY: 2,
-      },
-      kindCatalog,
-      layerCatalog,
-      resolveTile,
-      fallbackLayerId: 'grass-a',
-      blendWidth: 1,
-      terrainStateRevision: 'rev-a',
-      cache,
-    });
-    const repeated = buildTerrainSplatChunkData({
-      seed: 'chunk-build-cache-seed',
-      bounds: {
-        minX: 0,
-        maxX: 2,
-        minY: 0,
-        maxY: 2,
-      },
-      kindCatalog,
-      layerCatalog,
-      resolveTile,
-      fallbackLayerId: 'grass-a',
-      blendWidth: 1,
-      terrainStateRevision: 'rev-a',
-      cache,
-    });
-    const revised = buildTerrainSplatChunkData({
-      seed: 'chunk-build-cache-seed',
-      bounds: {
-        minX: 0,
-        maxX: 2,
-        minY: 0,
-        maxY: 2,
-      },
-      kindCatalog,
-      layerCatalog,
-      resolveTile,
-      fallbackLayerId: 'grass-a',
-      blendWidth: 1,
-      terrainStateRevision: 'rev-b',
-      cache,
-    });
-
-    expect(first.fromCache).toBe(false);
-    expect(repeated.fromCache).toBe(true);
-    expect(repeated.result).toBe(first.result);
-    expect(revised.fromCache).toBe(false);
-    expect(revised.result).not.toBe(first.result);
-    expect(resolveTileCalls).toBeGreaterThan(0);
-    expect(cache.size()).toBe(2);
+      })
+    ).rejects.toThrow('synthetic worker failure');
   });
 
-  it('can build chunk splat data through one async worker path', async () => {
-    const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
-    const worker = new FakeTerrainSplatWorker();
+  it('lists packed array buffers as worker message transferables', () => {
+    const { kindCatalog, layerCatalog } = createWorkerRuntimeCatalogs();
+    const response = buildTerrainSplatWorkerResponseMessage(
+      createTerrainSplatWorkerBuildRequestMessage({
+        request: createTerrainSplatWorkerBuildRequest({
+          seed: 'worker-runtime-transferable-seed',
+          bounds: {
+            minX: 0,
+            maxX: 2,
+            minY: 0,
+            maxY: 2,
+          },
+          resolveTile: createTerrainSplatGridTileResolver(() => ({
+            kind: 'plains',
+          })),
+          fallbackLayerId: 'grass-a',
+        }),
+        kindCatalog,
+        layerCatalog,
+        jobId: 'job-4',
+      })
+    );
 
-    const built = await buildTerrainSplatChunkDataInWorker({
-      seed: 'chunk-build-worker-seed',
-      bounds: {
-        minX: 0,
-        maxX: 2,
-        minY: 0,
-        maxY: 2,
-      },
-      kindCatalog,
-      layerCatalog,
-      worker,
-      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
-        kind: x >= 1 ? 'forest' : y >= 1 ? 'road' : 'plains',
-        signals: {
-          moisture: 0.58,
-          roadSignal: y >= 1 ? 0.8 : 0,
-          season: 'summer',
-          temperature: 0.68,
-        },
-      })),
-      fallbackLayerId: 'grass-a',
-      blendWidth: 1,
-    });
-
-    expect(built.fromCache).toBe(false);
-    expect(built.request.tiles.length).toBeGreaterThan(9);
-    expect(built.result.packedGrid.width).toBe(3);
-    expect(built.result.packedGrid.height).toBe(3);
-  });
-
-  it('reuses cached async worker chunk data until the terrain state changes', async () => {
-    const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
-    const cache =
-      createTerrainSplatChunkBuildCache<TerrainSplatWorkerBuildResult>(8);
-    const worker = new FakeTerrainSplatWorker();
-    let resolveTileCalls = 0;
-    const resolveTile = createTerrainSplatGridTileResolver(({ x }) => {
-      resolveTileCalls += 1;
-      return {
-        kind: x >= 1 ? 'forest' : 'plains',
-        signals: {
-          moisture: 0.6,
-        },
-      };
-    });
-
-    const first = await buildTerrainSplatChunkDataInWorker({
-      seed: 'chunk-build-worker-cache-seed',
-      bounds: {
-        minX: 0,
-        maxX: 2,
-        minY: 0,
-        maxY: 2,
-      },
-      kindCatalog,
-      layerCatalog,
-      worker,
-      resolveTile,
-      fallbackLayerId: 'grass-a',
-      blendWidth: 1,
-      terrainStateRevision: 'rev-a',
-      cache,
-    });
-    const repeated = await buildTerrainSplatChunkDataInWorker({
-      seed: 'chunk-build-worker-cache-seed',
-      bounds: {
-        minX: 0,
-        maxX: 2,
-        minY: 0,
-        maxY: 2,
-      },
-      kindCatalog,
-      layerCatalog,
-      worker,
-      resolveTile,
-      fallbackLayerId: 'grass-a',
-      blendWidth: 1,
-      terrainStateRevision: 'rev-a',
-      cache,
-    });
-
-    expect(first.fromCache).toBe(false);
-    expect(repeated.fromCache).toBe(true);
-    expect(repeated.result).toBe(first.result);
-    expect(resolveTileCalls).toBeGreaterThan(0);
-    expect(cache.size()).toBe(1);
+    expect(response.type).toBe('terrain-splat-build-result');
+    const transferables = listTerrainSplatWorkerMessageTransferables(response);
+    expect(transferables).toHaveLength(2);
   });
 });
+
+type FakeTerrainSplatWorkerOptions = {
+  handleMessage?: (
+    message: TerrainSplatWorkerMessage
+  ) => TerrainSplatWorkerMessage;
+};
 
 class FakeTerrainSplatWorker implements TerrainSplatWorkerLike {
   private readonly messageListeners = new Set<
@@ -227,12 +161,16 @@ class FakeTerrainSplatWorker implements TerrainSplatWorkerLike {
     (event: TerrainSplatWorkerErrorEvent) => void
   >();
 
+  constructor(private readonly options: FakeTerrainSplatWorkerOptions = {}) {}
+
   postMessage(message: TerrainSplatWorkerMessage): void {
     queueMicrotask(() => {
       try {
-        const response = buildTerrainSplatWorkerResponseMessage(
-          message as ReturnType<typeof createTerrainSplatWorkerBuildRequestMessage>
-        );
+        const response =
+          this.options.handleMessage?.(message) ??
+          buildTerrainSplatWorkerResponseMessage(
+            message as ReturnType<typeof createTerrainSplatWorkerBuildRequestMessage>
+          );
         this.messageListeners.forEach((listener) => listener({ data: response }));
       } catch (error) {
         this.errorListeners.forEach((listener) =>
@@ -276,7 +214,7 @@ class FakeTerrainSplatWorker implements TerrainSplatWorkerLike {
   }
 }
 
-function createChunkBuildCatalogs() {
+function createWorkerRuntimeCatalogs() {
   const layerCatalog = createTerrainMaterialLayerCatalog([
     {
       id: 'grass-a',
@@ -392,10 +330,10 @@ function createChunkBuildCatalogs() {
       grassLayerIds: ['grass-a', 'grass-b'],
       soilLayerId: 'soil',
       leafLayerId: 'leaf',
-      rockLayerId: 'rock',
-      sandLayerId: 'sand',
-      dirtLayerId: 'dirt',
-      gravelLayerId: 'gravel',
+    rockLayerId: 'rock',
+    sandLayerId: 'sand',
+    dirtLayerId: 'dirt',
+    gravelLayerId: 'gravel',
       mudLayerId: 'mud',
       snowLayerId: 'snow',
       dirtRoadLayerId: 'dirt-road',
@@ -403,7 +341,6 @@ function createChunkBuildCatalogs() {
     }),
     layerCatalog
   );
-
   return {
     layerCatalog,
     kindCatalog,

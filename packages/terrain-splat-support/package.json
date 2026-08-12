@@ -33,6 +33,7 @@
     "./texture-binding-runtime-plan": "./src/texture-binding-runtime-plan.ts",
     "./two-layer-vertex-blend": "./src/two-layer-vertex-blend.ts",
     "./worker-contract": "./src/worker-contract.ts",
+    "./worker-runtime": "./src/worker-runtime.ts",
     "./variant-pool": "./src/variant-pool.ts",
     "./layer-pool-plan": "./src/layer-pool-plan.ts",
     "./texture-array-plan": "./src/texture-array-plan.ts"

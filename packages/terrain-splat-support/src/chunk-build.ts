@@ -23,6 +23,11 @@ import {
   createTerrainSplatWorkerBuildRequestFromTerrainState,
   type TerrainSplatTerrainStateSnapshot,
 } from './terrain-state.ts';
+import {
+  createTerrainSplatWorkerBuildRequestMessage,
+  runTerrainSplatWorkerBuild,
+  type TerrainSplatWorkerLike,
+} from './worker-runtime.ts';
 
 export type TerrainSplatChunkBuildResult = {
   request: TerrainSplatWorkerBuildRequest;
@@ -77,6 +82,80 @@ export function buildTerrainSplatChunkData(params: {
     cache: params.cache,
     nowMs: params.nowMs,
   });
+}
+
+export async function buildTerrainSplatChunkDataInWorker(params: {
+  seed: Seed;
+  bounds: TerrainSplatGridBounds;
+  kindCatalog:
+    | ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>
+    | {
+        byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+      };
+  layerCatalog:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        byId: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      };
+  resolveTile: ResolveTerrainSplatGridTile;
+  worker: TerrainSplatWorkerLike;
+  fallbackKind?: Kind;
+  fallbackLayerId?: TerrainMaterialLayerId;
+  blendWidth?: number;
+  lodStepMultiplier?: number;
+  budgetMs?: number;
+  fallbackLodStepMultiplier?: number;
+  terrainStateRevision?: string | number;
+  cache?: TerrainSplatChunkBuildCache<TerrainSplatWorkerBuildResult>;
+}): Promise<TerrainSplatChunkBuildResult> {
+  const request = createTerrainSplatWorkerBuildRequest({
+    seed: params.seed,
+    bounds: params.bounds,
+    resolveTile: params.resolveTile,
+    fallbackKind: params.fallbackKind,
+    fallbackLayerId: params.fallbackLayerId,
+    blendWidth: params.blendWidth,
+    lodStepMultiplier: params.lodStepMultiplier,
+    budgetMs: params.budgetMs,
+    fallbackLodStepMultiplier: params.fallbackLodStepMultiplier,
+  });
+  const cacheKeyInput: TerrainSplatChunkStateKeyInput = {
+    request,
+    terrainStateRevision: params.terrainStateRevision,
+  };
+  const cacheKey = createTerrainSplatChunkStateKey(cacheKeyInput);
+
+  if (params.cache?.has(cacheKey)) {
+    const cached = params.cache.get(cacheKey);
+    if (cached !== undefined) {
+      return {
+        request,
+        result: cached,
+        cacheKey,
+        fromCache: true,
+      };
+    }
+  }
+
+  const result = await runTerrainSplatWorkerBuild({
+    worker: params.worker,
+    message: createTerrainSplatWorkerBuildRequestMessage({
+      request,
+      kindCatalog: params.kindCatalog,
+      layerCatalog: params.layerCatalog,
+    }),
+  });
+  params.cache?.set(cacheKey, result);
+
+  return {
+    request,
+    result,
+    cacheKey,
+    fromCache: false,
+  };
 }
 
 export function buildTerrainSplatChunkDataFromTerrainState(params: {
