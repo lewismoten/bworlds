@@ -5,6 +5,7 @@ import {
   createTerrainSplatHeightGeometryPlan,
   createTerrainSplatSampleGrid,
   createTerrainSplatViewerDebugModel,
+  type TerrainSplatHeightGeometryPlan,
   type TerrainChunkWireframeDebugView,
   type TerrainSplatSampleGrid,
 } from '@bworlds/terrain-splat-support';
