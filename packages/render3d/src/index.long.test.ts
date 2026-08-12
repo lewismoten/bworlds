@@ -112,6 +112,18 @@ vi.mock('@bworlds/three-support', () => ({
       },
     };
   },
+  getSharedPlaneGeometry(three: unknown, ...args: number[]) {
+    void three;
+    void args;
+    return {
+      attributes: {
+        position: {
+          count: 6,
+          array: new Float32Array(6 * 3),
+        },
+      },
+    };
+  },
   getSharedSphereGeometry(three: unknown, ...args: number[]) {
     void three;
     void args;

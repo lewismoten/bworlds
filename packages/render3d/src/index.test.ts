@@ -6132,6 +6132,51 @@ describe('render3d visibility helpers', () => {
     expect(buildEntry.mock.calls).toEqual([['low']]);
   });
 
+  it('keeps cached low-detail instanced models intact during visible lod recovery', () => {
+    const lowInstancedModel = createMockObject3D(
+      {},
+      [],
+      createMockStatGeometry('low-instanced-geometry', 24),
+      {},
+      'InstancedMesh'
+    );
+    (lowInstancedModel as { count?: number }).count = 12;
+    const lowEntry = {
+      detailLevel: 'low' as const,
+      modelRoot: lowInstancedModel as never,
+    };
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') =>
+      detailLevel === 'low'
+        ? lowEntry
+        : {
+            detailLevel,
+            modelRoot: { type: 'Group' } as never,
+          }
+    );
+
+    const result = buildRecoverableVisibleTileModelDetailEntry(
+      'full',
+      buildEntry,
+      'low'
+    );
+
+    expect(result).toEqual({
+      entry: lowEntry,
+      resolvedDetailLevel: 'low',
+      attemptedEntries: [{ detailLevel: 'low' }],
+    });
+    expect(result.entry.modelRoot).toBe(lowInstancedModel);
+    expect(result.entry.modelRoot?.type).toBe('InstancedMesh');
+    expect(collectSceneResourceStats(result.entry.modelRoot as never)).toEqual(
+      expect.objectContaining({
+        instancedMeshCount: 1,
+        visibleInstancedMeshCount: 1,
+        renderedInstanceCount: 12,
+      })
+    );
+    expect(buildEntry.mock.calls).toEqual([['low']]);
+  });
+
   it('falls through to the requested full-detail build when the cached low-detail recovery still fails', () => {
     const buildEntry = vi.fn((detailLevel: 'full' | 'low') =>
       detailLevel === 'low'

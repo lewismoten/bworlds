@@ -56,7 +56,8 @@ Do not work on this file. These are just ideas for later.
 
 different celestial bodies - constellations, moon, sun, comets, aurora, meteor shower, planets should proably be seprated into their own celestial plugins and have the ability to toggle on/off, and report/listen on some kind of event channel for calculations and such, but also be throttled so they don't get too noisy sending information out if they need to do so (ie, moon start/end phase/location, aurora on/off/position)
 
-Add different geographic layers where areas of the world have a 0.0 to 1.0 influence of style/game play - 
+Add different geographic layers where areas of the world have a 0.0 to 1.0 influence of style/game play -
+
 - Modern - Today (computers, internet, etc)
 - Future - Teleportation, Robots, Space Stations, etc.
 - Post Apocolyptic - Ruins
@@ -64,7 +65,7 @@ Add different geographic layers where areas of the world have a 0.0 to 1.0 influ
 - Fantasy - Magic
 - Steam Punk - Steam Engines & Westerns
 - Wild West
-Tiles can take on various chracteristics based on support for different layers. Players can choose starting towns in areas heavily influenced by one thing or another.
+  Tiles can take on various chracteristics based on support for different layers. Players can choose starting towns in areas heavily influenced by one thing or another.
 
 Moss on trees facing away from equator
 

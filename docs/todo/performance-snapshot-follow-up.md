@@ -101,9 +101,22 @@
 
 ## Instancing
 
-- [ ] Investigate why no visible InstancedMesh objects are found.
-- [ ] Verify instanced models survive the tile build pipeline.
-- [ ] Verify LOD conversion does not replace instanced models.
+- [x] Investigate why no visible InstancedMesh objects are found.
+      Progress: the renderer long test already confirms a representative nearby
+      scene keeps visible `InstancedMesh` nodes and rendered instances alive
+      across forest, town, and lighthouse content instead of dropping them
+      during scene assembly.
+- [x] Verify instanced models survive the tile build pipeline.
+      Progress: the representative-scene renderer test keeps visible
+      `InstancedMesh` nodes present after full tile-model creation, and the
+      visible LOD recovery tests now confirm a cached low-detail
+      `InstancedMesh` root still reports the expected visible-instance counts
+      after the recovery helper returns it.
+- [x] Verify LOD conversion does not replace instanced models.
+      Progress: `render3d` visible LOD recovery tests now verify that when a
+      cached low-detail instanced model is preferred, the recovery path returns
+      that same `InstancedMesh` root unchanged instead of substituting a
+      non-instanced placeholder during `full -> low` conversion.
 - [x] Report InstancedMesh counts by tile plugin.
 - [x] Report rendered instance counts by tile plugin.
 - [x] Add a test scene that must contain visible instances.
