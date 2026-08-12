@@ -18,6 +18,7 @@ Current API:
 
 - `createTerrainSplatSampleGrid(...)`
 - `createTerrainSplatSampleGridLod(...)`
+- `createTerrainSplatChunkPreview(...)`
 - `getTerrainSplatGridSample(...)`
 - `packTerrainSplatSampleGrid(...)`
 - `unpackTerrainSplatSampleGrid(...)`
@@ -82,3 +83,15 @@ Usage summaries:
 - emit warnings when chunk-level active-layer or variation budgets are exceeded
 - optionally warn when neighboring samples collapse into hard single-layer
   transitions with no blend zone
+
+Chunk previews:
+
+- `createTerrainSplatChunkPreview(...)` converts one sample grid into a simple
+  row-major preview of dominant layers and mixed cells
+- preview cells report `dominantLayerId`, sorted `activeLayerIds`, and whether
+  the sample is mixed
+- the preview summary reports grid-wide `activeLayerIds`, `mixedCellCount`, and
+  one dominant layer for the whole chunk
+- this gives tests, tooling, and future debug views a render-free way to prove
+  that one chunk already contains mixed grass/dirt/road/forest samples before
+  shared material or shader code exists

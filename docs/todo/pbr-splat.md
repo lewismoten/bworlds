@@ -221,7 +221,7 @@
 - [x] Test splat weights always normalize to one.
 - [x] Test adjacent chunks share border splat weights.
 - [x] Test terrain layers stay stable for one seed.
-- [ ] Test mixed terrain renders in one chunk.
+- [x] Test mixed terrain renders in one chunk.
 - [x] Test texture rotation does not add new materials.
 - [x] Test tint variation does not add new materials.
 - [x] Test distant LOD keeps major terrain boundaries.
@@ -233,7 +233,7 @@
 
 ## Initial Delivery
 
-- [ ] Build one chunk with grass and dirt splat layers.
+- [x] Build one chunk with grass and dirt splat layers.
 - [ ] Add one shared PBR splat material.
 - [ ] Blend two terrain layers from vertex weights.
 - [ ] Add base color texture array support.
@@ -318,6 +318,10 @@
   `uvMacroVariationStrength` support in `@bworlds/terrain-splat-support` so
   world-space UV sampling can decorrelate repeated wrapped phases across broad
   terrain regions without reintroducing seams at logical tile boundaries.
+- Added `createTerrainSplatChunkPreview(...)` in
+  `@bworlds/terrain-splat-support/sample-grid` so one chunk build can expose
+  dominant layers, mixed-cell counts, and render-free active-layer previews for
+  grass/dirt/road/forest chunk validation before shared material integration.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -382,11 +386,13 @@ splat density while preserving major terrain identities and matching
 chunk-edge weights from the same world-space inputs, plus road-aware
 sample-grid shoulder weighting so broad road tiles can bleed deterministic
 dirt/gravel edge material into adjacent terrain without needing renderer-only
-overlays, plus deterministic weather overlays so rain, snow accumulation,
-melting, and sustained wetness can adjust terrain splat weights and wetness
-metadata without changing the shared base sample identity, plus deterministic
-seasonal tint overlays so spring, summer, autumn, and winter can shift shared
-layer color metadata without changing material identity.
+overlays, plus render-free chunk preview summaries so one chunk can expose
+dominant layers and mixed-cell coverage before shader work exists, plus
+deterministic weather overlays so rain, snow accumulation, melting, and
+sustained wetness can adjust terrain splat weights and wetness metadata
+without changing the shared base sample identity, plus deterministic seasonal
+tint overlays so spring, summer, autumn, and winter can shift shared layer
+color metadata without changing material identity.
 
 # Roads and Paths as Terrain Splats
 

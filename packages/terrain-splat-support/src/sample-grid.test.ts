@@ -5,6 +5,7 @@ import {
   createTerrainKindSplatCatalog,
 } from './index.ts';
 import {
+  createTerrainSplatChunkPreview,
   createTerrainSplatGridTileResolver,
   createTerrainSplatSampleGridLod,
   createTerrainSplatSampleGrid,
@@ -235,6 +236,75 @@ describe('terrain splat sample grid', () => {
         (entry) => entry.layerId
       )
     ).not.toEqual(expect.arrayContaining(['dirt-road']));
+  });
+
+  it('builds one chunk preview with grass and dirt splat layers', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'grass-dirt-chunk-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x }) => ({
+        kind: x >= 1 ? 'dirt' : 'plains',
+        signals: {
+          moisture: x >= 1 ? 0.64 : 0.74,
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+    const preview = createTerrainSplatChunkPreview(grid);
+
+    expect(preview.width).toBe(3);
+    expect(preview.height).toBe(3);
+    expect(preview.activeLayerIds).toEqual(
+      expect.arrayContaining(['grass-a', 'dirt'])
+    );
+    expect(preview.mixedCellCount).toBeGreaterThan(0);
+  });
+
+  it('shows mixed terrain cells within one chunk preview', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'mixed-chunk-preview-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x >= 2 ? 'forest' : y >= 2 ? 'road' : 'plains',
+        signals: {
+          moisture: x >= 2 ? 0.82 : 0.58,
+          roadSignal: y >= 2 ? 0.84 : 0,
+          temperature: 0.68,
+          season: 'summer',
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+    const preview = createTerrainSplatChunkPreview(grid);
+    const mixedCells = preview.cells.filter((cell) => cell.isMixed);
+
+    expect(preview.activeLayerIds).toEqual(
+      expect.arrayContaining(['grass-a', 'leaf', 'dirt-road'])
+    );
+    expect(preview.mixedCellCount).toBe(mixedCells.length);
+    expect(mixedCells.length).toBeGreaterThan(0);
+    expect(
+      mixedCells.some((cell) =>
+        cell.activeLayerIds.includes('dirt-road') &&
+        cell.activeLayerIds.includes('grass-a')
+      )
+    ).toBe(true);
   });
 
   it('keeps adjacent chunk borders identical when blend zones use world neighbors', () => {

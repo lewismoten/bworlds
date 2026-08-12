@@ -75,6 +75,24 @@ export type TerrainSplatGridUsageSummary = {
   warnings: readonly TerrainSplatGridUsageWarning[];
 };
 
+export type TerrainSplatChunkPreviewCell = {
+  column: number;
+  row: number;
+  dominantLayerId: TerrainMaterialLayerId | null;
+  activeLayerIds: readonly TerrainMaterialLayerId[];
+  activeLayerCount: number;
+  isMixed: boolean;
+};
+
+export type TerrainSplatChunkPreview = {
+  width: number;
+  height: number;
+  cells: readonly TerrainSplatChunkPreviewCell[];
+  activeLayerIds: readonly TerrainMaterialLayerId[];
+  mixedCellCount: number;
+  dominantLayerId: TerrainMaterialLayerId | null;
+};
+
 type ResolvedTerrainSplatGridCell = {
   tile: TerrainSplatGridTile;
   sample: TerrainSplatSample;
@@ -411,6 +429,59 @@ export function summarizeTerrainSplatSampleGridUsage(
     unusedLayerIds,
     hardBoundaryCount,
     warnings,
+  };
+}
+
+export function createTerrainSplatChunkPreview(
+  grid: TerrainSplatSampleGrid
+): TerrainSplatChunkPreview {
+  const activeLayerCounts = new Map<TerrainMaterialLayerId, number>();
+  const cells: TerrainSplatChunkPreviewCell[] = [];
+  let mixedCellCount = 0;
+
+  for (let row = 0; row < grid.height; row += 1) {
+    for (let column = 0; column < grid.width; column += 1) {
+      const sample = getTerrainSplatGridSample(grid, column, row);
+      const sortedEntries = [...sample.entries].sort((left, right) =>
+        right.weight === left.weight
+          ? left.layerId.localeCompare(right.layerId)
+          : right.weight - left.weight
+      );
+      const activeLayerIds = sortedEntries.map((entry) => entry.layerId);
+      const dominantLayerId = sortedEntries[0]?.layerId ?? null;
+
+      if (activeLayerIds.length > 1) {
+        mixedCellCount += 1;
+      }
+      for (const layerId of activeLayerIds) {
+        activeLayerCounts.set(layerId, (activeLayerCounts.get(layerId) ?? 0) + 1);
+      }
+
+      cells.push({
+        column,
+        row,
+        dominantLayerId,
+        activeLayerIds,
+        activeLayerCount: activeLayerIds.length,
+        isMixed: activeLayerIds.length > 1,
+      });
+    }
+  }
+
+  const dominantLayerId =
+    [...activeLayerCounts.entries()].sort((left, right) =>
+      right[1] === left[1]
+        ? left[0].localeCompare(right[0])
+        : right[1] - left[1]
+    )[0]?.[0] ?? null;
+
+  return {
+    width: grid.width,
+    height: grid.height,
+    cells,
+    activeLayerIds: [...activeLayerCounts.keys()].sort(),
+    mixedCellCount,
+    dominantLayerId,
   };
 }
 
