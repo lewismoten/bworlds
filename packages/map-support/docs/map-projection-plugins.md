@@ -21,6 +21,7 @@ Current built-in support:
 - `createGenericConicMapProjectionPlugin()`
 - `createEqualEarthMapProjectionPlugin()`
 - `createGoodeHomolosineMapProjectionPlugin()`
+- `createGlobeMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
 - `createMollweideMapProjectionPlugin()`
@@ -366,6 +367,29 @@ solved numerically.
 This gives later map UIs a modern atlas-style compromise projection with
 lower aggregate distortion than equirectangular while still fitting the
 shared normalized plugin contract.
+
+## Globe
+
+`createGlobeMapProjectionPlugin()` provides a centered near-side perspective
+globe projection with configurable center longitude, center latitude, and
+camera distance.
+
+It currently:
+
+- uses `id: 'globe'` by default
+- declares `distortion: 'perspective'`
+- does not wrap world X or world Y
+- supports inverse projection for points inside the visible globe disk
+- defaults to a `0,0` center
+- defaults to perspective distance `2`
+- clips hidden-hemisphere forward projection to the horizon so projected
+  coordinates stay inside the normalized disk
+
+The projected range is normalized to a circular disk derived from the
+configured near-side perspective horizon radius.
+
+This gives later map UIs one explicit globe-style projection that is distinct
+from orthographic while still fitting the shared normalized plugin contract.
 
 ## Miller Cylindrical
 

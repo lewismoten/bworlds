@@ -18,6 +18,7 @@ import {
   createGenericConicMapProjectionPlugin,
   createEqualEarthMapProjectionPlugin,
   createGoodeHomolosineMapProjectionPlugin,
+  createGlobeMapProjectionPlugin,
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
@@ -52,6 +53,11 @@ import {
   GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE,
   GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET,
   GOODE_HOMOLOSINE_TRANSITION_LATITUDE_DEGREES,
+  GLOBE_CENTER_LATITUDE,
+  GLOBE_CENTER_LONGITUDE,
+  GLOBE_MAX_PROJECTED_RADIUS,
+  GLOBE_MAX_SOLVER_ITERATIONS,
+  GLOBE_PERSPECTIVE_DISTANCE,
   MOLLWEIDE_MAX_PROJECTED_X,
   MOLLWEIDE_MAX_PROJECTED_Y,
   MOLLWEIDE_MAX_SOLVER_ITERATIONS,
@@ -825,5 +831,67 @@ describe('map projections', () => {
     expect(WINKEL_TRIPEL_MAX_PROJECTED_X).toBeCloseTo(2.5706435923599793, 10);
     expect(WINKEL_TRIPEL_MAX_PROJECTED_Y).toBeCloseTo(Math.PI / 2, 10);
     expect(WINKEL_TRIPEL_MAX_SOLVER_ITERATIONS).toBe(16);
+  });
+
+  it('projects and inverts globe coordinates with the default perspective center', () => {
+    const projection = createGlobeMapProjectionPlugin();
+
+    expect(projection.id).toBe('globe');
+    expect(projection.label).toBe('Globe');
+    expect(projection.distortion).toBe('perspective');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 30,
+      worldY: 20,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(30, 3);
+    expect(inverted?.worldY).toBeCloseTo(20, 3);
+    expect(GLOBE_CENTER_LONGITUDE).toBe(0);
+    expect(GLOBE_CENTER_LATITUDE).toBe(0);
+    expect(GLOBE_PERSPECTIVE_DISTANCE).toBe(2);
+    expect(GLOBE_MAX_PROJECTED_RADIUS).toBeCloseTo(Math.sqrt(1 / 3), 10);
+    expect(GLOBE_MAX_SOLVER_ITERATIONS).toBe(16);
+  });
+
+  it('clips hidden globe coordinates to the horizon and rejects inverse points outside the disk', () => {
+    const projection = createGlobeMapProjectionPlugin();
+
+    const hiddenPoint = projection.project({
+      worldX: 170,
+      worldY: 0,
+    });
+
+    expect(Math.hypot(hiddenPoint.mapX, hiddenPoint.mapY)).toBeCloseTo(1, 10);
+    expect(projection.invert?.({ mapX: 1.1, mapY: 0 })).toBeNull();
+  });
+
+  it('supports custom globe centers and perspective distance with matching inverse projection', () => {
+    const projection = createGlobeMapProjectionPlugin({
+      id: 'regional-globe',
+      label: 'Regional Globe',
+      centerLongitudeDegrees: -75,
+      centerLatitudeDegrees: 35,
+      perspectiveDistance: 3,
+    });
+
+    expect(projection.id).toBe('regional-globe');
+    expect(projection.label).toBe('Regional Globe');
+
+    const forward = projection.project({
+      worldX: -60,
+      worldY: 30,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(-60, 3);
+    expect(inverted?.worldY).toBeCloseTo(30, 3);
   });
 });

@@ -42,6 +42,11 @@ export interface AzimuthalMapProjectionOptions {
   centerLatitudeDegrees?: number;
 }
 
+export interface GlobeMapProjectionOptions
+  extends AzimuthalMapProjectionOptions {
+  perspectiveDistance?: number;
+}
+
 export type MapProjectionDistortion =
   | 'conformal'
   | 'equal-area'
@@ -148,6 +153,14 @@ export const WINKEL_TRIPEL_MAX_PROJECTED_X =
 export const WINKEL_TRIPEL_MAX_PROJECTED_Y = Math.PI / 2;
 export const WINKEL_TRIPEL_MAX_SOLVER_ITERATIONS = 16;
 export const WINKEL_TRIPEL_SOLVER_TOLERANCE = 1e-10;
+export const GLOBE_CENTER_LONGITUDE = 0;
+export const GLOBE_CENTER_LATITUDE = 0;
+export const GLOBE_PERSPECTIVE_DISTANCE = 2;
+export const GLOBE_MAX_PROJECTED_RADIUS = Math.sqrt(
+  (GLOBE_PERSPECTIVE_DISTANCE - 1) / (GLOBE_PERSPECTIVE_DISTANCE + 1)
+);
+export const GLOBE_MAX_SOLVER_ITERATIONS = 16;
+export const GLOBE_SOLVER_TOLERANCE = 1e-10;
 const ROBINSON_X_TABLE = [
   1,
   0.9986,
@@ -1435,6 +1448,84 @@ export function createWinkelTripelMapProjectionPlugin(): MapProjectionPlugin {
   });
 }
 
+export function createGlobeMapProjectionPlugin(
+  options: GlobeMapProjectionOptions = {}
+): MapProjectionPlugin {
+  const centerLongitudeDegrees = normalizeFiniteNumber(
+    options.centerLongitudeDegrees ?? GLOBE_CENTER_LONGITUDE,
+    'Globe centerLongitudeDegrees'
+  );
+  const centerLatitudeDegrees = normalizeFiniteNumber(
+    options.centerLatitudeDegrees ?? GLOBE_CENTER_LATITUDE,
+    'Globe centerLatitudeDegrees'
+  );
+  const perspectiveDistance = normalizePerspectiveDistance(
+    options.perspectiveDistance ?? GLOBE_PERSPECTIVE_DISTANCE,
+    'Globe perspectiveDistance'
+  );
+  const centerLongitudeRadians = degreesToRadians(centerLongitudeDegrees);
+  const centerLatitudeRadians = degreesToRadians(centerLatitudeDegrees);
+  const maxProjectedRadius = resolveGlobeMaxProjectedRadius(perspectiveDistance);
+
+  return createMapProjectionPlugin({
+    id: options.id ?? 'globe',
+    label: options.label ?? 'Globe',
+    distortion: 'perspective',
+    bounds: {
+      minWorldX: -180,
+      maxWorldX: 180,
+      minWorldY: -90,
+      maxWorldY: 90,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const projected = projectVisibleGlobeCoordinate({
+        worldX,
+        worldY,
+        centerLongitudeRadians,
+        centerLatitudeRadians,
+        perspectiveDistance,
+      });
+      if (projected.visible) {
+        return {
+          mapX: snapNearZero(projected.mapX / maxProjectedRadius),
+          mapY: snapNearZero(projected.mapY / maxProjectedRadius),
+        };
+      }
+      const radius = Math.hypot(projected.mapX, projected.mapY);
+      const scale = radius <= 1e-12 ? 0 : maxProjectedRadius / radius;
+      return {
+        mapX: snapNearZero(projected.mapX * scale / maxProjectedRadius),
+        mapY: snapNearZero(projected.mapY * scale / maxProjectedRadius),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * maxProjectedRadius;
+      const projectedY = mapY * maxProjectedRadius;
+      if (Math.hypot(projectedX, projectedY) > maxProjectedRadius + 1e-12) {
+        return null;
+      }
+      return invertGlobeCoordinate({
+        targetMapX: projectedX,
+        targetMapY: projectedY,
+        centerLongitudeDegrees,
+        centerLatitudeDegrees,
+        centerLongitudeRadians,
+        centerLatitudeRadians,
+        perspectiveDistance,
+        maxProjectedRadius,
+      });
+    },
+  });
+}
+
 function normalizeMapProjectionWorldCoordinate(
   coordinate: MapProjectionWorldCoordinate
 ): MapProjectionWorldCoordinate {
@@ -1784,6 +1875,185 @@ function invertWinkelTripel(
     worldX: longitudeRadians,
     worldY: latitudeRadians,
   };
+}
+
+function projectVisibleGlobeCoordinate(params: {
+  worldX: number;
+  worldY: number;
+  centerLongitudeRadians: number;
+  centerLatitudeRadians: number;
+  perspectiveDistance: number;
+}): MapProjectionMapCoordinate & { visible: boolean } {
+  const longitudeRadians =
+    degreesToRadians(normalizeLongitudeDegrees(params.worldX)) -
+    params.centerLongitudeRadians;
+  const latitudeRadians = degreesToRadians(clamp(params.worldY, -90, 90));
+  const sinLatitude = Math.sin(latitudeRadians);
+  const cosLatitude = Math.cos(latitudeRadians);
+  const sinCenterLatitude = Math.sin(params.centerLatitudeRadians);
+  const cosCenterLatitude = Math.cos(params.centerLatitudeRadians);
+  const cosineCentralAngle =
+    sinCenterLatitude * sinLatitude +
+    cosCenterLatitude * cosLatitude * Math.cos(longitudeRadians);
+  const projectedXBase = cosLatitude * Math.sin(longitudeRadians);
+  const projectedYBase =
+    cosCenterLatitude * sinLatitude -
+    sinCenterLatitude * cosLatitude * Math.cos(longitudeRadians);
+  const visibleThreshold = 1 / params.perspectiveDistance;
+  const clampedCosineCentralAngle = Math.max(
+    cosineCentralAngle,
+    visibleThreshold
+  );
+  const scale =
+    (params.perspectiveDistance - 1) /
+    (params.perspectiveDistance - clampedCosineCentralAngle);
+  return {
+    mapX: projectedXBase * scale,
+    mapY: projectedYBase * scale,
+    visible: cosineCentralAngle >= visibleThreshold,
+  };
+}
+
+function invertGlobeCoordinate(params: {
+  targetMapX: number;
+  targetMapY: number;
+  centerLongitudeDegrees: number;
+  centerLatitudeDegrees: number;
+  centerLongitudeRadians: number;
+  centerLatitudeRadians: number;
+  perspectiveDistance: number;
+  maxProjectedRadius: number;
+}): MapProjectionWorldCoordinate {
+  const orthographicSeed = invertOrthographicSeed({
+    projectedX: params.targetMapX / params.maxProjectedRadius,
+    projectedY: params.targetMapY / params.maxProjectedRadius,
+    centerLongitudeDegrees: params.centerLongitudeDegrees,
+    centerLatitudeDegrees: params.centerLatitudeDegrees,
+    centerLongitudeRadians: params.centerLongitudeRadians,
+    centerLatitudeRadians: params.centerLatitudeRadians,
+  });
+
+  let longitudeDegrees = orthographicSeed.worldX;
+  let latitudeDegrees = orthographicSeed.worldY;
+
+  for (
+    let iteration = 0;
+    iteration < GLOBE_MAX_SOLVER_ITERATIONS;
+    iteration += 1
+  ) {
+    const projected = projectVisibleGlobeCoordinate({
+      worldX: longitudeDegrees,
+      worldY: latitudeDegrees,
+      centerLongitudeRadians: params.centerLongitudeRadians,
+      centerLatitudeRadians: params.centerLatitudeRadians,
+      perspectiveDistance: params.perspectiveDistance,
+    });
+    const errorX = projected.mapX - params.targetMapX;
+    const errorY = projected.mapY - params.targetMapY;
+    if (Math.hypot(errorX, errorY) <= GLOBE_SOLVER_TOLERANCE) {
+      break;
+    }
+
+    const delta = 1e-6;
+    const projectedLongitude = projectVisibleGlobeCoordinate({
+      worldX: longitudeDegrees + delta,
+      worldY: latitudeDegrees,
+      centerLongitudeRadians: params.centerLongitudeRadians,
+      centerLatitudeRadians: params.centerLatitudeRadians,
+      perspectiveDistance: params.perspectiveDistance,
+    });
+    const projectedLatitude = projectVisibleGlobeCoordinate({
+      worldX: longitudeDegrees,
+      worldY: latitudeDegrees + delta,
+      centerLongitudeRadians: params.centerLongitudeRadians,
+      centerLatitudeRadians: params.centerLatitudeRadians,
+      perspectiveDistance: params.perspectiveDistance,
+    });
+    const derivativeXLongitude =
+      (projectedLongitude.mapX - projected.mapX) / delta;
+    const derivativeYLongitude =
+      (projectedLongitude.mapY - projected.mapY) / delta;
+    const derivativeXLatitude =
+      (projectedLatitude.mapX - projected.mapX) / delta;
+    const derivativeYLatitude =
+      (projectedLatitude.mapY - projected.mapY) / delta;
+    const determinant =
+      derivativeXLongitude * derivativeYLatitude -
+      derivativeXLatitude * derivativeYLongitude;
+
+    if (Math.abs(determinant) <= 1e-12) {
+      break;
+    }
+
+    const longitudeStep =
+      (errorX * derivativeYLatitude - errorY * derivativeXLatitude) /
+      determinant;
+    const latitudeStep =
+      (derivativeXLongitude * errorY - derivativeYLongitude * errorX) /
+      determinant;
+
+    longitudeDegrees = normalizeLongitudeDegrees(longitudeDegrees - longitudeStep);
+    latitudeDegrees = clamp(latitudeDegrees - latitudeStep, -90, 90);
+  }
+
+  return {
+    worldX: longitudeDegrees,
+    worldY: latitudeDegrees,
+  };
+}
+
+function invertOrthographicSeed(params: {
+  projectedX: number;
+  projectedY: number;
+  centerLongitudeDegrees: number;
+  centerLatitudeDegrees: number;
+  centerLongitudeRadians: number;
+  centerLatitudeRadians: number;
+}): MapProjectionWorldCoordinate {
+  const radius = Math.hypot(params.projectedX, params.projectedY);
+  if (radius <= 1e-12) {
+    return {
+      worldX: params.centerLongitudeDegrees,
+      worldY: params.centerLatitudeDegrees,
+    };
+  }
+  const sinCenterLatitude = Math.sin(params.centerLatitudeRadians);
+  const cosCenterLatitude = Math.cos(params.centerLatitudeRadians);
+  const centralAngle = Math.asin(clamp(radius, -1, 1));
+  const sinCentralAngle = Math.sin(centralAngle);
+  const cosCentralAngle = Math.cos(centralAngle);
+  const latitudeRadians = Math.asin(
+    clamp(
+      cosCentralAngle * sinCenterLatitude +
+        (params.projectedY * sinCentralAngle * cosCenterLatitude) / radius,
+      -1,
+      1
+    )
+  );
+  const longitudeRadians =
+    params.centerLongitudeRadians +
+    Math.atan2(
+      params.projectedX * sinCentralAngle,
+      radius * cosCenterLatitude * cosCentralAngle -
+        params.projectedY * sinCenterLatitude * sinCentralAngle
+    );
+  return {
+    worldX: normalizeLongitudeDegrees(radiansToDegrees(longitudeRadians)),
+    worldY: radiansToDegrees(latitudeRadians),
+  };
+}
+
+function resolveGlobeMaxProjectedRadius(perspectiveDistance: number): number {
+  return Math.sqrt(
+    (perspectiveDistance - 1) / (perspectiveDistance + 1)
+  );
+}
+
+function normalizePerspectiveDistance(value: number, label: string): number {
+  if (!Number.isFinite(value) || value <= 1) {
+    throw new Error(`${label} must be a finite number greater than 1.`);
+  }
+  return value;
 }
 
 function resolveGenericConicConeConstant(
