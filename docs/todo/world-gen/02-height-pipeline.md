@@ -2,11 +2,11 @@
 
 ## Authoritative API
 
-- [ ] Define one world-space terrain height sampling interface.
-- [ ] Accept world X and Y in stable world units.
-- [ ] Return height in one canonical world unit.
-- [ ] Add feet to world-unit conversion helpers.
-- [ ] Keep sea level at one stable reference.
+- [x] Define one world-space terrain height sampling interface.
+- [x] Accept world X and Y in stable world units.
+- [x] Return height in one canonical world unit.
+- [x] Add feet to world-unit conversion helpers.
+- [x] Keep sea level at one stable reference.
 - [ ] Support coarse and fine height queries.
 - [ ] Cache expensive regional height inputs.
 
@@ -52,8 +52,16 @@
 
 Current support:
 
+- `@bworlds/worldgen` now exposes one reusable
+  `terrainHeightSampler.sampleHeight(worldX, worldY)` and
+  `terrainHeightSampler.sampleSurface(worldX, worldY)` contract from
+  `createWorldGenerator(...)`, with `WORLD_TERRAIN_SEA_LEVEL` fixed at `0`
+  and feet conversion helpers derived from the documented `250` meters-per-tile
+  world scale.
 - `@bworlds/worldgen` now exposes deterministic preview surface-height
-  sampling through `createWorldGenerator().samplePreviewSurfaceHeight(x, y)`.
+  sampling through `createWorldGenerator().sampleTerrainHeight(x, y)`, while
+  `samplePreviewSurfaceHeight(x, y)` remains as the compatibility alias for
+  older callers that still use the preview-specific name.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height

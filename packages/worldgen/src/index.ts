@@ -50,6 +50,32 @@ export {
   type TerrainChunkId,
 } from './terrain-chunks.ts';
 
+export const WORLD_METERS_PER_TILE = 250;
+export const WORLD_FEET_PER_METER = 3.28084;
+export const WORLD_FEET_PER_TILE = WORLD_METERS_PER_TILE * WORLD_FEET_PER_METER;
+export const WORLD_TERRAIN_SEA_LEVEL = 0;
+
+export type WorldTerrainHeightSample = {
+  worldX: number;
+  worldY: number;
+  height: number;
+  seaLevel: number;
+  depthBelowSeaLevel: number;
+};
+
+export type WorldTerrainHeightSampler = {
+  sampleHeight(worldX: number, worldY: number): number;
+  sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
+};
+
+export function convertFeetToWorldHeightUnits(feet: number): number {
+  return feet / WORLD_FEET_PER_TILE;
+}
+
+export function convertWorldHeightUnitsToFeet(height: number): number {
+  return height * WORLD_FEET_PER_TILE;
+}
+
 type Point = { x: number; y: number };
 type SpawnTile = TileLike & {
   building?: { id: string };
@@ -82,6 +108,9 @@ export function createWorldGenerator({
 }): {
   getMap(context: Context): WorldMapLike;
   sampleOverworld(x: number, y: number): SpawnTile;
+  terrainHeightSampler: WorldTerrainHeightSampler;
+  sampleTerrainHeight(x: number, y: number): number;
+  sampleTerrainSurface(x: number, y: number): WorldTerrainHeightSample;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
@@ -167,6 +196,32 @@ export function createWorldGenerator({
       return map;
     });
   };
+  const sampleTerrainHeight = (x: number, y: number) => {
+    const key = getPreviewKey(x, y);
+    return previewSurfaceHeightCache.getOrCreate(key, () => {
+      const kind = samplePreviewSurfaceKind(x, y);
+      return resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
+        kind,
+      });
+    });
+  };
+  const sampleTerrainSurface = (
+    x: number,
+    y: number
+  ): WorldTerrainHeightSample => {
+    const height = sampleTerrainHeight(x, y);
+    return {
+      worldX: x,
+      worldY: y,
+      height,
+      seaLevel: WORLD_TERRAIN_SEA_LEVEL,
+      depthBelowSeaLevel: Math.max(0, WORLD_TERRAIN_SEA_LEVEL - height),
+    };
+  };
+  const terrainHeightSampler: WorldTerrainHeightSampler = {
+    sampleHeight: sampleTerrainHeight,
+    sampleSurface: sampleTerrainSurface,
+  };
 
   return {
     getMap,
@@ -174,25 +229,17 @@ export function createWorldGenerator({
       return getMap(OVERWORLD_CONTEXT).getTile(x, y) as SpawnTile;
     },
     samplePreviewSurfaceKind,
-    samplePreviewSurfaceHeight(x: number, y: number) {
-      const key = getPreviewKey(x, y);
-      return previewSurfaceHeightCache.getOrCreate(key, () => {
-        const kind = samplePreviewSurfaceKind(x, y);
-        return resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
-          kind,
-        });
-      });
-    },
+    terrainHeightSampler,
+    sampleTerrainHeight,
+    sampleTerrainSurface,
+    samplePreviewSurfaceHeight: sampleTerrainHeight,
     samplePreviewOverworld(x: number, y: number) {
       const key = getPreviewKey(x, y);
       return previewTileCache.getOrCreate(key, () => {
         const kind = samplePreviewSurfaceKind(x, y);
         return {
           kind,
-          surfaceHeight: resolveOverworldReliefHeight(
-            terrainSignals(x, y).elevation,
-            { kind }
-          ),
+          surfaceHeight: sampleTerrainHeight(x, y),
         } as SpawnTile;
       });
     },

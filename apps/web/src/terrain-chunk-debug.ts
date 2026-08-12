@@ -446,7 +446,7 @@ function createPreviewHeightField(
   return createTerrainHeightField({
     bounds,
     normalSampleRing: 1,
-    resolveHeight: ({ x, y }) => generator.samplePreviewSurfaceHeight(x, y),
+    resolveHeight: ({ x, y }) => generator.sampleTerrainHeight(x, y),
   });
 }
 

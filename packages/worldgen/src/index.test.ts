@@ -7,6 +7,8 @@ import { createOverworldTerrainSignalSampler } from '@bworlds/overworld-support'
 import { getActivePluginRegistry } from '@bworlds/plugin-api';
 import { buildPlayerPoi } from '@bworlds/runtime-player-poi';
 import {
+  convertFeetToWorldHeightUnits,
+  convertWorldHeightUnitsToFeet,
   createBuiltinContentPackCatalog,
   createDefaultPluginRegistry,
   createPluginRegistryFromPack,
@@ -22,6 +24,9 @@ import {
   listBuiltinContentPacks,
   TERRAIN_CHUNK_CELL_SIZE,
   TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE,
+  WORLD_FEET_PER_TILE,
+  WORLD_METERS_PER_TILE,
+  WORLD_TERRAIN_SEA_LEVEL,
 } from './index.ts';
 import type {
   PluginPackDefinitionLike,
@@ -69,6 +74,20 @@ describe('world generator', () => {
   it('uses sixteen logical cells and seventeen height samples per terrain chunk', () => {
     expect(TERRAIN_CHUNK_CELL_SIZE).toBe(16);
     expect(TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE).toBe(17);
+  });
+
+  it('exposes stable terrain height unit helpers from the documented tile scale', () => {
+    expect(WORLD_METERS_PER_TILE).toBe(250);
+    expect(WORLD_FEET_PER_TILE).toBeCloseTo(820.21, 2);
+    expect(WORLD_TERRAIN_SEA_LEVEL).toBe(0);
+    expect(convertFeetToWorldHeightUnits(WORLD_FEET_PER_TILE)).toBeCloseTo(
+      1,
+      6
+    );
+    expect(convertWorldHeightUnitsToFeet(0.5)).toBeCloseTo(
+      WORLD_FEET_PER_TILE * 0.5,
+      6
+    );
   });
 
   it('converts world cells to terrain chunk coordinates across zero and negative boundaries', () => {
@@ -418,6 +437,9 @@ describe('world generator', () => {
   it('provides a lightweight preview sampler that is stable and omits route decoration', () => {
     const generator = createGenerator();
 
+    expect(generator.sampleTerrainHeight(10, 20)).toBe(
+      generator.samplePreviewSurfaceHeight(10, 20)
+    );
     expect(generator.samplePreviewSurfaceKind(10, 20)).toBe(
       generator.samplePreviewOverworld(10, 20).kind
     );
@@ -432,10 +454,30 @@ describe('world generator', () => {
     expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
   });
 
+  it('exposes one reusable world-space terrain height sampler contract', () => {
+    const generator = createGenerator();
+    const surface = generator.sampleTerrainSurface(10, 20);
+
+    expect(generator.terrainHeightSampler.sampleHeight(10, 20)).toBe(
+      generator.sampleTerrainHeight(10, 20)
+    );
+    expect(generator.terrainHeightSampler.sampleSurface(10, 20)).toEqual(
+      surface
+    );
+    expect(surface).toEqual({
+      worldX: 10,
+      worldY: 20,
+      height: generator.sampleTerrainHeight(10, 20),
+      seaLevel: WORLD_TERRAIN_SEA_LEVEL,
+      depthBelowSeaLevel: 0,
+    });
+  });
+
   it('keeps preview sampling deterministic after bounded cache eviction churn', () => {
     const generator = createGenerator();
     const baselinePreviewKind = generator.samplePreviewSurfaceKind(10, 20);
     const baselinePreviewHeight = generator.samplePreviewSurfaceHeight(10, 20);
+    const baselineTerrainSurface = generator.sampleTerrainSurface(10, 20);
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
@@ -444,6 +486,7 @@ describe('world generator', () => {
       const y = Math.floor(index / 150) - 30;
       generator.samplePreviewSurfaceKind(x, y);
       generator.samplePreviewSurfaceHeight(x, y);
+      generator.sampleTerrainSurface(x, y);
       generator.samplePreviewOverworld(x, y);
     }
 
@@ -452,6 +495,9 @@ describe('world generator', () => {
     );
     expect(generator.samplePreviewSurfaceHeight(10, 20)).toBe(
       baselinePreviewHeight
+    );
+    expect(generator.sampleTerrainSurface(10, 20)).toEqual(
+      baselineTerrainSurface
     );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
