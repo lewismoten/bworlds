@@ -18,6 +18,8 @@ export type TerrainSplatChunkPerformanceEstimate = {
   programCount: number;
   textureBindingCount: number;
   textureArrayCount: number;
+  estimatedTextureMemoryBytes: number;
+  estimatedFrameTimeMs: number;
   uniqueBaseColorTextureCount: number;
   uniqueNormalTextureCount: number;
   uniqueRoughnessTextureCount: number;
@@ -31,12 +33,16 @@ export type TerrainSplatChunkPerformanceComparison = {
     materialCount: number;
     programCount: number;
     textureBindingCount: number;
+    estimatedTextureMemoryBytes: number;
+    estimatedFrameTimeMs: number;
   };
   reductionRatios: {
     drawCallCount: number;
     materialCount: number;
     programCount: number;
     textureBindingCount: number;
+    estimatedTextureMemoryBytes: number;
+    estimatedFrameTimeMs: number;
   };
 };
 
@@ -52,6 +58,9 @@ export type TerrainSplatMaterialReuseEstimate =
   TerrainSplatMaterialReuseSummary & {
     chunks: readonly TerrainSplatChunkMaterialReuseEstimate[];
   };
+
+const DEFAULT_TEXTURE_DIMENSION = 256;
+const DEFAULT_TEXTURE_BYTES_PER_PIXEL = 4;
 
 export function compareTerrainSplatChunkPerformance(
   grid: TerrainSplatSampleGrid,
@@ -97,6 +106,15 @@ export function compareTerrainSplatChunkPerformance(
     countDistinct(activeLayers.map((layer) => layer.baseColorTextureId)) +
     countDistinct(activeLayers.map((layer) => layer.normalTextureId)) +
     countDistinct(activeLayers.map((layer) => layer.roughnessTextureId));
+  const uniqueBaseColorTextureCount = countDistinct(
+    activeLayers.map((layer) => layer.baseColorTextureId)
+  );
+  const uniqueNormalTextureCount = countDistinct(
+    activeLayers.map((layer) => layer.normalTextureId)
+  );
+  const uniqueRoughnessTextureCount = countDistinct(
+    activeLayers.map((layer) => layer.roughnessTextureId)
+  );
 
   const legacy = {
     cellCount: grid.samples.length,
@@ -105,34 +123,52 @@ export function compareTerrainSplatChunkPerformance(
     programCount: legacyMaterialSignatures.size,
     textureBindingCount,
     textureArrayCount: 0,
-    uniqueBaseColorTextureCount: countDistinct(
-      activeLayers.map((layer) => layer.baseColorTextureId)
-    ),
-    uniqueNormalTextureCount: countDistinct(
-      activeLayers.map((layer) => layer.normalTextureId)
-    ),
-    uniqueRoughnessTextureCount: countDistinct(
-      activeLayers.map((layer) => layer.roughnessTextureId)
-    ),
+    estimatedTextureMemoryBytes:
+      textureBindingCount *
+      DEFAULT_TEXTURE_DIMENSION *
+      DEFAULT_TEXTURE_DIMENSION *
+      DEFAULT_TEXTURE_BYTES_PER_PIXEL,
+    estimatedFrameTimeMs: estimateTerrainFrameTimeMs({
+      drawCallCount: grid.samples.length,
+      materialCount: legacyMaterialSignatures.size,
+      textureBindingCount,
+      cellCount: grid.samples.length,
+    }),
+    uniqueBaseColorTextureCount,
+    uniqueNormalTextureCount,
+    uniqueRoughnessTextureCount,
   } satisfies TerrainSplatChunkPerformanceEstimate;
 
   const splatMaterialCount = activeLayers.length > 0 ? 1 : 0;
+  const splatTextureArrayCount =
+    (uniqueBaseColorTextureCount > 0 ? 1 : 0) +
+    (uniqueNormalTextureCount > 0 ? 1 : 0) +
+    (uniqueRoughnessTextureCount > 0 ? 1 : 0);
   const splat = {
     cellCount: grid.samples.length,
     drawCallCount: grid.samples.length > 0 ? 1 : 0,
     materialCount: splatMaterialCount,
     programCount: splatMaterialCount,
     textureBindingCount:
-      (legacy.uniqueBaseColorTextureCount > 0 ? 1 : 0) +
-      (legacy.uniqueNormalTextureCount > 0 ? 1 : 0) +
-      (legacy.uniqueRoughnessTextureCount > 0 ? 1 : 0),
-    textureArrayCount:
-      (legacy.uniqueBaseColorTextureCount > 0 ? 1 : 0) +
-      (legacy.uniqueNormalTextureCount > 0 ? 1 : 0) +
-      (legacy.uniqueRoughnessTextureCount > 0 ? 1 : 0),
-    uniqueBaseColorTextureCount: legacy.uniqueBaseColorTextureCount,
-    uniqueNormalTextureCount: legacy.uniqueNormalTextureCount,
-    uniqueRoughnessTextureCount: legacy.uniqueRoughnessTextureCount,
+      (uniqueBaseColorTextureCount > 0 ? 1 : 0) +
+      (uniqueNormalTextureCount > 0 ? 1 : 0) +
+      (uniqueRoughnessTextureCount > 0 ? 1 : 0),
+    textureArrayCount: splatTextureArrayCount,
+    estimatedTextureMemoryBytes:
+      splatTextureArrayCount *
+      DEFAULT_TEXTURE_DIMENSION *
+      DEFAULT_TEXTURE_DIMENSION *
+      Math.max(1, activeLayers.length) *
+      DEFAULT_TEXTURE_BYTES_PER_PIXEL,
+    estimatedFrameTimeMs: estimateTerrainFrameTimeMs({
+      drawCallCount: grid.samples.length > 0 ? 1 : 0,
+      materialCount: splatMaterialCount,
+      textureBindingCount: splatTextureArrayCount,
+      cellCount: grid.samples.length,
+    }),
+    uniqueBaseColorTextureCount,
+    uniqueNormalTextureCount,
+    uniqueRoughnessTextureCount,
   } satisfies TerrainSplatChunkPerformanceEstimate;
 
   return {
@@ -144,6 +180,10 @@ export function compareTerrainSplatChunkPerformance(
       programCount: legacy.programCount - splat.programCount,
       textureBindingCount:
         legacy.textureBindingCount - splat.textureBindingCount,
+      estimatedTextureMemoryBytes:
+        legacy.estimatedTextureMemoryBytes - splat.estimatedTextureMemoryBytes,
+      estimatedFrameTimeMs:
+        legacy.estimatedFrameTimeMs - splat.estimatedFrameTimeMs,
     },
     reductionRatios: {
       drawCallCount: toReductionRatio(
@@ -158,6 +198,14 @@ export function compareTerrainSplatChunkPerformance(
       textureBindingCount: toReductionRatio(
         legacy.textureBindingCount,
         splat.textureBindingCount
+      ),
+      estimatedTextureMemoryBytes: toReductionRatio(
+        legacy.estimatedTextureMemoryBytes,
+        splat.estimatedTextureMemoryBytes
+      ),
+      estimatedFrameTimeMs: toReductionRatio(
+        legacy.estimatedFrameTimeMs,
+        splat.estimatedFrameTimeMs
       ),
     },
   };
@@ -247,4 +295,22 @@ function toReductionRatio(before: number, after: number): number {
     return 0;
   }
   return (before - after) / before;
+}
+
+function estimateTerrainFrameTimeMs(params: {
+  drawCallCount: number;
+  materialCount: number;
+  textureBindingCount: number;
+  cellCount: number;
+}): number {
+  return roundMetric(
+    params.drawCallCount * 0.045 +
+      params.materialCount * 0.012 +
+      params.textureBindingCount * 0.004 +
+      params.cellCount * 0.0008
+  );
+}
+
+function roundMetric(value: number): number {
+  return Math.round(value * 1000) / 1000;
 }

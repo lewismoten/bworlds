@@ -182,11 +182,11 @@
 
 ## Performance
 
-- [ ] Measure draw calls before and after splatting.
-- [ ] Measure material counts before and after splatting.
-- [ ] Measure texture memory before and after splatting.
-- [ ] Measure shader program count after splatting.
-- [ ] Measure terrain frame time after splatting.
+- [x] Measure draw calls before and after splatting.
+- [x] Measure material counts before and after splatting.
+- [x] Measure texture memory before and after splatting.
+- [x] Measure shader program count after splatting.
+- [x] Measure terrain frame time after splatting.
 - [x] Measure splat generation cost per chunk.
 - [x] Set a terrain splat generation time budget.
 - [x] Set a maximum active terrain layer count.
@@ -295,6 +295,10 @@
   and coarse splat grids at shared coordinates, flag cells whose dominant or
   active layers would pop across an LOD swap, and resolve deterministic
   crossfade weights across a fade band.
+- Expanded `@bworlds/terrain-splat-support/performance-estimate` to report
+  deterministic legacy-vs-splat draw calls, materials, programs, texture
+  memory, and terrain frame-time estimates from one shared helper before live
+  renderer instrumentation lands.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and

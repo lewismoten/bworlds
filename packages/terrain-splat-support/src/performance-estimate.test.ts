@@ -42,6 +42,45 @@ describe('terrain splat performance estimate', () => {
     expect(comparison.reductionRatios.drawCallCount).toBeGreaterThan(0.8);
   });
 
+  it('measures estimated texture memory and shows a lower shared-splat frame-time estimate', () => {
+    const { grid, layerCatalog } = createComparisonFixture();
+
+    const comparison = compareTerrainSplatChunkPerformance(grid, {
+      catalog: layerCatalog,
+    });
+
+    expect(comparison.legacy.estimatedTextureMemoryBytes).toBeGreaterThan(0);
+    expect(comparison.splat.estimatedTextureMemoryBytes).toBeGreaterThan(0);
+    expect(comparison.legacy.estimatedTextureMemoryBytes).toBeGreaterThanOrEqual(
+      comparison.splat.estimatedTextureMemoryBytes
+    );
+    expect(comparison.reductions.estimatedTextureMemoryBytes).toBeGreaterThanOrEqual(
+      0
+    );
+    expect(
+      comparison.reductionRatios.estimatedTextureMemoryBytes
+    ).toBeGreaterThanOrEqual(0);
+    expect(comparison.legacy.estimatedFrameTimeMs).toBeGreaterThan(
+      comparison.splat.estimatedFrameTimeMs
+    );
+    expect(comparison.reductions.estimatedFrameTimeMs).toBeGreaterThan(0);
+    expect(comparison.reductionRatios.estimatedFrameTimeMs).toBeGreaterThan(0);
+  });
+
+  it('tracks one shared splat program count instead of one program per legacy material signature', () => {
+    const { grid, layerCatalog } = createComparisonFixture();
+
+    const comparison = compareTerrainSplatChunkPerformance(grid, {
+      catalog: layerCatalog,
+    });
+
+    expect(comparison.legacy.programCount).toBeGreaterThan(
+      comparison.splat.programCount
+    );
+    expect(comparison.reductions.programCount).toBeGreaterThan(0);
+    expect(comparison.reductionRatios.programCount).toBeGreaterThan(0);
+  });
+
   it('reports shared splat material reuse across compatible chunks', () => {
     const first = createComparisonFixture();
     const second = createComparisonFixture();

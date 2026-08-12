@@ -29,6 +29,8 @@ renderer-free splat grid against one naive per-cell terrain path.
 
 - legacy and splat estimates for draw calls, materials, programs, and texture
   bindings
+- deterministic texture-memory and terrain frame-time estimates for the same
+  chunk under legacy vs shared splat paths
 - distinct texture counts per map type
 - absolute reductions and normalized reduction ratios
 - cross-chunk material reuse counts, per-chunk material keys, and warnings when
@@ -37,6 +39,7 @@ renderer-free splat grid against one naive per-cell terrain path.
 ## Current limits
 
 - these are deterministic estimates, not live renderer timings
-- the helper does not estimate terrain frame time yet
-- the helper does not estimate final GPU texture memory ownership because that
-  depends on the renderer's upload and cache behavior
+- texture-memory estimates use one normalized texture size/format budget model
+  rather than live uploaded GPU resources
+- frame-time estimates are comparative heuristics intended for trend checks
+  before live renderer instrumentation exists
