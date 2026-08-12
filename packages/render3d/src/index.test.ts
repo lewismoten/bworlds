@@ -192,6 +192,7 @@ import {
   getWrappedBatchWindow,
   getTwilightSkyPalette,
   getAdaptiveLodHysteresisDistance,
+  getAdaptiveLodSyncMovementSquared,
   getTileModelDetailLevel,
   getTileModelLowDetailDistance,
   getTileModelLowDetailExitDistanceSquared,
@@ -5860,6 +5861,27 @@ describe('render3d visibility helpers', () => {
         ),
       })
     ).toBe('full');
+  });
+
+  it('requires more movement to rescan LOD levels when swap churn is already high', () => {
+    expect(getAdaptiveLodSyncMovementSquared(3)).toBeCloseTo(0.0324);
+    expect(getAdaptiveLodSyncMovementSquared(4)).toBeCloseTo(0.1225);
+    expect(
+      shouldSyncTileModelDetailLevels(
+        { x: 0, y: 0 },
+        0.2,
+        0,
+        getAdaptiveLodSyncMovementSquared(4)
+      )
+    ).toBe(false);
+    expect(
+      shouldSyncTileModelDetailLevels(
+        { x: 0, y: 0 },
+        0.35,
+        0,
+        getAdaptiveLodSyncMovementSquared(4)
+      )
+    ).toBe(true);
   });
 
   it('skips obviously distant low-detail chunks during lod reevaluation', () => {

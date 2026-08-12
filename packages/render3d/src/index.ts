@@ -1568,8 +1568,11 @@ const PENDING_BUILD_FULL_DETAIL_DISTANCE_SQUARED =
   PENDING_BUILD_FULL_DETAIL_DISTANCE * PENDING_BUILD_FULL_DETAIL_DISTANCE;
 const PENDING_BUILD_LOW_DETAIL_QUEUE_THRESHOLD = 28;
 const LOD_SYNC_MOVEMENT_DISTANCE = 0.18;
+const ELEVATED_LOD_SYNC_MOVEMENT_DISTANCE = 0.35;
 const LOD_SYNC_MOVEMENT_DISTANCE_SQUARED =
   LOD_SYNC_MOVEMENT_DISTANCE * LOD_SYNC_MOVEMENT_DISTANCE;
+const ELEVATED_LOD_SYNC_MOVEMENT_DISTANCE_SQUARED =
+  ELEVATED_LOD_SYNC_MOVEMENT_DISTANCE * ELEVATED_LOD_SYNC_MOVEMENT_DISTANCE;
 const LOD_SYNC_FULL_DETAIL_MIN_REMAINING_BUDGET_MS = 1;
 const FAR_MODEL_FULL_VISIBILITY_DISTANCE = 8;
 const FAR_MODEL_REVEAL_DISTANCE_VARIANCE = 8;
@@ -2940,7 +2943,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       shouldSyncTileModelDetailLevels(
         lastLodSyncPlayerPosition,
         state.player.x,
-        state.player.y
+        state.player.y,
+        getAdaptiveLodSyncMovementSquared(
+          countRecentMetricEvents(
+            renderChurnMetrics.lodReplacements,
+            frameNowMs
+          )
+        )
       )
     ) {
       pendingLodSyncChecks = visibleTileNodes.size;
@@ -4410,6 +4419,23 @@ export function getAdaptiveLodHysteresisDistance(
   return lodReplacementsPerSecond >= elevatedSwapRateThreshold
     ? elevatedDistance
     : baseDistance;
+}
+
+export function getAdaptiveLodSyncMovementSquared(
+  lodReplacementsPerSecond: number,
+  {
+    baseDistanceSquared = LOD_SYNC_MOVEMENT_DISTANCE_SQUARED,
+    elevatedDistanceSquared = ELEVATED_LOD_SYNC_MOVEMENT_DISTANCE_SQUARED,
+    elevatedSwapRateThreshold = ELEVATED_LOD_HYSTERESIS_SWAP_RATE_THRESHOLD,
+  }: {
+    baseDistanceSquared?: number;
+    elevatedDistanceSquared?: number;
+    elevatedSwapRateThreshold?: number;
+  } = {}
+): number {
+  return lodReplacementsPerSecond >= elevatedSwapRateThreshold
+    ? elevatedDistanceSquared
+    : baseDistanceSquared;
 }
 
 export function getTileModelDetailLevelFromSquaredDistance(

@@ -1,6 +1,11 @@
 # Performance Snapshot Follow-Up
 
 - [x] consider improving the runtime-performance-snapshots API - mainly adding an additional API to report when rendering issues occur, but limited to a few seconds so that we don't have thrasing. The goal is to have that separate API to report important issues rarely that need to be addressed, and build a failing test when an issue is reported - ie what plugins, parameters, etc. was failing along with budget and reason.
+      Progress: the client-side issue reporter now only posts direct,
+      actionable tile/plugin/runtime diagnostics to
+      `/api/runtime-performance-issues`; generic frame/draw-call/material/
+      object pressure and reduced-quality limiter narration stay in the saved
+      payload context without creating another issue file on their own.
 - [ ] Limit each tree species to 10 material variants per part type.
 - [ ] Reuse bark, foliage, and branch materials across nearby trees.
 - [ ] Prefer tinting shared materials over creating new textures.
@@ -124,8 +129,19 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       and the warning carries the top plugin plus its swap rate summary so
       LOD thrash is visible immediately during `errors.md` triage instead of
       being buried in the raw swap counters.
-- [ ] Increase hysteresis when repeated swaps are detected.
+- [x] Increase hysteresis when repeated swaps are detected.
+      Progress: `render3d` now widens the low-detail exit hysteresis whenever
+      recent `lodReplacementsPerSecond` stays above the churn threshold, so
+      tiles that are already in `low` detail must move farther back inside the
+      boundary before they can flip to `full` again. That keeps repeated
+      `full <-> low` swaps from flapping at the same distance boundary while
+      normal low-detail entry thresholds stay unchanged.
 - [ ] Prevent LOD churn while the player remains nearly still.
+      Progress: `render3d` now widens the movement required to seed another
+      visible-tile LOD sync pass whenever recent `lodReplacementsPerSecond`
+      stays above the churn threshold, so near-stationary jitter no longer
+      restarts a full visible LOD sweep at the normal `0.18`-tile threshold
+      while swap churn is already high.
 - [x] Keep the last valid model during failed LOD upgrades.
 - [x] Cache the last successful LOD for every visible tile.
 - [x] Prefer cached lower LODs before generating fallbacks.

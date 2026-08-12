@@ -108,3 +108,14 @@ tiles in low detail until they move back inside `5.5` tiles.
 That adaptive exit threshold only affects tiles that are already in `low`
 detail, so it reduces repeated `full <-> low` boundary flapping without pushing
 farther tiles into low detail sooner than the normal threshold policy.
+
+## Adaptive Resync Movement
+
+Visible-tile LOD scans are also gated by player movement. The normal renderer
+policy starts another visible-tile LOD pass once the player has moved at least
+`0.18` tiles from the previous scan position.
+
+When recent `lodReplacementsPerSecond` reaches `4` or more, the renderer now
+widens that resync trigger to `0.35` tiles before it seeds another full
+visible-tile LOD sweep. That keeps near-stationary jitter from repeatedly
+restarting visible LOD reevaluation while swap churn is already high.
