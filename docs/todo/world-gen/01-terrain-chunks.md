@@ -29,8 +29,8 @@
 - [x] Sample chunk border heights from world coordinates.
 - [x] Never derive border heights from local-only noise.
 - [x] Share exact border height samples between neighbors.
-- [ ] Use world-space UVs across all chunk borders.
-- [ ] Keep splat weights continuous across chunk borders.
+- [x] Use world-space UVs across all chunk borders.
+- [x] Keep splat weights continuous across chunk borders.
 - [ ] Keep route and river influence continuous across borders.
 - [ ] Recalculate normals from seam-safe height samples.
 - [ ] Add a chunk seam debug view.
@@ -47,6 +47,10 @@ Current support:
   index onto a world-space coordinate, so chunk builders can sample one shared
   height function instead of inventing edge values from local chunk noise; see
   `docs/terrain-chunk-height-sample-contract.md`.
+- `@bworlds/terrain-splat-support` already resolves deterministic world-space
+  UV samples and verifies they stay continuous across repeated terrain
+  boundaries, while sample-grid tests verify border-identical splat weights for
+  adjacent chunk builds.
 
 ## Sextant Panel
 
