@@ -287,3 +287,37 @@ export function createRailMapFeatureGeneratorPlugin(options: {
     },
   });
 }
+
+export function createPopulationHeatMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getPopulationHeatMapFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'population-heat-map-layer',
+    label: options.label ?? 'Population Heat Map Layer',
+    layerId: 'population-heat-map',
+    getFeatures(request) {
+      return options.getPopulationHeatMapFeatures(request);
+    },
+  });
+}
+
+export function createChoroplethMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getChoroplethFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'choropleth-map-layer',
+    label: options.label ?? 'Choropleth Layer',
+    layerId: 'choropleth',
+    getFeatures(request) {
+      return options.getChoroplethFeatures(request);
+    },
+  });
+}

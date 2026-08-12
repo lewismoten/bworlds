@@ -12,7 +12,9 @@ import {
   createOceanCurrentMapFeatureGeneratorPlugin,
   createPhysicalMapFeatureGeneratorPlugin,
   createPoliticalMapFeatureGeneratorPlugin,
+  createPopulationHeatMapFeatureGeneratorPlugin,
   createPressureMapFeatureGeneratorPlugin,
+  createChoroplethMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
   createRailMapFeatureGeneratorPlugin,
   createRiverFlowMapFeatureGeneratorPlugin,
@@ -664,6 +666,83 @@ describe('map layer generators', () => {
       {
         kind: 'line',
         layerId: 'rail',
+      },
+    ]);
+  });
+
+  it('creates population heat map layer generators with conventional population heat map layer ids', () => {
+    const plugin = createPopulationHeatMapFeatureGeneratorPlugin({
+      getPopulationHeatMapFeatures(request) {
+        return [
+          createMapFeaturePointRecord({
+            sourceWorldObjectId: `population:${request.tile.x}:${request.tile.y}`,
+            layerId: 'population-heat-map',
+            coordinate: {
+              worldX: request.tile.x + 0.5,
+              worldY: request.tile.y + 0.5,
+            },
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('population-heat-map-layer');
+    expect(plugin.layerId).toBe('population-heat-map');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-18',
+        tile: {
+          zoom: 5,
+          x: 8,
+          y: 12,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'point',
+        layerId: 'population-heat-map',
+      },
+    ]);
+  });
+
+  it('creates choropleth layer generators with conventional choropleth layer ids', () => {
+    const plugin = createChoroplethMapFeatureGeneratorPlugin({
+      id: 'regional-choropleth',
+      label: 'Regional Choropleth',
+      getChoroplethFeatures(request) {
+        return [
+          createMapFeaturePolygonRecord({
+            sourceWorldObjectId: `district:${request.tile.zoom}`,
+            layerId: 'choropleth',
+            rings: [
+              [
+                { worldX: 0, worldY: 0 },
+                { worldX: 5, worldY: 0 },
+                { worldX: 5, worldY: 4 },
+                { worldX: 0, worldY: 0 },
+              ],
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('regional-choropleth');
+    expect(plugin.label).toBe('Regional Choropleth');
+    expect(plugin.layerId).toBe('choropleth');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-19',
+        tile: {
+          zoom: 4,
+          x: 6,
+          y: 7,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'polygon',
+        layerId: 'choropleth',
       },
     ]);
   });

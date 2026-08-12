@@ -18,6 +18,8 @@ for physical map products built on canonical map features:
 - `createPoliticalMapFeatureGeneratorPlugin(...)`
 - `createRoadMapFeatureGeneratorPlugin(...)`
 - `createRailMapFeatureGeneratorPlugin(...)`
+- `createPopulationHeatMapFeatureGeneratorPlugin(...)`
+- `createChoroplethMapFeatureGeneratorPlugin(...)`
 
 ## Purpose
 
@@ -52,6 +54,8 @@ The helpers currently reserve these layer ids:
 - `political`
 - `road`
 - `rail`
+- `population-heat-map`
+- `choropleth`
 
 That gives later PMTiles export, map styling, and viewer code one stable layer
 vocabulary instead of forcing each feature generator to invent its own names.
@@ -224,3 +228,26 @@ and:
 These wrappers intentionally accept canonical `MapFeatureRecord` values so
 later border, route, and network map products can share one layer contract
 before the concrete administrative and transport generation logic exists.
+
+## Population Heat Map And Choropleth Layers
+
+`createPopulationHeatMapFeatureGeneratorPlugin(...)` and
+`createChoroplethMapFeatureGeneratorPlugin(...)` follow the same PMTiles
+generator contract with conventional layer ids:
+
+- `layerId: 'population-heat-map'`
+- `layerId: 'choropleth'`
+
+They default to:
+
+- `id: 'population-heat-map-layer'`
+- `id: 'choropleth-map-layer'`
+
+and:
+
+- `label: 'Population Heat Map Layer'`
+- `label: 'Choropleth Layer'`
+
+These wrappers intentionally accept canonical `MapFeatureRecord` values so
+later density surfaces and region-classification map products can share one
+layer contract before the concrete population aggregation logic exists.
