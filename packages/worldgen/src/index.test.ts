@@ -680,6 +680,49 @@ describe('world generator', () => {
     );
   });
 
+  it('keeps terrain height sampling deterministic across repeated and detached calls', () => {
+    const generator = createGenerator();
+    const { sampleTerrainHeight } = generator;
+    const first = generator.sampleTerrainHeight(10, 20);
+    const second = generator.sampleTerrainHeight(10, 20);
+
+    expect(first).toBe(second);
+    expect(sampleTerrainHeight(10, 20)).toBe(first);
+    expect(generator.sampleTerrainHeight(-48, 73)).toBe(
+      generator.sampleTerrainHeight(-48, 73)
+    );
+  });
+
+  it('keeps adjacent chunk border terrain heights exactly equal on shared sample coordinates', () => {
+    const generator = createGenerator();
+
+    for (let row = 0; row < TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE; row += 1) {
+      const eastWestLeft = getTerrainChunkHeightSampleCoordinate(0, 0, 16, row);
+      const eastWestRight = getTerrainChunkHeightSampleCoordinate(1, 0, 0, row);
+      expect(
+        generator.sampleTerrainHeight(eastWestLeft.x, eastWestLeft.y)
+      ).toBe(generator.sampleTerrainHeight(eastWestRight.x, eastWestRight.y));
+
+      const southNorthTop = getTerrainChunkHeightSampleCoordinate(
+        0,
+        0,
+        row,
+        16
+      );
+      const southNorthBottom = getTerrainChunkHeightSampleCoordinate(
+        0,
+        1,
+        row,
+        0
+      );
+      expect(
+        generator.sampleTerrainHeight(southNorthTop.x, southNorthTop.y)
+      ).toBe(
+        generator.sampleTerrainHeight(southNorthBottom.x, southNorthBottom.y)
+      );
+    }
+  });
+
   it('exposes one reusable world-space terrain height sampler contract', () => {
     const generator = createGenerator();
     const surface = generator.sampleTerrainSurface(10, 20);

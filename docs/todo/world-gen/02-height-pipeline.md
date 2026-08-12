@@ -46,8 +46,8 @@
 - [x] Reject NaN and infinite height values.
 - [ ] Clamp impossible heights after all layers compose.
 - [ ] Log the plugin that caused an invalid height.
-- [ ] Test deterministic height sampling.
-- [ ] Test exact chunk border height equality.
+- [x] Test deterministic height sampling.
+- [x] Test exact chunk border height equality.
 - [ ] Test player height against rendered terrain height.
 
 Current support:
@@ -87,6 +87,10 @@ Current support:
 - The shared worldgen height path now also validates that sampled terrain
   heights stay finite before they are cached or summarized, via
   `validateTerrainHeightValue(...)`.
+- `packages/worldgen/src/index.test.ts` now also calls out deterministic
+  `sampleTerrainHeight(...)` behavior explicitly and verifies that adjacent
+  chunk-border sample coordinates resolve exactly equal heights on both sides
+  of east-west and south-north seams.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height
