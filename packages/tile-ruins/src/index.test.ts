@@ -126,6 +126,19 @@ const fakeThree = {
   SphereGeometry: FakeGeometry,
 } as const;
 
+function createFakeThreeHost() {
+  return {
+    Group: FakeGroup,
+    Mesh: FakeMesh,
+    InstancedMesh: FakeInstancedMesh,
+    Matrix4: FakeMatrix4,
+    PointLight: FakePointLight,
+    MeshStandardMaterial: FakeMaterial,
+    BoxGeometry: FakeGeometry,
+    SphereGeometry: FakeGeometry,
+  } as const;
+}
+
 function createRuinsState() {
   return {
     player: { x: 0, y: 0, facing: 0 },
@@ -288,6 +301,47 @@ describe('tile ruins', () => {
     ).toBeGreaterThan(0.5);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.38, 6);
     expect(pointLight?.visible).toBe(true);
+  });
+
+  it('keeps repeated ruins builds on one host within one shared material set', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const state = createRuinsState();
+    const sharedHost = createFakeThreeHost();
+    const first = tile?.create3DModel?.({
+      three: sharedHost as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeGroup | undefined;
+    const second = tile?.create3DModel?.({
+      three: sharedHost as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 22,
+      tileY: 4,
+    }) as FakeGroup | undefined;
+    const otherHost = tile?.create3DModel?.({
+      three: createFakeThreeHost() as never,
+      state,
+      tile: { kind: 'ruins' },
+      tileX: 38,
+      tileY: 4,
+    }) as FakeGroup | undefined;
+
+    const firstMaterials = collectMeshMaterials(first);
+    const secondMaterials = collectMeshMaterials(second);
+    const otherHostMaterials = collectMeshMaterials(otherHost);
+
+    expect(firstMaterials.size).toBeLessThanOrEqual(3);
+    expect(secondMaterials.size).toBeLessThanOrEqual(3);
+    expect([...firstMaterials]).toEqual(
+      expect.arrayContaining([...secondMaterials])
+    );
+    expect(
+      [...firstMaterials].some((material) => otherHostMaterials.has(material))
+    ).toBe(false);
   });
 
   it('keeps ruins model signatures stable after repeated regional churn', () => {
@@ -518,3 +572,24 @@ describe('tile ruins', () => {
     expect(leftGlow?.material).toBe(rightGlow?.material);
   });
 });
+
+function collectMeshMaterials(root: FakeGroup | undefined): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  root?.traverse((node) => {
+    if (!('material' in node)) {
+      return;
+    }
+    if (node.material instanceof FakeMaterial) {
+      materials.add(node.material);
+      return;
+    }
+    if (Array.isArray(node.material)) {
+      node.material.forEach((material) => {
+        if (material instanceof FakeMaterial) {
+          materials.add(material);
+        }
+      });
+    }
+  });
+  return materials;
+}

@@ -140,7 +140,10 @@
       materials still happen to be shared, and
       `tile-forest` now keeps a sampled full-detail forest sweep on the same
       host within the bounded shared palette across repeated builds instead of
-      allowing the material set to grow between passes.
+      allowing the material set to grow between passes, and `tile-ruins` now
+      keeps repeated builds on one Three host within one shared painted
+      stone/accent/glow material set so ruins regional style churn cannot
+      quietly add extra unique materials without failing the regression test.
 
 ## Instancing
 
