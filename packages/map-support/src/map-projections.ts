@@ -48,6 +48,11 @@ export const MERCATOR_MAX_WORLD_LATITUDE = 85.0511287798066;
 export const MILLER_MAX_WORLD_LATITUDE = 90;
 export const MILLER_MAX_PROJECTED_Y =
   1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * degreesToRadians(90)));
+export const TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE = 80;
+export const TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE = 90;
+export const TRANSVERSE_MERCATOR_MAX_PROJECTED_X = atanh(
+  Math.sin(degreesToRadians(TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE))
+);
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -174,6 +179,69 @@ export function createMillerCylindricalMapProjectionPlugin(): MapProjectionPlugi
         worldX: mapX * 180,
         worldY: radiansToDegrees(
           (Math.atan(Math.exp(projectedY / 1.25)) - Math.PI / 4) / 0.4
+        ),
+      };
+    },
+  });
+}
+
+export function createTransverseMercatorMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'transverse-mercator',
+    label: 'Transverse Mercator',
+    distortion: 'conformal',
+    bounds: {
+      minWorldX: -TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE,
+      maxWorldX: TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE,
+      minWorldY: -TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE,
+      maxWorldY: TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLongitude = clamp(
+        worldX,
+        -TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE,
+        TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE
+      );
+      const clampedLatitude = clamp(
+        worldY,
+        -TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE,
+        TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE
+      );
+      const longitudeRadians = degreesToRadians(clampedLongitude);
+      const latitudeRadians = degreesToRadians(clampedLatitude);
+      const projectedX = atanh(
+        clamp(
+          Math.cos(latitudeRadians) * Math.sin(longitudeRadians),
+          -1 + 1e-12,
+          1 - 1e-12
+        )
+      );
+      const projectedY = Math.atan2(
+        Math.tan(latitudeRadians),
+        Math.cos(longitudeRadians)
+      );
+      return {
+        mapX: snapNearZero(projectedX / TRANSVERSE_MERCATOR_MAX_PROJECTED_X),
+        mapY: snapNearZero(projectedY / (Math.PI / 2)),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * TRANSVERSE_MERCATOR_MAX_PROJECTED_X;
+      const projectedY = mapY * (Math.PI / 2);
+      return {
+        worldX: radiansToDegrees(
+          Math.atan2(Math.sinh(projectedX), Math.cos(projectedY))
+        ),
+        worldY: radiansToDegrees(
+          Math.asin(clamp(Math.sin(projectedY) / Math.cosh(projectedX), -1, 1))
         ),
       };
     },
@@ -309,4 +377,8 @@ function clamp(value: number, min: number, max: number): number {
 
 function snapNearZero(value: number, tolerance = 1e-12): number {
   return Math.abs(value) <= tolerance ? 0 : value;
+}
+
+function atanh(value: number): number {
+  return 0.5 * Math.log((1 + value) / (1 - value));
 }

@@ -17,6 +17,7 @@ Current built-in support:
 
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
+- `createTransverseMercatorMapProjectionPlugin()`
 
 ## Coordinate Contract
 
@@ -116,3 +117,25 @@ The projected range is normalized to:
 
 This gives later map UIs one less pole-distorted cylindrical option while the
 rest of the projection catalog is still being built.
+
+## Transverse Mercator
+
+`createTransverseMercatorMapProjectionPlugin()` provides a conformal
+projection centered on a vertical meridian instead of the equator.
+
+It currently:
+
+- uses `id: 'transverse-mercator'`
+- declares `distortion: 'conformal'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- clamps longitude to `±80` around the central meridian to keep the
+  normalized projected range finite
+
+The projected range is normalized to:
+
+- `mapX` within `-1..1` for `worldX` within `-80..80`
+- `mapY` within `-1..1` for `worldY` within `-90..90`
+
+This gives later map UIs one meridian-centered conformal option that is better
+suited to tall regional extents than standard Mercator.

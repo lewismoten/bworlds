@@ -17,9 +17,13 @@ export {
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
+  createTransverseMercatorMapProjectionPlugin,
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
+  TRANSVERSE_MERCATOR_MAX_PROJECTED_X,
+  TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE,
+  TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE,
 } from './map-projections.ts';
 
 type DecoratedTileContext =

@@ -3,9 +3,13 @@ import {
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
+  createTransverseMercatorMapProjectionPlugin,
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
+  TRANSVERSE_MERCATOR_MAX_PROJECTED_X,
+  TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE,
+  TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE,
 } from './map-projections.ts';
 
 describe('map projections', () => {
@@ -224,5 +228,38 @@ describe('map projections', () => {
     expect(inverted?.worldY).toBeCloseTo(45, 10);
     expect(MILLER_MAX_WORLD_LATITUDE).toBe(90);
     expect(MILLER_MAX_PROJECTED_Y).toBeGreaterThan(0);
+  });
+
+  it('projects and inverts Transverse Mercator coordinates inside its supported longitude window', () => {
+    const projection = createTransverseMercatorMapProjectionPlugin();
+
+    expect(projection.id).toBe('transverse-mercator');
+    expect(projection.label).toBe('Transverse Mercator');
+    expect(projection.distortion).toBe('conformal');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const eastEdge = projection.project({
+      worldX: 80,
+      worldY: 0,
+    });
+    expect(eastEdge.mapX).toBeCloseTo(1, 10);
+
+    const forward = projection.project({
+      worldX: 30,
+      worldY: 45,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(30, 10);
+    expect(inverted?.worldY).toBeCloseTo(45, 10);
+    expect(TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE).toBe(80);
+    expect(TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE).toBe(90);
+    expect(TRANSVERSE_MERCATOR_MAX_PROJECTED_X).toBeGreaterThan(0);
   });
 });
