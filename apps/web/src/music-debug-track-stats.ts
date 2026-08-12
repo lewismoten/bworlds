@@ -16,6 +16,7 @@ export type MusicDebugTrackStats = {
   minVelocity: number | null;
   maxVelocity: number | null;
   averageVelocity: number;
+  dynamicRange: number;
   uniqueVelocityLevelCount: number;
   occupancyPercentage: number;
   averageLeapSemitones: number;
@@ -143,6 +144,10 @@ export function createMusicDebugTrackStats(options: {
     stat.maxVelocity = maxVelocityByRole[role] ?? null;
     stat.averageVelocity =
       velocityCount > 0 ? (velocityTotalsByRole[role] ?? 0) / velocityCount : 0;
+    stat.dynamicRange =
+      stat.minVelocity === null || stat.maxVelocity === null
+        ? 0
+        : stat.maxVelocity - stat.minVelocity;
     stat.uniqueVelocityLevelCount = velocityLevelsByRole[role]?.size ?? 0;
     stat.rangeLabel =
       role === 'percussion'
@@ -190,6 +195,19 @@ export function formatMusicDebugTrackSoundingSummary(
   });
 }
 
+export function formatMusicDebugTrackVelocitySummary(
+  stats: Record<ProceduralMusicRole, MusicDebugTrackStats>,
+  formatter = formatMusicDebugDisplayRoleLabel
+): string[] {
+  return MUSIC_DEBUG_DISPLAY_ROLE_ORDER.map((role) => {
+    const stat = stats[role];
+    if (stat.minVelocity === null || stat.maxVelocity === null) {
+      return `${formatter(role)} vel n/a`;
+    }
+    return `${formatter(role)} vel ${stat.minVelocity}-${stat.maxVelocity} | dyn ${stat.dynamicRange} | avg ${Math.round(stat.averageVelocity)}`;
+  });
+}
+
 function createEmptyTrackStatsMap(): Record<
   ProceduralMusicRole,
   MusicDebugTrackStats
@@ -213,6 +231,7 @@ function createEmptyTrackStats(
     minVelocity: null,
     maxVelocity: null,
     averageVelocity: 0,
+    dynamicRange: 0,
     uniqueVelocityLevelCount: 0,
     occupancyPercentage: 0,
     averageLeapSemitones: 0,

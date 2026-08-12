@@ -110,6 +110,7 @@ describe('music debug markup', () => {
     expect(summary).toContain('Track Pitch');
     expect(summary).toContain('Track Sounding');
     expect(summary).toContain('Track Timing');
+    expect(summary).toContain('Track Velocity');
     expect(summary).toContain('Section Velocity');
     expect(summary).toContain('Melody ');
     expect(summary).toContain('exact repeats');

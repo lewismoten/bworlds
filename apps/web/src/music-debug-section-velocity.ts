@@ -12,6 +12,7 @@ export type MusicDebugSectionVelocityRoleStats = {
   minVelocity: number | null;
   maxVelocity: number | null;
   averageVelocity: number;
+  dynamicRange: number;
 };
 
 export type MusicDebugSectionVelocityStats = {
@@ -62,6 +63,10 @@ export function createMusicDebugSectionVelocityStats(options: {
         roleStats.noteCount > 0
           ? (velocityTotalsByRole[role] ?? 0) / roleStats.noteCount
           : 0;
+      roleStats.dynamicRange =
+        roleStats.minVelocity === null || roleStats.maxVelocity === null
+          ? 0
+          : roleStats.maxVelocity - roleStats.minVelocity;
     }
 
     return {
@@ -82,7 +87,7 @@ export function formatMusicDebugSectionVelocitySummary(
         if (roleStats.noteCount === 0 || roleStats.minVelocity === null) {
           return `${formatMusicDebugDisplayRoleLabel(role)} n/a`;
         }
-        return `${formatMusicDebugDisplayRoleLabel(role)} ${roleStats.minVelocity}-${roleStats.maxVelocity ?? roleStats.minVelocity} avg ${Math.round(roleStats.averageVelocity)}`;
+        return `${formatMusicDebugDisplayRoleLabel(role)} ${roleStats.minVelocity}-${roleStats.maxVelocity ?? roleStats.minVelocity} dyn ${roleStats.dynamicRange} avg ${Math.round(roleStats.averageVelocity)}`;
       });
       return `${section.sectionLabel} ${roleSummaries.join(' / ')}`;
     })
@@ -107,5 +112,6 @@ function createEmptyVelocityStats(): MusicDebugSectionVelocityRoleStats {
     minVelocity: null,
     maxVelocity: null,
     averageVelocity: 0,
+    dynamicRange: 0,
   };
 }

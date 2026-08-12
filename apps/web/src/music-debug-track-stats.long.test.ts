@@ -6,6 +6,7 @@ import {
   formatMusicDebugTrackPitchSummary,
   formatMusicDebugTrackSoundingSummary,
   formatMusicDebugTrackTimingSummary,
+  formatMusicDebugTrackVelocitySummary,
 } from './music-debug-track-stats.ts';
 
 const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
@@ -79,6 +80,7 @@ describe('music debug track stats', () => {
     expect(stats.lead.minVelocity).not.toBeNull();
     expect(stats.lead.maxVelocity).not.toBeNull();
     expect(stats.lead.averageVelocity).toBeGreaterThan(0);
+    expect(stats.lead.dynamicRange).toBeGreaterThanOrEqual(0);
     expect(stats.bass.outOfModeNoteCount).toBe(
       snapshot.outOfModeNotesByRole.bass
     );
@@ -134,12 +136,15 @@ describe('music debug track stats', () => {
     expect(stats.lead.minVelocity).toBe(80);
     expect(stats.lead.maxVelocity).toBe(92);
     expect(stats.lead.averageVelocity).toBeCloseTo(84);
+    expect(stats.lead.dynamicRange).toBe(12);
     expect(stats.lead.uniqueVelocityLevelCount).toBe(2);
     expect(stats.bass.minVelocity).toBe(64);
     expect(stats.bass.maxVelocity).toBe(64);
     expect(stats.bass.averageVelocity).toBe(64);
+    expect(stats.bass.dynamicRange).toBe(0);
     expect(stats.bass.uniqueVelocityLevelCount).toBe(1);
     expect(stats.harmony.minVelocity).toBeNull();
+    expect(stats.harmony.dynamicRange).toBe(0);
     expect(stats.harmony.uniqueVelocityLevelCount).toBe(0);
   });
 
@@ -151,6 +156,9 @@ describe('music debug track stats', () => {
       snapshot.trackStats
     );
     const timingLines = formatMusicDebugTrackTimingSummary(snapshot.trackStats);
+    const velocityLines = formatMusicDebugTrackVelocitySummary(
+      snapshot.trackStats
+    );
 
     expect(summaryLines).toHaveLength(4);
     expect(summaryLines[0]).toContain('Melody');
@@ -170,6 +178,11 @@ describe('music debug track stats', () => {
     expect(timingLines[0]).toContain('avg dur');
     expect(timingLines[1]).toContain('avg gap');
     expect(timingLines[1]).toContain('peak poly');
+    expect(velocityLines).toHaveLength(4);
+    expect(velocityLines[0]).toContain('vel');
+    expect(velocityLines[0]).toContain('dyn');
+    expect(velocityLines[0]).toContain('avg');
+    expect(velocityLines[3]).toContain('Percussion');
     expect(summaryLines.join(' | ')).not.toContain('Lead ');
   });
 

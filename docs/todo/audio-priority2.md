@@ -45,7 +45,12 @@
       per-section velocity summaries for melody, harmony, bass, and percussion,
       and the laboratory summary renders a `Section Velocity` line with min,
       max, and average velocity per role in each section.
-- [ ] Report dynamic range by track and section.
+- [x] Report dynamic range by track and section.
+      Progress: track stats now expose per-role velocity dynamic range beside
+      min/max/average values, section velocity summaries now include the same
+      `dyn` span per role, and the laboratory summary now shows both track and
+      section velocity lines so flat versus expressive sections are visible
+      before export.
 - [x] Warn when a track uses too few velocity levels.
       Progress: track stats now record min/max/average velocity plus distinct
       velocity-level counts, and the MIDI audit emits a non-critical warning

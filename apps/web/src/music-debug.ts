@@ -67,6 +67,7 @@ import {
   createMusicDebugTrackStats,
   formatMusicDebugTrackPitchSummary,
   formatMusicDebugTrackTimingSummary,
+  formatMusicDebugTrackVelocitySummary,
   type MusicDebugTrackStats,
 } from './music-debug-track-stats.ts';
 import {
@@ -1065,6 +1066,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Track Timing ${formatMusicDebugTrackTimingSummary(snapshot.trackStats).join(' | ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Track Velocity ${formatMusicDebugTrackVelocitySummary(snapshot.trackStats).join(' | ')}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Section Velocity ${formatMusicDebugSectionVelocitySummary(snapshot.sectionVelocityStats)}</span>

@@ -34,12 +34,14 @@ describe('music debug section velocity', () => {
           minVelocity: 80,
           maxVelocity: 92,
           averageVelocity: 86,
+          dynamicRange: 12,
         },
         bass: {
           noteCount: 1,
           minVelocity: 64,
           maxVelocity: 64,
           averageVelocity: 64,
+          dynamicRange: 0,
         },
       },
     });
@@ -48,12 +50,14 @@ describe('music debug section velocity', () => {
       minVelocity: 70,
       maxVelocity: 70,
       averageVelocity: 70,
+      dynamicRange: 0,
     });
     expect(stats[1]?.velocityByRole.percussion).toMatchObject({
       noteCount: 1,
       minVelocity: 96,
       maxVelocity: 96,
       averageVelocity: 96,
+      dynamicRange: 0,
     });
   });
 
@@ -68,31 +72,35 @@ describe('music debug section velocity', () => {
             minVelocity: 80,
             maxVelocity: 92,
             averageVelocity: 86,
+            dynamicRange: 12,
           },
           harmony: {
             noteCount: 0,
             minVelocity: null,
             maxVelocity: null,
             averageVelocity: 0,
+            dynamicRange: 0,
           },
           bass: {
             noteCount: 1,
             minVelocity: 64,
             maxVelocity: 64,
             averageVelocity: 64,
+            dynamicRange: 0,
           },
           percussion: {
             noteCount: 0,
             minVelocity: null,
             maxVelocity: null,
             averageVelocity: 0,
+            dynamicRange: 0,
           },
         },
       },
     ]);
 
     expect(summary).toBe(
-      'Intro Melody 80-92 avg 86 / Harmony n/a / Bass 64-64 avg 64 / Percussion n/a'
+      'Intro Melody 80-92 dyn 12 avg 86 / Harmony n/a / Bass 64-64 dyn 0 avg 64 / Percussion n/a'
     );
   });
 });
