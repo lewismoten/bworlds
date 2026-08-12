@@ -124,7 +124,7 @@
 - [x] Allow changing the harmonic oscillator type.
 - [x] Add a primary oscillator gain control.
 - [x] Add a harmonic oscillator gain control.
-- [ ] Add a harmonic frequency ratio control.
+- [x] Add a harmonic frequency ratio control.
 - [ ] Add a harmonic detune control.
 - [ ] Add a primary detune control.
 - [ ] Add an oscillator phase control if supported.

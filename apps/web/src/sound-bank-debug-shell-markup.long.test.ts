@@ -126,6 +126,9 @@ describe('sound bank debug shell markup', () => {
     expect(normalizedMarkup).toContain(
       'sound-bank-debug-oscillator-harmonic-gain'
     );
+    expect(normalizedMarkup).toContain(
+      'sound-bank-debug-oscillator-harmonic-ratio'
+    );
     expect(normalizedMarkup).toContain('Filter, Noise, and Detune');
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-detune');
     expect(normalizedMarkup).toContain('sound-bank-debug-timbre-filter-cutoff');

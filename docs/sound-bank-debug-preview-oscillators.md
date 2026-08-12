@@ -7,6 +7,7 @@ for oscillator routing:
 - `harmonicEnabled`
 - `carrierGainMultiplier`
 - `harmonicGainMultiplier`
+- `harmonicRatio`
 - `carrierWaveform`
 - `harmonicWaveform`
 - `soloTarget`
@@ -14,7 +15,8 @@ for oscillator routing:
 ## Flow
 
 1. `sound-bank-debug.ts` renders carrier and harmonic toggle buttons plus
-   waveform selectors and gain sliders beside the selected generated patch.
+   waveform selectors, gain sliders, and a harmonic-ratio slider beside the
+   selected generated patch.
 2. `sound-bank-debug-page.ts` keeps the oscillator state local to the current
    selected instrument and re-renders the panel when the user toggles, solos,
    or changes either oscillator waveform.
@@ -34,4 +36,5 @@ The same oscillator override state now drives:
 
 That keeps the waveform panel, patch stats, and audible preview in sync when
 the carrier or harmonic oscillator is muted, soloed, switched between the
-built-in Web Audio waveform types, or rebalanced with debug-only gain changes.
+built-in Web Audio waveform types, rebalanced with debug-only gain changes, or
+retuned to a different harmonic multiple.

@@ -146,6 +146,7 @@ describe('sound bank debug preview mode', () => {
           harmonicEnabled: true,
           carrierGainMultiplier: 1,
           harmonicGainMultiplier: 1,
+          harmonicRatio: 2,
           carrierWaveform: 'square',
           harmonicWaveform: 'triangle',
           soloTarget: 'carrier',
@@ -155,6 +156,7 @@ describe('sound bank debug preview mode', () => {
 
     expect(note?.timbre.fundamentalGainMultiplier ?? 1).toBeGreaterThan(0);
     expect(note?.harmonicGain).toBe(0);
+    expect(note?.timbre.harmonicRatio).toBe(2);
   });
 
   it('can preview a generated phrase using the locked reference patch values', () => {

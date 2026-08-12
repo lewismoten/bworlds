@@ -2514,6 +2514,25 @@ function buildSoundBankDebugPreviewOscillatorControlsMarkup(
               </output>
             </div>
           </label>
+          <label>
+            <span>Harmonic Ratio</span>
+            <div class="sound-bank-debug-master-gain-row">
+              <input
+                id="sound-bank-debug-oscillator-harmonic-ratio"
+                type="range"
+                min="50"
+                max="800"
+                step="5"
+                value="${Math.round(previewOscillators.harmonicRatio * 100)}"
+              />
+              <output
+                id="sound-bank-debug-oscillator-harmonic-ratio-value"
+                for="sound-bank-debug-oscillator-harmonic-ratio"
+              >
+                ${previewOscillators.harmonicRatio.toFixed(2)}x
+              </output>
+            </div>
+          </label>
         </div>
       </div>
     </section>

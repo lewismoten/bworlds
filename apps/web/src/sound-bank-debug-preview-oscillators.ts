@@ -17,6 +17,7 @@ export type SoundBankDebugPreviewOscillatorOverride = Readonly<{
   harmonicEnabled: boolean;
   carrierGainMultiplier: number;
   harmonicGainMultiplier: number;
+  harmonicRatio: number;
   carrierWaveform: MusicWaveform;
   harmonicWaveform: MusicWaveform;
   soloTarget: SoundBankDebugPreviewOscillatorSoloTarget;
@@ -40,6 +41,7 @@ export function resolveSoundBankDebugPreviewOscillatorDefaults(
     harmonicEnabled: instrument.harmonicGain > 0,
     carrierGainMultiplier: 1,
     harmonicGainMultiplier: 1,
+    harmonicRatio: instrument.timbre.harmonicRatio,
     carrierWaveform: instrument.waveform,
     harmonicWaveform: instrument.timbre.harmonicWaveform,
     soloTarget: 'all',
@@ -60,6 +62,9 @@ export function normalizeSoundBankDebugPreviewOscillatorState(
     ),
     harmonicGainMultiplier: normalizeGainMultiplier(
       value?.harmonicGainMultiplier ?? fallback.harmonicGainMultiplier
+    ),
+    harmonicRatio: normalizeHarmonicRatio(
+      value?.harmonicRatio ?? fallback.harmonicRatio
     ),
     carrierWaveform: resolveWaveform(
       value?.carrierWaveform ?? fallback.carrierWaveform
@@ -121,6 +126,7 @@ export function applySoundBankDebugPreviewOscillatorStateToNote(
     timbre: {
       ...note.timbre,
       harmonicWaveform: state.harmonicWaveform,
+      harmonicRatio: state.harmonicRatio,
       fundamentalGainMultiplier: carrierEnabled
         ? Math.max(
             0,
@@ -157,6 +163,7 @@ export function applySoundBankDebugPreviewOscillatorStateToInstrument<
     timbre: {
       ...instrument.timbre,
       harmonicWaveform: state.harmonicWaveform,
+      harmonicRatio: state.harmonicRatio,
       fundamentalGainMultiplier: carrierEnabled
         ? Math.max(
             0,
@@ -193,4 +200,11 @@ function normalizeGainMultiplier(value: number | null | undefined): number {
     return 1;
   }
   return Math.min(2, Math.max(0, value));
+}
+
+function normalizeHarmonicRatio(value: number | null | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 2;
+  }
+  return Math.min(8, Math.max(0.5, value));
 }

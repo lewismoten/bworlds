@@ -459,6 +459,12 @@ function readPreviewOscillatorState(): SoundBankDebugPreviewOscillatorState | nu
             '#sound-bank-debug-oscillator-harmonic-gain'
           )?.value
         ) / 100,
+      harmonicRatio:
+        Number(
+          document.querySelector<HTMLInputElement>(
+            '#sound-bank-debug-oscillator-harmonic-ratio'
+          )?.value
+        ) / 100,
       carrierWaveform: (document.querySelector<HTMLSelectElement>(
         '#sound-bank-debug-oscillator-carrier-waveform'
       )?.value ?? previewOscillatorState?.carrierWaveform) as
@@ -495,6 +501,15 @@ function syncPreviewOscillatorUi(): void {
         `${Math.round(
           (readPreviewOscillatorState()?.harmonicGainMultiplier ?? 1) * 100
         )}%`
+      )
+    );
+  document
+    .querySelector<HTMLOutputElement>(
+      '#sound-bank-debug-oscillator-harmonic-ratio-value'
+    )
+    ?.replaceChildren(
+      document.createTextNode(
+        `${(readPreviewOscillatorState()?.harmonicRatio ?? 2).toFixed(2)}x`
       )
     );
 }
@@ -1294,7 +1309,7 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
 
   document
     .querySelectorAll<HTMLInputElement>(
-      '#sound-bank-debug-oscillator-carrier-gain, #sound-bank-debug-oscillator-harmonic-gain'
+      '#sound-bank-debug-oscillator-carrier-gain, #sound-bank-debug-oscillator-harmonic-gain, #sound-bank-debug-oscillator-harmonic-ratio'
     )
     .forEach((input) => {
       input.addEventListener(

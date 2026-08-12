@@ -19,6 +19,7 @@ describe('sound bank debug preview oscillators', () => {
           harmonicEnabled: true,
           carrierGainMultiplier: 1.25,
           harmonicGainMultiplier: 0.75,
+          harmonicRatio: 3.5,
           carrierWaveform: 'sawtooth',
           harmonicWaveform: 'triangle',
           soloTarget: 'carrier',
@@ -33,6 +34,7 @@ describe('sound bank debug preview oscillators', () => {
       harmonicEnabled: true,
       carrierGainMultiplier: 1.25,
       harmonicGainMultiplier: 0.75,
+      harmonicRatio: 3.5,
       carrierWaveform: 'sawtooth',
       harmonicWaveform: 'triangle',
       soloTarget: 'carrier',
@@ -60,6 +62,7 @@ describe('sound bank debug preview oscillators', () => {
       harmonicEnabled: true,
       carrierGainMultiplier: 1,
       harmonicGainMultiplier: 1,
+      harmonicRatio: 2,
       carrierWaveform: 'sine',
       harmonicWaveform: 'triangle',
       soloTarget: 'all',
@@ -96,6 +99,7 @@ describe('sound bank debug preview oscillators', () => {
         harmonicEnabled: true,
         carrierGainMultiplier: 1.4,
         harmonicGainMultiplier: 0.5,
+        harmonicRatio: 3.25,
         carrierWaveform: 'triangle',
         harmonicWaveform: 'sawtooth',
         soloTarget: 'carrier',
@@ -105,6 +109,7 @@ describe('sound bank debug preview oscillators', () => {
     expect(note.timbre.fundamentalGainMultiplier).toBe(1.4);
     expect(note.harmonicGain).toBe(0);
     expect(note.waveform).toBe('triangle');
+    expect(note.timbre.harmonicRatio).toBe(3.25);
     expect(note.timbre.harmonicWaveform).toBe('sawtooth');
   });
 
@@ -129,6 +134,7 @@ describe('sound bank debug preview oscillators', () => {
         harmonicEnabled: true,
         carrierGainMultiplier: 0.8,
         harmonicGainMultiplier: 1.5,
+        harmonicRatio: 1.75,
         carrierWaveform: 'triangle',
         harmonicWaveform: 'sawtooth',
         soloTarget: 'all',
@@ -138,6 +144,7 @@ describe('sound bank debug preview oscillators', () => {
     expect(instrument.waveform).toBe('triangle');
     expect(instrument.timbre.fundamentalGainMultiplier).toBe(0.8);
     expect(instrument.harmonicGain).toBeCloseTo(0.33, 5);
+    expect(instrument.timbre.harmonicRatio).toBe(1.75);
     expect(instrument.timbre.harmonicWaveform).toBe('sawtooth');
   });
 
@@ -148,6 +155,7 @@ describe('sound bank debug preview oscillators', () => {
         harmonicEnabled: true,
         carrierGainMultiplier: 1,
         harmonicGainMultiplier: 1,
+        harmonicRatio: 2,
         carrierWaveform: 'square',
         harmonicWaveform: 'triangle',
         soloTarget: 'carrier',
@@ -159,6 +167,7 @@ describe('sound bank debug preview oscillators', () => {
         harmonicEnabled: true,
         carrierGainMultiplier: 1,
         harmonicGainMultiplier: 1,
+        harmonicRatio: 2,
         carrierWaveform: 'square',
         harmonicWaveform: 'triangle',
         soloTarget: 'carrier',
@@ -170,6 +179,7 @@ describe('sound bank debug preview oscillators', () => {
         harmonicEnabled: false,
         carrierGainMultiplier: 1,
         harmonicGainMultiplier: 1,
+        harmonicRatio: 2,
         carrierWaveform: 'square',
         harmonicWaveform: 'triangle',
         soloTarget: 'harmonic',
@@ -187,6 +197,7 @@ describe('sound bank debug preview oscillators', () => {
           instrumentId: 'lead-square',
           carrierGainMultiplier: -1,
           harmonicGainMultiplier: 99,
+          harmonicRatio: 99,
         },
         {
           instrumentId: 'lead-square',
@@ -196,6 +207,7 @@ describe('sound bank debug preview oscillators', () => {
       expect.objectContaining({
         carrierGainMultiplier: 0,
         harmonicGainMultiplier: 2,
+        harmonicRatio: 8,
       })
     );
   });
