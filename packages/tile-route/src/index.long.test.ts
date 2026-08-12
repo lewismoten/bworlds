@@ -1731,6 +1731,26 @@ describe('tile route', () => {
     );
   });
 
+  it('uses the dock deck mesh as the root node', () => {
+    const state = createDockModelState();
+    const model = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.children.length).toBeGreaterThanOrEqual(2);
+
+    const childKinds = new Set(
+      model?.children.map((child) => child.userData?.dockInstancedPart) ?? []
+    );
+    expect(childKinds.has('rail')).toBe(true);
+    expect(childKinds.has('pile')).toBe(true);
+  });
+
   it('reuses dock palette materials across separated dock clusters in one region', () => {
     const state = createSeparatedDockModelState();
     const first = dockTile?.create3DModel?.({

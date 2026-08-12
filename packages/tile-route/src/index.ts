@@ -1794,16 +1794,13 @@ function* createDockGroupProgressive({
     info.anchorY
   );
   const alongX = info.axis === 'ew';
-  const group = new three.Group();
-  group.position.set(tileX, 0, tileY);
   const totalSteps = 3;
 
   const deck = new three.Mesh(
     new three.BoxGeometry(alongX ? 1.02 : 0.64, 0.07, alongX ? 0.64 : 1.02),
     style.deckMaterial
   );
-  deck.position.y = -0.035;
-  group.add(deck);
+  deck.position.set(tileX, -0.035, tileY);
 
   const railInstances = new three.InstancedMesh(
     new three.BoxGeometry(1, 1, 1),
@@ -1829,7 +1826,7 @@ function* createDockGroupProgressive({
       )
     );
   }
-  group.add(railInstances);
+  deck.add(railInstances);
 
   const pileOffsets = alongX
     ? [
@@ -1869,7 +1866,7 @@ function* createDockGroupProgressive({
       )
     );
   }
-  group.add(pileInstances);
+  deck.add(pileInstances);
 
   yield {
     completedSteps: 1,
@@ -1878,7 +1875,7 @@ function* createDockGroupProgressive({
   };
 
   if (shouldRenderDockBoat(state, tileX, tileY, info)) {
-    addDockBoat(group, three, state, style, alongX, tileX, tileY, info);
+    addDockBoat(deck, three, state, style, alongX, tileX, tileY, info);
   }
 
   yield {
@@ -1889,7 +1886,7 @@ function* createDockGroupProgressive({
 
   const route = resolveDockBoatRoute(state, tileX, tileY);
   if (route && info.segmentIndex === 0) {
-    addDockRouteSign(group, three, state, style, alongX, tileX, tileY, route);
+    addDockRouteSign(deck, three, state, style, alongX, tileX, tileY, route);
   }
 
   yield {
@@ -1898,7 +1895,7 @@ function* createDockGroupProgressive({
     label: 'route-sign',
   };
 
-  return group;
+  return deck;
 }
 
 function addDockRouteSign(

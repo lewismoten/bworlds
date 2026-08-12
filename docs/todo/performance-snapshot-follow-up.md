@@ -351,7 +351,11 @@ low` visible recovery, and full-detail `tile-sign` tiles now use their post
       and attach the repeated support-post `InstancedMesh` beneath it instead
       of wrapping both parts in a dedicated `Group`, which removes one static
       `Object3D` from each forest-log bridge tile without changing its support
-      placement or traversal-axis metadata.
+      placement or traversal-axis metadata, and dock tiles now use their deck
+      mesh as the tile root and attach the repeated rail/pile `InstancedMesh`
+      sets plus optional boat and route sign beneath it instead of wrapping the
+      crossing in a dedicated `Group`, which removes one static `Object3D` from
+      each dock tile without changing dock geometry or route-sign placement.
 
 ## LOD Stability
 

@@ -48,5 +48,10 @@ attach the repeated support posts beneath it. That removes one static wrapper
 `Group` from each visible forest-log bridge while preserving the same support
 placement and traversal marker metadata.
 
+Dock tiles now use the deck mesh as the tile root and attach the repeated
+rails, piles, optional boat, and optional route sign beneath it. That removes
+one static wrapper `Group` from each visible dock tile while preserving the
+same local placements and route signage behavior.
+
 The synchronous `create3DModel()` path still exhausts the same generator so the
 progressive and eager dock builds stay structurally aligned.
