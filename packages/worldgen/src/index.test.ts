@@ -24,6 +24,7 @@ import {
   listBuiltinContentPacks,
   TERRAIN_CHUNK_CELL_SIZE,
   TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE,
+  validateTerrainHeightValue,
   WORLD_FEET_PER_TILE,
   WORLD_TERRAIN_FLAT_GRADE_EPSILON,
   WORLD_METERS_PER_TILE,
@@ -88,6 +89,19 @@ describe('world generator', () => {
     expect(convertWorldHeightUnitsToFeet(0.5)).toBeCloseTo(
       WORLD_FEET_PER_TILE * 0.5,
       6
+    );
+  });
+
+  it('rejects non-finite terrain height values', () => {
+    expect(validateTerrainHeightValue(0.25, 'Test height')).toBe(0.25);
+    expect(() => validateTerrainHeightValue(Number.NaN)).toThrow(
+      'Terrain height must be a finite number, received NaN.'
+    );
+    expect(() => validateTerrainHeightValue(Number.POSITIVE_INFINITY)).toThrow(
+      'Terrain height must be a finite number, received Infinity.'
+    );
+    expect(() => validateTerrainHeightValue(Number.NEGATIVE_INFINITY)).toThrow(
+      'Terrain height must be a finite number, received -Infinity.'
     );
   });
 

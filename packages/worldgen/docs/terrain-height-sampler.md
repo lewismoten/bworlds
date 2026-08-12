@@ -21,6 +21,8 @@ Current surface:
 - `terrainHeightSampler` exposes the same height, surface, slope, aspect,
   curvature, range, and sea-depth calls for consumers that want one shared
   sampler object
+- `validateTerrainHeightValue(height, label?)` is the shared finite-value guard
+  used by the sampler path before height values are cached or summarized
 
 Current limits:
 

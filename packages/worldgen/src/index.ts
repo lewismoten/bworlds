@@ -115,6 +115,16 @@ export type WorldTerrainSeaDepthSample = {
   isBelowSeaLevel: boolean;
 };
 
+export function validateTerrainHeightValue(
+  height: number,
+  label = 'Terrain height'
+): number {
+  if (!Number.isFinite(height)) {
+    throw new Error(`${label} must be a finite number, received ${height}.`);
+  }
+  return height;
+}
+
 export type WorldTerrainHeightSampler = {
   sampleHeight(worldX: number, worldY: number): number;
   sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
@@ -298,9 +308,12 @@ export function createWorldGenerator({
     const key = getPreviewKey(x, y);
     return previewSurfaceHeightCache.getOrCreate(key, () => {
       const kind = samplePreviewSurfaceKind(x, y);
-      return resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
-        kind,
-      });
+      return validateTerrainHeightValue(
+        resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
+          kind,
+        }),
+        `Terrain height at ${x}:${y}`
+      );
     });
   };
   const sampleTerrainSurface = (
@@ -415,9 +428,18 @@ export function createWorldGenerator({
     return {
       ...normalizedBounds,
       sampleCount,
-      minHeight,
-      maxHeight,
-      heightRange: maxHeight - minHeight,
+      minHeight: validateTerrainHeightValue(
+        minHeight,
+        'Terrain height range minimum'
+      ),
+      maxHeight: validateTerrainHeightValue(
+        maxHeight,
+        'Terrain height range maximum'
+      ),
+      heightRange: validateTerrainHeightValue(
+        maxHeight - minHeight,
+        'Terrain height range span'
+      ),
     };
   };
   const sampleTerrainSeaDepth = (

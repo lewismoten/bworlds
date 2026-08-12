@@ -43,7 +43,7 @@
 
 ## Validation
 
-- [ ] Reject NaN and infinite height values.
+- [x] Reject NaN and infinite height values.
 - [ ] Clamp impossible heights after all layers compose.
 - [ ] Log the plugin that caused an invalid height.
 - [ ] Test deterministic height sampling.
@@ -84,6 +84,9 @@ Current support:
 - It now also exposes `sampleTerrainSeaDepth(worldX, worldY)`, which turns the
   shared surface sample into one explicit sea-depth result with
   `depthBelowSeaLevel` and `isBelowSeaLevel`.
+- The shared worldgen height path now also validates that sampled terrain
+  heights stay finite before they are cached or summarized, via
+  `validateTerrainHeightValue(...)`.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height
