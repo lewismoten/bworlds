@@ -128,11 +128,13 @@ const fakeThree = {
   Mesh: FakeMesh,
   InstancedMesh: FakeInstancedMesh,
   Matrix4: FakeMatrix4,
+  MeshBasicMaterial: FakeMaterial,
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
   PlaneGeometry: FakeGeometry,
   Vector3: FakeVector3,
+  DoubleSide: 'DoubleSide',
 } as const;
 
 const plugin = createRouteTilePlugin();

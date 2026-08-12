@@ -129,11 +129,13 @@ const fakeThree = {
   Mesh: FakeMesh,
   InstancedMesh: FakeInstancedMesh,
   Matrix4: FakeMatrix4,
+  MeshBasicMaterial: FakeMaterial,
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
   PlaneGeometry: FakeGeometry,
   Vector3: FakeVector3,
+  DoubleSide: 'DoubleSide',
 } as const;
 
 const plugin = createRouteTilePlugin();
@@ -1302,6 +1304,53 @@ describe('tile route', () => {
     expect(signPlacardInstances[0]?.count).toBe(2);
     expect(signPlacardInstances[0]?.matrices).toHaveLength(2);
     expect(nestedSignGroups).toHaveLength(0);
+  });
+
+  it('reuses dock route label materials across repeated builds on the same host', () => {
+    const state = createRoutedDockModelState();
+    const firstModel = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup;
+    const secondModel = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup;
+
+    const firstLabelMaterials: FakeMaterial[] = [];
+    const secondLabelMaterials: FakeMaterial[] = [];
+    firstModel.traverse((node) => {
+      if (
+        node instanceof FakeMesh &&
+        (node.userData?.dockRouteSignPart === 'main-label' ||
+          node.userData?.dockRouteSignPart === 'stop-label') &&
+        node.material instanceof FakeMaterial
+      ) {
+        firstLabelMaterials.push(node.material);
+      }
+    });
+    secondModel.traverse((node) => {
+      if (
+        node instanceof FakeMesh &&
+        (node.userData?.dockRouteSignPart === 'main-label' ||
+          node.userData?.dockRouteSignPart === 'stop-label') &&
+        node.material instanceof FakeMaterial
+      ) {
+        secondLabelMaterials.push(node.material);
+      }
+    });
+
+    expect(firstLabelMaterials).toHaveLength(3);
+    expect(secondLabelMaterials).toHaveLength(3);
+    expect(secondLabelMaterials[0]).toBe(firstLabelMaterials[0]);
+    expect(secondLabelMaterials[1]).toBe(firstLabelMaterials[1]);
+    expect(secondLabelMaterials[2]).toBe(firstLabelMaterials[2]);
   });
 
   it('instances repeated bridge railing posts on standard bridges', () => {

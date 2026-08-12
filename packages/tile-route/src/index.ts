@@ -1,6 +1,7 @@
 import {
   createBoundedCache,
   createCoordinateCache,
+  getOrCreateCacheValue,
 } from '@bworlds/cache-support';
 import { resolveDockBoatRoute } from '@bworlds/dock-route-support';
 import {
@@ -31,10 +32,11 @@ import {
   resolveDominantNeighborFloorKind3D,
 } from '@bworlds/tile-support';
 import {
+  createBasicMaterial,
   createPaintedCanvasTexture,
   createQuadraticBezierPoints,
   createRibbonMesh,
-  createTexturedPlaneMesh,
+  getSharedPlaneGeometry,
   getOrCreatePaintedCanvasTexture,
   type PathPointLike,
 } from '@bworlds/three-support';
@@ -134,9 +136,14 @@ const bridgeClusterCache = createCoordinateCache<BridgeClusterInfo>();
 const dockStyleCache = createBoundedCache<string, DockStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
-const dockRouteLabelCache = createBoundedCache<string, ThreeTextureLike>(
-  ROUTE_LABEL_CACHE_LIMIT
-);
+const dockRouteLabelTextureCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, ThreeTextureLike>>
+>();
+const dockRouteLabelMaterialCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, ThreeMaterialLike>>
+>();
 const dockClusterCache = createCoordinateCache<DockClusterInfo>();
 const dockClassificationFootprintCache = new WeakMap<
   NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>,
@@ -2022,8 +2029,33 @@ function createDockRouteLabelPlane(
     key: string;
   }
 ) {
-  const texture = getOrCreatePaintedCanvasTexture(
-    dockRouteLabelCache,
+  const material = getOrCreateCacheValue(
+    getDockRouteLabelMaterialCache(three),
+    options.key,
+    () =>
+      createBasicMaterial(three, {
+        map: getDockRouteLabelTexture(three, options),
+        transparent: true,
+        depthWrite: false,
+        side: three.DoubleSide,
+      })
+  );
+  return new three.Mesh(
+    getSharedPlaneGeometry(three, options.width, options.height),
+    material
+  );
+}
+
+function getDockRouteLabelTexture(
+  three: ThreeHostLike,
+  options: {
+    boatName: string;
+    stopName: string;
+    key: string;
+  }
+): ThreeTextureLike {
+  return getOrCreatePaintedCanvasTexture(
+    getDockRouteLabelTextureCache(three),
     options.key,
     three,
     {
@@ -2058,11 +2090,28 @@ function createDockRouteLabelPlane(
       },
     }
   );
-  return createTexturedPlaneMesh(three, {
-    width: options.width,
-    height: options.height,
-    texture,
-  });
+}
+
+function getDockRouteLabelTextureCache(three: object) {
+  let cache = dockRouteLabelTextureCache.get(three);
+  if (!cache) {
+    cache = createBoundedCache<string, ThreeTextureLike>(
+      ROUTE_LABEL_CACHE_LIMIT
+    );
+    dockRouteLabelTextureCache.set(three, cache);
+  }
+  return cache;
+}
+
+function getDockRouteLabelMaterialCache(three: object) {
+  let cache = dockRouteLabelMaterialCache.get(three);
+  if (!cache) {
+    cache = createBoundedCache<string, ThreeMaterialLike>(
+      ROUTE_LABEL_CACHE_LIMIT
+    );
+    dockRouteLabelMaterialCache.set(three, cache);
+  }
+  return cache;
 }
 
 function getDockLandwardSide(
