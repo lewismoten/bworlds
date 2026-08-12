@@ -16,6 +16,7 @@ describe('runtime performance snapshot validation', () => {
     const snapshot = createValidRuntimePerformanceSnapshot();
 
     expect(validateRuntimePerformanceSnapshot(snapshot).errors).toEqual([]);
+    expect(validateRuntimePerformanceSnapshot(snapshot).warnings).toEqual([]);
   });
 
   it('treats nullable non-required metrics as unmeasured rather than invalid zeros', () => {
@@ -29,6 +30,59 @@ describe('runtime performance snapshot validation', () => {
     snapshot.violations = [];
 
     expect(validateRuntimePerformanceSnapshot(snapshot).errors).toEqual([]);
+    expect(validateRuntimePerformanceSnapshot(snapshot).warnings).toEqual([]);
+  });
+
+  it('keeps startup missing-metric warnings separate from hard validation errors', () => {
+    const snapshot = createValidRuntimePerformanceSnapshot();
+    snapshot.trigger = 'startup';
+    snapshot.metrics.initialWorldGenerationMs = null;
+    snapshot.metrics.visibleTileGeneration = null;
+
+    const validation = validateRuntimePerformanceSnapshot(snapshot);
+
+    expect(validation.errors).toEqual(
+      expect.arrayContaining([
+        'Runtime performance snapshot trigger startup requires metric initialWorldGenerationMs.',
+        'Runtime performance snapshot trigger startup requires metric visibleTileGeneration.',
+      ])
+    );
+    expect(validation.warnings).toEqual(
+      expect.arrayContaining([
+        'Startup snapshot is missing initialWorldGenerationMs.',
+        'Startup snapshot is missing visibleTileGeneration.',
+      ])
+    );
+  });
+
+  it('warns when game runtime metrics are suspiciously near zero', () => {
+    const snapshot = createValidRuntimePerformanceSnapshot();
+    snapshot.source = 'game';
+    snapshot.trigger = 'runtime-issue';
+    snapshot.metrics.maximumFrameMs = 0.2;
+    snapshot.metrics.drawCalls = 0;
+    snapshot.metrics.activeThreeObjectCount = 25;
+    snapshot.metrics.visibleTileGeneration = {
+      averageMs: 4,
+      maxMs: 7,
+      buildsPerSecond: 0,
+      pendingTileCount: 3,
+    };
+    snapshot.violations = collectRuntimePerformanceViolations(
+      snapshot.metrics,
+      snapshot.limits
+    );
+
+    const validation = validateRuntimePerformanceSnapshot(snapshot);
+
+    expect(validation.errors).toEqual([]);
+    expect(validation.warnings).toEqual(
+      expect.arrayContaining([
+        'Maximum frame time 0.2 ms is suspiciously low.',
+        'Draw calls are zero despite active Three.js objects being present.',
+        'Visible tile buildsPerSecond is 0.0 while 3 pending tiles remain.',
+      ])
+    );
   });
 
   it('keeps the supported limit fields aligned with the supported metric fields', () => {
@@ -123,6 +177,20 @@ describe('runtime performance snapshot validation', () => {
         'Runtime performance snapshot metric visibleTileGeneration.buildsPerSecond must be null or a finite non-negative number.',
       ])
     );
+  });
+
+  it('accepts legacy snapshots that are missing newer limit fields by backfilling current defaults', () => {
+    const snapshot = createValidRuntimePerformanceSnapshot() as {
+      limits: Record<string, number>;
+    };
+    delete snapshot.limits.pendingTileCount;
+    delete snapshot.limits.visibleTileGenerationAverageMs;
+    delete snapshot.limits.visibleTileGenerationMaxMs;
+    snapshot.limits.visibleTileGenerationMs = 16;
+
+    expect(
+      validateRuntimePerformanceSnapshot(snapshot as never).errors
+    ).toEqual([]);
   });
 
   it('fails when a trigger-specific required metric is missing', () => {

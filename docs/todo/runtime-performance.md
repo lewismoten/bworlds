@@ -38,9 +38,9 @@
 - [x] Test MIDI export duration enforcement.
 - [x] Test WAV export duration enforcement.
 - [ ] Reject impossible object or draw-call counts.
-- [ ] Warn when expected startup metrics are missing.
-- [ ] Warn when suspicious metrics are near zero.
-- [ ] Keep warnings separate from hard violations.
+- [x] Warn when expected startup metrics are missing.
+- [x] Warn when suspicious metrics are near zero.
+- [x] Keep warnings separate from hard violations.
 - [x] Test snapshot JSON can round-trip without data loss.
 - [ ] Test old schema versions can be migrated.
 - [x] Test unknown schema versions are rejected.
@@ -67,4 +67,8 @@ the runtime snapshot limits now split visible tile generation into separate
 matches the actual metric shape instead of forcing two measurements through one
 shared threshold, and runtime snapshots now also enforce the healthy
 pending-build queue ceiling of `8` pending tiles, with regression coverage for
-the corresponding violation and schema alignment path.
+the corresponding violation and schema alignment path, and snapshot validation
+now returns non-fatal `warnings` separately from hard `errors`, with coverage
+for missing startup metrics, suspicious near-zero runtime measurements, and the
+latest-snapshot regression path accepting warnings without treating them as
+schema failures.

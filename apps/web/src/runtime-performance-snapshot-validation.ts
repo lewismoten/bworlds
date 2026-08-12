@@ -8,6 +8,7 @@ import {
 
 export type RuntimePerformanceSnapshotValidationResult = {
   errors: string[];
+  warnings: string[];
 };
 
 export const NULLABLE_RUNTIME_PERFORMANCE_METRICS = [
@@ -71,10 +72,18 @@ export const REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER = {
   readonly string[]
 >;
 
+const LEGACY_RUNTIME_PERFORMANCE_LIMIT_ALIASES = new Set([
+  'visibleTileGenerationMs',
+]);
+
 export function validateRuntimePerformanceSnapshot(
   snapshot: RuntimePerformanceSnapshot
 ): RuntimePerformanceSnapshotValidationResult {
   const errors: string[] = [];
+  const warnings: string[] = [];
+  const normalizedLimits = normalizeRuntimePerformanceSnapshotLimits(
+    snapshot.limits
+  );
 
   if (snapshot.schemaVersion !== 1) {
     errors.push(
@@ -118,7 +127,7 @@ export function validateRuntimePerformanceSnapshot(
     );
   }
 
-  for (const [limitName, limitValue] of Object.entries(snapshot.limits)) {
+  for (const [limitName, limitValue] of Object.entries(normalizedLimits)) {
     if (!isFiniteNonNegativeNumber(limitValue)) {
       errors.push(
         `Runtime performance snapshot limit ${limitName} must be a finite non-negative number.`
@@ -218,11 +227,19 @@ export function validateRuntimePerformanceSnapshot(
     }
   }
 
-  const limitNames = Object.keys(snapshot.limits).sort();
+  const limitNames = Object.keys(normalizedLimits).sort();
   const alignedLimitNames = Object.keys(
     RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS
   ).sort();
+  const unexpectedLimitNames = Object.keys(snapshot.limits ?? {}).filter(
+    (limitName) =>
+      !(
+        limitName in DEFAULT_RUNTIME_PERFORMANCE_LIMITS ||
+        LEGACY_RUNTIME_PERFORMANCE_LIMIT_ALIASES.has(limitName)
+      )
+  );
   if (
+    unexpectedLimitNames.length > 0 ||
     limitNames.length !== alignedLimitNames.length ||
     limitNames.some(
       (limitName, index) => limitName !== alignedLimitNames[index]
@@ -244,10 +261,12 @@ export function validateRuntimePerformanceSnapshot(
     }
   }
 
+  warnings.push(...collectRuntimePerformanceSnapshotWarnings(snapshot));
+
   if (errors.length === 0) {
     const expectedViolations = collectRuntimePerformanceViolations(
       snapshot.metrics,
-      snapshot.limits
+      normalizedLimits
     );
     const actualViolations = Array.isArray(snapshot.violations)
       ? snapshot.violations
@@ -270,7 +289,86 @@ export function validateRuntimePerformanceSnapshot(
 
   return {
     errors,
+    warnings,
   };
+}
+
+function normalizeRuntimePerformanceSnapshotLimits(
+  limits: RuntimePerformanceSnapshot['limits']
+): typeof DEFAULT_RUNTIME_PERFORMANCE_LIMITS {
+  const legacyLimits = limits as Record<string, number> | undefined;
+  const {
+    visibleTileGenerationMs: _legacyVisibleTileGenerationMs,
+    ...remainingLimits
+  } = legacyLimits ?? {};
+  return {
+    ...DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
+    ...(typeof legacyLimits?.visibleTileGenerationMs === 'number'
+      ? {
+          visibleTileGenerationMaxMs: legacyLimits.visibleTileGenerationMs,
+        }
+      : {}),
+    ...remainingLimits,
+  };
+}
+
+function collectRuntimePerformanceSnapshotWarnings(
+  snapshot: RuntimePerformanceSnapshot
+): string[] {
+  const warnings: string[] = [];
+
+  if (snapshot.trigger === 'startup') {
+    if (snapshot.metrics.initialWorldGenerationMs === null) {
+      warnings.push('Startup snapshot is missing initialWorldGenerationMs.');
+    }
+    if (snapshot.metrics.visibleTileGeneration === null) {
+      warnings.push('Startup snapshot is missing visibleTileGeneration.');
+    }
+    if (snapshot.metrics.maximumFrameMs === null) {
+      warnings.push('Startup snapshot is missing maximumFrameMs.');
+    }
+    if (snapshot.metrics.activeThreeObjectCount === null) {
+      warnings.push('Startup snapshot is missing activeThreeObjectCount.');
+    }
+    if (snapshot.metrics.drawCalls === null) {
+      warnings.push('Startup snapshot is missing drawCalls.');
+    }
+  }
+
+  if (
+    snapshot.source === 'game' &&
+    snapshot.metrics.maximumFrameMs !== null &&
+    snapshot.metrics.maximumFrameMs < 1
+  ) {
+    warnings.push(
+      `Maximum frame time ${snapshot.metrics.maximumFrameMs.toFixed(1)} ms is suspiciously low.`
+    );
+  }
+
+  if (
+    snapshot.source === 'game' &&
+    snapshot.metrics.activeThreeObjectCount !== null &&
+    snapshot.metrics.activeThreeObjectCount > 0 &&
+    snapshot.metrics.drawCalls !== null &&
+    snapshot.metrics.drawCalls === 0
+  ) {
+    warnings.push(
+      'Draw calls are zero despite active Three.js objects being present.'
+    );
+  }
+
+  if (
+    snapshot.source === 'game' &&
+    snapshot.metrics.visibleTileGeneration !== null &&
+    snapshot.metrics.visibleTileGeneration.pendingTileCount > 0 &&
+    snapshot.metrics.visibleTileGeneration.buildsPerSecond === 0
+  ) {
+    warnings.push(
+      `Visible tile buildsPerSecond is 0.0 while ${snapshot.metrics.visibleTileGeneration.pendingTileCount} pending tiles remain.`
+    );
+  }
+
+  return warnings;
 }
 
 function getRuntimePerformanceMetricPathValue(
