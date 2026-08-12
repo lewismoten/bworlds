@@ -188,7 +188,10 @@
       `tile-observatory` now keeps repeated full-detail observatory builds on
       one host within one shared six-material palette so plinth, snow, tower,
       trim, dome, and telescope materials cannot quietly grow between passes,
-      and `tile-cave` now keeps repeated full-detail cave-mouth builds on one
+      and `tile-tower` now keeps repeated tower builds on one host within one
+      shared four-material palette so stone, trim, roof, and lamp materials
+      cannot quietly grow between passes, and `tile-cave` now keeps repeated
+      full-detail cave-mouth builds on one
       host within one shared six-material palette so mountain stone, void,
       tunnel, and lantern materials cannot quietly grow between passes, and
       `tile-station` now keeps repeated station builds on one host within

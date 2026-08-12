@@ -51,6 +51,41 @@ describe('tile tower', () => {
     expect(first?.children[5]?.material).toBe(second?.children[5]?.material);
   });
 
+  it('keeps repeated tower builds on one host within the shared material budget', () => {
+    const plugin = createTowerTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
+    const three = createFakeThree() as never;
+    const repeatedModels: BaseNode[] = [];
+
+    for (const [tileX, tileY] of [
+      [8, -3],
+      [10, -1],
+      [12, 1],
+      [14, 3],
+    ]) {
+      const model = tile?.create3DModel?.({
+        tile: { kind: 'tower' },
+        three,
+        state: {} as never,
+        tileX,
+        tileY,
+      }) as BaseNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<object>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(4);
+  });
+
   it('builds the full-detail tower progressively before returning the final model', () => {
     const plugin = createTowerTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
@@ -347,4 +382,26 @@ function createModelSignature(model: BaseNode | undefined) {
     });
   });
   return signature;
+}
+
+function collectMeshMaterials(root: BaseNode | undefined): Set<object> {
+  const materials = new Set<object>();
+  root?.traverse((node) => {
+    if (!(node instanceof Mesh)) {
+      return;
+    }
+    const material = node.material;
+    if (Array.isArray(material)) {
+      material.forEach((entry) => {
+        if (entry && typeof entry === 'object') {
+          materials.add(entry);
+        }
+      });
+      return;
+    }
+    if (material && typeof material === 'object') {
+      materials.add(material);
+    }
+  });
+  return materials;
 }
