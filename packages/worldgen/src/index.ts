@@ -84,6 +84,16 @@ export type WorldTerrainAspectSample = {
   aspectRadians: number | null;
 };
 
+export type WorldTerrainCurvatureSample = {
+  worldX: number;
+  worldY: number;
+  sampleStep: number;
+  height: number;
+  curvatureX: number;
+  curvatureY: number;
+  curvatureMagnitude: number;
+};
+
 export type WorldTerrainHeightSampler = {
   sampleHeight(worldX: number, worldY: number): number;
   sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
@@ -97,6 +107,11 @@ export type WorldTerrainHeightSampler = {
     worldY: number,
     sampleStep?: number
   ): WorldTerrainAspectSample;
+  sampleCurvature(
+    worldX: number,
+    worldY: number,
+    sampleStep?: number
+  ): WorldTerrainCurvatureSample;
 };
 
 export function convertFeetToWorldHeightUnits(feet: number): number {
@@ -152,6 +167,11 @@ export function createWorldGenerator({
     y: number,
     sampleStep?: number
   ): WorldTerrainAspectSample;
+  sampleTerrainCurvature(
+    x: number,
+    y: number,
+    sampleStep?: number
+  ): WorldTerrainCurvatureSample;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
@@ -301,11 +321,37 @@ export function createWorldGenerator({
       aspectRadians,
     };
   };
+  const sampleTerrainCurvature = (
+    x: number,
+    y: number,
+    sampleStep = 1
+  ): WorldTerrainCurvatureSample => {
+    const normalizedSampleStep = normalizeTerrainSampleStep(sampleStep);
+    const centerHeight = sampleTerrainHeight(x, y);
+    const leftHeight = sampleTerrainHeight(x - normalizedSampleStep, y);
+    const rightHeight = sampleTerrainHeight(x + normalizedSampleStep, y);
+    const downHeight = sampleTerrainHeight(x, y - normalizedSampleStep);
+    const upHeight = sampleTerrainHeight(x, y + normalizedSampleStep);
+    const denominator = normalizedSampleStep * normalizedSampleStep;
+    const curvatureX =
+      (leftHeight - 2 * centerHeight + rightHeight) / denominator;
+    const curvatureY = (downHeight - 2 * centerHeight + upHeight) / denominator;
+    return {
+      worldX: x,
+      worldY: y,
+      sampleStep: normalizedSampleStep,
+      height: centerHeight,
+      curvatureX,
+      curvatureY,
+      curvatureMagnitude: Math.hypot(curvatureX, curvatureY),
+    };
+  };
   const terrainHeightSampler: WorldTerrainHeightSampler = {
     sampleHeight: sampleTerrainHeight,
     sampleSurface: sampleTerrainSurface,
     sampleSlope: sampleTerrainSlope,
     sampleAspect: sampleTerrainAspect,
+    sampleCurvature: sampleTerrainCurvature,
   };
 
   return {
@@ -319,6 +365,7 @@ export function createWorldGenerator({
     sampleTerrainSurface,
     sampleTerrainSlope,
     sampleTerrainAspect,
+    sampleTerrainCurvature,
     samplePreviewSurfaceHeight: sampleTerrainHeight,
     samplePreviewOverworld(x: number, y: number) {
       const key = getPreviewKey(x, y);

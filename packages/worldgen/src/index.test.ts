@@ -527,6 +527,54 @@ describe('world generator', () => {
     expect(aspect.aspectRadians).toBeNull();
   });
 
+  it('samples deterministic terrain curvature from the shared height API', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainCurvature(10, 20);
+    const centerHeight = generator.sampleTerrainHeight(10, 20);
+    const curvatureX =
+      generator.sampleTerrainHeight(9, 20) -
+      2 * centerHeight +
+      generator.sampleTerrainHeight(11, 20);
+    const curvatureY =
+      generator.sampleTerrainHeight(10, 19) -
+      2 * centerHeight +
+      generator.sampleTerrainHeight(10, 21);
+
+    expect(sample).toEqual({
+      worldX: 10,
+      worldY: 20,
+      sampleStep: 1,
+      height: centerHeight,
+      curvatureX,
+      curvatureY,
+      curvatureMagnitude: Math.hypot(curvatureX, curvatureY),
+    });
+    expect(generator.terrainHeightSampler.sampleCurvature(10, 20)).toEqual(
+      sample
+    );
+  });
+
+  it('supports wider terrain curvature sampling steps', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainCurvature(10, 20, 2);
+    const centerHeight = generator.sampleTerrainHeight(10, 20);
+    const curvatureX =
+      (generator.sampleTerrainHeight(8, 20) -
+        2 * centerHeight +
+        generator.sampleTerrainHeight(12, 20)) /
+      4;
+    const curvatureY =
+      (generator.sampleTerrainHeight(10, 18) -
+        2 * centerHeight +
+        generator.sampleTerrainHeight(10, 22)) /
+      4;
+
+    expect(sample.sampleStep).toBe(2);
+    expect(sample.curvatureX).toBe(curvatureX);
+    expect(sample.curvatureY).toBe(curvatureY);
+    expect(sample.curvatureMagnitude).toBe(Math.hypot(curvatureX, curvatureY));
+  });
+
   it('exposes one reusable world-space terrain height sampler contract', () => {
     const generator = createGenerator();
     const surface = generator.sampleTerrainSurface(10, 20);
@@ -553,6 +601,7 @@ describe('world generator', () => {
     const baselineTerrainSurface = generator.sampleTerrainSurface(10, 20);
     const baselineTerrainSlope = generator.sampleTerrainSlope(10, 20);
     const baselineTerrainAspect = generator.sampleTerrainAspect(10, 20);
+    const baselineTerrainCurvature = generator.sampleTerrainCurvature(10, 20);
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
@@ -564,6 +613,7 @@ describe('world generator', () => {
       generator.sampleTerrainSurface(x, y);
       generator.sampleTerrainSlope(x, y);
       generator.sampleTerrainAspect(x, y);
+      generator.sampleTerrainCurvature(x, y);
       generator.samplePreviewOverworld(x, y);
     }
 
@@ -579,6 +629,9 @@ describe('world generator', () => {
     expect(generator.sampleTerrainSlope(10, 20)).toEqual(baselineTerrainSlope);
     expect(generator.sampleTerrainAspect(10, 20)).toEqual(
       baselineTerrainAspect
+    );
+    expect(generator.sampleTerrainCurvature(10, 20)).toEqual(
+      baselineTerrainCurvature
     );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);

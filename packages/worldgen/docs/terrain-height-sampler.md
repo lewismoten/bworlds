@@ -12,12 +12,14 @@ Current surface:
   slope from the same shared height sampler
 - `sampleTerrainAspect(worldX, worldY, sampleStep?)` derives one local aspect
   angle from that same slope sample, or `null` for flat or near-flat terrain
-- `terrainHeightSampler` exposes the same height, surface, slope, and aspect
-  calls for consumers that want one shared sampler object
+- `sampleTerrainCurvature(worldX, worldY, sampleStep?)` derives one local
+  second-difference curvature sample from the same height path
+- `terrainHeightSampler` exposes the same height, surface, slope, aspect, and
+  curvature calls for consumers that want one shared sampler object
 
 Current limits:
 
 - this still samples the interim overworld relief curve, not the future fully
   layered authoritative terrain pipeline
-- slope and aspect are currently local central-difference derivatives only;
-  curvature and drainage-derived signals still need separate Phase 2 work
+- slope, aspect, and curvature are currently local finite-difference
+  derivatives only; drainage-derived signals still need separate Phase 2 work
