@@ -34,7 +34,7 @@
 
 ## Derived Data
 
-- [ ] Add slope sampling.
+- [x] Add slope sampling.
 - [ ] Add aspect sampling.
 - [ ] Add local curvature sampling.
 - [ ] Add drainage-gradient sampling.
@@ -66,6 +66,11 @@ Current support:
   `sampleTerrainHeight(x, y)` path whenever the deferred terrain preview module
   is loaded, while keeping the decorated runtime tile height as the temporary
   bootstrap fallback until that module resolves.
+- `@bworlds/worldgen` now also exposes
+  `sampleTerrainSlope(worldX, worldY, sampleStep?)`, which derives one local
+  central-difference grade from the same shared terrain-height sampler and
+  keeps that slope query on `terrainHeightSampler.sampleSlope(...)` too; see
+  `packages/worldgen/docs/terrain-height-sampler.md`.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height

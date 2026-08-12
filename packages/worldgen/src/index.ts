@@ -63,9 +63,24 @@ export type WorldTerrainHeightSample = {
   depthBelowSeaLevel: number;
 };
 
+export type WorldTerrainSlopeSample = {
+  worldX: number;
+  worldY: number;
+  sampleStep: number;
+  height: number;
+  slopeX: number;
+  slopeY: number;
+  grade: number;
+};
+
 export type WorldTerrainHeightSampler = {
   sampleHeight(worldX: number, worldY: number): number;
   sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
+  sampleSlope(
+    worldX: number,
+    worldY: number,
+    sampleStep?: number
+  ): WorldTerrainSlopeSample;
 };
 
 export function convertFeetToWorldHeightUnits(feet: number): number {
@@ -111,6 +126,11 @@ export function createWorldGenerator({
   terrainHeightSampler: WorldTerrainHeightSampler;
   sampleTerrainHeight(x: number, y: number): number;
   sampleTerrainSurface(x: number, y: number): WorldTerrainHeightSample;
+  sampleTerrainSlope(
+    x: number,
+    y: number,
+    sampleStep?: number
+  ): WorldTerrainSlopeSample;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
@@ -218,9 +238,32 @@ export function createWorldGenerator({
       depthBelowSeaLevel: Math.max(0, WORLD_TERRAIN_SEA_LEVEL - height),
     };
   };
+  const sampleTerrainSlope = (
+    x: number,
+    y: number,
+    sampleStep = 1
+  ): WorldTerrainSlopeSample => {
+    const normalizedSampleStep = normalizeTerrainSampleStep(sampleStep);
+    const leftHeight = sampleTerrainHeight(x - normalizedSampleStep, y);
+    const rightHeight = sampleTerrainHeight(x + normalizedSampleStep, y);
+    const downHeight = sampleTerrainHeight(x, y - normalizedSampleStep);
+    const upHeight = sampleTerrainHeight(x, y + normalizedSampleStep);
+    const slopeX = (rightHeight - leftHeight) / (normalizedSampleStep * 2);
+    const slopeY = (upHeight - downHeight) / (normalizedSampleStep * 2);
+    return {
+      worldX: x,
+      worldY: y,
+      sampleStep: normalizedSampleStep,
+      height: sampleTerrainHeight(x, y),
+      slopeX,
+      slopeY,
+      grade: Math.hypot(slopeX, slopeY),
+    };
+  };
   const terrainHeightSampler: WorldTerrainHeightSampler = {
     sampleHeight: sampleTerrainHeight,
     sampleSurface: sampleTerrainSurface,
+    sampleSlope: sampleTerrainSlope,
   };
 
   return {
@@ -232,6 +275,7 @@ export function createWorldGenerator({
     terrainHeightSampler,
     sampleTerrainHeight,
     sampleTerrainSurface,
+    sampleTerrainSlope,
     samplePreviewSurfaceHeight: sampleTerrainHeight,
     samplePreviewOverworld(x: number, y: number) {
       const key = getPreviewKey(x, y);
@@ -244,6 +288,15 @@ export function createWorldGenerator({
       });
     },
   };
+}
+
+function normalizeTerrainSampleStep(sampleStep: number): number {
+  if (!(sampleStep > 0) || !Number.isFinite(sampleStep)) {
+    throw new Error(
+      'Terrain slope sampleStep must be a finite positive number.'
+    );
+  }
+  return sampleStep;
 }
 
 export function createDefaultRuntimePlugins(): RuntimePlugin[] {

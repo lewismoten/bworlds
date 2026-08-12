@@ -454,6 +454,52 @@ describe('world generator', () => {
     expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
   });
 
+  it('samples deterministic terrain slope from the shared height API', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainSlope(10, 20);
+    const expectedSlopeX =
+      (generator.sampleTerrainHeight(11, 20) -
+        generator.sampleTerrainHeight(9, 20)) /
+      2;
+    const expectedSlopeY =
+      (generator.sampleTerrainHeight(10, 21) -
+        generator.sampleTerrainHeight(10, 19)) /
+      2;
+
+    expect(sample).toEqual({
+      worldX: 10,
+      worldY: 20,
+      sampleStep: 1,
+      height: generator.sampleTerrainHeight(10, 20),
+      slopeX: expectedSlopeX,
+      slopeY: expectedSlopeY,
+      grade: Math.hypot(expectedSlopeX, expectedSlopeY),
+    });
+    expect(generator.terrainHeightSampler.sampleSlope(10, 20)).toEqual(sample);
+    expect(generator.sampleTerrainSlope(10, 20)).toEqual(sample);
+  });
+
+  it('supports wider terrain slope sampling steps and rejects invalid step sizes', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainSlope(10, 20, 2);
+    const expectedSlopeX =
+      (generator.sampleTerrainHeight(12, 20) -
+        generator.sampleTerrainHeight(8, 20)) /
+      4;
+    const expectedSlopeY =
+      (generator.sampleTerrainHeight(10, 22) -
+        generator.sampleTerrainHeight(10, 18)) /
+      4;
+
+    expect(sample.sampleStep).toBe(2);
+    expect(sample.slopeX).toBe(expectedSlopeX);
+    expect(sample.slopeY).toBe(expectedSlopeY);
+    expect(sample.grade).toBe(Math.hypot(expectedSlopeX, expectedSlopeY));
+    expect(() => generator.sampleTerrainSlope(10, 20, 0)).toThrow(
+      'Terrain slope sampleStep must be a finite positive number.'
+    );
+  });
+
   it('exposes one reusable world-space terrain height sampler contract', () => {
     const generator = createGenerator();
     const surface = generator.sampleTerrainSurface(10, 20);
@@ -478,6 +524,7 @@ describe('world generator', () => {
     const baselinePreviewKind = generator.samplePreviewSurfaceKind(10, 20);
     const baselinePreviewHeight = generator.samplePreviewSurfaceHeight(10, 20);
     const baselineTerrainSurface = generator.sampleTerrainSurface(10, 20);
+    const baselineTerrainSlope = generator.sampleTerrainSlope(10, 20);
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
@@ -487,6 +534,7 @@ describe('world generator', () => {
       generator.samplePreviewSurfaceKind(x, y);
       generator.samplePreviewSurfaceHeight(x, y);
       generator.sampleTerrainSurface(x, y);
+      generator.sampleTerrainSlope(x, y);
       generator.samplePreviewOverworld(x, y);
     }
 
@@ -499,6 +547,7 @@ describe('world generator', () => {
     expect(generator.sampleTerrainSurface(10, 20)).toEqual(
       baselineTerrainSurface
     );
+    expect(generator.sampleTerrainSlope(10, 20)).toEqual(baselineTerrainSlope);
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
     expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
