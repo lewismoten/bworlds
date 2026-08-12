@@ -18,6 +18,7 @@ export default defineConfig({
       ...(suiteSelection.include ?? [
         'packages/**/src/**/*.test.ts',
         'apps/web/src/**/*.test.ts',
+        'scripts/**/*.test.mjs',
       ]),
     ],
     exclude: [...(suiteSelection.exclude ?? [])],

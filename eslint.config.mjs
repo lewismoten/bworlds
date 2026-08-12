@@ -45,5 +45,15 @@ export default tseslint.config(
         ...globals.es2022,
       },
     },
+  },
+  {
+    files: ['scripts/**/*.test.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.es2022,
+        ...globals.vitest,
+      },
+    },
   }
 );

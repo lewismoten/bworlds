@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node ../../scripts/vite-dev-restart.mjs",
     "build": "vite build && npm run build:budget",
     "build:analyze": "vite build --mode analyze && npm run build:budget",
     "build:budget": "node ./build-bundle-budgets.mjs",
