@@ -778,6 +778,49 @@ export interface WorldActionLike {
   [key: string]: unknown;
 }
 
+export interface WorldGenerationBounds {
+  minX: WorldX;
+  maxX: WorldX;
+  minY: WorldY;
+  maxY: WorldY;
+}
+
+export type WorldGenerationLayerPluginId = string;
+export type WorldGenerationRecordType = string;
+
+export interface WorldGenerationLayerDependency {
+  pluginId: WorldGenerationLayerPluginId;
+  recordType: WorldGenerationRecordType;
+  optional?: boolean;
+}
+
+export interface WorldGenerationLayerOutputRecord {
+  recordType: WorldGenerationRecordType;
+  description?: string;
+}
+
+export interface WorldGenerationFeatureRecordLike {
+  id: Identity;
+  type: WorldGenerationRecordType;
+  pluginId: WorldGenerationLayerPluginId;
+  bounds: WorldGenerationBounds;
+  zoomRelevance?: {
+    min?: number;
+    max?: number;
+  };
+  summary?: Record<string, unknown>;
+  detail?: Record<string, unknown>;
+}
+
+export interface WorldGenerationLayerContext {
+  seed: Seed;
+  worldRevision?: string | number;
+  bounds: WorldGenerationBounds;
+  queryRecords(
+    dependency: WorldGenerationLayerDependency
+  ): readonly WorldGenerationFeatureRecordLike[];
+}
+
 export interface PluginRegistryLike {
   getTilePlugin(kind: Kind): TilePlugin | null;
   getTileDefinition(kind: Kind): TileDefinitionLike | null;
@@ -875,22 +918,32 @@ export interface TilePlugin extends Pick<TileLike, 'kind'> {
   ) => WorldActionLike | null | void;
 }
 
-interface OrderPriority {
+export interface PluginOrder {
   priority?: number;
   after?: string[];
   before?: string[];
+}
+
+export interface WorldGenerationLayerPlugin {
+  id: WorldGenerationLayerPluginId;
+  order?: PluginOrder;
+  inputDependencies: readonly WorldGenerationLayerDependency[];
+  outputRecords: readonly WorldGenerationLayerOutputRecord[];
+  run(
+    context: WorldGenerationLayerContext
+  ): readonly WorldGenerationFeatureRecordLike[];
 }
 
 export interface OrderedPluginFactoryLike<
   TPlugin extends RuntimePlugin = RuntimePlugin,
 > {
   create(): TPlugin;
-  order?: OrderPriority;
+  order?: PluginOrder;
 }
 
 export interface RuntimePlugin {
   name: PluginName;
-  order?: OrderPriority;
+  order?: PluginOrder;
   tiles?: TilePlugin[];
   createMap?: (context: CreateMapContext) => WorldMapLike | null | void;
   resolveOverworldTile?: (

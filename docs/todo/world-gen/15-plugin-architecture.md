@@ -40,3 +40,25 @@
 - [ ] Show which plugin changed a selected height sample.
 - [ ] Show plugin execution timings by region.
 - [ ] Toggle selected generation layers in debug views.
+
+Current support:
+
+- `@bworlds/plugin-api` now exposes one dedicated
+  `WorldGenerationLayerPlugin` contract that is separate from runtime tile and
+  map plugins, so frozen world-data passes can declare a stable `id`,
+  execution `order`, `inputDependencies`, and `outputRecords` without bringing
+  renderer or gameplay hooks into the generation layer itself.
+- `createWorldGenerationLayerPlugin(...)` now normalizes and validates those
+  declarations, rejecting empty ids, malformed dependency keys, and empty
+  output-record declarations before later worldgen packages attempt to wire the
+  layer into a larger pipeline.
+- `sortWorldGenerationLayerPlugins(...)` now provides deterministic
+  priority-plus-`after`/`before` ordering for generation layers, which gives
+  later worldgen packages one reusable execution-order rule for continent,
+  hydrology, climate, vegetation, settlement, border, and naming passes.
+- `createWorldGenerationDependencyKey(...)` now gives future regional summary
+  caches and debug tooling one stable `pluginId:recordType` key shape for
+  querying upstream records by type and plugin owner.
+- See `packages/plugin-api/docs/world-generation-layer-plugins.md` for the
+  intended contract and why it is kept separate from the runtime content
+  plugin registry.

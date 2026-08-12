@@ -105,6 +105,11 @@ export {
   withOverworldTileClassifier,
   withPluginOrder,
 } from './utils';
+export {
+  createWorldGenerationDependencyKey,
+  createWorldGenerationLayerPlugin,
+  sortWorldGenerationLayerPlugins,
+} from './world-generation-layers';
 
 export class PluginRegistry implements PluginRegistryLike {
   plugins: RuntimePlugin[];
