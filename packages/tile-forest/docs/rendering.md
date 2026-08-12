@@ -22,9 +22,9 @@ Progressive loading:
   immediate ring around the player and sparsifies farther background tiles to a
   stable subset, while minimal quality drops every background tile beyond the
   immediate ring.
-- Reduced-quality near forest tiles keep their low-detail trunk silhouettes so
-  grounded trees remain readable around the player, while only the farther
-  background subset drops trunk instances to save draw calls.
+- Reduced-quality forest keeps low-detail trunk silhouettes on every visible
+  remaining forest tile so grounded trees remain readable even after the
+  background subset is thinned aggressively.
 - Reduced-quality full-detail forest tiles now also stop building the last
   player-tile full-detail tree and return after the low-detail canopy path, so
   reduced quality no longer spends progressive tree work on the foreground

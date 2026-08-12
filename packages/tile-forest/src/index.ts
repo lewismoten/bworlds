@@ -1436,15 +1436,7 @@ function* createForestModelProgressive({
       tileX,
       tileY,
       descriptors,
-      renderQuality,
-      {
-        omitTrunks: shouldOmitReducedForestBackgroundTrunks(
-          state,
-          tileX,
-          tileY,
-          renderQuality
-        ),
-      }
+      renderQuality
     );
     return group;
   }
@@ -1471,15 +1463,7 @@ function* createForestModelProgressive({
       tileX,
       tileY,
       backgroundInstanceDescriptors,
-      renderQuality,
-      {
-        omitTrunks: shouldOmitReducedForestBackgroundTrunks(
-          state,
-          tileX,
-          tileY,
-          renderQuality
-        ),
-      }
+      renderQuality
     );
   }
   if (fullDetailDescriptors.length === 0) {
@@ -4414,26 +4398,6 @@ function shouldSkipReducedForestBackgroundTile(
   return Math.abs(tileX * 17 + tileY * 31) % 3 !== 0;
 }
 
-function shouldOmitReducedForestBackgroundTrunks(
-  state: Create3DModelContext['state'],
-  tileX: number,
-  tileY: number,
-  quality: RenderBudgetQualityLevel | null | undefined
-) {
-  if (quality !== 'reduced' && quality !== 'minimal') {
-    return false;
-  }
-
-  const player = state?.player;
-  if (!player) {
-    return false;
-  }
-
-  const deltaX = tileX - player.x;
-  const deltaY = tileY - player.y;
-  return deltaX * deltaX + deltaY * deltaY > 2;
-}
-
 function addLowDetailForestTreeInstances(
   three: ThreeHostLike,
   group: ThreeObject3DLike,
@@ -4441,17 +4405,13 @@ function addLowDetailForestTreeInstances(
   tileX: number,
   tileY: number,
   descriptors: ForestTreeDescriptor[],
-  quality?: RenderBudgetQualityLevel | null,
-  options?: {
-    omitTrunks?: boolean;
-  }
+  quality?: RenderBudgetQualityLevel | null
 ) {
   if (descriptors.length === 0) {
     return;
   }
 
-  const omitTrunksForReducedQuality =
-    options?.omitTrunks ?? false;
+  const omitTrunksForReducedQuality = false;
   const trunkBuckets = new Map<ForestTreeForm, ForestTreeDescriptor[]>();
   for (const descriptor of descriptors) {
     const bucket = trunkBuckets.get(descriptor.form);

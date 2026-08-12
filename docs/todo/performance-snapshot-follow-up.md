@@ -153,9 +153,9 @@
       and reduced-quality forest tiles now skip optional close-detail
       accessories such as hollows, owls, carvings, meadows, birds, webs,
       breadcrumbs, bushes, landmarks, and floor props, and reduced-quality
-      low-detail forest tiles now drop separate trunk instances and keep one
-      canopy silhouette pass so the dominant background forest path costs one
-      instanced mesh instead of two per tile, and reduced-quality background
+      low-detail forest tiles now keep one shared trunk mesh plus one shared
+      canopy silhouette pass for the remaining visible subset, and
+      reduced-quality background
       forest now keeps canopy silhouettes only inside the immediate ring around
       the player while farther tiles fall back to a stable sparse subset so
       chunk draw calls stop spending half the visible forest budget on distant
