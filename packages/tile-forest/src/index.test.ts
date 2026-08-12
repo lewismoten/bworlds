@@ -691,7 +691,7 @@ describe('tile forest', () => {
     expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
   });
 
-  it('collapses reduced-quality background forest canopies to one shared instanced mesh', () => {
+  it('collapses reduced-quality near forest canopies to one shared instanced mesh while keeping trunks grounded', () => {
     const tile = getForestTile();
     const state = createForestTestState();
     let targetTile: { x: number; y: number } | null = null;
@@ -747,12 +747,12 @@ describe('tile forest', () => {
       }
     });
 
-    expect(instancedTrunks).toHaveLength(0);
+    expect(instancedTrunks).toHaveLength(1);
     expect(instancedCanopies).toHaveLength(1);
     expect(instancedCanopies[0]?.count).toBeGreaterThan(0);
   });
 
-  it('omits low-detail trunk instances while reduced quality is active', () => {
+  it('keeps low-detail trunk instances on the player tile while reduced quality is active', () => {
     const tile = getForestTile();
     const state = createForestTestState();
     state.player.x = 8;
@@ -786,9 +786,48 @@ describe('tile forest', () => {
         child.userData?.forestTreeLowDetailInstancedPart === 'canopy'
     ) as FakeInstancedMesh[];
 
-    expect(instancedTrunks).toHaveLength(0);
+    expect(instancedTrunks).toHaveLength(1);
     expect(instancedCanopies).toHaveLength(1);
     expect(instancedCanopies[0]?.count).toBeGreaterThan(0);
+  });
+
+  it('omits low-detail trunk instances for distant reduced-quality background forest tiles', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    state.player.x = 8;
+    state.player.y = 6;
+
+    const reducedDistantModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 9,
+      tileY: 9,
+      detailLevel: 'low',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'low',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    const instancedTrunks = reducedDistantModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'trunk'
+    );
+    const instancedCanopies = reducedDistantModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'canopy'
+    ) as FakeInstancedMesh[];
+
+    expect(reducedDistantModel.children.length).toBeGreaterThan(0);
+    expect(instancedTrunks).toHaveLength(0);
+    expect(instancedCanopies).toHaveLength(1);
   });
 
   it('skips some distant reduced-quality forest background tiles entirely', () => {
