@@ -20,6 +20,7 @@ Current responsibilities:
 - build chunk-like sample grids without coupling splat generation to meshes
 - flatten packed splat grids into transferable typed arrays
 - summarize chunk layer usage before renderer integration decides budgets
+- share deterministic terrain family variant pools across chunk generation paths
 
 Why this comes first:
 

@@ -8,6 +8,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./sample-grid": "./src/sample-grid.ts"
+    "./sample-grid": "./src/sample-grid.ts",
+    "./variant-pool": "./src/variant-pool.ts"
   }
 }

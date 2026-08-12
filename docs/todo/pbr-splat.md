@@ -41,7 +41,7 @@
 - [x] Keep unused terrain layers out of chunk data.
 - [ ] Reuse common layers across neighboring chunks.
 - [x] Warn when too many layers are active in one chunk.
-- [ ] Prefer shared layers over creating new variants.
+- [x] Prefer shared layers over creating new variants.
 
 ## Splat Weights
 
@@ -99,9 +99,9 @@
 
 ## Texture Variation
 
-- [ ] Allow several variants per terrain material family.
-- [ ] Limit each terrain family to a small variant pool.
-- [ ] Pick texture variants deterministically.
+- [x] Allow several variants per terrain material family.
+- [x] Limit each terrain family to a small variant pool.
+- [x] Pick texture variants deterministically.
 - [ ] Support 90 degree texture rotation.
 - [ ] Support texture mirroring.
 - [ ] Use UV transforms instead of duplicate textures.
@@ -257,6 +257,9 @@
   `@bworlds/terrain-splat-support/sample-grid` to report active and unused
   layers, dominant layer usage, unique layer combinations, and chunk-level
   warnings when terrain layer budgets are exceeded.
+- Added `@bworlds/terrain-splat-support/variant-pool` to define bounded terrain
+  material families and resolve deterministic layer variants from a shared pool
+  instead of creating ad hoc per-chunk variants.
 - [ ] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -288,9 +291,10 @@ entries, stable catalog indexing by layer ID, bounded `TerrainSplatSample` /
 deterministic terrain-kind mapping from seed plus world signals. Architecture
 notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/deterministic-mapping.md`, plus
-`packages/terrain-splat-support/docs/chunk-sample-grids.md`, and focused tests
-cover normalization, packing, validation, deterministic mapping, chunk border
-stability, and chunk layer-usage analysis.
+`packages/terrain-splat-support/docs/chunk-sample-grids.md` and
+`packages/terrain-splat-support/docs/variant-pools.md`, and focused tests cover
+normalization, packing, validation, deterministic mapping, chunk border
+stability, chunk layer-usage analysis, and bounded family variant selection.
 
 # Roads and Paths as Terrain Splats
 
