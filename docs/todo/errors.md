@@ -72,7 +72,10 @@ Always run tests to make sure all tests pass
       directly under the tile root instead of a portal subgroup, and low-
       detail cave mouths now place their mound, mouth, and tunnel-back
       meshes directly under the tile root instead of a dedicated silhouette
-      subgroup, cave
+      subgroup, and full-detail cave mouths now use their entrance-boulder
+      `InstancedMesh` as the cave-mouth root and attach the cap, portal
+      shell, arch, inner pillars, sill, and lantern pieces beneath it instead
+      of returning a dedicated wrapper `Group`, and cave
       mushroom tiles now collapse their
       repeated stems and caps into two `InstancedMesh` nodes, cave dripstone
       tiles now collapse their repeated floor spires into one `InstancedMesh`,

@@ -178,7 +178,6 @@ function* createCaveModelProgressive({
     lanternCoreMaterial,
   } = getCaveSharedMaterials(three);
 
-  const group = new three.Group();
   const entrance = getCaveEntranceDirection(state, tileX, tileY);
   const width = 0.9 + hash2D(CAVE_WIDTH_SEED, tileX, tileY) * 0.22;
   const depth = 0.92 + hash2D(CAVE_DEPTH_SEED, tileX, tileY) * 0.24;
@@ -235,7 +234,7 @@ function* createCaveModelProgressive({
       )
     );
   }
-  group.add(boulderInstances);
+  const caveRoot = boulderInstances;
 
   const cap = new three.Mesh(
     new three.SphereGeometry(0.3, 7, 6),
@@ -247,7 +246,7 @@ function* createCaveModelProgressive({
     tileY + (hash2D(CAVE_CAP_Z_SEED, tileX, tileY) - 0.5) * 0.08
   );
   cap.scale.set(width * 0.88, height * 0.6, depth * 0.82);
-  group.add(cap);
+  caveRoot.add(cap);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -270,7 +269,7 @@ function* createCaveModelProgressive({
   );
   crown.rotation.y = entrance.rotationY;
   crown.scale.set(2.2, 1.5, 1.05);
-  group.add(crown);
+  caveRoot.add(crown);
 
   const cheekInstances = new three.InstancedMesh(
     new three.SphereGeometry(0.14, 7, 6),
@@ -308,7 +307,7 @@ function* createCaveModelProgressive({
       entrance.rotationY
     )
   );
-  group.add(cheekInstances);
+  caveRoot.add(cheekInstances);
 
   const mouthVoid = new three.Mesh(
     new three.CircleGeometry(0.18, 20),
@@ -321,7 +320,7 @@ function* createCaveModelProgressive({
     portalOriginZ + mouthVoidOffset.z
   );
   mouthVoid.rotation.y = entrance.rotationY;
-  group.add(mouthVoid);
+  caveRoot.add(mouthVoid);
 
   const tunnelBack = new three.Mesh(
     new three.CircleGeometry(0.12, 18),
@@ -334,7 +333,7 @@ function* createCaveModelProgressive({
     portalOriginZ + tunnelBackOffset.z
   );
   tunnelBack.rotation.y = entrance.rotationY;
-  group.add(tunnelBack);
+  caveRoot.add(tunnelBack);
 
   const tunnelCeiling = new three.Mesh(
     new three.PlaneGeometry(0.24, 0.46),
@@ -352,7 +351,7 @@ function* createCaveModelProgressive({
   );
   tunnelCeiling.rotation.x = Math.PI * 0.5;
   tunnelCeiling.rotation.y = entrance.rotationY;
-  group.add(tunnelCeiling);
+  caveRoot.add(tunnelCeiling);
 
   const tunnelFloor = new three.Mesh(
     new three.PlaneGeometry(0.22, 0.34),
@@ -366,7 +365,7 @@ function* createCaveModelProgressive({
   );
   tunnelFloor.rotation.x = -Math.PI * 0.5;
   tunnelFloor.rotation.y = entrance.rotationY;
-  group.add(tunnelFloor);
+  caveRoot.add(tunnelFloor);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -385,7 +384,7 @@ function* createCaveModelProgressive({
   );
   arch.rotation.y = entrance.rotationY;
   arch.rotation.z = Math.PI;
-  group.add(arch);
+  caveRoot.add(arch);
 
   const pillarInstances = new three.InstancedMesh(
     new three.SphereGeometry(0.08, 6, 6),
@@ -423,7 +422,7 @@ function* createCaveModelProgressive({
       entrance.rotationY
     )
   );
-  group.add(pillarInstances);
+  caveRoot.add(pillarInstances);
 
   const sill = new three.Mesh(
     new three.SphereGeometry(0.1, 6, 6),
@@ -437,7 +436,7 @@ function* createCaveModelProgressive({
   );
   sill.rotation.y = entrance.rotationY;
   sill.scale.set(2.8, 0.55, 1.2);
-  group.add(sill);
+  caveRoot.add(sill);
   yield {
     completedSteps: 3,
     totalSteps,
@@ -462,7 +461,7 @@ function* createCaveModelProgressive({
     portalOriginY + 0.34,
     portalOriginZ + lanternCoreOffset.z
   );
-  group.add(lanternCore);
+  caveRoot.add(lanternCore);
 
   const lanternLight = markPoiLightEmitter(
     new three.PointLight('#f6b85d', 0, 2.9, 1.9),
@@ -483,14 +482,14 @@ function* createCaveModelProgressive({
     portalOriginZ + lanternLightOffset.z
   );
   lanternLight.visible = false;
-  group.add(lanternLight);
+  caveRoot.add(lanternLight);
   yield {
     completedSteps: 4,
     totalSteps,
     label: 'lantern',
   };
 
-  return group;
+  return caveRoot;
 }
 
 function runCaveModelBuildToCompletion(

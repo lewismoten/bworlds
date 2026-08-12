@@ -30,7 +30,10 @@ Current layout:
   stored in matrices.
 - The repeated entrance boulders now share one `SphereGeometry`, one material,
   and one `InstancedMesh`, with per-instance scale and position stored in
-  matrices.
+  matrices. The full-detail cave mouth now uses that entrance-boulder
+  `InstancedMesh` as the tile root and attaches the cap, portal shell, arch,
+  pillars, sill, and lantern pieces beneath it instead of returning a wrapper
+  `Group`.
 - The mirrored cave-mouth cheek rocks and inner pillars now each share one
   `SphereGeometry`, one material, and one `InstancedMesh`, with local portal
   positions and scale stored in matrices.

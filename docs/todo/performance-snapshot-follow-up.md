@@ -257,6 +257,12 @@
       and low-detail straight `tile-route` roads now use the road ribbon mesh
       itself as the tile root and attach the center patch beneath it instead
       of returning a wrapper group for that two-connection case, and
+      full-detail `tile-cave` now uses its entrance-boulder `InstancedMesh`
+      as the cave-mouth root and attaches the cap, portal shell, arch, inner
+      pillars, sill, and lantern pieces beneath it instead of returning a
+      dedicated wrapper `Group`, which removes one static scene node from each
+      visible full-detail cave mouth without changing the portal layout or
+      lantern placement, and
       full-detail `tile-dungeon` now uses its base keep mesh as the root and
       attaches the central keep, instanced towers, gate pieces, banner
       hardware, banner cloth, and beacon content beneath it instead of

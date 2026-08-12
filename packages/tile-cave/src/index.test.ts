@@ -194,6 +194,45 @@ describe('tile cave', () => {
     }
   });
 
+  it('uses the full-detail entrance-boulder instances as the cave root', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+    const three = createFakeThree() as never;
+    const state = {
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return { walkable: true };
+      },
+    } as never;
+
+    try {
+      const full = caveTile?.create3DModel?.({
+        tile: { kind: 'cave' },
+        three,
+        state,
+        tileX: 4,
+        tileY: 6,
+        detailLevel: 'full',
+      }) as
+        | {
+            userData?: Record<string, unknown>;
+            children?: unknown[];
+          }
+        | null
+        | undefined;
+
+      expect(full).toBeInstanceOf(
+        (three as { InstancedMesh: object }).InstancedMesh
+      );
+      expect(full?.userData?.caveInstancedPart).toBe('entrance-boulder');
+      expect((full?.children?.length ?? 0) > 0).toBe(true);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
+
   it('groups nearby cave mouths along the same mountain pass into one cave system', () => {
     const west = classifier?.(
       createCaveClassifierPayload({
@@ -711,6 +750,12 @@ describe('tile cave', () => {
         detailLevel: 'full',
       }) as
         | {
+            userData?: Record<string, unknown>;
+            count?: number;
+            matrices?: Array<{
+              scale: { x: number; y: number; z: number };
+              position?: { x: number; y: number; z: number };
+            }>;
             children?: Array<{
               userData?: Record<string, unknown>;
               count?: number;
@@ -731,9 +776,10 @@ describe('tile cave', () => {
         | null
         | undefined;
 
-      const boulderInstances = model?.children?.filter(
-        (child) => child.userData?.caveInstancedPart === 'entrance-boulder'
-      );
+      const boulderInstances =
+        model?.userData?.caveInstancedPart === 'entrance-boulder'
+          ? [model]
+          : [];
       const cheekInstances = model?.children?.filter(
         (child) => child.userData?.caveInstancedPart === 'entrance-cheek'
       );
