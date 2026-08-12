@@ -130,6 +130,25 @@ describe('tile tower', () => {
     );
   });
 
+  it('uses the full-detail tower base mesh as the root instead of a wrapper group', () => {
+    const plugin = createTowerTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
+    const three = createFakeThree() as never;
+
+    const full = tile?.create3DModel?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+      detailLevel: 'full',
+    }) as Mesh | null | undefined;
+
+    expect(full).toBeInstanceOf(Mesh);
+    expect(full?.position).toMatchObject({ x: 8, y: 0.11, z: -3 });
+    expect(full?.children).toHaveLength(6);
+  });
+
   it('builds a simplified low-detail tower without the doorway and lantern rig', () => {
     const plugin = createTowerTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');

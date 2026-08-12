@@ -229,7 +229,12 @@
       the tile root and hangs the tower, stripe, cap, and rotating beam pivot
       beneath it instead of wrapping them in a dedicated `Group`, which removes
       one static `Object3D` from each reduced-quality lighthouse tile while
-      preserving the same beam animation and silhouette, and the low-detail
+      preserving the same beam animation and silhouette, and full-detail
+      `tile-tower` now also uses its base cylinder mesh as the root and hangs
+      the crown ring, roof cap, doorway, lantern glow, and point light beneath
+      it instead of wrapping the landmark in a dedicated `Group`, which
+      removes one static `Object3D` from each tower tile without changing the
+      silhouette or night-light placement, and the low-detail
       dungeon silhouette now uses its base keep mesh as the root and hangs the
       smaller keep, corner towers, gate pieces, and gate beacon nodes beneath
       it instead of wrapping them in a dedicated `Group`, which removes one

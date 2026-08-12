@@ -103,22 +103,19 @@ function* createTowerModelProgressive({
     return base;
   }
 
-  const group = new three.Group();
-  group.add(base);
-
   const ring = new three.Mesh(
     getSharedCylinderGeometry(three, 0.5, 0.56, 0.08, 8),
     trimMaterial
   );
-  ring.position.set(tileX, 1.64, tileY);
-  group.add(ring);
+  ring.position.set(0, 1.53, 0);
+  base.add(ring);
 
   const cap = new three.Mesh(
     getSharedConeGeometry(three, 0.56, 0.34, 8),
     roofMaterial
   );
-  cap.position.set(tileX, 1.86, tileY);
-  group.add(cap);
+  cap.position.set(0, 1.75, 0);
+  base.add(cap);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -129,8 +126,8 @@ function* createTowerModelProgressive({
     getSharedBoxGeometry(three, 0.22, 0.34, 0.08),
     trimMaterial
   );
-  doorway.position.set(tileX, 0.17, tileY + 0.44);
-  group.add(doorway);
+  doorway.position.set(0, 0.06, 0.44);
+  base.add(doorway);
 
   const lantern = markPoiLightEmitter(
     new three.Mesh(getSharedSphereGeometry(three, 0.04, 6, 6), lampMaterial),
@@ -140,8 +137,8 @@ function* createTowerModelProgressive({
       nightIntensity: 1.26,
     }
   );
-  lantern.position.set(tileX + 0.2, 0.42, tileY + 0.32);
-  group.add(lantern);
+  lantern.position.set(0.2, 0.31, 0.32);
+  base.add(lantern);
 
   const light = markPoiLightEmitter(
     new three.PointLight('#f8cd74', 0, 3.4, 1.85),
@@ -151,16 +148,16 @@ function* createTowerModelProgressive({
       visibleThreshold: 0.04,
     }
   );
-  light.position.set(tileX + 0.2, 0.42, tileY + 0.32);
+  light.position.set(0.2, 0.31, 0.32);
   light.visible = false;
-  group.add(light);
+  base.add(light);
   yield {
     completedSteps: 3,
     totalSteps,
     label: 'entry-lantern',
   };
 
-  return group;
+  return base;
 }
 
 function runTowerModelBuildToCompletion(

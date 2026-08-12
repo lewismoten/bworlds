@@ -20,3 +20,8 @@ progressive and eager builds stay structurally aligned.
 The low-detail tower silhouette now also uses the base cylinder mesh as its
 root and attaches the shaft and roof beneath it, so reduced-quality tower
 tiles avoid one otherwise empty wrapper `Group` without changing the silhouette.
+
+The full-detail tower landmark now also uses that same base cylinder mesh as
+its root and attaches the crown ring, roof cap, doorway, lantern glow, and
+point light beneath it, so tower tiles avoid one otherwise empty wrapper
+`Group` without changing the silhouette or night-light placement.
