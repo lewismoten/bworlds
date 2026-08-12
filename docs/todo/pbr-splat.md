@@ -415,7 +415,7 @@
   blend colors, texture-array indices, and packed memory usage before any
   terrain viewer UI is wired up.
 - [x] Add roughness texture array support.
-- [ ] Add a debug view for layer weights.
+- [x] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
 
 ## Second Delivery
