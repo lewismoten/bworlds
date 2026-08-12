@@ -345,6 +345,9 @@
   trail splat builders can resolve a deterministic soft shoulder falloff from
   distance-to-center samples plus shared width metadata before edge blending or
   full route distance-field generation lands.
+- Added `@bworlds/terrain-splat-support/route-edge-blend` so route surface
+  layers can blend gradually into surrounding terrain samples from one bounded
+  route-weight input instead of embedding edge falloff logic in renderer code.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
@@ -516,7 +519,7 @@ color metadata without changing material identity.
 - [x] Project road splat weights onto the terrain height field.
 - [x] Generate road width from route metadata.
 - [x] Generate soft shoulder weights around road edges.
-- [ ] Blend roads gradually into surrounding terrain.
+- [x] Blend roads gradually into surrounding terrain.
 - [ ] Let trails use narrower blend zones than roads.
 - [ ] Allow road surface type to choose a PBR layer.
 - [ ] Support dirt road splat layers.

@@ -34,6 +34,7 @@ Current responsibilities:
 - resolve deterministic road and trail widths from shared route metadata
 - project weighted route splat samples onto the shared terrain height field
 - resolve deterministic route shoulder falloff from shared width plans
+- blend route surface layers gradually into surrounding terrain samples
 - plan one bounded active layer pool for neighboring chunk groups
 - plan aligned texture-array slots and validate descriptor consistency before
   renderer upload code exists
