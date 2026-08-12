@@ -514,6 +514,112 @@ describe('tile forest', () => {
     );
   });
 
+  it('keeps each sampled forest species within a one-material trunk and foliage budget on one host', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    const speciesTargets = new Map<
+      'oak' | 'birch' | 'pine',
+      { x: number; y: number }
+    >();
+
+    outer: for (let tileY = 0; tileY < 32; tileY += 1) {
+      for (let tileX = 0; tileX < 32; tileX += 1) {
+        const speciesIds = new Set(getForestTreeSpeciesIds(tileX, tileY));
+        if (speciesIds.size !== 1) {
+          continue;
+        }
+        const [speciesId] = [...speciesIds];
+        if (
+          (speciesId === 'oak' ||
+            speciesId === 'birch' ||
+            speciesId === 'pine') &&
+          !speciesTargets.has(speciesId)
+        ) {
+          speciesTargets.set(speciesId, { x: tileX, y: tileY });
+          if (speciesTargets.size === 3) {
+            break outer;
+          }
+        }
+      }
+    }
+
+    expect(speciesTargets.size).toBe(3);
+
+    const speciesBuckets = new Map<
+      'oak' | 'birch' | 'pine',
+      { trunkMaterials: Set<unknown>; foliageMaterials: Set<unknown> }
+    >();
+
+    speciesTargets.forEach((coordinates, speciesId) => {
+      const model = tile.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: { kind: 'forest' },
+        tileX: coordinates.x,
+        tileY: coordinates.y,
+        detailLevel: 'full',
+      }) as FakeGroup;
+      const trunkMaterials = new Set<unknown>();
+      const foliageMaterials = new Set<unknown>();
+
+      model.children.forEach((child) => {
+        child.traverse((node) => {
+          const materialOwner = node as FakeNode & {
+            material?: unknown | unknown[];
+          };
+          if (!materialOwner.material) {
+            return;
+          }
+          const material = Array.isArray(materialOwner.material)
+            ? materialOwner.material[0]
+            : materialOwner.material;
+          if (!material) {
+            return;
+          }
+          if (
+            node.userData?.forestTreeTrunkSegment ||
+            node.userData?.forestTreeBranchInstanced
+          ) {
+            trunkMaterials.add(material);
+          }
+          if (node.userData?.forestTreeFoliageInstanced) {
+            foliageMaterials.add(material);
+          }
+        });
+      });
+
+      speciesBuckets.set(speciesId, {
+        trunkMaterials,
+        foliageMaterials,
+      });
+    });
+
+    expect(speciesBuckets.get('oak')?.trunkMaterials.size).toBe(1);
+    expect(speciesBuckets.get('oak')?.foliageMaterials.size).toBe(1);
+    expect(speciesBuckets.get('birch')?.trunkMaterials.size).toBe(1);
+    expect(speciesBuckets.get('birch')?.foliageMaterials.size).toBe(1);
+    expect(speciesBuckets.get('pine')?.trunkMaterials.size).toBe(1);
+    expect(speciesBuckets.get('pine')?.foliageMaterials.size).toBe(1);
+    expect(
+      [...(speciesBuckets.get('oak')?.trunkMaterials ?? new Set())][0]
+    ).toBe([...(speciesBuckets.get('birch')?.trunkMaterials ?? new Set())][0]);
+    expect(
+      [...(speciesBuckets.get('oak')?.foliageMaterials ?? new Set())][0]
+    ).toBe(
+      [...(speciesBuckets.get('birch')?.foliageMaterials ?? new Set())][0]
+    );
+    expect(
+      [...(speciesBuckets.get('oak')?.trunkMaterials ?? new Set())][0]
+    ).not.toBe(
+      [...(speciesBuckets.get('pine')?.trunkMaterials ?? new Set())][0]
+    );
+    expect(
+      [...(speciesBuckets.get('oak')?.foliageMaterials ?? new Set())][0]
+    ).not.toBe(
+      [...(speciesBuckets.get('pine')?.foliageMaterials ?? new Set())][0]
+    );
+  });
+
   it('instances full-detail tree branches and foliage within each tree', () => {
     const tile = getForestTile();
     const state = createForestTestState();

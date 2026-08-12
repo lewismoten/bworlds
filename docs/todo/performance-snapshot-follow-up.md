@@ -10,12 +10,12 @@
       also suppressed when they only restate generic budget-threshold pressure
       such as `tile drawCallCount 21>17` or
       `plugin unique materialCount 13>12`.
-- [ ] Limit each tree species to 10 material variants per part type.
+- [x] Limit each tree species to 10 material variants per part type.
 - [ ] Reuse bark, foliage, and branch materials across nearby trees.
 - [ ] Prefer tinting shared materials over creating new textures.
 - [ ] Use color shifts to distinguish related tree species.
 - [ ] Avoid unique textures when color variation is sufficient.
-- [ ] Share material variants between compatible tree species.
+- [x] Share material variants between compatible tree species.
       Progress: `tile-forest` now resolves full-detail broadleaf materials
       through one shared host-level family bundle, so oak and birch nearby on
       the same renderer reuse the same trunk, foliage, and close-detail
@@ -34,7 +34,10 @@
       colors, and forest fireflies now stay disabled outside full-quality
       close-detail rendering so reduced/minimal forest scenes do not pay one
       extra `PointsMaterial` that pushes the visible forest plugin material
-      budget from `12` to `13`.
+      budget from `12` to `13`, and the forest regression tests now verify
+      that sampled oak, birch, and pine full-detail tiles each stay at one
+      trunk/branch material plus one foliage material, with oak and birch
+      explicitly sharing the same broadleaf material pair.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First
