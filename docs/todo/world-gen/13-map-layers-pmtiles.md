@@ -31,8 +31,8 @@ Current support:
 - [x] Use coarse features at low zoom levels.
 - [x] Reveal finer features as zoom increases.
 - [x] Simplify lines and polygons by zoom level.
-- [ ] Keep major rivers visible at low zoom.
-- [ ] Reveal local roads and small rivers at higher zoom.
+- [x] Keep major rivers visible at low zoom.
+- [x] Reveal local roads and small rivers at higher zoom.
 - [ ] Cache generated tiles by world revision.
 
 - `@bworlds/map-support` now exposes a shared `PmtilesExportPlugin`
@@ -55,6 +55,11 @@ Current support:
   one shared zoom-detail pass for coarse low-zoom geometry, finer high-zoom
   geometry, and zoom-dependent line/polygon simplification without changing
   the underlying canonical world-space feature records.
+- `createHydrologyFeatureZoomRange(...)` and
+  `createTransportFeatureZoomRange(...)` now give that PMTiles path one
+  shared visibility-policy layer so major rivers stay visible earlier than
+  smaller waterways, and local roads unlock later than trunk transport
+  corridors instead of hard-coding those thresholds in each future layer.
 
 ## Physical Layers
 
