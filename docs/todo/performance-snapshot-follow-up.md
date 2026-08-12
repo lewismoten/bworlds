@@ -94,7 +94,10 @@
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so
       pine silhouettes remain recognizable, but they no longer pay an extra
-      low-detail trunk container for each form present in the tile.
+      low-detail trunk container for each form present in the tile, and
+      `tile-plains` now defers to the renderer's shared visible floor mesh
+      instead of stacking a second plugin-owned plains plane on top of every
+      visible plains tile.
 
 ## LOD Stability
 
