@@ -76,6 +76,9 @@ describe('procedural music song layers', () => {
     const returnBass = resolveSongSectionLayerTreatment(
       createContext(createSection('return'), { role: 'bass' }, 0)
     );
+    const returnBassCadence = resolveSongSectionLayerTreatment(
+      createContext(createSection('return'), { role: 'bass' }, 7, 1_750)
+    );
     const returnHarmony = resolveSongSectionLayerTreatment(
       createContext(createSection('return'), { role: 'harmony' }, 0)
     );
@@ -115,7 +118,7 @@ describe('procedural music song layers', () => {
     expect(returnLead.muted).toBe(false);
     expect(returnLead.volumeMultiplier).toBeLessThan(1);
     expect(returnBass.muted).toBe(false);
-    expect(returnBass.volumeMultiplier).toBeGreaterThan(1);
+    expect(returnBass.volumeMultiplier).toBeLessThan(returnBassCadence.volumeMultiplier);
     expect(returnBass.durationMultiplier).toBeGreaterThan(1);
     expect(returnHarmony.muted).toBe(false);
     expect(returnHarmony.volumeMultiplier).toBeGreaterThan(
@@ -138,6 +141,60 @@ describe('procedural music song layers', () => {
     ).toContain('stretched lead');
     expect(describeSongSectionLayerArrangement(createSection('b'))).toContain(
       'thinner percussion'
+    );
+  });
+
+  it('applies section-level volume curves within the same section', () => {
+    const introLeadStart = resolveSongSectionLayerTreatment(
+      createContext(createSection('intro'), { role: 'lead' }, 0, 0)
+    );
+    const introLeadMiddle = resolveSongSectionLayerTreatment(
+      createContext(createSection('intro'), { role: 'lead' }, 4, 6_000)
+    );
+    const outroLeadEarly = resolveSongSectionLayerTreatment(
+      createContext(createSection('outro'), { role: 'lead' }, 0, 0)
+    );
+    const outroLeadLate = resolveSongSectionLayerTreatment(
+      createContext(createSection('outro'), { role: 'lead' }, 6, 18_000)
+    );
+    const variationLeadEarly = resolveSongSectionLayerTreatment(
+      createContext(createSection('variation'), { role: 'lead' }, 1, 1_500)
+    );
+    const variationLeadPeak = resolveSongSectionLayerTreatment(
+      createContext(createSection('variation'), { role: 'lead' }, 5, 12_000)
+    );
+
+    expect(introLeadMiddle.volumeMultiplier).toBeGreaterThan(
+      introLeadStart.volumeMultiplier
+    );
+    expect(outroLeadLate.volumeMultiplier).toBeLessThan(
+      outroLeadEarly.volumeMultiplier
+    );
+    expect(variationLeadPeak.volumeMultiplier).toBeGreaterThan(
+      variationLeadEarly.volumeMultiplier
+    );
+  });
+
+  it('ducks accompaniment volume during lead-forward phrase positions', () => {
+    const section = createSection('a');
+    const earlyHarmony = resolveSongSectionLayerTreatment(
+      createContext(section, { role: 'harmony' }, 2, 500)
+    );
+    const cadenceHarmony = resolveSongSectionLayerTreatment(
+      createContext(section, { role: 'harmony' }, 7, 1_750)
+    );
+    const earlyBass = resolveSongSectionLayerTreatment(
+      createContext(section, { role: 'bass' }, 2, 500)
+    );
+    const cadenceBass = resolveSongSectionLayerTreatment(
+      createContext(section, { role: 'bass' }, 7, 1_750)
+    );
+
+    expect(earlyHarmony.volumeMultiplier).toBeLessThan(
+      cadenceHarmony.volumeMultiplier
+    );
+    expect(earlyBass.volumeMultiplier).toBeLessThan(
+      cadenceBass.volumeMultiplier
     );
   });
 });

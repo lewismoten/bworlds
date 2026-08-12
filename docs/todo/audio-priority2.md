@@ -2,14 +2,14 @@
 
 ## 0) Musical Expression and Track Dynamics
 
-- [ ] Give every track a section-level volume curve.
+- [x] Give every track a section-level volume curve.
 - [x] Give every phrase a small dynamic rise and fall.
 - [ ] Increase velocity range for harmony notes.
 - [ ] Increase velocity range for bass notes.
 - [ ] Keep velocity changes related to phrase position.
 - [x] Make strong beats slightly louder than weak beats.
 - [ ] Accent motif notes above nearby filler notes.
-- [ ] Reduce accompaniment volume while lead phrases play.
+- [x] Reduce accompaniment volume while lead phrases play.
 - [ ] Add crescendos approaching important section peaks.
 - [ ] Add diminuendos after climaxes and near endings.
 - [x] Add MIDI expression changes within sustained phrases.
@@ -110,6 +110,11 @@
       that rises toward the middle of each eight-note phrase and relaxes again
       by the cadence; unit and arrangement-dynamics tests verify both the beat
       accent and the phrase rise/fall behavior.
+      Progress: section layer treatment now adds role-aware section-progress
+      volume curves plus accompaniment ducking during lead-forward phrase
+      positions, so intro/variation/return/outro sections can swell or taper
+      by arrangement phase while harmony and bass step back during active lead
+      phrases; see `docs/procedural-music-song-layer-curves.md`.
 
 ## 1) Enforce musical correctness first
 

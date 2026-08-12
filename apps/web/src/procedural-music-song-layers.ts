@@ -41,13 +41,28 @@ export function describeSongSectionLayerArrangement(
 export function resolveSongSectionLayerTreatment(
   context: Pick<
     ProceduralMusicSongSectionContext,
-    'section' | 'note' | 'noteIndexInSection' | 'measureIndex'
+    | 'section'
+    | 'note'
+    | 'noteIndexInSection'
+    | 'measureIndex'
+    | 'sectionProgress'
+    | 'phrasePosition'
   >
 ): ProceduralSongLayerTreatment {
   const harmonyLeadSpace = resolveHarmonyLeadSpaceConfig(
     context.section.id,
     context.note.role
   );
+  const sectionVolumeCurveMultiplier = resolveSectionVolumeCurveMultiplier({
+    sectionId: context.section.id,
+    role: context.note.role,
+    sectionProgress: context.sectionProgress,
+  });
+  const accompanimentDuckMultiplier = resolveAccompanimentDuckMultiplier({
+    sectionId: context.section.id,
+    role: context.note.role,
+    phrasePosition: context.phrasePosition,
+  });
 
   switch (context.section.id) {
     case 'intro':
@@ -56,7 +71,10 @@ export function resolveSongSectionLayerTreatment(
           context.note.role === 'percussion' ||
           (context.note.role === 'bass' &&
             context.noteIndexInSection % 2 === 1),
-        volumeMultiplier: context.note.role === 'lead' ? 0.84 : 0.68,
+        volumeMultiplier:
+          (context.note.role === 'lead' ? 0.84 : 0.68) *
+          sectionVolumeCurveMultiplier *
+          accompanimentDuckMultiplier,
         velocityMultiplier: context.note.role === 'percussion' ? 0.78 : 1,
         durationMultiplier:
           context.note.role === 'harmony'
@@ -71,11 +89,13 @@ export function resolveSongSectionLayerTreatment(
           context.noteIndexInSection
         ),
         volumeMultiplier:
-          context.note.role === 'lead'
+          (context.note.role === 'lead'
             ? 1.06
             : context.note.role === 'harmony'
               ? harmonyLeadSpace.volumeMultiplier
-              : 1,
+              : 1) *
+          sectionVolumeCurveMultiplier *
+          accompanimentDuckMultiplier,
         velocityMultiplier: context.note.role === 'percussion' ? 1.08 : 1,
         durationMultiplier:
           context.note.role === 'lead'
@@ -97,13 +117,15 @@ export function resolveSongSectionLayerTreatment(
           (context.note.role === 'harmony' &&
             context.noteIndexInSection % 2 === 0),
         volumeMultiplier:
-          context.note.role === 'lead'
+          (context.note.role === 'lead'
             ? 1.08
             : context.note.role === 'percussion'
               ? 0.68
               : context.note.role === 'harmony'
                 ? harmonyLeadSpace.volumeMultiplier
-                : 1,
+                : 1) *
+          sectionVolumeCurveMultiplier *
+          accompanimentDuckMultiplier,
         velocityMultiplier: context.note.role === 'percussion' ? 0.84 : 1,
         durationMultiplier:
           context.note.role === 'bass'
@@ -124,9 +146,11 @@ export function resolveSongSectionLayerTreatment(
             context.noteIndexInSection
           ),
         volumeMultiplier:
-          context.note.role === 'harmony'
+          (context.note.role === 'harmony'
             ? harmonyLeadSpace.volumeMultiplier
-            : 1,
+            : 1) *
+          sectionVolumeCurveMultiplier *
+          accompanimentDuckMultiplier,
         velocityMultiplier: context.note.role === 'percussion' ? 1.18 : 1,
         durationMultiplier:
           context.note.role === 'lead'
@@ -140,11 +164,13 @@ export function resolveSongSectionLayerTreatment(
       return {
         muted: false,
         volumeMultiplier:
-          context.note.role === 'lead'
+          (context.note.role === 'lead'
             ? 0.94
             : context.note.role === 'harmony'
               ? harmonyLeadSpace.volumeMultiplier
-              : 1.02,
+              : 1.02) *
+          sectionVolumeCurveMultiplier *
+          accompanimentDuckMultiplier,
         velocityMultiplier: context.note.role === 'percussion' ? 1.1 : 1,
         durationMultiplier:
           context.note.role === 'harmony'
@@ -165,7 +191,8 @@ export function resolveSongSectionLayerTreatment(
           context.note.role === 'percussion' ||
           (context.note.role === 'lead' &&
             context.noteIndexInSection % 2 === 1),
-        volumeMultiplier: 0.72,
+        volumeMultiplier:
+          0.72 * sectionVolumeCurveMultiplier * accompanimentDuckMultiplier,
         velocityMultiplier: context.note.role === 'percussion' ? 0.76 : 1,
         durationMultiplier:
           context.note.role === 'harmony'
@@ -178,9 +205,11 @@ export function resolveSongSectionLayerTreatment(
       return {
         muted: false,
         volumeMultiplier:
-          context.note.role === 'harmony'
+          (context.note.role === 'harmony'
             ? harmonyLeadSpace.volumeMultiplier
-            : 1,
+            : 1) *
+          sectionVolumeCurveMultiplier *
+          accompanimentDuckMultiplier,
         velocityMultiplier: 1,
         durationMultiplier:
           context.note.role === 'harmony'
@@ -260,4 +289,112 @@ function shouldMuteHarmonyForLeadSpace(
   noteIndexInSection: number
 ): boolean {
   return config.muteEvery > 0 && noteIndexInSection % config.muteEvery === 0;
+}
+
+function resolveSectionVolumeCurveMultiplier(options: {
+  sectionId: ProceduralMusicSongSection['id'];
+  role: ProceduralMusicNote['role'];
+  sectionProgress: number;
+}): number {
+  const progress = clampUnit(options.sectionProgress);
+  switch (options.sectionId) {
+    case 'intro':
+      return interpolateSectionCurve(
+        progress,
+        options.role === 'lead' ? 0.9 : 0.84,
+        options.role === 'lead' ? 1 : 0.94,
+        options.role === 'lead' ? 0.98 : 0.92
+      );
+    case 'a':
+      return interpolateSectionCurve(
+        progress,
+        options.role === 'lead' ? 0.99 : 0.97,
+        options.role === 'lead' ? 1.04 : 1.01,
+        options.role === 'lead' ? 1 : 0.98
+      );
+    case 'a-prime':
+      return interpolateSectionCurve(
+        progress,
+        options.role === 'lead' ? 1.01 : 0.97,
+        options.role === 'lead' ? 1.08 : 1.02,
+        options.role === 'lead' ? 1.03 : 0.99
+      );
+    case 'b':
+      return interpolateSectionCurve(
+        progress,
+        options.role === 'lead' ? 0.98 : 0.95,
+        options.role === 'lead' ? 1.04 : 0.99,
+        options.role === 'lead' ? 1 : 0.96
+      );
+    case 'variation':
+      return interpolateSectionCurve(
+        progress,
+        options.role === 'lead' ? 0.98 : 0.94,
+        options.role === 'lead' ? 1.12 : 1.04,
+        options.role === 'lead' ? 1.04 : 0.97
+      );
+    case 'return':
+      return interpolateSectionCurve(
+        progress,
+        options.role === 'lead' ? 0.97 : 0.99,
+        options.role === 'lead' ? 1.04 : 1.03,
+        options.role === 'lead' ? 1 : 1.01
+      );
+    case 'outro':
+      return interpolateSectionCurve(
+        progress,
+        options.role === 'lead' ? 0.98 : 0.94,
+        options.role === 'lead' ? 0.92 : 0.88,
+        options.role === 'lead' ? 0.8 : 0.76
+      );
+    default:
+      return 1;
+  }
+}
+
+function resolveAccompanimentDuckMultiplier(options: {
+  sectionId: ProceduralMusicSongSection['id'];
+  role: ProceduralMusicNote['role'];
+  phrasePosition: number;
+}): number {
+  if (options.role === 'lead') {
+    return 1;
+  }
+
+  const normalizedPhrasePosition = options.phrasePosition % 8;
+  const leadForwardWindow = normalizedPhrasePosition <= 5;
+  if (!leadForwardWindow) {
+    return 1;
+  }
+
+  switch (options.role) {
+    case 'harmony':
+      return options.sectionId === 'variation' ? 0.84 : 0.9;
+    case 'bass':
+      return options.sectionId === 'variation' ? 0.9 : 0.95;
+    case 'percussion':
+      return options.sectionId === 'variation' ? 0.94 : 0.97;
+    default:
+      return 1;
+  }
+}
+
+function interpolateSectionCurve(
+  progress: number,
+  start: number,
+  peak: number,
+  end: number
+): number {
+  if (progress <= 0.5) {
+    return lerp(start, peak, progress / 0.5);
+  }
+  return lerp(peak, end, (progress - 0.5) / 0.5);
+}
+
+function lerp(start: number, end: number, amount: number): number {
+  return start + (end - start) * clampUnit(amount);
+}
+
+function clampUnit(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
