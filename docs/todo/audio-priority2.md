@@ -22,7 +22,12 @@
       compatible sustained families such as strings, pads, winds, brass, and
       vocals, and the MIDI export structure tests now verify those controller
       changes appear on sustained harmony tracks.
-- [ ] Add subtle vibrato to sustained strings and winds.
+- [x] Add subtle vibrato to sustained strings and winds.
+      Progress: live Web Audio playback now adds a light sine-LFO vibrato to
+      sustained string and wind families such as strings, violin, flute, and
+      trumpet once notes are long enough to settle, and the integration tests
+      now verify that supported sustained notes create the extra modulation
+      path while short notes do not.
 - [ ] Add controlled pitch bends for suitable articulations.
 - [ ] Add note attack differences by articulation type.
 - [ ] Add release differences by articulation type.

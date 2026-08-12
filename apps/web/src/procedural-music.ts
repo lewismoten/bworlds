@@ -263,6 +263,7 @@ export type ProceduralMusicNote = {
   themeId: MusicRegionThemeId;
   instrumentId: string;
   role: InstrumentRole;
+  family?: InstrumentFamily;
   startMs: number;
   durationMs: number;
   frequency: number;
@@ -1145,6 +1146,7 @@ function createThemeNotes(options: {
           ? `${instrument.id}:voice-${voiceIndex}`
           : instrument.id,
       role,
+      family: instrument.family,
       startMs: options.startMs,
       durationMs:
         options.theme.noteDurationMs *

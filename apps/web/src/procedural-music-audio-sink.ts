@@ -1,5 +1,6 @@
 import { clamp } from '@bworlds/core';
 import { MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS } from './audio-budget.ts';
+import type { InstrumentFamily } from './music-instrument-timbres.ts';
 import { resolveSoundBankDebugPreviewDecayMs } from './sound-bank-debug-preview-envelope.ts';
 import type { AudioCategory } from './audio-categories.ts';
 import {
@@ -33,6 +34,8 @@ type ActiveMusicVoice = {
   startedAt: number;
   oscillator: OscillatorNode;
   harmonicOscillator: OscillatorNode;
+  vibratoOscillator: OscillatorNode | null;
+  vibratoDepthGain: GainNode | null;
   transientSource: AudioBufferSourceNodeLike | null;
   transientGain: GainNode | null;
   transientFilter: BiquadFilterNodeLike | null;
@@ -47,6 +50,15 @@ type ActiveMusicVoice = {
   panner: StereoPannerNodeLike | null;
   remainingOscillators: number;
 };
+
+const MIN_VIBRATO_DURATION_MS = 360;
+
+type MusicVibratoProfile = Readonly<{
+  rateHz: number;
+  depthCents: number;
+  leadInSeconds: number;
+  fadeOutSeconds: number;
+}>;
 
 export function createWebAudioMusicSink(
   options: MusicSinkOptions = {}
@@ -117,8 +129,13 @@ export function createWebAudioMusicSink(
     );
     voice.oscillator.onended = null;
     voice.harmonicOscillator.onended = null;
+    if (voice.vibratoOscillator) {
+      voice.vibratoOscillator.onended = null;
+    }
     voice.oscillator.disconnect?.();
     voice.harmonicOscillator.disconnect?.();
+    voice.vibratoOscillator?.disconnect?.();
+    voice.vibratoDepthGain?.disconnect?.();
     voice.transientSource?.disconnect?.();
     voice.transientGain?.disconnect?.();
     voice.transientFilter?.disconnect?.();
@@ -150,6 +167,9 @@ export function createWebAudioMusicSink(
   ): void {
     voice.oscillator.onended = null;
     voice.harmonicOscillator.onended = null;
+    if (voice.vibratoOscillator) {
+      voice.vibratoOscillator.onended = null;
+    }
     try {
       voice.oscillator.stop(stopAt);
     } catch {
@@ -157,6 +177,11 @@ export function createWebAudioMusicSink(
     }
     try {
       voice.harmonicOscillator.stop(stopAt);
+    } catch {
+      // Ignore duplicate stop calls while pruning voices.
+    }
+    try {
+      voice.vibratoOscillator?.stop(stopAt);
     } catch {
       // Ignore duplicate stop calls while pruning voices.
     }
@@ -173,8 +198,14 @@ export function createWebAudioMusicSink(
     removeVoice(voice);
   }
 
-  function enforceMusicOscillatorBudget(nextVoiceLoudness: number): boolean {
-    if (activeSourceCount + 2 <= MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS) {
+  function enforceMusicOscillatorBudget(
+    nextVoiceLoudness: number,
+    requiredOscillatorCount: number
+  ): boolean {
+    if (
+      activeSourceCount + requiredOscillatorCount <=
+      MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS
+    ) {
       return true;
     }
 
@@ -195,7 +226,10 @@ export function createWebAudioMusicSink(
     }
 
     stopVoice(weakestVoice);
-    return activeSourceCount + 2 <= MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS;
+    return (
+      activeSourceCount + requiredOscillatorCount <=
+      MAX_ACTIVE_PROCEDURAL_MUSIC_OSCILLATORS
+    );
   }
 
   function disposeSharedReverbBuses(): void {
@@ -333,13 +367,27 @@ export function createWebAudioMusicSink(
           bodySettleAt - startAt,
           durationSeconds - note.releaseMs / 1000 - harmonicReleaseLeadSeconds
         );
+      const vibratoProfile = resolveMusicVibratoProfile(note.family);
       const sustainVolume =
         note.volume * categoryVolume * spatial.gainMultiplier;
-      if (!enforceMusicOscillatorBudget(sustainVolume)) {
+      const vibratoOscillatorCount = shouldUseMusicVibrato(
+        note.durationMs,
+        note.role,
+        vibratoProfile
+      )
+        ? 1
+        : 0;
+      if (
+        !enforceMusicOscillatorBudget(sustainVolume, 2 + vibratoOscillatorCount)
+      ) {
         return;
       }
       const oscillator = context.createOscillator();
       const harmonicOscillator = context.createOscillator();
+      const vibratoOscillator =
+        vibratoOscillatorCount > 0 ? context.createOscillator() : null;
+      const vibratoDepthGain =
+        vibratoOscillatorCount > 0 ? context.createGain() : null;
       const transientMix = Math.max(0, note.timbre.transientMix ?? 0);
       const transientGain = transientMix > 0 ? context.createGain() : null;
       const transientFilter =
@@ -388,6 +436,40 @@ export function createWebAudioMusicSink(
         startAt
       );
       harmonicOscillator.detune.setValueAtTime(note.detuneCents * 0.5, startAt);
+      if (vibratoOscillator && vibratoDepthGain && vibratoProfile) {
+        const vibratoLeadInAt = Math.min(
+          startAt + durationSeconds,
+          startAt +
+            Math.min(
+              Math.max(attackSeconds * 1.4, vibratoProfile.leadInSeconds),
+              Math.max(0.06, durationSeconds * 0.3)
+            )
+        );
+        const vibratoFadeOutAt = Math.max(
+          vibratoLeadInAt,
+          startAt + durationSeconds - vibratoProfile.fadeOutSeconds
+        );
+        vibratoOscillator.type = 'sine';
+        vibratoOscillator.frequency.setValueAtTime(
+          vibratoProfile.rateHz,
+          startAt
+        );
+        vibratoDepthGain.gain.setValueAtTime(0, startAt);
+        rampAudioParamToValue(
+          vibratoDepthGain.gain,
+          vibratoProfile.depthCents,
+          vibratoLeadInAt
+        );
+        vibratoDepthGain.gain.setValueAtTime(
+          vibratoProfile.depthCents,
+          vibratoFadeOutAt
+        );
+        rampAudioParamToValue(
+          vibratoDepthGain.gain,
+          0,
+          startAt + durationSeconds
+        );
+      }
       if (pitchSweepDurationSeconds > 0) {
         oscillator.frequency.exponentialRampToValueAtTime(
           note.frequency,
@@ -543,6 +625,11 @@ export function createWebAudioMusicSink(
 
       oscillator.connect(gain);
       harmonicOscillator.connect(harmonicGain);
+      if (vibratoOscillator && vibratoDepthGain) {
+        vibratoOscillator.connect(vibratoDepthGain);
+        vibratoDepthGain.connect(oscillator.detune);
+        vibratoDepthGain.connect(harmonicOscillator.detune);
+      }
       if (transientSource && transientGain) {
         transientSource.buffer = getSharedNoiseBuffer(context);
         transientSource.connect(transientGain);
@@ -666,6 +753,8 @@ export function createWebAudioMusicSink(
         startedAt: startAt,
         oscillator,
         harmonicOscillator,
+        vibratoOscillator,
+        vibratoDepthGain,
         transientSource,
         transientGain,
         transientFilter,
@@ -678,22 +767,29 @@ export function createWebAudioMusicSink(
         timbreFilter,
         eqFilters,
         panner,
-        remainingOscillators: 2,
+        remainingOscillators: 2 + vibratoOscillatorCount,
       };
       activeVoices.add(voice);
-      activeSourceCount += 2;
+      activeSourceCount += 2 + vibratoOscillatorCount;
       oscillator.onended = () => {
         handleVoiceOscillatorEnded(voice);
       };
       harmonicOscillator.onended = () => {
         handleVoiceOscillatorEnded(voice);
       };
+      if (vibratoOscillator) {
+        vibratoOscillator.onended = () => {
+          handleVoiceOscillatorEnded(voice);
+        };
+      }
       oscillator.start(startAt);
       harmonicOscillator.start(startAt);
+      vibratoOscillator?.start(startAt);
       transientSource?.start(startAt);
       noiseSource?.start(startAt);
       oscillator.stop(startAt + durationSeconds);
       harmonicOscillator.stop(startAt + durationSeconds);
+      vibratoOscillator?.stop(startAt + durationSeconds);
       transientSource?.stop(
         startAt +
           Math.max(
@@ -845,4 +941,69 @@ function resolveBurstNoiseEnvelopeLevel(options: {
     );
   }
   return options.bodySustainLevel;
+}
+
+function shouldUseMusicVibrato(
+  durationMs: number,
+  role: 'lead' | 'harmony' | 'bass' | 'percussion',
+  profile: MusicVibratoProfile | null
+): boolean {
+  return (
+    role !== 'percussion' &&
+    profile !== null &&
+    durationMs >= MIN_VIBRATO_DURATION_MS
+  );
+}
+
+function resolveMusicVibratoProfile(
+  family: InstrumentFamily | undefined
+): MusicVibratoProfile | null {
+  switch (family) {
+    case 'strings':
+      return {
+        rateHz: 4.8,
+        depthCents: 4,
+        leadInSeconds: 0.08,
+        fadeOutSeconds: 0.09,
+      };
+    case 'violin':
+      return {
+        rateHz: 5.2,
+        depthCents: 5,
+        leadInSeconds: 0.06,
+        fadeOutSeconds: 0.08,
+      };
+    case 'flute':
+      return {
+        rateHz: 5,
+        depthCents: 4.5,
+        leadInSeconds: 0.07,
+        fadeOutSeconds: 0.08,
+      };
+    case 'trumpet':
+      return {
+        rateHz: 5.4,
+        depthCents: 4.2,
+        leadInSeconds: 0.07,
+        fadeOutSeconds: 0.08,
+      };
+    default:
+      return null;
+  }
+}
+
+function rampAudioParamToValue(
+  parameter: AudioParam,
+  value: number,
+  atTime: number
+): void {
+  if (typeof parameter.linearRampToValueAtTime === 'function') {
+    parameter.linearRampToValueAtTime(value, atTime);
+    return;
+  }
+
+  parameter.exponentialRampToValueAtTime(Math.max(0.0001, value), atTime);
+  if (value === 0) {
+    parameter.setValueAtTime(0, atTime);
+  }
 }

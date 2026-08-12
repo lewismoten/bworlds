@@ -2889,6 +2889,263 @@ describe('procedural music', () => {
     }
   });
 
+  it('adds subtle vibrato to sustained string and wind notes', () => {
+    const createdOscillators: Array<{
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      detune: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+      type: OscillatorType;
+      onended: (() => void) | null;
+    }> = [];
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as (() => void) | null,
+          type: 'sine' as OscillatorType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'bandpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'strings-vibrato',
+        role: 'harmony',
+        family: 'strings',
+        startMs: 0,
+        durationMs: 620,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'triangle',
+        timbre: {
+          harmonicWaveform: 'sawtooth',
+          harmonicRatio: 2,
+          filterType: 'bandpass',
+          filterCutoffHz: 1_500,
+          filterQ: 1.1,
+        },
+        attackMs: 48,
+        releaseMs: 120,
+        detuneCents: 0,
+        harmonicGain: 0.18,
+        pulseRate: 0.7,
+      });
+
+      expect(createdOscillators).toHaveLength(3);
+      expect(createdOscillators[2]?.type).toBe('sine');
+      expect(
+        createdOscillators[2]?.frequency.setValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(4.8, 3);
+      expect(createdOscillators[2]?.start).toHaveBeenCalled();
+      expect(createdOscillators[2]?.stop).toHaveBeenCalledWith(0.62);
+      expect(createdGains[0]?.connect).toHaveBeenCalledWith(
+        createdOscillators[0]?.detune
+      );
+      expect(createdGains[0]?.connect).toHaveBeenCalledWith(
+        createdOscillators[1]?.detune
+      );
+      expect(
+        createdGains[0]?.gain.exponentialRampToValueAtTime.mock.calls[0]?.[0]
+      ).toBeCloseTo(4, 3);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('skips vibrato for short sustained-family notes', () => {
+    const createdOscillators: Array<{
+      frequency: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      detune: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+      type: OscillatorType;
+      onended: (() => void) | null;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        const oscillator = {
+          onended: null as (() => void) | null,
+          type: 'sine' as OscillatorType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        };
+        createdOscillators.push(oscillator);
+        return oscillator as unknown as OscillatorNode;
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'highpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'flute-short',
+        role: 'lead',
+        family: 'flute',
+        startMs: 0,
+        durationMs: 220,
+        frequency: 660,
+        volume: 0.05,
+        waveform: 'sine',
+        timbre: {
+          harmonicWaveform: 'sine',
+          harmonicRatio: 2,
+          filterType: 'highpass',
+          filterCutoffHz: 1_400,
+          filterQ: 0.8,
+        },
+        attackMs: 18,
+        releaseMs: 70,
+        detuneCents: 0,
+        harmonicGain: 0.18,
+        pulseRate: 0.8,
+      });
+
+      expect(createdOscillators).toHaveLength(2);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('lets bass harmonic gain release earlier than the carrier body', () => {
     const createdGains: Array<{
       gain: {
