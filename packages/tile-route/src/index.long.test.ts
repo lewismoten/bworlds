@@ -1456,6 +1456,35 @@ describe('tile route', () => {
     );
   });
 
+  it('uses the standard bridge deck mesh as the root node', () => {
+    let model: FakeNode | undefined;
+
+    for (let tileY = 0; tileY < 44 && !model; tileY += 1) {
+      for (let tileX = 0; tileX < 44; tileX += 1) {
+        const candidate = bridgeTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: createStandardBridgeState(tileX, tileY) as never,
+          tile: { kind: 'bridge' } as never,
+          tileX,
+          tileY,
+        }) as FakeNode | undefined;
+        if (
+          candidate &&
+          collectTaggedInstancedMeshes(candidate, 'routeInstancedPart').length > 0
+        ) {
+          model = candidate;
+          break;
+        }
+      }
+    }
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.children.length).toBeGreaterThanOrEqual(1);
+    expect(
+      collectTaggedInstancedMeshes(model, 'routeInstancedPart').length
+    ).toBeGreaterThanOrEqual(1);
+  });
+
   it('instances repeated stone bridge parapets', () => {
     let parapetInstances: FakeInstancedMesh[] = [];
     let bridgeCoordinates: { x: number; y: number } | null = null;

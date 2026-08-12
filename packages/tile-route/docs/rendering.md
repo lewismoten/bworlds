@@ -48,6 +48,11 @@ attach the repeated support posts beneath it. That removes one static wrapper
 `Group` from each visible forest-log bridge while preserving the same support
 placement and traversal marker metadata.
 
+Standard bridges now use the deck mesh as the tile root and attach the
+railings/parapets, optional cover, optional drawbridge details, and optional
+pillars beneath it. That removes one static wrapper `Group` from each visible
+standard bridge tile while preserving the same local bridge-part placement.
+
 Dock tiles now use the deck mesh as the tile root and attach the repeated
 rails, piles, optional boat, and optional route sign beneath it. That removes
 one static wrapper `Group` from each visible dock tile while preserving the

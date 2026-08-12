@@ -1611,8 +1611,6 @@ function* createBridgeGroupProgressive({
     (info.connectNegative ? 0.08 : 0) +
     (info.connectPositive ? 0.08 : 0);
   const deckWidth = 0.72 + style.widthJitter;
-  const group = new three.Group();
-  group.position.set(tileX, 0, tileY);
   const stepLabels = ['deck', 'railings-or-parapets'];
   if (style.covered) {
     stepLabels.push('cover');
@@ -1634,8 +1632,7 @@ function* createBridgeGroupProgressive({
     ),
     style.deckMaterial
   );
-  deck.position.y = -BRIDGE_DECK_THICKNESS * 0.5;
-  group.add(deck);
+  deck.position.set(tileX, -BRIDGE_DECK_THICKNESS * 0.5, tileY);
   completedSteps += 1;
   yield {
     completedSteps,
@@ -1644,9 +1641,9 @@ function* createBridgeGroupProgressive({
   };
 
   if (style.type === 'stone') {
-    addBridgeParapets(three, group, style, alongX, deckLength, deckWidth);
+    addBridgeParapets(three, deck, style, alongX, deckLength, deckWidth);
   } else {
-    addBridgeRailings(three, group, style, alongX, deckLength, deckWidth, info);
+    addBridgeRailings(three, deck, style, alongX, deckLength, deckWidth, info);
   }
   completedSteps += 1;
   yield {
@@ -1656,7 +1653,7 @@ function* createBridgeGroupProgressive({
   };
 
   if (style.covered) {
-    addBridgeCover(three, group, style, alongX, deckLength, deckWidth, info);
+    addBridgeCover(three, deck, style, alongX, deckLength, deckWidth, info);
     completedSteps += 1;
     yield {
       completedSteps,
@@ -1666,7 +1663,7 @@ function* createBridgeGroupProgressive({
   }
 
   if (style.drawbridge) {
-    addDrawbridgeDetails(three, group, style, alongX, deckWidth);
+    addDrawbridgeDetails(three, deck, style, alongX, deckWidth);
     completedSteps += 1;
     yield {
       completedSteps,
@@ -1676,7 +1673,7 @@ function* createBridgeGroupProgressive({
   }
 
   if (info.length > 1 && style.pillarSpacing > 0) {
-    addBridgePillars(three, group, style, alongX, info, deckWidth);
+    addBridgePillars(three, deck, style, alongX, info, deckWidth);
     completedSteps += 1;
     yield {
       completedSteps,
@@ -1685,7 +1682,7 @@ function* createBridgeGroupProgressive({
     };
   }
 
-  return group;
+  return deck;
 }
 
 function* createForestLogBridgeGroupProgressive(

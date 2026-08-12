@@ -356,6 +356,11 @@ low` visible recovery, and full-detail `tile-sign` tiles now use their post
       sets plus optional boat and route sign beneath it instead of wrapping the
       crossing in a dedicated `Group`, which removes one static `Object3D` from
       each dock tile without changing dock geometry or route-sign placement,
+      and standard bridge tiles now use their deck mesh as the tile root and
+      attach the railings/parapets, optional cover, optional drawbridge
+      details, and optional pillars beneath it instead of wrapping the crossing
+      in a dedicated `Group`, which removes one static `Object3D` from each
+      standard bridge tile without changing bridge-part placement,
       and cave mushroom tiles now use their stem `InstancedMesh` as the root
       and attach the cap `InstancedMesh` beneath it while cave dripstone tiles
       now use their floor-spire `InstancedMesh` as the root and attach the
