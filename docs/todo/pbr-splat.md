@@ -106,7 +106,7 @@
 - [x] Support texture mirroring.
 - [x] Use UV transforms instead of duplicate textures.
 - [x] Add small tint variation without new materials.
-- [ ] Add large-scale tint noise across terrain chunks.
+- [x] Add large-scale tint noise across terrain chunks.
 
 ## UV Mapping
 
@@ -285,6 +285,10 @@
   `@bworlds/terrain-splat-support` so terrain layers can resolve small color
   drift from seed, world position, layer ID, and terrain kind without adding
   new textures or per-chunk materials.
+- Added cell-based tint fields in
+  `@bworlds/terrain-splat-support` so nearby terrain can share the same
+  low-frequency tint drift across broader world-space regions while staying
+  deterministic from seed and layer metadata.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.

@@ -26,6 +26,8 @@ Current responsibilities:
   renderer upload code exists
 - resolve deterministic per-layer UV transforms for rotation and mirroring
 - resolve deterministic per-layer tint variation metadata without new materials
+- support low-frequency tint fields so nearby terrain can share broader color
+  drift without new materials
 
 Why this comes first:
 

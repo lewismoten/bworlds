@@ -64,6 +64,7 @@ describe('terrain splat support', () => {
         defaultRoughness: 1.4,
         defaultMetalness: -0.1,
         tintVariation: 1.5,
+        tintVariationCellSize: 0,
         uvRotationQuarterTurns: [0, 0.5 as 0 | 1 | 2 | 3, 0],
         allowMirrorU: 'yes' as unknown as boolean,
         allowMirrorV: 'no' as unknown as boolean,
@@ -79,6 +80,7 @@ describe('terrain splat support', () => {
         'Terrain material layer "" must define defaultRoughness within 0..1.',
         'Terrain material layer "" must omit defaultMetalness or define it within 0..1.',
         'Terrain material layer "" must omit tintVariation or define it within 0..1.',
+        'Terrain material layer "" must omit tintVariationCellSize or define a positive finite value.',
         'Terrain material layer "" uvRotationQuarterTurns entries must stay within 0..3.',
         'Terrain material layer "" must not repeat uvRotationQuarterTurns entries.',
         'Terrain material layer "" must omit allowMirrorU or define a boolean.',
@@ -151,6 +153,44 @@ describe('terrain splat support', () => {
       resolvedTint: '#7b5a3d',
       variationStrength: 0,
     });
+  });
+
+  it('supports large-scale tint variation fields across nearby terrain positions', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 3,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      tintVariation: 0.12,
+      tintVariationCellSize: 8,
+    };
+
+    const first = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 10,
+      y: 20,
+      kind: 'plains',
+    });
+    const second = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 15,
+      y: 23,
+      kind: 'plains',
+    });
+    const shifted = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 18,
+      y: 29,
+      kind: 'plains',
+    });
+
+    expect(first.resolvedTint).toBe(second.resolvedTint);
+    expect(shifted.resolvedTint).not.toBe(first.resolvedTint);
+    expect(first.variationStrength).toBeCloseTo(0.12, 6);
+    expect(shifted.variationStrength).toBeCloseTo(0.12, 6);
   });
 
   it('resolves deterministic terrain UV transforms from layer configuration', () => {

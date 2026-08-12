@@ -25,6 +25,7 @@ export type TerrainMaterialLayerDefinition = {
   defaultRoughness: number;
   defaultMetalness?: number;
   tintVariation?: number;
+  tintVariationCellSize?: number;
   uvRotationQuarterTurns?: readonly TerrainUvRotationQuarterTurn[];
   allowMirrorU?: boolean;
   allowMirrorV?: boolean;
@@ -226,6 +227,18 @@ export function validateTerrainMaterialLayerDefinition(
   ) {
     errors.push(
       `Terrain material layer ${formatLayerLabel(layer.id)} must omit tintVariation or define it within 0..1.`
+    );
+  }
+  if (
+    layer.tintVariationCellSize !== undefined &&
+    !(
+      typeof layer.tintVariationCellSize === 'number' &&
+      Number.isFinite(layer.tintVariationCellSize) &&
+      layer.tintVariationCellSize > 0
+    )
+  ) {
+    errors.push(
+      `Terrain material layer ${formatLayerLabel(layer.id)} must omit tintVariationCellSize or define a positive finite value.`
     );
   }
   if (layer.uvRotationQuarterTurns !== undefined) {
@@ -1055,11 +1068,20 @@ export function resolveTerrainMaterialLayerTintTransform(
     resolveHashSeedInput(input.seed),
     TERRAIN_SPLAT_TINT_VARIATION_LABEL
   );
+  const tintVariationCellSize = layer.tintVariationCellSize ?? 1;
+  const quantizedX = quantizeTintVariationCoordinate(
+    input.x,
+    tintVariationCellSize
+  );
+  const quantizedY = quantizeTintVariationCoordinate(
+    input.y,
+    tintVariationCellSize
+  );
   const tintNoise =
     hash2DWithSeed(
       seedHash,
-      input.x + hashString(layer.id),
-      input.y + hashString(input.kind)
+      quantizedX + hashString(layer.id),
+      quantizedY + hashString(input.kind)
     ) *
       2 -
     1;
@@ -1234,6 +1256,13 @@ function formatHexColor(rgb: {
 
 function clampColorChannel(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function quantizeTintVariationCoordinate(
+  value: number,
+  cellSize: number
+): number {
+  return Math.floor(value / cellSize);
 }
 
 function formatLayerLabel(value: string): string {
