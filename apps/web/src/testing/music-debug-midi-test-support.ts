@@ -325,6 +325,43 @@ export function readControllerValue(
   return null;
 }
 
+export function readControllerValues(
+  track: Uint8Array,
+  controller: number
+): number[] {
+  const values: number[] = [];
+  let offset = 0;
+
+  while (offset < track.length) {
+    const delta = readVariableLengthQuantity(track, offset);
+    offset += delta.length;
+    const status = track[offset++];
+    if (status === undefined) {
+      break;
+    }
+    if (status === 0xff) {
+      const lengthInfo = readVariableLengthQuantity(track, offset + 1);
+      offset += 1 + lengthInfo.length + lengthInfo.value;
+      continue;
+    }
+    if ((status & 0xf0) === 0xb0) {
+      const controllerNumber = track[offset++];
+      const value = track[offset++];
+      if (controllerNumber === controller && value !== undefined) {
+        values.push(value);
+      }
+      continue;
+    }
+    if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+      offset += 1;
+      continue;
+    }
+    offset += 2;
+  }
+
+  return values;
+}
+
 export function readMidiNoteOns(track: Uint8Array): number[] {
   const notes: number[] = [];
   let offset = 0;

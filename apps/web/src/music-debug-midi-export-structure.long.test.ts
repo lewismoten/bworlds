@@ -5,6 +5,7 @@ import {
   encodeExpectedTempoMeta,
   msToTicks,
   parseMidiChunks,
+  readControllerValues,
   readControllerValue,
   readTrackEndTick,
   readTrackMetaEvent,
@@ -87,5 +88,24 @@ describe('music debug midi export structure', () => {
       expect(readControllerValue(track!, 7)).not.toBeNull();
       expect(readControllerValue(track!, 10)).not.toBeNull();
     }
+  });
+
+  it('adds CC11 expression changes for sustained harmony exports', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const exportableSnapshot = toExportableSnapshot(snapshot);
+    const file = createMusicDebugMidiFile(exportableSnapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const chunks = parseMidiChunks(file.bytes);
+    const harmonyTrack = chunks.tracks[2]!;
+    const expressionValues = readControllerValues(harmonyTrack, 11);
+
+    expect(expressionValues.length).toBeGreaterThan(2);
+    expect(new Set(expressionValues).size).toBeGreaterThan(1);
   });
 });

@@ -328,12 +328,12 @@ describe('music debug midi audit warnings', () => {
       },
       trackStats: {
         ...snapshot.trackStats,
-        harmony: {
-          ...snapshot.trackStats.harmony,
+        lead: {
+          ...snapshot.trackStats.lead,
           noteCount: 8,
           occupancyPercentage: 62,
           averageDurationMs: 920,
-          maxPolyphony: 3,
+          maxPolyphony: 1,
         },
       },
     });
@@ -341,7 +341,32 @@ describe('music debug midi audit warnings', () => {
     expect(audit.isConsistent).toBe(true);
     expect(audit.criticalWarningMessages).toEqual([]);
     expect(audit.warningMessages).toContain(
-      'Harmony sustains for 62% of the song with 920 ms average notes but exported MIDI has no expression changes.'
+      'Lead sustains for 62% of the song with 920 ms average notes but exported MIDI has no expression changes.'
+    );
+  });
+
+  it('does not warn when a sustained harmony track exports expression changes', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
+    });
+
+    expect(audit.warningMessages).not.toContain(
+      expect.stringContaining('Harmony sustains for')
     );
   });
 });

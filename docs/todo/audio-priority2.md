@@ -12,7 +12,11 @@
 - [ ] Reduce accompaniment volume while lead phrases play.
 - [ ] Add crescendos approaching important section peaks.
 - [ ] Add diminuendos after climaxes and near endings.
-- [ ] Add MIDI expression changes within sustained phrases.
+- [x] Add MIDI expression changes within sustained phrases.
+      Progress: MIDI exports now add first-pass CC11 swells for compatible
+      sustained harmony, bass, and expressive lead families, and the MIDI
+      audit plus export-structure tests now verify those controller changes
+      appear when sustained phrases are present.
 - [ ] Add modulation control for suitable sustained instruments.
 - [ ] Add subtle vibrato to sustained strings and winds.
 - [ ] Add controlled pitch bends for suitable articulations.

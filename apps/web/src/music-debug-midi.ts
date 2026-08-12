@@ -408,6 +408,14 @@ function buildRoleTracks(
       if (!isMidiPercussionFamily(instrument.family)) {
         events.push(createProgramChangeEvent(channel, instrument.family, 6));
       }
+      events.push(
+        ...buildTrackExpressionEvents({
+          snapshot,
+          role,
+          channel,
+          instrument,
+        })
+      );
       if (role === 'lead') {
         for (let index = 0; index < snapshot.lyrics.length; index += 1) {
           const lyric = snapshot.lyrics[index]!;
@@ -493,6 +501,120 @@ function createProgramChangeEvent(
     tick: 0,
     order,
     data: [0xc0 | channel, INSTRUMENT_PROGRAMS[family] ?? 0],
+  };
+}
+
+function buildTrackExpressionEvents(options: {
+  snapshot: MusicDebugSnapshot;
+  role: keyof typeof ROLE_CHANNELS;
+  channel: number;
+  instrument: ProceduralInstrument;
+}): MidiTrackEvent[] {
+  if (!supportsTrackExpressionAutomation(options.instrument.family)) {
+    return [];
+  }
+
+  const notes = options.snapshot.notes.filter(
+    (note) => note.role === options.role
+  );
+  const events: MidiTrackEvent[] = [];
+  let order = 8;
+
+  for (const note of notes) {
+    if (note.durationMs < resolveMinimumExpressionDurationMs(options.role)) {
+      continue;
+    }
+
+    const startTick = msToTicks(
+      note.startMs - options.snapshot.song.startMs,
+      options.snapshot
+    );
+    const peakTick = msToTicks(
+      note.startMs +
+        note.durationMs * resolveExpressionPeakRatio(options.role) -
+        options.snapshot.song.startMs,
+      options.snapshot
+    );
+    const settleTick = msToTicks(
+      note.startMs +
+        note.durationMs * resolveExpressionSettleRatio(options.role) -
+        options.snapshot.song.startMs,
+      options.snapshot
+    );
+    const expressionProfile = resolveTrackExpressionProfile(
+      note.volume,
+      options.role
+    );
+
+    events.push({
+      tick: startTick,
+      order,
+      data: createControllerEvent(options.channel, 11, expressionProfile.start),
+    });
+    events.push({
+      tick: Math.max(startTick, peakTick),
+      order: order + 0.25,
+      data: createControllerEvent(options.channel, 11, expressionProfile.peak),
+    });
+    events.push({
+      tick: Math.max(startTick, settleTick),
+      order: order + 0.5,
+      data: createControllerEvent(
+        options.channel,
+        11,
+        expressionProfile.settle
+      ),
+    });
+    order += 1;
+  }
+
+  return events;
+}
+
+function supportsTrackExpressionAutomation(
+  family: ProceduralInstrument['family']
+): boolean {
+  return (
+    family === 'strings' ||
+    family === 'synth-pad' ||
+    family === 'organ' ||
+    family === 'violin' ||
+    family === 'flute' ||
+    family === 'trumpet' ||
+    family === 'vocals'
+  );
+}
+
+function resolveMinimumExpressionDurationMs(
+  role: keyof typeof ROLE_CHANNELS
+): number {
+  return role === 'harmony' ? 420 : role === 'bass' ? 650 : 900;
+}
+
+function resolveExpressionPeakRatio(role: keyof typeof ROLE_CHANNELS): number {
+  return role === 'harmony' ? 0.55 : 0.62;
+}
+
+function resolveExpressionSettleRatio(
+  role: keyof typeof ROLE_CHANNELS
+): number {
+  return role === 'harmony' ? 0.82 : 0.86;
+}
+
+function resolveTrackExpressionProfile(
+  volume: number,
+  role: keyof typeof ROLE_CHANNELS
+): {
+  start: number;
+  peak: number;
+  settle: number;
+} {
+  const base = clamp(Math.round(volume * 112), 68, 108);
+  const roleBoost = role === 'lead' ? 8 : role === 'harmony' ? 6 : 4;
+  return {
+    start: base,
+    peak: clamp(base + roleBoost, 72, 120),
+    settle: clamp(base + Math.max(2, Math.floor(roleBoost * 0.4)), 70, 116),
   };
 }
 
