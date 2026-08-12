@@ -21,6 +21,7 @@ Current built-in support:
 - `createGenericConicMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
+- `createOrthographicMapProjectionPlugin()`
 - `createStereographicMapProjectionPlugin()`
 - `createTransverseMercatorMapProjectionPlugin()`
 
@@ -209,6 +210,27 @@ stereographic radius, which maps to `mapX/mapY` within `-1..1`.
 This gives later map UIs one conformal azimuthal option that stays compatible
 with the shared normalized plugin contract instead of leaving stereographic as
 an unbounded special case.
+
+## Orthographic
+
+`createOrthographicMapProjectionPlugin()` provides a centered spherical
+orthographic projection with configurable center longitude and latitude.
+
+It currently:
+
+- uses `id: 'orthographic'` by default
+- declares `distortion: 'perspective'`
+- does not wrap world X or world Y
+- supports inverse projection for points inside the visible disk
+- defaults to a `0,0` center
+- clips hidden-hemisphere forward projection to the horizon so projected
+  coordinates stay inside the normalized disk
+
+The projected range is normalized to a circular disk with radius `1`, which
+maps to `mapX/mapY` within `-1..1`.
+
+This gives later map UIs one globe-like azimuthal option that preserves the
+shared plugin contract while making the visible-hemisphere limit explicit.
 
 ## Miller Cylindrical
 

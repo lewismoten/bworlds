@@ -18,7 +18,7 @@
 - [x] Add an azimuthal projection plugin.
 - [x] Add an azimuthal equidistant plugin.
 - [x] Add a stereographic projection plugin.
-- [ ] Add an orthographic projection plugin.
+- [x] Add an orthographic projection plugin.
 - [ ] Add a sinusoidal projection plugin.
 - [ ] Add a Mollweide projection plugin.
 - [ ] Add an Equal Earth projection plugin.
@@ -74,6 +74,11 @@ Current support:
   centered spherical conformal option with inverse projection support while
   clipping just short of the antipode to keep the normalized map bounds
   finite.
+- `@bworlds/map-support` now also exposes
+  `createOrthographicMapProjectionPlugin()`, which gives the map stack a
+  centered spherical perspective option with inverse projection support for
+  visible-disk coordinates and explicit horizon clipping for hidden
+  hemisphere coordinates.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

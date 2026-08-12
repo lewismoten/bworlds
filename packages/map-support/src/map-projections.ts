@@ -97,6 +97,9 @@ export const STEREOGRAPHIC_MAX_PROJECTED_RADIUS =
   Math.tan(
     degreesToRadians(STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES) / 2
   );
+export const ORTHOGRAPHIC_CENTER_LONGITUDE = 0;
+export const ORTHOGRAPHIC_CENTER_LATITUDE = 0;
+export const ORTHOGRAPHIC_MAX_PROJECTED_RADIUS = 1;
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -806,6 +809,110 @@ export function createStereographicMapProjectionPlugin(
       const centralAngle = 2 * Math.atan(radius / 2);
       const sinCentralAngle = Math.sin(centralAngle);
       const cosCentralAngle = Math.cos(centralAngle);
+      const latitudeRadians = Math.asin(
+        clamp(
+          cosCentralAngle * sinCenterLatitude +
+            (projectedY * sinCentralAngle * cosCenterLatitude) / radius,
+          -1,
+          1
+        )
+      );
+      const longitudeRadians =
+        centerLongitudeRadians +
+        Math.atan2(
+          projectedX * sinCentralAngle,
+          radius * cosCenterLatitude * cosCentralAngle -
+            projectedY * sinCenterLatitude * sinCentralAngle
+        );
+      return {
+        worldX: normalizeLongitudeDegrees(radiansToDegrees(longitudeRadians)),
+        worldY: radiansToDegrees(latitudeRadians),
+      };
+    },
+  });
+}
+
+export function createOrthographicMapProjectionPlugin(
+  options: AzimuthalMapProjectionOptions = {}
+): MapProjectionPlugin {
+  const centerLongitudeDegrees = normalizeFiniteNumber(
+    options.centerLongitudeDegrees ?? ORTHOGRAPHIC_CENTER_LONGITUDE,
+    'Orthographic centerLongitudeDegrees'
+  );
+  const centerLatitudeDegrees = normalizeFiniteNumber(
+    options.centerLatitudeDegrees ?? ORTHOGRAPHIC_CENTER_LATITUDE,
+    'Orthographic centerLatitudeDegrees'
+  );
+  const centerLongitudeRadians = degreesToRadians(centerLongitudeDegrees);
+  const centerLatitudeRadians = degreesToRadians(centerLatitudeDegrees);
+  const sinCenterLatitude = Math.sin(centerLatitudeRadians);
+  const cosCenterLatitude = Math.cos(centerLatitudeRadians);
+
+  return createMapProjectionPlugin({
+    id: options.id ?? 'orthographic',
+    label: options.label ?? 'Orthographic',
+    distortion: 'perspective',
+    bounds: {
+      minWorldX: -180,
+      maxWorldX: 180,
+      minWorldY: -90,
+      maxWorldY: 90,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const longitudeRadians =
+        degreesToRadians(normalizeLongitudeDegrees(worldX)) -
+        centerLongitudeRadians;
+      const latitudeRadians = degreesToRadians(clamp(worldY, -90, 90));
+      const sinLatitude = Math.sin(latitudeRadians);
+      const cosLatitude = Math.cos(latitudeRadians);
+      const cosineCentralAngle =
+        sinCenterLatitude * sinLatitude +
+        cosCenterLatitude * cosLatitude * Math.cos(longitudeRadians);
+      const projectedX = cosLatitude * Math.sin(longitudeRadians);
+      const projectedY =
+        cosCenterLatitude * sinLatitude -
+        sinCenterLatitude * cosLatitude * Math.cos(longitudeRadians);
+      if (cosineCentralAngle >= 0) {
+        return {
+          mapX: snapNearZero(projectedX / ORTHOGRAPHIC_MAX_PROJECTED_RADIUS),
+          mapY: snapNearZero(projectedY / ORTHOGRAPHIC_MAX_PROJECTED_RADIUS),
+        };
+      }
+      const radius = Math.hypot(projectedX, projectedY);
+      const horizonScale = radius <= 1e-12 ? 0 : 1 / radius;
+      return {
+        mapX: snapNearZero(
+          (projectedX * horizonScale) / ORTHOGRAPHIC_MAX_PROJECTED_RADIUS
+        ),
+        mapY: snapNearZero(
+          (projectedY * horizonScale) / ORTHOGRAPHIC_MAX_PROJECTED_RADIUS
+        ),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * ORTHOGRAPHIC_MAX_PROJECTED_RADIUS;
+      const projectedY = mapY * ORTHOGRAPHIC_MAX_PROJECTED_RADIUS;
+      const radius = Math.hypot(projectedX, projectedY);
+      if (radius > ORTHOGRAPHIC_MAX_PROJECTED_RADIUS + 1e-12) {
+        return null;
+      }
+      const centralAngle = Math.asin(clamp(radius, -1, 1));
+      const sinCentralAngle = Math.sin(centralAngle);
+      const cosCentralAngle = Math.cos(centralAngle);
+      if (radius <= 1e-12) {
+        return {
+          worldX: centerLongitudeDegrees,
+          worldY: centerLatitudeDegrees,
+        };
+      }
       const latitudeRadians = Math.asin(
         clamp(
           cosCentralAngle * sinCenterLatitude +

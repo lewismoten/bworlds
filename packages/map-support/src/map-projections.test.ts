@@ -6,7 +6,6 @@ import {
   AZIMUTHAL_EQUIDISTANT_CENTER_LATITUDE,
   AZIMUTHAL_EQUIDISTANT_CENTER_LONGITUDE,
   AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS,
-  createStereographicMapProjectionPlugin,
   ALBERS_CENTRAL_MERIDIAN,
   ALBERS_LATITUDE_OF_ORIGIN,
   ALBERS_MAX_WORLD_LATITUDE,
@@ -20,6 +19,8 @@ import {
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
+  createOrthographicMapProjectionPlugin,
+  createStereographicMapProjectionPlugin,
   createTransverseMercatorMapProjectionPlugin,
   GENERIC_CONIC_CENTRAL_MERIDIAN,
   GENERIC_CONIC_LATITUDE_OF_ORIGIN,
@@ -30,6 +31,9 @@ import {
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
+  ORTHOGRAPHIC_CENTER_LATITUDE,
+  ORTHOGRAPHIC_CENTER_LONGITUDE,
+  ORTHOGRAPHIC_MAX_PROJECTED_RADIUS,
   STEREOGRAPHIC_CENTER_LATITUDE,
   STEREOGRAPHIC_CENTER_LONGITUDE,
   STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES,
@@ -529,6 +533,65 @@ describe('map projections', () => {
     });
     const inverted = projection.invert?.(forward);
     expect(inverted?.worldX).toBeCloseTo(-60, 10);
+    expect(inverted?.worldY).toBeCloseTo(40, 10);
+  });
+
+  it('projects and inverts orthographic coordinates with the default center', () => {
+    const projection = createOrthographicMapProjectionPlugin();
+
+    expect(projection.id).toBe('orthographic');
+    expect(projection.label).toBe('Orthographic');
+    expect(projection.distortion).toBe('perspective');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 20,
+      worldY: 30,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(20, 10);
+    expect(inverted?.worldY).toBeCloseTo(30, 10);
+    expect(ORTHOGRAPHIC_CENTER_LONGITUDE).toBe(0);
+    expect(ORTHOGRAPHIC_CENTER_LATITUDE).toBe(0);
+    expect(ORTHOGRAPHIC_MAX_PROJECTED_RADIUS).toBe(1);
+  });
+
+  it('clips the hidden orthographic hemisphere to the horizon and rejects inverse points outside the disk', () => {
+    const projection = createOrthographicMapProjectionPlugin();
+
+    const hiddenPoint = projection.project({
+      worldX: 170,
+      worldY: 0,
+    });
+
+    expect(Math.hypot(hiddenPoint.mapX, hiddenPoint.mapY)).toBeCloseTo(1, 10);
+    expect(projection.invert?.({ mapX: 1.1, mapY: 0 })).toBeNull();
+  });
+
+  it('supports custom orthographic centers with matching inverse projection', () => {
+    const projection = createOrthographicMapProjectionPlugin({
+      id: 'regional-orthographic',
+      label: 'Regional Orthographic',
+      centerLongitudeDegrees: 15,
+      centerLatitudeDegrees: 50,
+    });
+
+    expect(projection.id).toBe('regional-orthographic');
+    expect(projection.label).toBe('Regional Orthographic');
+
+    const forward = projection.project({
+      worldX: 25,
+      worldY: 40,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(25, 10);
     expect(inverted?.worldY).toBeCloseTo(40, 10);
   });
 });
