@@ -32,6 +32,7 @@ Current responsibilities:
 - merge terrain splat contributions from multiple plugins into one shared
   catalog set
 - resolve deterministic road and trail widths from shared route metadata
+- project weighted route splat samples onto the shared terrain height field
 - plan one bounded active layer pool for neighboring chunk groups
 - plan aligned texture-array slots and validate descriptor consistency before
   renderer upload code exists
