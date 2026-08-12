@@ -651,6 +651,62 @@ describe('runtime performance tracking', () => {
     expect(issue).toBeNull();
   });
 
+  it('skips runtime issue reports for the reduced-quality-only runtime snapshot shape seen in saved issue files', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      worldSeed: 'bworlds-alpha',
+      context: {
+        id: 'overworld',
+        label: 'Overworld',
+        depth: 0,
+      },
+      debugSnapshot: createDebugSnapshot({
+        fps: 56.5,
+        averageFps: 58.2,
+        worstRecentFrameMs: 17.7,
+        frameMs: 16.9,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'Reduced',
+        reducedQualityDurationSec: 0,
+        renderQualityLimiters:
+          'Visibility radius reduced to 13.851626191986439, Weather visibility reduced draw distance, Chunk draw calls exceeded the soft cap, Scene materials exceeded the soft cap',
+        latestQualityChangeLimiter:
+          'Visibility radius reduced to 13.851626191986439',
+        latestQualityChangeSummary:
+          'Target FPS 60 -> 60, visibility radius 13.9 -> 13.9, quality Reduced -> Reduced, limiters: Visibility radius reduced to 13.851626191986439, Weather visibility reduced draw distance, Chunk draw calls exceeded the soft cap, Scene materials exceeded the soft cap',
+        visibilityRadius: 13.851626191986439,
+        weatherVisibilityRadiusCap: 13.851626191986439,
+        drawCalls: 230,
+        object3dCount: 1334,
+        pendingTileCount: 0,
+        averageTileBuildMs: 0.13461538155873617,
+        maxTileBuildMs: 2.1999998092651367,
+        tileBuildsPerSecond: 156,
+        maxChunkDrawCalls: 184,
+        materialCount: 29,
+        sceneUniqueMaterialTopPluginLabel: 'tile-town',
+        drawCallTopPluginLabel: 'tile-forest',
+        objectTopPluginLabel: 'tile-forest',
+        meshTopPluginLabel: 'tile-forest',
+        schedulerStarvationTopPluginLabel: 'tile-plains',
+        resourceWarnings: ['tile-plains:5'],
+        tileModelBudgetViolationsPerSecond: 0,
+        schedulerStarvationEventsPerSecond: 0,
+        fallbackBoxesPerSecond: 0,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        currentTilePlugin: 'tile-plains',
+        currentTileRequestedDetailLevel: 'full',
+        currentTileRenderedDetailLevel: 'full',
+        currentTileCachedDetailLevel: undefined,
+        currentTileFallbackReason: undefined,
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
   it('skips runtime issue reports when only wrapped budget fallback and lod reasons remain', () => {
     const issue = buildRuntimePerformanceIssueReport({
       source: 'game',
@@ -913,6 +969,124 @@ describe('runtime performance tracking', () => {
     await expect(reporter(null)).resolves.toBe(false);
     await expect(reporter(issue)).resolves.toBe(true);
     expect(postIssue).toHaveBeenCalledTimes(2);
+  });
+
+  it('reporter skips stale issue payloads that only contain reduced-quality narration', async () => {
+    const postIssue = vi.fn(async () => true);
+    const reporter = createRuntimePerformanceIssueReporter({
+      postIssue,
+    });
+
+    const posted = await reporter({
+      schemaVersion: 1,
+      createdAt: '2026-08-12T05:19:25.774Z',
+      source: 'game',
+      route: '/',
+      worldSeed: 'bworlds-alpha',
+      context: {
+        id: 'overworld',
+        label: 'Overworld',
+        depth: 0,
+      },
+      issueHash: '167cb0c8',
+      summary: 'Chunk draw calls 184 exceeded soft cap 160.',
+      reasons: [
+        'Graphics quality is constrained by Chunk draw calls 184 exceeded soft cap 160; Scene materials 29 exceeded soft cap 32.',
+      ],
+      performanceSnapshot: {
+        schemaVersion: 1,
+        createdAt: '2026-08-12T05:19:25.774Z',
+        source: 'game',
+        trigger: 'runtime-issue',
+        route: '/',
+        worldSeed: 'bworlds-alpha',
+        context: {
+          id: 'overworld',
+          label: 'Overworld',
+          depth: 0,
+        },
+        limits: {
+          initialWorldGenerationMs: 4000,
+          visibleTileGenerationMs: 16,
+          maximumFrameMs: 50,
+          memoryAfterRegionChangeMb: 512,
+          activeThreeObjectCount: 2500,
+          drawCalls: 1200,
+          audioNodeCount: 16,
+          songGenerationMs: 750,
+          midiExportMs: 1500,
+          wavExportMs: 2000,
+        },
+        metrics: {
+          initialWorldGenerationMs: null,
+          visibleTileGeneration: {
+            averageMs: 0.13,
+            maxMs: 2.2,
+            buildsPerSecond: 156,
+            pendingTileCount: 0,
+          },
+          maximumFrameMs: 17.7,
+          memoryAfterRegionChangeMb: null,
+          activeThreeObjectCount: 1334,
+          drawCalls: 230,
+          audioNodeCount: 0,
+          songGenerationMs: null,
+          midiExportMs: null,
+          wavExportMs: null,
+        },
+        violations: [],
+      },
+      renderState: {
+        performanceTier: 'reduced',
+        renderQualityLevel: 'Reduced',
+        reducedQualityDurationSec: 0,
+        renderQualityLimiters: [
+          'Visibility radius reduced to 13.851626191986439',
+          'Weather visibility reduced draw distance',
+          'Chunk draw calls exceeded the soft cap',
+          'Scene materials exceeded the soft cap',
+        ],
+        renderQualityLimiterDetails: [
+          'Chunk draw calls 184 exceeded soft cap 160',
+          'Scene materials 29 exceeded soft cap 32',
+        ],
+        visibilityRadiusDetail: null,
+        latestQualityChangeLimiter:
+          'Visibility radius reduced to 13.851626191986439',
+        latestQualityChangeLimiterDetail: null,
+        latestQualityChangeSummary:
+          'Target FPS 60 -> 60, visibility radius 13.9 -> 13.9, quality Reduced -> Reduced, limiters: Visibility radius reduced to 13.851626191986439, Weather visibility reduced draw distance, Chunk draw calls exceeded the soft cap, Scene materials exceeded the soft cap',
+        targetFps: 60,
+        visibilityRadius: 13.851626191986439,
+        pendingTileCount: 0,
+      },
+      pluginHotspots: {
+        instancedMeshes: null,
+        renderedInstances: null,
+        instancingWarnings: null,
+        materials: 'tile-town',
+        drawCalls: 'tile-forest',
+        objects: 'tile-forest',
+        meshes: 'tile-forest',
+        lodSwaps: null,
+        schedulerStarvations: 'tile-plains',
+        fallbackBoxes: null,
+        rejectedModels: null,
+        staticMatrixUpdates: null,
+      },
+      currentTile: {
+        plugin: 'tile-plains',
+        requestedDetailLevel: 'full',
+        renderedDetailLevel: 'full',
+        cachedDetailLevel: null,
+        fallbackReason: null,
+        hasVisibleModel: true,
+      },
+      resourceWarnings: ['tile-plains:5'],
+    });
+
+    expect(posted).toBe(false);
+    expect(postIssue).not.toHaveBeenCalled();
   });
 
   it('treats matching issue summaries as the same issue hash even when other details differ', () => {

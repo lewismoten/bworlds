@@ -183,6 +183,15 @@ export function buildRuntimePerformanceIssueReport(
   };
 }
 
+function hasReportableRuntimePerformanceIssuePayload(
+  issue: RuntimePerformanceIssueReport
+): boolean {
+  return (
+    issue.reasons.some(isReportableRuntimePerformanceReason) &&
+    isReportableRuntimePerformanceReason(issue.summary)
+  );
+}
+
 function collectRuntimePerformanceIssueReasons(
   debugSnapshot: DebugSnapshot,
   performanceSnapshot: RuntimePerformanceSnapshot
@@ -955,6 +964,10 @@ export function createRuntimePerformanceIssueReporter(
 
   return async (issue: RuntimePerformanceIssueReport | null) => {
     if (!issue) {
+      activeIssueHash = null;
+      return false;
+    }
+    if (!hasReportableRuntimePerformanceIssuePayload(issue)) {
       activeIssueHash = null;
       return false;
     }
