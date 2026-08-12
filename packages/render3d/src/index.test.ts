@@ -6166,7 +6166,9 @@ describe('render3d visibility helpers', () => {
       attemptedEntries: [{ detailLevel: 'low' }],
     });
     expect(result.entry.modelRoot).toBe(lowInstancedModel);
-    expect(result.entry.modelRoot?.type).toBe('InstancedMesh');
+    expect((result.entry.modelRoot as { type?: string } | null)?.type).toBe(
+      'InstancedMesh'
+    );
     expect(collectSceneResourceStats(result.entry.modelRoot as never)).toEqual(
       expect.objectContaining({
         instancedMeshCount: 1,

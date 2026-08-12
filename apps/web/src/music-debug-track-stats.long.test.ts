@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { createMusicDebugSnapshot } from './music-debug.ts';
+import type {
+  MusicDebugAccidentalReason,
+  MusicDebugNotePitchDiagnostic,
+} from './music-debug-note-analysis.ts';
 import {
   createMusicDebugTrackStats,
   formatMusicDebugTrackPitchSummary,
@@ -8,6 +12,8 @@ import {
   formatMusicDebugTrackTimingSummary,
   formatMusicDebugTrackVelocitySummary,
 } from './music-debug-track-stats.ts';
+import type { ProceduralInstrumentTimbre } from './music-instrument-timbres.ts';
+import type { MusicRegionThemeId } from './procedural-music-vocabulary.ts';
 
 const DEFAULT_SNAPSHOT = createMusicDebugSnapshot();
 const PLAINS_SNAPSHOT = createMusicDebugSnapshot({
@@ -311,7 +317,7 @@ function createVelocityTestNote(
     >
 ): Parameters<typeof createMusicDebugTrackStats>[0]['notes'][number] {
   return {
-    themeId: 'plains-day',
+    themeId: 'frontier-plains' satisfies MusicRegionThemeId,
     instrumentId: `${overrides.role}-instrument`,
     role: overrides.role,
     startMs: overrides.startMs,
@@ -320,23 +326,7 @@ function createVelocityTestNote(
     volume: 0.8,
     velocity: overrides.velocity,
     waveform: 'sine',
-    timbre: {
-      attackShape: 'linear',
-      harmonicSeries: [1],
-      noiseLevel: 0,
-      pulseWidth: 0.5,
-      unisonDetuneCents: 0,
-      lowPassHz: 2_000,
-      resonance: 0,
-      vibratoDepthCents: 0,
-      vibratoRateHz: 0,
-      glideMs: 0,
-      bitCrushBits: 0,
-      waveFolderAmount: 0,
-      tremoloDepth: 0,
-      tremoloRateHz: 0,
-      stereoWidth: 0,
-    },
+    timbre: createTestTimbre(),
     attackMs: 20,
     releaseMs: 80,
     detuneCents: 0,
@@ -348,7 +338,10 @@ function createVelocityTestNote(
 function createVelocityTestDiagnostic(
   midiNote: number,
   role: 'lead' | 'harmony' | 'bass' | 'percussion'
-) {
+): MusicDebugNotePitchDiagnostic {
+  const accidentalReason: MusicDebugAccidentalReason =
+    role === 'percussion' ? 'percussion' : 'in-mode';
+
   return {
     noteIndex: 0,
     role,
@@ -359,8 +352,19 @@ function createVelocityTestDiagnostic(
     scaleDegreeLabel: '1',
     isBlackKey: false,
     inMode: true,
-    accidentalReason: role === 'percussion' ? 'percussion' : 'in-mode',
+    accidentalReason,
     accidentalRuleLabel: null,
     accidentalExplanation: null,
+  };
+}
+
+function createTestTimbre(): ProceduralInstrumentTimbre {
+  return {
+    harmonicWaveform: 'sine',
+    harmonicRatio: 1,
+    filterType: 'lowpass',
+    filterCutoffHz: 2_000,
+    filterQ: 0,
+    noiseMix: 0,
   };
 }

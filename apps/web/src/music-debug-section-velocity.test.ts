@@ -4,8 +4,11 @@ import {
   createMusicDebugSectionVelocityStats,
   formatMusicDebugSectionVelocitySummary,
 } from './music-debug-section-velocity.ts';
+import type { ProceduralInstrumentTimbre } from './music-instrument-timbres.ts';
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralMusicSongSection } from './procedural-music-song.ts';
+import type { ProceduralMusicSongSectionId } from './procedural-music-blueprint.ts';
+import type { MusicRegionThemeId } from './procedural-music-vocabulary.ts';
 
 describe('music debug section velocity', () => {
   it('reports min, max, and average velocity by section and role', () => {
@@ -106,7 +109,7 @@ describe('music debug section velocity', () => {
 });
 
 function createSection(
-  id: string,
+  id: ProceduralMusicSongSectionId,
   label: string,
   startOffsetMs: number,
   durationMs: number
@@ -116,6 +119,7 @@ function createSection(
     label,
     startOffsetMs,
     durationMs,
+    loopEligible: false,
     startTick: 0,
     endTick: 0,
     measureCount: 1,
@@ -132,7 +136,7 @@ function createNote(
   velocity: number
 ): ProceduralMusicNote {
   return {
-    themeId: 'plains-day',
+    themeId: 'frontier-plains' satisfies MusicRegionThemeId,
     instrumentId: `${role}-instrument`,
     role,
     startMs,
@@ -141,27 +145,22 @@ function createNote(
     volume: 0.8,
     velocity,
     waveform: 'sine',
-    timbre: {
-      attackShape: 'linear',
-      harmonicSeries: [1],
-      noiseLevel: 0,
-      pulseWidth: 0.5,
-      unisonDetuneCents: 0,
-      lowPassHz: 2_000,
-      resonance: 0,
-      vibratoDepthCents: 0,
-      vibratoRateHz: 0,
-      glideMs: 0,
-      bitCrushBits: 0,
-      waveFolderAmount: 0,
-      tremoloDepth: 0,
-      tremoloRateHz: 0,
-      stereoWidth: 0,
-    },
+    timbre: createTestTimbre(),
     attackMs: 20,
     releaseMs: 80,
     detuneCents: 0,
     harmonicGain: 0,
     pulseRate: 0,
+  };
+}
+
+function createTestTimbre(): ProceduralInstrumentTimbre {
+  return {
+    harmonicWaveform: 'sine',
+    harmonicRatio: 1,
+    filterType: 'lowpass',
+    filterCutoffHz: 2_000,
+    filterQ: 0,
+    noiseMix: 0,
   };
 }
