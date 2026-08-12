@@ -131,6 +131,13 @@
       cloth materials now also resolve through one host-level cache keyed by
       effective banner color so different towns that land on the same banner
       palette stop paying duplicate double-sided cloth materials, and
+      `tile-route` now resolves dock deck/rail/pile/boat/sail/trim materials
+      through one host-level palette cache instead of keeping them scoped to
+      one dock cluster, and standard bridge appearances now also reuse
+      untextured trim/post materials through a host-level cache keyed by
+      effective color/roughness/metalness values, so separate dock clusters
+      and bridge regions can share those solid accent materials whenever their
+      effective style matches, and
       `render3d` now caches constellation sky line/sprite materials and Milky
       Way fill/center-line materials per sky root and per effective opacity
       instead of allocating fresh equivalent materials on repeated sky syncs.
@@ -192,7 +199,10 @@
       quietly grow between passes, and `tile-sign` now keeps repeated full-
       detail sign builds on one host within one shared seven-material palette
       so post, placard, trim, lantern, and cached label materials cannot
-      quietly grow between passes.
+      quietly grow between passes, and `tile-route` now keeps separated dock
+      clusters on one host sharing the same six-material dock palette while a
+      cross-region bridge sweep must still find shared trim/post materials
+      whenever the effective bridge style matches.
 
 ## Instancing
 

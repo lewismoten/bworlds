@@ -248,6 +248,38 @@ function createDockModelState() {
   };
 }
 
+function createSeparatedDockModelState() {
+  const dockTiles = new Set(['0:0', '1:0', '6:0', '7:0']);
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', depth: 0, type: 'overworld' as const };
+    },
+    getCurrentTile(x: number, y: number) {
+      const key = `${x}:${y}`;
+      if (dockTiles.has(key)) {
+        return { kind: 'dock' };
+      }
+      if (y === 0 && (x === -1 || x === 5)) {
+        return { kind: 'road' };
+      }
+      if (Math.abs(y) === 1 && x >= 0 && x <= 7) {
+        return { kind: 'ocean' };
+      }
+      return { kind: 'shore' };
+    },
+    getTileDefinition(kind: string) {
+      return {
+        name: kind,
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
 function createRoutedDockModelState() {
   const dockTiles = new Set(['0:0', '1:0', '22:0', '23:0', '11:22', '12:22']);
   const poiNames: Record<string, string> = {
@@ -1680,6 +1712,28 @@ describe('tile route', () => {
     );
   });
 
+  it('reuses dock palette materials across separated dock clusters in one region', () => {
+    const state = createSeparatedDockModelState();
+    const first = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+    const second = dockTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'dock' } as never,
+      tileX: 6,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
+      3
+    );
+  });
+
   it('instances repeated dock rails and piles instead of emitting one mesh per part', () => {
     const state = createDockModelState();
     const model = dockTile?.create3DModel?.({
@@ -1789,6 +1843,55 @@ describe('tile route', () => {
 
     expect(nearbyBridgeModels.length).toBeGreaterThanOrEqual(2);
     expect(highestSharedCount).toBeGreaterThanOrEqual(4);
+  });
+
+  it('reuses bridge trim and post materials across different regions when the effective style matches', () => {
+    const regionalBridgeModels: Array<{
+      regionX: number;
+      regionY: number;
+      model: FakeNode;
+    }> = [];
+
+    for (let regionY = 0; regionY < 8; regionY += 1) {
+      for (let regionX = 0; regionX < 8; regionX += 1) {
+        const tileX = regionX * 22;
+        const tileY = regionY * 22;
+        const model = bridgeTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: createStandardBridgeState(tileX, tileY) as never,
+          tile: { kind: 'bridge' } as never,
+          tileX,
+          tileY,
+        }) as FakeNode | undefined;
+        if (model) {
+          regionalBridgeModels.push({ regionX, regionY, model });
+        }
+      }
+    }
+
+    let highestCrossRegionSharedCount = 0;
+    for (let index = 0; index < regionalBridgeModels.length; index += 1) {
+      for (
+        let compareIndex = index + 1;
+        compareIndex < regionalBridgeModels.length;
+        compareIndex += 1
+      ) {
+        const left = regionalBridgeModels[index]!;
+        const right = regionalBridgeModels[compareIndex]!;
+        if (
+          left.regionX === right.regionX &&
+          left.regionY === right.regionY
+        ) {
+          continue;
+        }
+        highestCrossRegionSharedCount = Math.max(
+          highestCrossRegionSharedCount,
+          countSharedMaterialReferences(left.model, right.model)
+        );
+      }
+    }
+
+    expect(highestCrossRegionSharedCount).toBeGreaterThanOrEqual(2);
   });
 
   it('creates a boardable ship action from docks on a valid route', () => {

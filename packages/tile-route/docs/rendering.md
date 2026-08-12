@@ -33,5 +33,15 @@ Current dock progressive phases:
 - `boat`
 - `route-sign`
 
+Dock surface materials now resolve through a host-level palette cache instead of
+staying scoped to one dock cluster key. Separate dock clusters in the same
+renderer can reuse the same deck, rail, pile, boat, sail, and trim materials
+when their effective palette matches.
+
+Standard bridge appearance builders also reuse the untextured trim and post
+materials through a host-level cache keyed by effective color/roughness/
+metalness values. Region-specific bridge textures still vary where needed, but
+equivalent solid accent materials no longer duplicate per bridge appearance.
+
 The synchronous `create3DModel()` path still exhausts the same generator so the
 progressive and eager dock builds stay structurally aligned.

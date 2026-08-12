@@ -144,6 +144,10 @@ const dockRouteLabelMaterialCache = new WeakMap<
   object,
   ReturnType<typeof createBoundedCache<string, ThreeMaterialLike>>
 >();
+const dockPaletteMaterialCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, DockStyle>>
+>();
 const dockClusterCache = createCoordinateCache<DockClusterInfo>();
 const dockClassificationFootprintCache = new WeakMap<
   NonNullable<ClassifyOverworldTileContext['sampleTerrainSignals']>,
@@ -162,6 +166,10 @@ const connectedRoutePathResolverCache = new WeakMap<
 const roadStyleCache = createBoundedCache<string, RoadStyleBlueprint>(
   ROUTE_STYLE_CACHE_LIMIT
 );
+const bridgeSolidMaterialCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, ThreeMaterialLike>>
+>();
 const forestLogBridgeMaterialCache = new WeakMap<
   object,
   {
@@ -2310,42 +2318,62 @@ function getDockStyle(
               trim: '#d4a86f',
             };
       return createHostMaterialResolver((host: ThreeHostLike): DockStyle => {
-        const style = {
-          deckMaterial: new host.MeshStandardMaterial({
-            color: palette.deck,
-            roughness: 0.92,
-            metalness: 0.02,
-          }),
-          railMaterial: new host.MeshStandardMaterial({
-            color: palette.rail,
-            roughness: 0.88,
-            metalness: 0.02,
-          }),
-          pileMaterial: new host.MeshStandardMaterial({
-            color: palette.pile,
-            roughness: 0.94,
-            metalness: 0.02,
-          }),
-          boatMaterial: new host.MeshStandardMaterial({
-            color: palette.boat,
-            roughness: 0.84,
-            metalness: 0.03,
-          }),
-          sailMaterial: new host.MeshStandardMaterial({
-            color: palette.sail,
-            roughness: 0.96,
-            metalness: 0.01,
-          }),
-          trimMaterial: new host.MeshStandardMaterial({
-            color: palette.trim,
-            roughness: 0.85,
-            metalness: 0.02,
-          }),
-        };
-        return style;
+        return getOrCreateDockPaletteMaterials(host, palette);
       });
     })
     .createMaterials(three);
+}
+
+function getOrCreateDockPaletteMaterials(
+  host: ThreeHostLike,
+  palette: DockPalette
+): DockStyle {
+  let cache = dockPaletteMaterialCache.get(host);
+  if (!cache) {
+    cache = createBoundedCache<string, DockStyle>(ROUTE_STYLE_CACHE_LIMIT);
+    dockPaletteMaterialCache.set(host, cache);
+  }
+
+  const key = [
+    palette.deck,
+    palette.rail,
+    palette.pile,
+    palette.boat,
+    palette.sail,
+    palette.trim,
+  ].join(':');
+  return cache.getOrCreate(key, () => ({
+    deckMaterial: new host.MeshStandardMaterial({
+      color: palette.deck,
+      roughness: 0.92,
+      metalness: 0.02,
+    }),
+    railMaterial: new host.MeshStandardMaterial({
+      color: palette.rail,
+      roughness: 0.88,
+      metalness: 0.02,
+    }),
+    pileMaterial: new host.MeshStandardMaterial({
+      color: palette.pile,
+      roughness: 0.94,
+      metalness: 0.02,
+    }),
+    boatMaterial: new host.MeshStandardMaterial({
+      color: palette.boat,
+      roughness: 0.84,
+      metalness: 0.03,
+    }),
+    sailMaterial: new host.MeshStandardMaterial({
+      color: palette.sail,
+      roughness: 0.96,
+      metalness: 0.01,
+    }),
+    trimMaterial: new host.MeshStandardMaterial({
+      color: palette.trim,
+      roughness: 0.85,
+      metalness: 0.02,
+    }),
+  }));
 }
 
 function shouldRenderDockBoat(
@@ -3230,16 +3258,24 @@ function getBridgeAppearance(
             roughness: 0.86,
             metalness: type === 'metal' ? 0.36 : 0.05,
           }),
-          postMaterial: new host.MeshStandardMaterial({
-            color: palette.trim,
-            roughness: 0.88,
-            metalness: type === 'metal' ? 0.22 : 0.03,
-          }),
-          trimMaterial: new host.MeshStandardMaterial({
-            color: palette.trim,
-            roughness: 0.82,
-            metalness: type === 'metal' ? 0.34 : 0.04,
-          }),
+          postMaterial: getOrCreateBridgeSolidMaterial(
+            host,
+            `post:${palette.trim}:${type === 'metal' ? 0.22 : 0.03}:0.88`,
+            {
+              color: palette.trim,
+              roughness: 0.88,
+              metalness: type === 'metal' ? 0.22 : 0.03,
+            }
+          ),
+          trimMaterial: getOrCreateBridgeSolidMaterial(
+            host,
+            `trim:${palette.trim}:${type === 'metal' ? 0.34 : 0.04}:0.82`,
+            {
+              color: palette.trim,
+              roughness: 0.82,
+              metalness: type === 'metal' ? 0.34 : 0.04,
+            }
+          ),
           coverMaterial: new host.MeshStandardMaterial({
             color: '#ffffff',
             map: coverTexture,
@@ -3256,6 +3292,28 @@ function getBridgeAppearance(
       })
     )
     .createMaterials(three);
+}
+
+function getOrCreateBridgeSolidMaterial(
+  host: ThreeHostLike,
+  key: string,
+  options: {
+    color: string;
+    roughness: number;
+    metalness: number;
+  }
+) {
+  let cache = bridgeSolidMaterialCache.get(host);
+  if (!cache) {
+    cache = createBoundedCache<string, ThreeMaterialLike>(
+      ROUTE_STYLE_CACHE_LIMIT
+    );
+    bridgeSolidMaterialCache.set(host, cache);
+  }
+  return cache.getOrCreate(
+    key,
+    () => new host.MeshStandardMaterial(options)
+  );
 }
 
 function createBridgeTexture(
@@ -3427,6 +3485,15 @@ interface DockStyle {
   boatMaterial: ThreeMaterialLike;
   sailMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;
+}
+
+interface DockPalette {
+  deck: string;
+  rail: string;
+  pile: string;
+  boat: string;
+  sail: string;
+  trim: string;
 }
 
 interface DockStyleBlueprint {
