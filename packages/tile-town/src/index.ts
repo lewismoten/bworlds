@@ -350,8 +350,6 @@ function* createTownModelProgressive({
 > {
   const style = getTownStyle(three, tileX, tileY, renderBudget?.quality);
   const descriptors = getTownDescriptors(tileX, tileY);
-  const group = new three.Group();
-
   if (detailLevel === 'low') {
     const lowBodyInstances = new three.InstancedMesh(
       new three.BoxGeometry(1, 1, 1),
@@ -481,11 +479,10 @@ function* createTownModelProgressive({
     windowMatrixScratch,
   });
 
-  group.add(bodyInstances);
-  group.add(roofInstances);
-  group.add(doorInstances);
+  bodyInstances.add(roofInstances);
+  bodyInstances.add(doorInstances);
   if (windowInstances) {
-    group.add(windowInstances);
+    bodyInstances.add(windowInstances);
   }
   yield {
     completedSteps: 1,
@@ -550,7 +547,7 @@ function* createTownModelProgressive({
         : 1;
 
   if (tile.poi?.name) {
-    addTownNameSign(group, three, tile.poi.name, tileX, tileY, style);
+    addTownNameSign(bodyInstances, three, tile.poi.name, tileX, tileY, style);
   }
   yield {
     completedSteps: postBuildingBaseStep + 1,
@@ -613,12 +610,12 @@ function* createTownModelProgressive({
           banner.rotationY
         )
       );
-      group.add(
+      bodyInstances.add(
         createTownBannerCloth(three, banner, style, tileX, tileY, index)
       );
     });
-    group.add(bannerPoleInstances);
-    group.add(bannerCrossbarInstances);
+    bodyInstances.add(bannerPoleInstances);
+    bodyInstances.add(bannerCrossbarInstances);
   }
   yield {
     completedSteps: postBuildingBaseStep + 2,
@@ -627,7 +624,7 @@ function* createTownModelProgressive({
   };
 
   createTownNightLights(three, descriptors).forEach((light) => {
-    group.add(light);
+    bodyInstances.add(light);
   });
   yield {
     completedSteps: postBuildingBaseStep + 3,
@@ -635,7 +632,7 @@ function* createTownModelProgressive({
     label: 'night-lights',
   };
 
-  return group;
+  return bodyInstances;
 }
 
 function populateTownBuildingInstances(options: {

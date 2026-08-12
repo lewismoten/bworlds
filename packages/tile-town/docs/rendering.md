@@ -18,5 +18,10 @@ Current progressive phases:
 - `banners`
 - `night-lights`
 
+Full-detail town tiles now use the `building-body` `InstancedMesh` as the tile
+root and attach the roof, door, window, sign, banner, and night-light content
+beneath it. That removes one static wrapper `Group` from each visible full-
+detail town tile while preserving the same world-space building layout.
+
 The synchronous `create3DModel()` path exhausts the same generator so the
 progressive and eager builds stay structurally aligned.

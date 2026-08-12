@@ -399,7 +399,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
     const lowModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -415,11 +415,7 @@ describe('tile town', () => {
     expect(lowModel.count).toBe(descriptorCount);
     expect(lowModel.matrices).toHaveLength(descriptorCount);
     expect(
-      fullModel.children.some(
-        (child) =>
-          child instanceof FakeInstancedMesh &&
-          child.userData?.townInstancedPart === 'building-body'
-      )
+      collectTownInstancedParts(fullModel).includes('building-body')
     ).toBe(true);
   });
 
@@ -628,9 +624,12 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
 
-    const bodyInstances = model.children.filter(
+    expect(model).toBeInstanceOf(FakeInstancedMesh);
+    expect(model.userData?.townInstancedPart).toBe('building-body');
+
+    const bodyInstances = [model].filter(
       (child) =>
         child instanceof FakeInstancedMesh &&
         child.userData?.townInstancedPart === 'building-body'
@@ -674,7 +673,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
 
     const signParts = model.children.filter(
       (child) => typeof child.userData?.townSignPart === 'string'
@@ -702,7 +701,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
     const secondModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -710,7 +709,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
 
     const firstLabelMaterials = firstModel.children
       .filter(
@@ -752,7 +751,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
     const lowModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -852,7 +851,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
 
     for (let index = 0; index < 144; index += 1) {
       tile?.create3DModel?.({
@@ -875,7 +874,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
 
     expect(createModelSignature(resolved)).toEqual(
       createModelSignature(baseline)
@@ -894,7 +893,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
     const second = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -902,7 +901,7 @@ describe('tile town', () => {
       tileX: 4,
       tileY: 8,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
 
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
       4
@@ -974,7 +973,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
     const second = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
@@ -982,7 +981,7 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'full',
-    }) as FakeGroup;
+    }) as FakeNode;
 
     expect(findTownBannerMaterial(first)).toBe(findTownBannerMaterial(second));
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
@@ -994,7 +993,7 @@ describe('tile town', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
     const state = createTownState();
-    const models: FakeGroup[] = [];
+    const models: FakeNode[] = [];
 
     for (let regionY = 0; regionY < 8; regionY += 1) {
       for (let regionX = 0; regionX < 8; regionX += 1) {
@@ -1009,7 +1008,7 @@ describe('tile town', () => {
             tileX: regionX * 18,
             tileY: regionY * 18,
             detailLevel: 'full',
-          }) as FakeGroup
+          }) as FakeNode
         );
       }
     }

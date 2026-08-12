@@ -361,6 +361,11 @@ low` visible recovery, and full-detail `tile-sign` tiles now use their post
       details, and optional pillars beneath it instead of wrapping the crossing
       in a dedicated `Group`, which removes one static `Object3D` from each
       standard bridge tile without changing bridge-part placement,
+      and full-detail town tiles now use their `building-body` `InstancedMesh`
+      as the tile root and attach the roof, door, window, sign, banner, and
+      night-light content beneath it instead of wrapping the landmark in a
+      dedicated `Group`, which removes one static `Object3D` from each visible
+      full-detail town tile without changing the world-space building layout,
       and cave mushroom tiles now use their stem `InstancedMesh` as the root
       and attach the cap `InstancedMesh` beneath it while cave dripstone tiles
       now use their floor-spire `InstancedMesh` as the root and attach the
