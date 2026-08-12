@@ -24,7 +24,7 @@
 - [x] Add an Equal Earth projection plugin.
 - [x] Add a Goode homolosine projection plugin.
 - [x] Add a Robinson projection plugin.
-- [ ] Add a Winkel Tripel projection plugin.
+- [x] Add a Winkel Tripel projection plugin.
 - [ ] Add a globe projection plugin.
 
 ## Interaction
@@ -100,6 +100,10 @@ Current support:
   `createRobinsonMapProjectionPlugin()`, which gives the map stack a
   full-world compromise option based on the standard Robinson lookup tables
   with interpolated forward projection and numeric inverse support.
+- `@bworlds/map-support` now also exposes
+  `createWinkelTripelMapProjectionPlugin()`, which gives the map stack a
+  full-world compromise option based on the standard Aitoff plus
+  equirectangular blend with numeric inverse projection support.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

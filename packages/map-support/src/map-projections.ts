@@ -137,6 +137,17 @@ export const ROBINSON_MAX_PROJECTED_X = 0.8487;
 export const ROBINSON_MAX_PROJECTED_Y = 1.3523;
 export const ROBINSON_MAX_SOLVER_ITERATIONS = 12;
 export const ROBINSON_SOLVER_TOLERANCE = 1e-12;
+export const WINKEL_TRIPEL_MAX_WORLD_LONGITUDE = 180;
+export const WINKEL_TRIPEL_MAX_WORLD_LATITUDE = 90;
+export const WINKEL_TRIPEL_STANDARD_PARALLEL_DEGREES = 50.467;
+export const WINKEL_TRIPEL_STANDARD_PARALLEL_RADIANS = degreesToRadians(
+  WINKEL_TRIPEL_STANDARD_PARALLEL_DEGREES
+);
+export const WINKEL_TRIPEL_MAX_PROJECTED_X =
+  Math.PI * (1 + Math.cos(WINKEL_TRIPEL_STANDARD_PARALLEL_RADIANS)) / 2;
+export const WINKEL_TRIPEL_MAX_PROJECTED_Y = Math.PI / 2;
+export const WINKEL_TRIPEL_MAX_SOLVER_ITERATIONS = 16;
+export const WINKEL_TRIPEL_SOLVER_TOLERANCE = 1e-10;
 const ROBINSON_X_TABLE = [
   1,
   0.9986,
@@ -1372,6 +1383,58 @@ export function createRobinsonMapProjectionPlugin(): MapProjectionPlugin {
   });
 }
 
+export function createWinkelTripelMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'winkel-tripel',
+    label: 'Winkel Tripel',
+    distortion: 'compromise',
+    bounds: {
+      minWorldX: -WINKEL_TRIPEL_MAX_WORLD_LONGITUDE,
+      maxWorldX: WINKEL_TRIPEL_MAX_WORLD_LONGITUDE,
+      minWorldY: -WINKEL_TRIPEL_MAX_WORLD_LATITUDE,
+      maxWorldY: WINKEL_TRIPEL_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLongitude = clamp(
+        worldX,
+        -WINKEL_TRIPEL_MAX_WORLD_LONGITUDE,
+        WINKEL_TRIPEL_MAX_WORLD_LONGITUDE
+      );
+      const clampedLatitude = clamp(
+        worldY,
+        -WINKEL_TRIPEL_MAX_WORLD_LATITUDE,
+        WINKEL_TRIPEL_MAX_WORLD_LATITUDE
+      );
+      const projected = projectWinkelTripel(
+        degreesToRadians(clampedLongitude),
+        degreesToRadians(clampedLatitude)
+      );
+      return {
+        mapX: snapNearZero(projected.mapX / WINKEL_TRIPEL_MAX_PROJECTED_X),
+        mapY: snapNearZero(projected.mapY / WINKEL_TRIPEL_MAX_PROJECTED_Y),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const inverted = invertWinkelTripel({
+        mapX: mapX * WINKEL_TRIPEL_MAX_PROJECTED_X,
+        mapY: mapY * WINKEL_TRIPEL_MAX_PROJECTED_Y,
+      });
+      return {
+        worldX: radiansToDegrees(inverted.worldX),
+        worldY: radiansToDegrees(inverted.worldY),
+      };
+    },
+  });
+}
+
 function normalizeMapProjectionWorldCoordinate(
   coordinate: MapProjectionWorldCoordinate
 ): MapProjectionWorldCoordinate {
@@ -1623,6 +1686,104 @@ function invertRobinsonLatitude(yNormalized: number): number {
 
 function interpolate(start: number, end: number, fraction: number): number {
   return start + (end - start) * fraction;
+}
+
+function projectWinkelTripel(
+  longitudeRadians: number,
+  latitudeRadians: number
+): MapProjectionMapCoordinate {
+  const halfLongitude = longitudeRadians / 2;
+  const cosLatitude = Math.cos(latitudeRadians);
+  const sinLatitude = Math.sin(latitudeRadians);
+  const cosineAlpha = clamp(
+    cosLatitude * Math.cos(halfLongitude),
+    -1,
+    1
+  );
+  const alpha = Math.acos(cosineAlpha);
+  const sincAlpha = Math.abs(alpha) <= 1e-12 ? 1 : Math.sin(alpha) / alpha;
+  const aitoffX =
+    Math.abs(sincAlpha) <= 1e-12
+      ? 0
+      : (2 * cosLatitude * Math.sin(halfLongitude)) / sincAlpha;
+  const aitoffY =
+    Math.abs(sincAlpha) <= 1e-12 ? 0 : sinLatitude / sincAlpha;
+  const equirectangularX =
+    longitudeRadians * Math.cos(WINKEL_TRIPEL_STANDARD_PARALLEL_RADIANS);
+  return {
+    mapX: (aitoffX + equirectangularX) / 2,
+    mapY: (aitoffY + latitudeRadians) / 2,
+  };
+}
+
+function invertWinkelTripel(
+  coordinate: MapProjectionMapCoordinate
+): MapProjectionWorldCoordinate {
+  let longitudeRadians = clamp(
+    coordinate.mapX / Math.cos(WINKEL_TRIPEL_STANDARD_PARALLEL_RADIANS),
+    -Math.PI,
+    Math.PI
+  );
+  let latitudeRadians = clamp(coordinate.mapY, -Math.PI / 2, Math.PI / 2);
+
+  for (
+    let iteration = 0;
+    iteration < WINKEL_TRIPEL_MAX_SOLVER_ITERATIONS;
+    iteration += 1
+  ) {
+    const projected = projectWinkelTripel(longitudeRadians, latitudeRadians);
+    const errorX = projected.mapX - coordinate.mapX;
+    const errorY = projected.mapY - coordinate.mapY;
+    if (
+      Math.hypot(errorX, errorY) <= WINKEL_TRIPEL_SOLVER_TOLERANCE
+    ) {
+      break;
+    }
+
+    const delta = 1e-6;
+    const projectedLongitude = projectWinkelTripel(
+      clamp(longitudeRadians + delta, -Math.PI, Math.PI),
+      latitudeRadians
+    );
+    const projectedLatitude = projectWinkelTripel(
+      longitudeRadians,
+      clamp(latitudeRadians + delta, -Math.PI / 2, Math.PI / 2)
+    );
+    const derivativeXLongitude =
+      (projectedLongitude.mapX - projected.mapX) / delta;
+    const derivativeYLongitude =
+      (projectedLongitude.mapY - projected.mapY) / delta;
+    const derivativeXLatitude =
+      (projectedLatitude.mapX - projected.mapX) / delta;
+    const derivativeYLatitude =
+      (projectedLatitude.mapY - projected.mapY) / delta;
+    const determinant =
+      derivativeXLongitude * derivativeYLatitude -
+      derivativeXLatitude * derivativeYLongitude;
+
+    if (Math.abs(determinant) <= 1e-12) {
+      break;
+    }
+
+    const longitudeStep =
+      (errorX * derivativeYLatitude - errorY * derivativeXLatitude) /
+      determinant;
+    const latitudeStep =
+      (derivativeXLongitude * errorY - derivativeYLongitude * errorX) /
+      determinant;
+
+    longitudeRadians = clamp(longitudeRadians - longitudeStep, -Math.PI, Math.PI);
+    latitudeRadians = clamp(
+      latitudeRadians - latitudeStep,
+      -Math.PI / 2,
+      Math.PI / 2
+    );
+  }
+
+  return {
+    worldX: longitudeRadians,
+    worldY: latitudeRadians,
+  };
 }
 
 function resolveGenericConicConeConstant(

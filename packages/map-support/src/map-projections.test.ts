@@ -27,6 +27,7 @@ import {
   createSinusoidalMapProjectionPlugin,
   createStereographicMapProjectionPlugin,
   createTransverseMercatorMapProjectionPlugin,
+  createWinkelTripelMapProjectionPlugin,
   GENERIC_CONIC_CENTRAL_MERIDIAN,
   GENERIC_CONIC_LATITUDE_OF_ORIGIN,
   GENERIC_CONIC_MAX_WORLD_LATITUDE,
@@ -75,6 +76,12 @@ import {
   TRANSVERSE_MERCATOR_MAX_PROJECTED_X,
   TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE,
   TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE,
+  WINKEL_TRIPEL_MAX_PROJECTED_X,
+  WINKEL_TRIPEL_MAX_PROJECTED_Y,
+  WINKEL_TRIPEL_MAX_SOLVER_ITERATIONS,
+  WINKEL_TRIPEL_MAX_WORLD_LATITUDE,
+  WINKEL_TRIPEL_MAX_WORLD_LONGITUDE,
+  WINKEL_TRIPEL_STANDARD_PARALLEL_DEGREES,
 } from './map-projections.ts';
 
 describe('map projections', () => {
@@ -788,5 +795,35 @@ describe('map projections', () => {
     expect(ROBINSON_MAX_PROJECTED_X).toBeCloseTo(0.8487, 10);
     expect(ROBINSON_MAX_PROJECTED_Y).toBeCloseTo(1.3523, 10);
     expect(ROBINSON_MAX_SOLVER_ITERATIONS).toBe(12);
+  });
+
+  it('projects and inverts Winkel Tripel coordinates across the full latitude range', () => {
+    const projection = createWinkelTripelMapProjectionPlugin();
+
+    expect(projection.id).toBe('winkel-tripel');
+    expect(projection.label).toBe('Winkel Tripel');
+    expect(projection.distortion).toBe('compromise');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 90,
+      worldY: 30,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(90, 3);
+    expect(inverted?.worldY).toBeCloseTo(30, 3);
+    expect(WINKEL_TRIPEL_MAX_WORLD_LONGITUDE).toBe(180);
+    expect(WINKEL_TRIPEL_MAX_WORLD_LATITUDE).toBe(90);
+    expect(WINKEL_TRIPEL_STANDARD_PARALLEL_DEGREES).toBeCloseTo(50.467, 10);
+    expect(WINKEL_TRIPEL_MAX_PROJECTED_X).toBeCloseTo(2.5706435923599793, 10);
+    expect(WINKEL_TRIPEL_MAX_PROJECTED_Y).toBeCloseTo(Math.PI / 2, 10);
+    expect(WINKEL_TRIPEL_MAX_SOLVER_ITERATIONS).toBe(16);
   });
 });

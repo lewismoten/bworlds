@@ -29,6 +29,7 @@ Current built-in support:
 - `createSinusoidalMapProjectionPlugin()`
 - `createStereographicMapProjectionPlugin()`
 - `createTransverseMercatorMapProjectionPlugin()`
+- `createWinkelTripelMapProjectionPlugin()`
 
 ## Coordinate Contract
 
@@ -342,6 +343,29 @@ numeric inversion of the Y lookup.
 
 This gives later map UIs a classic world-atlas compromise projection while
 still fitting the shared normalized plugin contract.
+
+## Winkel Tripel
+
+`createWinkelTripelMapProjectionPlugin()` provides a global compromise
+projection built from the arithmetic mean of Aitoff and equirectangular
+projection components.
+
+It currently:
+
+- uses `id: 'winkel-tripel'`
+- declares `distortion: 'compromise'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- supports the full `±180` longitude and `±90` latitude range
+- uses the standard parallel `50.467` degrees
+
+The projected range is normalized from the standard global Winkel Tripel
+extents, with forward projection computed directly and inverse projection
+solved numerically.
+
+This gives later map UIs a modern atlas-style compromise projection with
+lower aggregate distortion than equirectangular while still fitting the
+shared normalized plugin contract.
 
 ## Miller Cylindrical
 
