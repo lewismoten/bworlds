@@ -348,6 +348,61 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('keeps tile-scoped material summaries separate from scene-unique material counts', () => {
+    const sharedMaterial = createMockMaterial({
+      color: '#7c5a3b',
+      type: 'MeshStandardMaterial',
+    });
+    const firstTileNode = createMockObject3D(undefined, [
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('tile-material-a', 24)
+      ),
+    ]);
+    const secondTileNode = createMockObject3D(undefined, [
+      createMockObject3D(
+        sharedMaterial,
+        [],
+        createMockStatGeometry('tile-material-b', 24)
+      ),
+    ]);
+    const entries = [
+      {
+        tileX: 0,
+        tileY: 0,
+        drawCallCount: 1,
+        materialCount: 1,
+        tilePluginOwnerLabel: 'tile-forest',
+        node: firstTileNode,
+      },
+      {
+        tileX: 1,
+        tileY: 0,
+        drawCallCount: 1,
+        materialCount: 1,
+        tilePluginOwnerLabel: 'tile-forest',
+        node: secondTileNode,
+      },
+    ];
+
+    expect(collectVisibleTileResourceStats(entries).totalMaterialCount).toBe(2);
+    expect(summarizeVisibleTileMaterialsByPlugin(entries)).toEqual(
+      expect.objectContaining({
+        totalCount: 2,
+        topCount: 2,
+        topLabel: 'tile-forest',
+      })
+    );
+    expect(summarizeVisibleTileOwnedUniqueMaterialsByPlugin(entries)).toEqual(
+      expect.objectContaining({
+        totalCount: 1,
+        topCount: 1,
+        topLabel: 'tile-forest',
+      })
+    );
+  });
+
   it('detects equivalent material instances that could be shared', () => {
     const sharedTexture = createMockTexture(16, 16);
     const materialA = createMockMaterial({

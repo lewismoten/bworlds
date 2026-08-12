@@ -3183,8 +3183,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   }
 
   function getMaterialCount(): number {
-    return collectVisibleTileResourceStats(visibleTileNodes.values())
-      .totalMaterialCount;
+    return collectSceneResourceStats(scene).materialCount;
   }
 
   function getVisibleObjectCount(): number {

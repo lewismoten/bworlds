@@ -63,6 +63,20 @@ scene graph size, mesh density, unique-material pressure, cloned-material
 pressure, draw-call pressure, and which ones keep the largest number of static
 transforms on `matrixAutoUpdate = true`.
 
+## Budget boundary
+
+These plugin summaries are intentionally tile-scoped diagnostics. They are not
+the authoritative scene-wide material budget metric.
+
+The live renderer budget and runtime issue reporting must use
+`collectSceneResourceStats(scene).materialCount`, which deduplicates shared
+material instances across every visible tile plus persistent scene content.
+
+That distinction matters because summing each tile's local `materialCount`
+double-counts shared materials. Mixed forest scenes can legitimately reuse one
+material object across many visible tiles, so tile-scoped material summaries may
+be much larger than the actual scene-unique material count.
+
 ## Tradeoff
 
 This summary is intentionally tile-scoped. It attributes static matrix updates
