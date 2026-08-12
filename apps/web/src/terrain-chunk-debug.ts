@@ -46,6 +46,15 @@ export type TerrainChunkDebugCell = {
   parityReason: string;
 };
 
+export type TerrainChunkDebugParityMismatch = {
+  column: number;
+  row: number;
+  tileKind: string;
+  biomeId: string;
+  dominantLayerId: string | null;
+  parityReason: string;
+};
+
 export type TerrainChunkDebugSeamSummary = {
   edge: 'east' | 'south';
   mismatchCount: number;
@@ -73,6 +82,8 @@ export type TerrainChunkDebugSnapshot = {
   logicalTileCellCount: number;
   parityMatchCount: number;
   parityMismatchCount: number;
+  parityStatus: 'aligned' | 'drift';
+  parityMismatchPreview: readonly TerrainChunkDebugParityMismatch[];
   heightRange: {
     min: number;
     max: number;
@@ -204,6 +215,17 @@ export function createTerrainChunkDebugSnapshot(
       cell.column < snapshotCellSpan(currentBounds) &&
       cell.row < snapshotCellSpan(currentBounds)
   );
+  const parityMismatchPreview = logicalTileCells
+    .filter((cell) => !cell.parityMatches)
+    .slice(0, 8)
+    .map((cell) => ({
+      column: cell.column,
+      row: cell.row,
+      tileKind: cell.tileKind,
+      biomeId: cell.biomeId,
+      dominantLayerId: cell.dominantLayerId,
+      parityReason: cell.parityReason,
+    }));
   const seamSummaries: TerrainChunkDebugSeamSummary[] = [
     createSeamSummary({
       edge: 'east',
@@ -236,6 +258,8 @@ export function createTerrainChunkDebugSnapshot(
       .length,
     parityMismatchCount: logicalTileCells.filter((cell) => !cell.parityMatches)
       .length,
+    parityStatus: parityMismatchPreview.length === 0 ? 'aligned' : 'drift',
+    parityMismatchPreview,
     heightRange: {
       min: Math.min(...heights),
       max: Math.max(...heights),
@@ -317,6 +341,18 @@ export function buildTerrainChunkDebugMarkup(
       `
     )
     .join('');
+  const parityMismatchMarkup =
+    snapshot.parityMismatchPreview.length > 0
+      ? `<ul class="terrain-chunk-debug-list">
+          ${snapshot.parityMismatchPreview
+            .map(
+              (cell) => `
+                <li>(${cell.column}, ${cell.row}) ${escapeHtml(cell.tileKind)} / ${escapeHtml(cell.biomeId)} -> ${escapeHtml(cell.dominantLayerId ?? 'none')} (${escapeHtml(cell.parityReason)})</li>
+              `
+            )
+            .join('')}
+        </ul>`
+      : '<p class="terrain-chunk-debug-note">All logical tile cells stay broadly compatible with the current shared terrain-preview categories for this chunk.</p>';
 
   return `
     <main class="terrain-chunk-debug-shell">
@@ -371,6 +407,7 @@ export function buildTerrainChunkDebugMarkup(
             <div><dt>Height Range</dt><dd>${formatNumber(snapshot.heightRange.min)}..${formatNumber(snapshot.heightRange.max)}</dd></div>
             <div><dt>Dominant Layer</dt><dd>${escapeHtml(snapshot.dominantLayerId ?? 'none')}</dd></div>
             <div><dt>Logical Tiles</dt><dd>${snapshot.logicalTileCellCount}</dd></div>
+            <div><dt>Parity Status</dt><dd>${snapshot.parityStatus === 'aligned' ? 'Aligned' : 'Drift detected'}</dd></div>
             <div><dt>Parity Matches</dt><dd>${snapshot.parityMatchCount}</dd></div>
             <div><dt>Parity Mismatches</dt><dd>${snapshot.parityMismatchCount}</dd></div>
           </dl>
@@ -392,6 +429,7 @@ export function buildTerrainChunkDebugMarkup(
           <p class="terrain-chunk-debug-note">
             Green cells stay broadly compatible with the shared terrain preview category. Red cells show where the logical tile kind and dominant terrain layer drift apart.
           </p>
+          ${parityMismatchMarkup}
         </article>
       </section>
       <section class="terrain-chunk-debug-grid-layout">

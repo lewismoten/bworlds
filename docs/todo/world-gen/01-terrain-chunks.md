@@ -69,6 +69,10 @@ Current support:
   versus mismatches, which gives Phase 1 one explicit inspection path toward
   verifying that the 2D tile map still represents the same terrain story as
   the future shared 3D chunk surface.
+- The parity card now also surfaces a bounded mismatch preview list with
+  logical-cell coordinates, tile kinds, biome IDs, dominant layers, and drift
+  reasons so parity regressions can be inspected directly without hovering
+  every cell in the grid.
 - `@bworlds/terrain-splat-support/height-field` now emits seam-safe vertex
   normals from the shared world-space height samples, supports extra
   `normalSampleRing` world-space samples so curved borders can match across
