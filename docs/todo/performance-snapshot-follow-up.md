@@ -11,7 +11,7 @@
       such as `tile drawCallCount 21>17` or
       `plugin unique materialCount 13>12`.
 - [x] Limit each tree species to 10 material variants per part type.
-- [ ] Reuse bark, foliage, and branch materials across nearby trees.
+- [x] Reuse bark, foliage, and branch materials across nearby trees.
 - [ ] Prefer tinting shared materials over creating new textures.
 - [ ] Use color shifts to distinguish related tree species.
 - [ ] Avoid unique textures when color variation is sufficient.
@@ -37,7 +37,10 @@
       budget from `12` to `13`, and the forest regression tests now verify
       that sampled oak, birch, and pine full-detail tiles each stay at one
       trunk/branch material plus one foliage material, with oak and birch
-      explicitly sharing the same broadleaf material pair.
+      explicitly sharing the same broadleaf material pair, and a nearby-tile
+      regression test now verifies that neighboring oak and birch forest tiles
+      on one host reuse the same broadleaf bark/branch material and foliage
+      material instead of allocating duplicate near-identical variants.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First
