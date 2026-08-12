@@ -21,6 +21,7 @@ Current built-in support:
 - `createGenericConicMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
+- `createMollweideMapProjectionPlugin()`
 - `createOrthographicMapProjectionPlugin()`
 - `createSinusoidalMapProjectionPlugin()`
 - `createStereographicMapProjectionPlugin()`
@@ -253,6 +254,28 @@ The projected range is normalized from raw sinusoidal coordinates:
 
 This gives later map UIs one simple equal-area world projection that covers
 the full globe without requiring sampled extents or clipped azimuthal bounds.
+
+## Mollweide
+
+`createMollweideMapProjectionPlugin()` provides a global elliptical
+equal-area projection with a closed-form inverse and a small Newton solver in
+the forward path.
+
+It currently:
+
+- uses `id: 'mollweide'`
+- declares `distortion: 'equal-area'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- supports the full `±180` longitude and `±90` latitude range
+
+The projected range is normalized from raw Mollweide coordinates:
+
+- `mapX` within `-1..1` from the standard `2 * sqrt(2)` horizontal extent
+- `mapY` within `-1..1` from the standard `sqrt(2)` vertical extent
+
+This gives later map UIs one full-world equal-area option with an oval map
+footprint while still fitting the same normalized projection plugin contract.
 
 ## Miller Cylindrical
 

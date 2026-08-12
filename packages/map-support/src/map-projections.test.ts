@@ -19,6 +19,7 @@ import {
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
+  createMollweideMapProjectionPlugin,
   createOrthographicMapProjectionPlugin,
   createSinusoidalMapProjectionPlugin,
   createStereographicMapProjectionPlugin,
@@ -32,6 +33,11 @@ import {
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
+  MOLLWEIDE_MAX_PROJECTED_X,
+  MOLLWEIDE_MAX_PROJECTED_Y,
+  MOLLWEIDE_MAX_SOLVER_ITERATIONS,
+  MOLLWEIDE_MAX_WORLD_LATITUDE,
+  MOLLWEIDE_MAX_WORLD_LONGITUDE,
   ORTHOGRAPHIC_CENTER_LATITUDE,
   ORTHOGRAPHIC_CENTER_LONGITUDE,
   ORTHOGRAPHIC_MAX_PROJECTED_RADIUS,
@@ -626,5 +632,34 @@ describe('map projections', () => {
     expect(SINUSOIDAL_MAX_WORLD_LATITUDE).toBe(90);
     expect(SINUSOIDAL_MAX_PROJECTED_X).toBeCloseTo(Math.PI, 10);
     expect(SINUSOIDAL_MAX_PROJECTED_Y).toBeCloseTo(Math.PI / 2, 10);
+  });
+
+  it('projects and inverts Mollweide coordinates across the full latitude range', () => {
+    const projection = createMollweideMapProjectionPlugin();
+
+    expect(projection.id).toBe('mollweide');
+    expect(projection.label).toBe('Mollweide');
+    expect(projection.distortion).toBe('equal-area');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 60,
+      worldY: 35,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(60, 10);
+    expect(inverted?.worldY).toBeCloseTo(35, 10);
+    expect(MOLLWEIDE_MAX_WORLD_LONGITUDE).toBe(180);
+    expect(MOLLWEIDE_MAX_WORLD_LATITUDE).toBe(90);
+    expect(MOLLWEIDE_MAX_PROJECTED_X).toBeCloseTo(2 * Math.SQRT2, 10);
+    expect(MOLLWEIDE_MAX_PROJECTED_Y).toBeCloseTo(Math.SQRT2, 10);
+    expect(MOLLWEIDE_MAX_SOLVER_ITERATIONS).toBe(12);
   });
 });

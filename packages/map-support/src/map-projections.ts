@@ -104,6 +104,12 @@ export const SINUSOIDAL_MAX_WORLD_LONGITUDE = 180;
 export const SINUSOIDAL_MAX_WORLD_LATITUDE = 90;
 export const SINUSOIDAL_MAX_PROJECTED_X = Math.PI;
 export const SINUSOIDAL_MAX_PROJECTED_Y = Math.PI / 2;
+export const MOLLWEIDE_MAX_WORLD_LONGITUDE = 180;
+export const MOLLWEIDE_MAX_WORLD_LATITUDE = 90;
+export const MOLLWEIDE_MAX_PROJECTED_X = 2 * Math.SQRT2;
+export const MOLLWEIDE_MAX_PROJECTED_Y = Math.SQRT2;
+export const MOLLWEIDE_MAX_SOLVER_ITERATIONS = 12;
+export const MOLLWEIDE_SOLVER_TOLERANCE = 1e-12;
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -995,6 +1001,71 @@ export function createSinusoidalMapProjectionPlugin(): MapProjectionPlugin {
   });
 }
 
+export function createMollweideMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'mollweide',
+    label: 'Mollweide',
+    distortion: 'equal-area',
+    bounds: {
+      minWorldX: -MOLLWEIDE_MAX_WORLD_LONGITUDE,
+      maxWorldX: MOLLWEIDE_MAX_WORLD_LONGITUDE,
+      minWorldY: -MOLLWEIDE_MAX_WORLD_LATITUDE,
+      maxWorldY: MOLLWEIDE_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLongitude = clamp(
+        worldX,
+        -MOLLWEIDE_MAX_WORLD_LONGITUDE,
+        MOLLWEIDE_MAX_WORLD_LONGITUDE
+      );
+      const clampedLatitude = clamp(
+        worldY,
+        -MOLLWEIDE_MAX_WORLD_LATITUDE,
+        MOLLWEIDE_MAX_WORLD_LATITUDE
+      );
+      const longitudeRadians = degreesToRadians(clampedLongitude);
+      const latitudeRadians = degreesToRadians(clampedLatitude);
+      const theta = solveMollweideTheta(latitudeRadians);
+      return {
+        mapX: snapNearZero(
+          ((2 * Math.SQRT2) / Math.PI) *
+            longitudeRadians *
+            Math.cos(theta) /
+            MOLLWEIDE_MAX_PROJECTED_X
+        ),
+        mapY: snapNearZero(
+          (Math.SQRT2 * Math.sin(theta)) / MOLLWEIDE_MAX_PROJECTED_Y
+        ),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * MOLLWEIDE_MAX_PROJECTED_X;
+      const projectedY = mapY * MOLLWEIDE_MAX_PROJECTED_Y;
+      const theta = Math.asin(clamp(projectedY / Math.SQRT2, -1, 1));
+      const cosineTheta = Math.cos(theta);
+      const longitudeRadians =
+        Math.abs(cosineTheta) <= 1e-12
+          ? 0
+          : (Math.PI * projectedX) / (2 * Math.SQRT2 * cosineTheta);
+      const latitudeRadians = Math.asin(
+        clamp((2 * theta + Math.sin(2 * theta)) / Math.PI, -1, 1)
+      );
+      return {
+        worldX: radiansToDegrees(longitudeRadians),
+        worldY: radiansToDegrees(latitudeRadians),
+      };
+    },
+  });
+}
+
 function normalizeMapProjectionWorldCoordinate(
   coordinate: MapProjectionWorldCoordinate
 ): MapProjectionWorldCoordinate {
@@ -1135,6 +1206,29 @@ function snapNearZero(value: number, tolerance = 1e-12): number {
 
 function atanh(value: number): number {
   return 0.5 * Math.log((1 + value) / (1 - value));
+}
+
+function solveMollweideTheta(latitudeRadians: number): number {
+  const clampedLatitude = clamp(latitudeRadians, -Math.PI / 2, Math.PI / 2);
+  if (Math.abs(Math.abs(clampedLatitude) - Math.PI / 2) <= 1e-12) {
+    return Math.sign(clampedLatitude) * (Math.PI / 2);
+  }
+  let theta = clampedLatitude;
+  const target = Math.PI * Math.sin(clampedLatitude);
+  for (
+    let iteration = 0;
+    iteration < MOLLWEIDE_MAX_SOLVER_ITERATIONS;
+    iteration += 1
+  ) {
+    const delta =
+      (2 * theta + Math.sin(2 * theta) - target) /
+      (2 + 2 * Math.cos(2 * theta));
+    theta -= delta;
+    if (Math.abs(delta) <= MOLLWEIDE_SOLVER_TOLERANCE) {
+      break;
+    }
+  }
+  return clamp(theta, -Math.PI / 2, Math.PI / 2);
 }
 
 function resolveGenericConicConeConstant(
