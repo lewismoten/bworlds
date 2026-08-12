@@ -307,4 +307,41 @@ describe('music debug midi audit warnings', () => {
       'Lead uses only 2 velocity levels across 8 notes; dynamics may sound flat.'
     );
   });
+
+  it('warns when a sustained track has no exported expression changes', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
+      trackStats: {
+        ...snapshot.trackStats,
+        harmony: {
+          ...snapshot.trackStats.harmony,
+          noteCount: 8,
+          occupancyPercentage: 62,
+          averageDurationMs: 920,
+          maxPolyphony: 3,
+        },
+      },
+    });
+
+    expect(audit.isConsistent).toBe(true);
+    expect(audit.criticalWarningMessages).toEqual([]);
+    expect(audit.warningMessages).toContain(
+      'Harmony sustains for 62% of the song with 920 ms average notes but exported MIDI has no expression changes.'
+    );
+  });
 });

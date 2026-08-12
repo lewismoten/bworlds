@@ -57,7 +57,11 @@
       when lead, harmony, or bass stays at fewer than three velocity levels
       across a meaningful note count so flat dynamics show up in the debug
       summary before export.
-- [ ] Warn when sustained tracks have no expression changes.
+- [x] Warn when sustained tracks have no expression changes.
+      Progress: the MIDI audit now flags sustained non-percussion tracks when
+      the exported track carries no CC11 expression movement, so long-held
+      lead, harmony, or bass parts can fail the musical-expression checklist
+      before expression automation lanes are fully visualized in the debug UI.
 
 ## 1) Enforce musical correctness first
 

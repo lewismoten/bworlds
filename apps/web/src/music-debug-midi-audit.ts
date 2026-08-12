@@ -187,7 +187,12 @@ export function inspectMusicDebugMidiBytes(
     );
   }
   warningMessages.push(
-    ...collectFlatVelocityWarnings(snapshot.trackStats, includedRoles)
+    ...collectFlatVelocityWarnings(snapshot.trackStats, includedRoles),
+    ...collectMissingExpressionWarnings(
+      snapshot.trackStats,
+      exportedTrackSummaries,
+      includedRoles
+    )
   );
   if (
     snapshot.harmonyChordDetections.some(
@@ -439,6 +444,7 @@ type MidiTrackSummary = {
   noteOnCount: number;
   pitchClassCounts: Partial<Record<MusicDebugPitchClassLabel, number>>;
   midiNotes: number[];
+  expressionValueChangeCount: number;
 };
 
 function readExportedTrackSummaries(
@@ -501,6 +507,8 @@ function summarizeTrackMidiNotes(track: Uint8Array): MidiTrackSummary {
   const pitchClassCounts: Partial<Record<MusicDebugPitchClassLabel, number>> =
     {};
   const midiNotes: number[] = [];
+  let previousExpressionValue: number | null = null;
+  let expressionValueChangeCount = 0;
 
   while (offset < track.length) {
     const delta = readVariableLengthQuantity(track, offset);
@@ -556,6 +564,15 @@ function summarizeTrackMidiNotes(track: Uint8Array): MidiTrackSummary {
       pitchClassCounts[pitchClassLabel] =
         (pitchClassCounts[pitchClassLabel] ?? 0) + 1;
     }
+    if (
+      messageType === 0xb0 &&
+      firstData === 11 &&
+      secondData !== undefined &&
+      previousExpressionValue !== secondData
+    ) {
+      previousExpressionValue = secondData;
+      expressionValueChangeCount += 1;
+    }
 
     offset += dataLength;
   }
@@ -564,7 +581,50 @@ function summarizeTrackMidiNotes(track: Uint8Array): MidiTrackSummary {
     noteOnCount,
     pitchClassCounts,
     midiNotes,
+    expressionValueChangeCount,
   };
+}
+
+function collectMissingExpressionWarnings(
+  stats: Pick<
+    Record<MusicDebugSnapshot['notes'][number]['role'], MusicDebugTrackStats>,
+    'lead' | 'harmony' | 'bass' | 'percussion'
+  >,
+  summaries: Partial<
+    Record<MusicDebugSnapshot['notes'][number]['role'], MidiTrackSummary>
+  >,
+  includedRoles: ReadonlySet<MusicDebugSnapshot['notes'][number]['role']>
+): string[] {
+  const warnings: string[] = [];
+
+  for (const role of MIDI_AUDIT_ROLE_ORDER) {
+    if (role === 'percussion' || !includedRoles.has(role)) {
+      continue;
+    }
+    const stat = stats[role];
+    if (!isSustainedTrack(stat)) {
+      continue;
+    }
+    const expressionValueChangeCount =
+      summaries[role]?.expressionValueChangeCount ?? 0;
+    if (expressionValueChangeCount > 1) {
+      continue;
+    }
+    warnings.push(
+      `${capitalizeRoleLabel(role)} sustains for ${Math.round(stat.occupancyPercentage)}% of the song with ${Math.round(stat.averageDurationMs)} ms average notes but exported MIDI has no expression changes.`
+    );
+  }
+
+  return warnings;
+}
+
+function isSustainedTrack(stat: MusicDebugTrackStats): boolean {
+  return (
+    stat.noteCount >= 4 &&
+    stat.occupancyPercentage >= 20 &&
+    (stat.averageDurationMs >= 700 ||
+      (stat.maxPolyphony >= 2 && stat.averageDurationMs >= 450))
+  );
 }
 
 function pitchClassCountsMatch(
