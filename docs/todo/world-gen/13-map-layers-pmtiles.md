@@ -120,7 +120,7 @@ Current support:
 
 - [x] Add political, road, and rail map plugins.
 - [x] Add population heat map and choropleth plugins.
-- [ ] Add dot distribution, vector, and isoline plugins.
+- [x] Add dot distribution, vector, and isoline plugins.
 
 Current support:
 
@@ -136,6 +136,13 @@ Current support:
   region-classification map products can share conventional
   `population-heat-map` and `choropleth` PMTiles generator wrappers instead of
   creating another set of thematic layer ids.
+- `@bworlds/map-support` also now exposes
+  `createDotDistributionMapFeatureGeneratorPlugin(...)`,
+  `createVectorMapFeatureGeneratorPlugin(...)`, and
+  `createIsolineMapFeatureGeneratorPlugin(...)`, so later symbolic density,
+  vector-field, and contour-style map products can share conventional
+  `dot-distribution`, `vector`, and `isoline` PMTiles generator wrappers
+  instead of creating more one-off human-layer names.
 
 ## 2D and 3D Parity
 

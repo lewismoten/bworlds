@@ -20,6 +20,9 @@ for physical map products built on canonical map features:
 - `createRailMapFeatureGeneratorPlugin(...)`
 - `createPopulationHeatMapFeatureGeneratorPlugin(...)`
 - `createChoroplethMapFeatureGeneratorPlugin(...)`
+- `createDotDistributionMapFeatureGeneratorPlugin(...)`
+- `createVectorMapFeatureGeneratorPlugin(...)`
+- `createIsolineMapFeatureGeneratorPlugin(...)`
 
 ## Purpose
 
@@ -56,6 +59,9 @@ The helpers currently reserve these layer ids:
 - `rail`
 - `population-heat-map`
 - `choropleth`
+- `dot-distribution`
+- `vector`
+- `isoline`
 
 That gives later PMTiles export, map styling, and viewer code one stable layer
 vocabulary instead of forcing each feature generator to invent its own names.
@@ -251,3 +257,31 @@ and:
 These wrappers intentionally accept canonical `MapFeatureRecord` values so
 later density surfaces and region-classification map products can share one
 layer contract before the concrete population aggregation logic exists.
+
+## Dot Distribution, Vector, And Isoline Layers
+
+`createDotDistributionMapFeatureGeneratorPlugin(...)`,
+`createVectorMapFeatureGeneratorPlugin(...)`, and
+`createIsolineMapFeatureGeneratorPlugin(...)` follow the same PMTiles
+generator contract with conventional layer ids:
+
+- `layerId: 'dot-distribution'`
+- `layerId: 'vector'`
+- `layerId: 'isoline'`
+
+They default to:
+
+- `id: 'dot-distribution-map-layer'`
+- `id: 'vector-map-layer'`
+- `id: 'isoline-map-layer'`
+
+and:
+
+- `label: 'Dot Distribution Layer'`
+- `label: 'Vector Layer'`
+- `label: 'Isoline Layer'`
+
+These wrappers intentionally accept canonical `MapFeatureRecord` values so
+later symbolic density maps, vector-field products, and contour-like overlays
+can share one layer contract before the concrete thematic generation logic
+exists.

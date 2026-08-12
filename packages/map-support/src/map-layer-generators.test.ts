@@ -6,15 +6,17 @@ import {
 } from './map-features.ts';
 import {
   createClimateMapFeatureGeneratorPlugin,
+  createChoroplethMapFeatureGeneratorPlugin,
   createElevationMapFeatureGeneratorPlugin,
+  createDotDistributionMapFeatureGeneratorPlugin,
   createGeologyMapFeatureGeneratorPlugin,
   createHumidityMapFeatureGeneratorPlugin,
+  createIsolineMapFeatureGeneratorPlugin,
   createOceanCurrentMapFeatureGeneratorPlugin,
   createPhysicalMapFeatureGeneratorPlugin,
   createPoliticalMapFeatureGeneratorPlugin,
   createPopulationHeatMapFeatureGeneratorPlugin,
   createPressureMapFeatureGeneratorPlugin,
-  createChoroplethMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
   createRailMapFeatureGeneratorPlugin,
   createRiverFlowMapFeatureGeneratorPlugin,
@@ -22,6 +24,7 @@ import {
   createSlopeMapFeatureGeneratorPlugin,
   createTemperatureZoneMapFeatureGeneratorPlugin,
   createTopographicMapFeatureGeneratorPlugin,
+  createVectorMapFeatureGeneratorPlugin,
   createWeatherMapFeatureGeneratorPlugin,
   createWindMapFeatureGeneratorPlugin,
 } from './map-layer-generators.ts';
@@ -743,6 +746,114 @@ describe('map layer generators', () => {
       {
         kind: 'polygon',
         layerId: 'choropleth',
+      },
+    ]);
+  });
+
+  it('creates dot distribution layer generators with conventional dot distribution layer ids', () => {
+    const plugin = createDotDistributionMapFeatureGeneratorPlugin({
+      getDotDistributionFeatures(request) {
+        return [
+          createMapFeaturePointRecord({
+            sourceWorldObjectId: `dot:${request.tile.x}:${request.tile.y}`,
+            layerId: 'dot-distribution',
+            coordinate: {
+              worldX: request.tile.x + 0.25,
+              worldY: request.tile.y + 0.75,
+            },
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('dot-distribution-map-layer');
+    expect(plugin.layerId).toBe('dot-distribution');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-20',
+        tile: {
+          zoom: 5,
+          x: 9,
+          y: 14,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'point',
+        layerId: 'dot-distribution',
+      },
+    ]);
+  });
+
+  it('creates vector layer generators with conventional vector layer ids', () => {
+    const plugin = createVectorMapFeatureGeneratorPlugin({
+      id: 'field-vectors',
+      label: 'Field Vectors',
+      getVectorFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `vector:${request.tile.zoom}`,
+            layerId: 'vector',
+            coordinates: [
+              { worldX: request.tile.x, worldY: request.tile.y },
+              { worldX: request.tile.x + 3, worldY: request.tile.y + 2 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('field-vectors');
+    expect(plugin.label).toBe('Field Vectors');
+    expect(plugin.layerId).toBe('vector');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-21',
+        tile: {
+          zoom: 4,
+          x: 10,
+          y: 11,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'vector',
+      },
+    ]);
+  });
+
+  it('creates isoline layer generators with conventional isoline layer ids', () => {
+    const plugin = createIsolineMapFeatureGeneratorPlugin({
+      getIsolineFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `isoline:${request.tile.zoom}`,
+            layerId: 'isoline',
+            coordinates: [
+              { worldX: 0, worldY: request.tile.zoom },
+              { worldX: 4, worldY: request.tile.zoom + 1 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('isoline-map-layer');
+    expect(plugin.layerId).toBe('isoline');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-22',
+        tile: {
+          zoom: 4,
+          x: 8,
+          y: 12,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'isoline',
       },
     ]);
   });

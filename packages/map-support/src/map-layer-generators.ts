@@ -321,3 +321,54 @@ export function createChoroplethMapFeatureGeneratorPlugin(options: {
     },
   });
 }
+
+export function createDotDistributionMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getDotDistributionFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'dot-distribution-map-layer',
+    label: options.label ?? 'Dot Distribution Layer',
+    layerId: 'dot-distribution',
+    getFeatures(request) {
+      return options.getDotDistributionFeatures(request);
+    },
+  });
+}
+
+export function createVectorMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getVectorFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'vector-map-layer',
+    label: options.label ?? 'Vector Layer',
+    layerId: 'vector',
+    getFeatures(request) {
+      return options.getVectorFeatures(request);
+    },
+  });
+}
+
+export function createIsolineMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getIsolineFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'isoline-map-layer',
+    label: options.label ?? 'Isoline Layer',
+    layerId: 'isoline',
+    getFeatures(request) {
+      return options.getIsolineFeatures(request);
+    },
+  });
+}
