@@ -44,7 +44,7 @@
 ## Validation
 
 - [x] Reject NaN and infinite height values.
-- [ ] Clamp impossible heights after all layers compose.
+- [x] Clamp impossible heights after all layers compose.
 - [ ] Log the plugin that caused an invalid height.
 - [x] Test deterministic height sampling.
 - [x] Test exact chunk border height equality.
@@ -87,6 +87,9 @@ Current support:
 - The shared worldgen height path now also validates that sampled terrain
   heights stay finite before they are cached or summarized, via
   `validateTerrainHeightValue(...)`.
+- That same path now also clamps post-compose heights through
+  `clampTerrainHeightValue(...)` before validation and caching, so one shared
+  world-height range stays enforced at the sampler boundary.
 - `packages/worldgen/src/index.test.ts` now also calls out deterministic
   `sampleTerrainHeight(...)` behavior explicitly and verifies that adjacent
   chunk-border sample coordinates resolve exactly equal heights on both sides

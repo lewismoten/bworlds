@@ -7,6 +7,7 @@ import { createOverworldTerrainSignalSampler } from '@bworlds/overworld-support'
 import { getActivePluginRegistry } from '@bworlds/plugin-api';
 import { buildPlayerPoi } from '@bworlds/runtime-player-poi';
 import {
+  clampTerrainHeightValue,
   convertFeetToWorldHeightUnits,
   convertWorldHeightUnitsToFeet,
   createBuiltinContentPackCatalog,
@@ -27,7 +28,9 @@ import {
   validateTerrainHeightValue,
   WORLD_FEET_PER_TILE,
   WORLD_TERRAIN_FLAT_GRADE_EPSILON,
+  WORLD_TERRAIN_MAX_HEIGHT,
   WORLD_METERS_PER_TILE,
+  WORLD_TERRAIN_MIN_HEIGHT,
   WORLD_TERRAIN_SEA_LEVEL,
 } from './index.ts';
 import type {
@@ -103,6 +106,27 @@ describe('world generator', () => {
     expect(() => validateTerrainHeightValue(Number.NEGATIVE_INFINITY)).toThrow(
       'Terrain height must be a finite number, received -Infinity.'
     );
+  });
+
+  it('clamps terrain heights to one shared world range', () => {
+    expect(clampTerrainHeightValue(0.25)).toBe(0.25);
+    expect(clampTerrainHeightValue(WORLD_TERRAIN_MIN_HEIGHT - 1)).toBe(
+      WORLD_TERRAIN_MIN_HEIGHT
+    );
+    expect(clampTerrainHeightValue(WORLD_TERRAIN_MAX_HEIGHT + 1)).toBe(
+      WORLD_TERRAIN_MAX_HEIGHT
+    );
+    expect(() =>
+      clampTerrainHeightValue(0, {
+        min: Number.NaN,
+      })
+    ).toThrow('Terrain height clamp bounds must be finite numbers.');
+    expect(() =>
+      clampTerrainHeightValue(0, {
+        min: 2,
+        max: 1,
+      })
+    ).toThrow('Terrain height clamp min 2 must be <= max 1.');
   });
 
   it('converts world cells to terrain chunk coordinates across zero and negative boundaries', () => {

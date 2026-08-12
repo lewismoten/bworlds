@@ -23,6 +23,8 @@ Current surface:
   sampler object
 - `validateTerrainHeightValue(height, label?)` is the shared finite-value guard
   used by the sampler path before height values are cached or summarized
+- `clampTerrainHeightValue(height, bounds?)` is the shared post-compose clamp
+  used by the sampler path before validated heights are cached
 
 Current limits:
 

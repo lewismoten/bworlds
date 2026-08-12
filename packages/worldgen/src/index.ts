@@ -55,6 +55,8 @@ export const WORLD_FEET_PER_METER = 3.28084;
 export const WORLD_FEET_PER_TILE = WORLD_METERS_PER_TILE * WORLD_FEET_PER_METER;
 export const WORLD_TERRAIN_SEA_LEVEL = 0;
 export const WORLD_TERRAIN_FLAT_GRADE_EPSILON = 0.0001;
+export const WORLD_TERRAIN_MIN_HEIGHT = -64;
+export const WORLD_TERRAIN_MAX_HEIGHT = 64;
 
 export type WorldTerrainHeightSample = {
   worldX: number;
@@ -123,6 +125,24 @@ export function validateTerrainHeightValue(
     throw new Error(`${label} must be a finite number, received ${height}.`);
   }
   return height;
+}
+
+export function clampTerrainHeightValue(
+  height: number,
+  bounds: {
+    min?: number;
+    max?: number;
+  } = {}
+): number {
+  const min = bounds.min ?? WORLD_TERRAIN_MIN_HEIGHT;
+  const max = bounds.max ?? WORLD_TERRAIN_MAX_HEIGHT;
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    throw new Error('Terrain height clamp bounds must be finite numbers.');
+  }
+  if (min > max) {
+    throw new Error(`Terrain height clamp min ${min} must be <= max ${max}.`);
+  }
+  return Math.min(max, Math.max(min, height));
 }
 
 export type WorldTerrainHeightSampler = {
@@ -309,9 +329,11 @@ export function createWorldGenerator({
     return previewSurfaceHeightCache.getOrCreate(key, () => {
       const kind = samplePreviewSurfaceKind(x, y);
       return validateTerrainHeightValue(
-        resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
-          kind,
-        }),
+        clampTerrainHeightValue(
+          resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
+            kind,
+          })
+        ),
         `Terrain height at ${x}:${y}`
       );
     });
