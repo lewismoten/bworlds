@@ -194,7 +194,7 @@
 
 ## Debug View
 
-- [ ] Add a splat debug mode to the terrain viewer.
+- [x] Add a splat debug mode to the terrain viewer.
 - [x] Show active layer IDs per terrain sample.
 - [x] Show blend weights as debug colors.
 - [x] Show one layer at a time.
@@ -325,6 +325,10 @@
   plans can raise `lodStepMultiplier` and emit coarser distant meshes from the
   same shared height field while preserving chunk bounds and rejecting invalid
   spans that would break edge alignment.
+- Added `@bworlds/terrain-splat-support/debug-viewer` so terrain viewers can
+  enumerate stable splat debug modes, resolve valid layer-weight targets, and
+  render a selected shared debug payload without duplicating mode-selection
+  rules in UI code.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and

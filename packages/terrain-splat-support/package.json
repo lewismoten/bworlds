@@ -13,6 +13,7 @@
     "./chunk-build": "./src/chunk-build.ts",
     "./chunk-cache": "./src/chunk-cache.ts",
     "./debug-view": "./src/debug-view.ts",
+    "./debug-viewer": "./src/debug-viewer.ts",
     "./height-field": "./src/height-field.ts",
     "./material-plan": "./src/material-plan.ts",
     "./lod-transition": "./src/lod-transition.ts",

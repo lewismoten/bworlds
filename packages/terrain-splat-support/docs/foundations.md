@@ -22,6 +22,8 @@ Current responsibilities:
   planning
 - reduce distant terrain geometry density through shared height-field LOD
   planning before live mesh upload
+- expose stable terrain-viewer debug mode metadata around the renderer-free
+  splat debug payloads
 - flatten packed splat grids into transferable typed arrays
 - summarize chunk layer usage before renderer integration decides budgets
 - share deterministic terrain family variant pools across chunk generation paths

@@ -41,3 +41,9 @@ data for chunk splat grids.
 - the module does not render a viewer UI; it only prepares debug payloads
 - color maps are intentionally simple helper encodings, not final art
 - texture-array index reporting depends on the shared layer catalog indices
+
+Viewer integration:
+
+- `@bworlds/terrain-splat-support/debug-viewer` wraps these payloads in stable
+  viewer mode metadata so terrain viewers can expose a splat debug toggle
+  without duplicating mode-selection logic
