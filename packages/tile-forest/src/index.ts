@@ -1414,9 +1414,8 @@ function* createForestModelProgressive({
     tileX,
     tileY
   );
-  const renderFullQualityAccessories = shouldRenderForestFullQualityAccessories(
-    renderQuality
-  );
+  const renderFullQualityAccessories =
+    shouldRenderForestFullQualityAccessories(renderQuality);
   const descriptors =
     detailLevel === 'low'
       ? getForestTreeDescriptors(tileX, tileY).filter(
@@ -1426,7 +1425,9 @@ function* createForestModelProgressive({
   const geometry = getTreeGeometry(three);
 
   if (detailLevel === 'low') {
-    if (shouldSkipReducedForestBackgroundTile(state, tileX, tileY, renderQuality)) {
+    if (
+      shouldSkipReducedForestBackgroundTile(state, tileX, tileY, renderQuality)
+    ) {
       return group;
     }
     addLowDetailForestTreeInstances(
@@ -1531,14 +1532,15 @@ function* createForestModelProgressive({
 
   const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
   const scene = getForestTreeSceneState(tileX, tileY);
-  const hollows = renderCloseDetails && renderFullQualityAccessories
-    ? scene.decorations.filter(
-        (
-          decoration
-        ): decoration is Extract<ForestTreeDecoration, { kind: 'hollow' }> =>
-          decoration.kind === 'hollow'
-      )
-    : [];
+  const hollows =
+    renderCloseDetails && renderFullQualityAccessories
+      ? scene.decorations.filter(
+          (
+            decoration
+          ): decoration is Extract<ForestTreeDecoration, { kind: 'hollow' }> =>
+            decoration.kind === 'hollow'
+        )
+      : [];
   if (hollows.length > 0) {
     const hollowInstances = new three.InstancedMesh(
       geometry.foliage,
@@ -1736,7 +1738,9 @@ function* createForestModelProgressive({
     label: 'hollows-and-markings',
   };
 
-  const meadows = renderFullQualityAccessories ? getForestMeadows(tileX, tileY) : [];
+  const meadows = renderFullQualityAccessories
+    ? getForestMeadows(tileX, tileY)
+    : [];
   if (meadows.length > 0) {
     const meadowInstances = new three.InstancedMesh(
       geometry.foliage,
@@ -1845,7 +1849,9 @@ function* createForestModelProgressive({
     label: 'understory-and-wildlife',
   };
 
-  const trail = renderFullQualityAccessories ? getForestTrail(tileX, tileY) : null;
+  const trail = renderFullQualityAccessories
+    ? getForestTrail(tileX, tileY)
+    : null;
   if (trail) {
     addForestBreadcrumbInstances(
       three,
@@ -2455,40 +2461,6 @@ function writeForestTrunkInstancedMatrix(
   );
 }
 
-function writeForestBranchInstancedMatrix(
-  target: ThreeMatrix4Like,
-  x: number,
-  y: number,
-  z: number,
-  length: number,
-  pitch: number,
-  roll: number
-) {
-  const cosPitch = Math.cos(pitch);
-  const sinPitch = Math.sin(pitch);
-  const cosRoll = Math.cos(roll);
-  const sinRoll = Math.sin(roll);
-
-  return target.set(
-    cosRoll,
-    -sinRoll * cosPitch * length,
-    sinRoll * sinPitch,
-    x,
-    sinRoll,
-    cosRoll * cosPitch * length,
-    -cosRoll * sinPitch,
-    y,
-    0,
-    sinPitch * length,
-    cosPitch,
-    z,
-    0,
-    0,
-    0,
-    1
-  );
-}
-
 function rotateForestTreeLocalVector(
   transform: ForestTreeTransform,
   x: number,
@@ -2503,14 +2475,8 @@ function rotateForestTreeLocalVector(
   const scaledY = y * transform.scale;
   const scaledZ = z * transform.scale;
   return {
-    x:
-      cosZ * scaledX +
-      -sinZ * cosX * scaledY +
-      sinZ * sinX * scaledZ,
-    y:
-      sinZ * scaledX +
-      cosZ * cosX * scaledY +
-      -cosZ * sinX * scaledZ,
+    x: cosZ * scaledX + -sinZ * cosX * scaledY + sinZ * sinX * scaledZ,
+    y: sinZ * scaledX + cosZ * cosX * scaledY + -cosZ * sinX * scaledZ,
     z: sinX * scaledY + cosX * scaledZ,
   };
 }
@@ -4770,7 +4736,6 @@ function splitForestFullDetailTreeDescriptors(
     };
   }
 
-  const player = state?.player;
   const baseFullCount = 0;
   const rankedDescriptors = [...descriptors].sort((left, right) => {
     const leftHistorical = getTreeHistoricalState(left).landmark ? 1 : 0;

@@ -660,7 +660,6 @@ describe('runtime performance tracking', () => {
       source: 'game',
       route: '/',
       debugSnapshot: createDebugSnapshot({
-        route: '/',
         currentTilePlugin: 'tile-forest',
         resourceWarnings: [
           'Instanced meshes are missing from the visible scene.',

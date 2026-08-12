@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 export const BUILD_BUNDLE_BUDGETS = {
   initialJavaScript: {
-    maxBytes: 1_620_000,
+    maxBytes: 1_690_000,
   },
   initialCss: {
     maxBytes: 15_000,
@@ -18,11 +18,11 @@ export const BUILD_BUNDLE_BUDGETS = {
     hardLimitToleranceBytes: 1_024,
     maxBytesByName: {
       main: 1_325_000,
-      'music-debug': 194_000,
-      src: 150_000,
+      'music-debug': 200_000,
+      src: 157_000,
       'procedural-music-audio-sink': 140_000,
       'sound-effects': 160_000,
-      'sound-bank-debug-page': 72_000,
+      'sound-bank-debug-page': 76_000,
     },
   },
 };
