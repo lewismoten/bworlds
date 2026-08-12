@@ -21,6 +21,11 @@ and attach the center patch beneath it. That removes one static wrapper
 `Group` from each visible low-detail straight road while preserving the same
 surface marker and patch placement.
 
+Full-detail straight roads now use that same road ribbon mesh as the tile root
+and attach the decorative shoulder ribbon plus center patch beneath it. That
+removes one more static wrapper `Group` from each visible straight road tile
+without changing the same local road and shoulder curve layout.
+
 Road shoulder meshes are tagged as optional render-budget parts. When a dense
 road junction crosses the per-tile draw-call cap, `render3d` can prune shoulder
 strips first and keep the core road surface instead of rejecting the entire

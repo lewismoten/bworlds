@@ -1138,8 +1138,9 @@ function* createRoadGroupProgressive({
       ? 1 + (includeShoulders ? 2 : 1)
       : (includeCenterPatch ? 1 : 0) + connections.length;
   let completedSteps = 0;
+  const shouldUseStraightRoadRibbonAsRoot = connections.length === 2;
   const attachCenterPatchToRoadRibbon =
-    !includeShoulders && includeCenterPatch && connections.length === 2;
+    shouldUseStraightRoadRibbonAsRoot && includeCenterPatch;
   if (includeCenterPatch && !attachCenterPatchToRoadRibbon) {
     const centerPatch = new three.Mesh(
       new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
@@ -1172,8 +1173,24 @@ function* createRoadGroupProgressive({
       appendHashSeedLabel(tileSeed, ROAD_RIBBON_ROAD_SEED),
       0.03
     );
+    roadRibbon.position.set(tileX, 0, tileY);
+    if (attachCenterPatchToRoadRibbon) {
+      const centerPatch = new three.Mesh(
+        new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
+        style.shoulderMaterial
+      );
+      centerPatch.position.set(0, ROAD_SURFACE_HEIGHT, 0);
+      centerPatch.scale.z = 0.85;
+      roadRibbon.add(centerPatch);
+      completedSteps += 1;
+      yield {
+        completedSteps,
+        totalSteps,
+        label: 'center-patch',
+      };
+    }
     if (includeShoulders) {
-      group.add(
+      roadRibbon.add(
         markOptionalDecorativeRenderBudgetPart(
           createRoadRibbonMesh(
             three,
@@ -1186,7 +1203,7 @@ function* createRoadGroupProgressive({
           {
             label: 'shoulder-ribbon',
           }
-        )
+        ) as ThreeObject3DLike
       );
       completedSteps += 1;
       yield {
@@ -1195,27 +1212,13 @@ function* createRoadGroupProgressive({
         label: 'shoulder-ribbon',
       };
     }
-    if (includeShoulders) {
-      group.add(roadRibbon);
-    } else {
-      roadRibbon.position.set(tileX, 0, tileY);
-      if (attachCenterPatchToRoadRibbon) {
-        const centerPatch = new three.Mesh(
-          new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
-          style.shoulderMaterial
-        );
-        centerPatch.position.set(0, ROAD_SURFACE_HEIGHT, 0);
-        centerPatch.scale.z = 0.85;
-        roadRibbon.add(centerPatch);
-      }
-    }
     completedSteps += 1;
     yield {
       completedSteps,
       totalSteps,
       label: 'road-ribbon',
     };
-    return includeShoulders ? group : roadRibbon;
+    return roadRibbon;
   }
 
   for (let index = 0; index < connections.length; index += 1) {

@@ -800,7 +800,7 @@ describe('tile route', () => {
       tile: { kind: 'road' } as never,
       tileX: 0,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const progressiveBuild = roadTile?.create3DModelProgressive?.({
       three: fakeThree as never,
       state: state as never,
@@ -808,7 +808,7 @@ describe('tile route', () => {
       tileX: 0,
       tileY: 0,
     });
-    let progressiveModel: FakeGroup | undefined;
+    let progressiveModel: FakeNode | undefined;
 
     while (true) {
       const next = progressiveBuild?.next();
@@ -818,7 +818,7 @@ describe('tile route', () => {
       }
     }
 
-    const captureRoadSignature = (model: FakeGroup | undefined) =>
+    const captureRoadSignature = (model: FakeNode | undefined) =>
       model?.children.map((child) => ({
         material: child instanceof FakeMesh ? child.material : undefined,
       })) ?? [];
@@ -826,6 +826,25 @@ describe('tile route', () => {
     expect(captureRoadSignature(progressiveModel)).toEqual(
       captureRoadSignature(syncModel)
     );
+  });
+
+  it('uses the full-detail straight road ribbon as the root instead of a wrapper group', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+    });
+    const model = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 0, y: 0, z: 0 });
+    expect(model?.children).toHaveLength(2);
   });
 
   it('builds road junctions progressively one branch at a time', () => {
