@@ -16,6 +16,7 @@ export type * from './map-projections.ts';
 export type * from './map-layer-generators.ts';
 export type * from './map-feature-policies.ts';
 export type * from './map-features.ts';
+export type * from './map-derived-sources.ts';
 export type * from './map-pmtiles.ts';
 export type * from './map-network-lines.ts';
 export type * from './map-regional-records.ts';
@@ -59,6 +60,11 @@ export {
   DEFAULT_MAP_FEATURE_MIN_ZOOM,
   isMapFeatureVisibleAtZoom,
 } from './map-features.ts';
+export {
+  createDerivedMapFeatureGeneratorPlugin,
+  createMapDerivedDataSourceReference,
+  createMapDerivedDataSourceReferences,
+} from './map-derived-sources.ts';
 export {
   createMapFeatureGeneratorPlugin,
   createPmtilesTileCache,

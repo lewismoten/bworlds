@@ -150,7 +150,7 @@ Current support:
 - [x] Derive roads and rivers from the same graphs as 3D.
 - [x] Derive settlements and borders from shared records.
 - [x] Keep 2D tile symbols representative of 3D state.
-- [ ] Avoid separate hand-authored map-only world state.
+- [x] Avoid separate hand-authored map-only world state.
 
 Current support:
 
@@ -183,3 +183,9 @@ Current support:
   shared symbol contract so 2D text viewport glyphs, relief cues, and compact
   traffic annotations stay derived from shared decorated tile state such as
   `surfaceHeight`, `train`, and `boat` instead of renderer-local heuristics.
+- `@bworlds/map-support` now also exposes
+  `createDerivedMapFeatureGeneratorPlugin(...)` plus normalized
+  `dataSources` declarations, so derived map layers can explicitly name the
+  authoritative terrain samplers, route graphs, anchors, or generation records
+  they consume instead of drifting toward separate hand-authored map-only
+  state.
