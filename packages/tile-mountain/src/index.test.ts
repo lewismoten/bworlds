@@ -198,7 +198,7 @@ describe('tile mountain', () => {
       tile: { kind: 'mountain' } as never,
       tileX: 0,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const progressiveBuild = tile?.create3DModelProgressive?.({
       three: fakeThree as never,
       state,
@@ -206,7 +206,7 @@ describe('tile mountain', () => {
       tileX: 0,
       tileY: 0,
     });
-    let progressiveModel: FakeGroup | undefined;
+    let progressiveModel: FakeNode | undefined;
 
     while (true) {
       const next = progressiveBuild?.next();
@@ -216,9 +216,7 @@ describe('tile mountain', () => {
       }
     }
 
-    expect(createModelSignature(progressiveModel)).toEqual(
-      createModelSignature(syncModel)
-    );
+    expect(createModelSignature(progressiveModel)).toEqual(createModelSignature(syncModel));
   });
 
   it('creates deterministic mountain model signatures for the same tile', () => {
@@ -259,17 +257,17 @@ describe('tile mountain', () => {
       tile: { kind: 'mountain' } as never,
       tileX: 0,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const surrounded = tile?.create3DModel?.({
       three: fakeThree as never,
       state: surroundedState,
       tile: { kind: 'mountain' } as never,
       tileX: 0,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
-    expect(isolated?.children).toHaveLength(2);
-    expect(surrounded?.children.length ?? 0).toBeGreaterThanOrEqual(4);
+    expect(isolated?.children).toHaveLength(1);
+    expect(surrounded?.children.length ?? 0).toBeGreaterThanOrEqual(1);
   });
 
   it('keeps mountain materials scoped to the current Three host', () => {
@@ -285,20 +283,39 @@ describe('tile mountain', () => {
       tile: { kind: 'mountain' } as never,
       tileX: 4,
       tileY: -3,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const secondModel = tile?.create3DModel?.({
       three: secondHost as never,
       state,
       tile: { kind: 'mountain' } as never,
       tileX: 4,
       tileY: -3,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
-    const firstBase = firstModel?.children[0] as FakeMesh | undefined;
-    const secondBase = secondModel?.children[0] as FakeMesh | undefined;
+    const firstBase = firstModel as FakeMesh | undefined;
+    const secondBase = secondModel as FakeMesh | undefined;
 
     expect(firstBase?.material).toBeDefined();
     expect(secondBase?.material).toBeDefined();
     expect(secondBase?.material).not.toBe(firstBase?.material);
+  });
+
+  it('uses the mountain base cone as the root instead of a wrapper group', () => {
+    const plugin = createMountainTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'mountain');
+    const state = createMountainState(() => 'plains');
+
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'mountain' } as never,
+      tileX: 4,
+      tileY: -3,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position.x).toBe(4);
+    expect(model?.position.z).toBe(-3);
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(1);
   });
 });

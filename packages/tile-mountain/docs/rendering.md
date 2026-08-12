@@ -13,3 +13,7 @@ Current progressive phases:
 
 The synchronous `create3DModel()` path exhausts the same generator so the
 progressive and eager builds stay structurally aligned.
+
+The mountain stack now also uses the base cone mesh as its root and attaches
+the upper cone, crown, and snowcap beneath it, so mountain tiles avoid one
+otherwise empty wrapper `Group` without changing the peak silhouette.

@@ -103,7 +103,6 @@ function* createMountainModelProgressive({
   tileX,
   tileY,
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
-  const group = new three.Group();
   const style = getMountainStyle(three);
   const peakScale = getMountainPeakScale(state, tileX, tileY);
   const height = 1.4 * peakScale;
@@ -121,7 +120,6 @@ function* createMountainModelProgressive({
   base.position.set(tileX, lowerHeight * 0.5, tileY);
   base.rotation.y = hash2D(MOUNTAIN_ROTATION_A_SEED, tileX, tileY) * Math.PI;
   base.scale.z = depth / width;
-  group.add(base);
 
   yield {
     completedSteps: 1,
@@ -134,13 +132,13 @@ function* createMountainModelProgressive({
     style.mountainMaterial
   );
   upper.position.set(
-    tileX + (hash2D(MOUNTAIN_OFFSET_X_SEED, tileX, tileY) - 0.5) * 0.12,
-    lowerHeight * 0.62 + upperHeight * 0.5,
-    tileY + (hash2D(MOUNTAIN_OFFSET_Y_SEED, tileX, tileY) - 0.5) * 0.12
+    (hash2D(MOUNTAIN_OFFSET_X_SEED, tileX, tileY) - 0.5) * 0.12,
+    lowerHeight * 0.12 + upperHeight * 0.5,
+    (hash2D(MOUNTAIN_OFFSET_Y_SEED, tileX, tileY) - 0.5) * 0.12
   );
   upper.rotation.y = hash2D(MOUNTAIN_ROTATION_B_SEED, tileX, tileY) * Math.PI;
   upper.scale.z = depth / width;
-  group.add(upper);
+  base.add(upper);
 
   yield {
     completedSteps: 2,
@@ -158,13 +156,13 @@ function* createMountainModelProgressive({
       style.mountainMaterial
     );
     crown.position.set(
-      upper.position.x,
-      upper.position.y + upperHeight * 0.42,
-      upper.position.z
+      0,
+      upperHeight * 0.42,
+      0
     );
     crown.rotation.y = hash2D(MOUNTAIN_ROTATION_C_SEED, tileX, tileY) * Math.PI;
     crown.scale.z = depth / width;
-    group.add(crown);
+    upper.add(crown);
   }
 
   yield {
@@ -183,13 +181,13 @@ function* createMountainModelProgressive({
       style.snowMaterial
     );
     snow.position.set(
-      upper.position.x,
-      upper.position.y + upperHeight * 0.56,
-      upper.position.z
+      0,
+      upperHeight * 0.56,
+      0
     );
     snow.rotation.y = upper.rotation.y;
     snow.scale.z = depth / width;
-    group.add(snow);
+    upper.add(snow);
   }
 
   yield {
@@ -198,7 +196,7 @@ function* createMountainModelProgressive({
     label: 'snowcap',
   };
 
-  return group;
+  return base;
 }
 
 function getMountainPeakScale(
