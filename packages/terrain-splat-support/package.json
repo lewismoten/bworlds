@@ -24,6 +24,7 @@
     "./route-edge-blend": "./src/route-edge-blend.ts",
     "./route-appearance-plan": "./src/route-appearance-plan.ts",
     "./route-distance-field": "./src/route-distance-field.ts",
+    "./route-geometry-plan": "./src/route-geometry-plan.ts",
     "./route-junction-blend": "./src/route-junction-blend.ts",
     "./route-shoulder-weight": "./src/route-shoulder-weight.ts",
     "./route-splat-projection": "./src/route-splat-projection.ts",

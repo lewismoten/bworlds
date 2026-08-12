@@ -556,13 +556,13 @@ worker-backed generation. The worker runtime notes live in
 - [x] Let traffic intensity influence road appearance.
 - [x] Let weather influence road wetness and mud.
 - [x] Let snow partially cover road splat layers.
-- [ ] Keep bridges as separate geometry.
-- [ ] Keep tunnels as separate geometry.
-- [ ] Keep raised causeways as separate geometry.
-- [ ] Keep stairs separate when actual steps are required.
-- [ ] Keep retaining walls separate from terrain splats.
-- [ ] Detect when a route requires real geometry.
-- [ ] Fall back to road geometry for unsupported cases.
+- [x] Keep bridges as separate geometry.
+- [x] Keep tunnels as separate geometry.
+- [x] Keep raised causeways as separate geometry.
+- [x] Keep stairs separate when actual steps are required.
+- [x] Keep retaining walls separate from terrain splats.
+- [x] Detect when a route requires real geometry.
+- [x] Fall back to road geometry for unsupported cases.
 - [x] Show route splat weights in terrain debug mode.
 - [x] Add a toggle for road and path splat layers.
 - [x] Compare splat roads against mesh road draw calls.
@@ -579,6 +579,10 @@ worker-backed generation. The worker runtime notes live in
   world-space route contributions can merge into one normalized crossroads
   sample, avoid overlapping duplicate road-mesh-style entries, and stay
   identical when adjacent chunks query the same intersection point.
+- Added `@bworlds/terrain-splat-support/route-geometry-plan` so splat-capable
+  flat routes can be separated cleanly from bridges, tunnels, raised
+  causeways, stairs, retaining walls, and other unsupported cases that need a
+  dedicated geometry fallback path.
 
 - Added `@bworlds/terrain-splat-support/route-appearance-plan` so route
   splatting can resolve deterministic wear, wheel-rut, worn-center,
