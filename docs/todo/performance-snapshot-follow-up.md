@@ -202,7 +202,14 @@
       quietly grow between passes, and `tile-route` now keeps separated dock
       clusters on one host sharing the same six-material dock palette while a
       cross-region bridge sweep must still find shared trim/post materials
-      whenever the effective bridge style matches.
+      whenever the effective bridge style matches, and `render3d` now keeps a
+      representative nearby forest-town-lighthouse scene under a scene-level
+      cap for unique materials, cloned materials, and shader-define variants
+      so broad material regressions fail before they reach runtime snapshots,
+      while the full-detail tile-budget cap now allows up to twenty-four
+      `InstancedMesh` nodes so recent “more shared instance sets, fewer repeated
+      meshes” cleanups do not incorrectly fail the representative forest scene
+      just for splitting repeated props into one extra instanced set.
 
 ## Instancing
 

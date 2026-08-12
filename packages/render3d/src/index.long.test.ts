@@ -23,6 +23,9 @@ vi.mock('@bworlds/three-support', () => ({
       image: { width: 16, height: 16 },
     };
   },
+  applySurfaceTextureSampling(texture: Record<string, unknown>) {
+    return texture;
+  },
   createTexturedPlaneMesh(
     _three: unknown,
     _texture: unknown,
@@ -498,58 +501,7 @@ describe('render3d representative render-budget integrations', () => {
   });
 
   it('keeps visible instanced meshes in a representative nearby scene', () => {
-    const forestPlugin = createForestTilePlugin();
-    const forestTile = forestPlugin.tiles?.find(
-      (entry) => entry.kind === 'forest'
-    );
-    const townPlugin = createTownTilePlugin();
-    const townTile = townPlugin.tiles?.find((entry) => entry.kind === 'town');
-    const lighthousePlugin = createLighthouseTilePlugin();
-    const lighthouseTile = lighthousePlugin.tiles?.find(
-      (entry) => entry.kind === 'lighthouse'
-    );
-    const state = createPluginRenderState();
-
-    const forestModel = forestTile?.create3DModel?.({
-      three: fakePluginThree as never,
-      state,
-      tile: { kind: 'forest' },
-      tileX: 8,
-      tileY: 6,
-      detailLevel: 'full',
-    });
-    const townModel = townTile?.create3DModel?.({
-      three: fakePluginThree as never,
-      state,
-      tile: {
-        kind: 'town',
-        poi: {
-          id: 'town-poi',
-          name: 'Oak Hollow',
-          type: 'town',
-          x: 4,
-          y: 4,
-        },
-      } as never,
-      tileX: 4,
-      tileY: 4,
-      detailLevel: 'full',
-    });
-    const lighthouseModel = lighthouseTile?.create3DModel?.({
-      three: fakePluginThree as never,
-      state,
-      tile: { kind: 'lighthouse' },
-      tileX: 3,
-      tileY: 3,
-      detailLevel: 'full',
-    });
-
-    const root = new FakePluginGroup();
-    root.add(
-      forestModel as FakePluginNode,
-      townModel as FakePluginNode,
-      lighthouseModel as FakePluginNode
-    );
+    const root = createRepresentativeNearbySceneRoot();
     const stats = collectSceneResourceStats(root as never);
 
     expect(stats).toEqual(
@@ -562,7 +514,96 @@ describe('render3d representative render-budget integrations', () => {
     expect(stats.visibleInstancedMeshCount).toBeGreaterThan(0);
     expect(stats.renderedInstanceCount).toBeGreaterThan(0);
   });
+
+  it('fails when representative nearby scene materials regress sharply', () => {
+    const root = createRepresentativeNearbySceneRoot();
+    const stats = collectSceneResourceStats(root as never);
+    const sampledStats = {
+      materialCount: stats.materialCount,
+      sharedMaterialCount: stats.sharedMaterialCount,
+      clonedMaterialCount: stats.clonedMaterialCount,
+      colorVariantMaterialCount: stats.colorVariantMaterialCount,
+      shaderDefineSignatureCount: stats.shaderDefineSignatureCount,
+      textureCount: stats.textureCount,
+      visibleMeshCount: stats.visibleMeshCount,
+    };
+
+    expect(
+      sampledStats.materialCount,
+      `Representative nearby scene unique materials regressed: ${JSON.stringify(
+        sampledStats
+      )}`
+    ).toBeLessThanOrEqual(24);
+    expect(
+      sampledStats.clonedMaterialCount,
+      `Representative nearby scene cloned materials regressed: ${JSON.stringify(
+        sampledStats
+      )}`
+    ).toBeLessThanOrEqual(16);
+    expect(
+      sampledStats.shaderDefineSignatureCount,
+      `Representative nearby scene shader-define variants regressed: ${JSON.stringify(
+        sampledStats
+      )}`
+    ).toBeLessThanOrEqual(1);
+  });
 });
+
+function createRepresentativeNearbySceneRoot(): FakePluginGroup {
+  const forestPlugin = createForestTilePlugin();
+  const forestTile = forestPlugin.tiles?.find(
+    (entry) => entry.kind === 'forest'
+  );
+  const townPlugin = createTownTilePlugin();
+  const townTile = townPlugin.tiles?.find((entry) => entry.kind === 'town');
+  const lighthousePlugin = createLighthouseTilePlugin();
+  const lighthouseTile = lighthousePlugin.tiles?.find(
+    (entry) => entry.kind === 'lighthouse'
+  );
+  const state = createPluginRenderState();
+
+  const forestModel = forestTile?.create3DModel?.({
+    three: fakePluginThree as never,
+    state,
+    tile: { kind: 'forest' },
+    tileX: 8,
+    tileY: 6,
+    detailLevel: 'full',
+  });
+  const townModel = townTile?.create3DModel?.({
+    three: fakePluginThree as never,
+    state,
+    tile: {
+      kind: 'town',
+      poi: {
+        id: 'town-poi',
+        name: 'Oak Hollow',
+        type: 'town',
+        x: 4,
+        y: 4,
+      },
+    } as never,
+    tileX: 4,
+    tileY: 4,
+    detailLevel: 'full',
+  });
+  const lighthouseModel = lighthouseTile?.create3DModel?.({
+    three: fakePluginThree as never,
+    state,
+    tile: { kind: 'lighthouse' },
+    tileX: 3,
+    tileY: 3,
+    detailLevel: 'full',
+  });
+
+  const root = new FakePluginGroup();
+  root.add(
+    forestModel as FakePluginNode,
+    townModel as FakePluginNode,
+    lighthouseModel as FakePluginNode
+  );
+  return root;
+}
 
 function createPluginRenderState() {
   return {

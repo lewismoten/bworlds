@@ -673,7 +673,7 @@ const FULL_DETAIL_TILE_MODEL_HARD_LIMITS: TileModelHardLimits = {
   groupCount: 64,
   meshCount: 96,
   drawCallCount: 80,
-  instancedMeshCount: 20,
+  instancedMeshCount: 24,
   pointsCount: 8,
   particleEmitterCount: 2,
   lineObjectCount: 12,

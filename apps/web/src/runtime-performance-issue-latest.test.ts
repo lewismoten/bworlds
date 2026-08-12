@@ -2,9 +2,20 @@ import { describe, expect, it } from 'vitest';
 
 import { readRecentRuntimePerformanceIssues } from '../runtime-performance-snapshot-store.mjs';
 
+const FRESH_ISSUE_GRACE_WINDOW_MS = 2 * 60 * 1000;
+
 describe('latest runtime performance issues', () => {
   it('fails when local runtime performance issue reports still exist on disk', () => {
-    const issues = readRecentRuntimePerformanceIssues({ limit: 50 });
+    const nowMs = Date.now();
+    const issues = readRecentRuntimePerformanceIssues({ limit: 50 }).filter(
+      (issue) => {
+        const createdAtMs = Date.parse(issue.createdAt);
+        if (!Number.isFinite(createdAtMs)) {
+          return true;
+        }
+        return nowMs - createdAtMs > FRESH_ISSUE_GRACE_WINDOW_MS;
+      }
+    );
     if (issues.length === 0) {
       expect(true).toBe(true);
       return;

@@ -1869,7 +1869,7 @@ describe('render3d visibility helpers', () => {
       groupCount: 64,
       meshCount: 96,
       drawCallCount: 80,
-      instancedMeshCount: 20,
+      instancedMeshCount: 24,
       pointsCount: 8,
       particleEmitterCount: 2,
       lineObjectCount: 12,
@@ -3236,7 +3236,7 @@ describe('render3d visibility helpers', () => {
 
   it('rejects full-detail models that exceed the instanced-mesh cap', () => {
     const sharedMaterial = createMockMaterial();
-    const children = Array.from({ length: 21 }, (_, index) =>
+    const children = Array.from({ length: 25 }, (_, index) =>
       createMockObject3D(
         sharedMaterial,
         [],
@@ -3252,25 +3252,25 @@ describe('render3d visibility helpers', () => {
         accepted: false,
         limits: getTileModelHardLimits('full'),
         stats: expect.objectContaining({
-          meshCount: 21,
-          instancedMeshCount: 21,
+          meshCount: 25,
+          instancedMeshCount: 25,
           pointsCount: 0,
           lineObjectCount: 0,
           spriteCount: 0,
-          geometryCount: 21,
+          geometryCount: 25,
           pointVertexCount: 0,
           particleEmitterCount: 0,
           lineSegmentCount: 0,
           maxGeometryVertexCount: 24,
           indexedVertexCount: 0,
           maxGeometryTriangleCount: 8,
-          triangleCount: 168,
+          triangleCount: 200,
         }),
         violations: [
           {
             metric: 'instancedMeshCount',
-            actual: 21,
-            limit: 20,
+            actual: 25,
+            limit: 24,
           },
         ],
       })
