@@ -22,10 +22,10 @@ import {
 } from '@bworlds/procedural-style';
 import { getTownProfile } from '@bworlds/town-support';
 import {
+  getOrCreatePaintedCanvasTexture,
+  applySurfaceTextureSampling,
   createBasicMaterial,
   getSharedPlaneGeometry,
-  getOrCreatePaintedCanvasTexture,
-  createPaintedStandardMaterial,
 } from '@bworlds/three-support';
 import type {
   Create3DModelContext,
@@ -135,6 +135,14 @@ const townSignLabelTextureCache = new WeakMap<
   object,
   ReturnType<typeof createBoundedCache<string, ThreeTextureLike>>
 >();
+const townWallTextureCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, ThreeTextureLike>>
+>();
+const townRoofTextureCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, ThreeTextureLike>>
+>();
 const townSignLabelMaterialCache = new WeakMap<
   object,
   ReturnType<typeof createBoundedCache<string, ThreeMaterialLike>>
@@ -221,44 +229,26 @@ function resolveTownStyle(tileX: number, tileY: number): TownStyleBlueprint {
           trimColor: variant.palette.trimColor,
           signBaseColor: variant.palette.signBaseColor,
           signTextColor: '#2f2218',
-          wallMaterial: createPaintedStandardMaterial(three, {
-            color: '#ffffff',
+          wallMaterial: createTownSurfaceMaterial(three, {
+            textureCache: getTownWallTextureCache(three),
+            textureKey: `wall:${variant.wallPatternVariant}:quality:${quality ?? 'full'}`,
+            color: variant.palette.wallColor,
             roughness: 0.92,
             metalness: 0.02,
             quality,
-            width: 64,
-            height: 64,
-            repeatX: 1.1,
-            repeatY: 1.1,
             paint(context, canvas) {
-              paintTownWallTexture(
-                context,
-                canvas,
-                variant.palette.wallColor,
-                variant.palette.trimColor,
-                variant.paletteIndex,
-                variant.wallPatternVariant
-              );
+              paintTownWallTexture(context, canvas, variant.wallPatternVariant);
             },
           }),
-          roofMaterial: createPaintedStandardMaterial(three, {
-            color: '#ffffff',
+          roofMaterial: createTownSurfaceMaterial(three, {
+            textureCache: getTownRoofTextureCache(three),
+            textureKey: `roof:${variant.roofPatternVariant}:quality:${quality ?? 'full'}`,
+            color: variant.palette.roofColor,
             roughness: 0.88,
             metalness: 0.03,
             quality,
-            width: 64,
-            height: 64,
-            repeatX: 1.35,
-            repeatY: 1.35,
             paint(context, canvas) {
-              paintTownRoofTexture(
-                context,
-                canvas,
-                variant.palette.roofColor,
-                variant.palette.trimColor,
-                variant.paletteIndex,
-                variant.roofPatternVariant
-              );
+              paintTownRoofTexture(context, canvas, variant.roofPatternVariant);
             },
           }),
           trimMaterial: new three.MeshStandardMaterial({
@@ -1080,14 +1070,11 @@ function getTownStyle(
 function paintTownWallTexture(
   context: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
-  baseColor: string,
-  trimColor: string,
-  paletteIndex: number,
   wallPatternVariant: number
 ) {
-  const patternSeedX = paletteIndex * 17 + wallPatternVariant * 11;
-  const patternSeedY = paletteIndex * 13 + wallPatternVariant * 7;
-  context.fillStyle = baseColor;
+  const patternSeedX = wallPatternVariant * 11;
+  const patternSeedY = wallPatternVariant * 7;
+  context.fillStyle = '#d7d0c4';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   for (let row = 0; row < canvas.height; row += 8) {
@@ -1120,7 +1107,7 @@ function paintTownWallTexture(
       hash2D(TOWN_WALL_BEAM_X_SEED, patternSeedX + index, patternSeedY) *
         canvas.width
     );
-    context.fillStyle = trimColor;
+    context.fillStyle = 'rgba(78, 62, 48, 0.28)';
     context.fillRect(x, 0, 2, canvas.height);
   }
 }
@@ -1128,18 +1115,16 @@ function paintTownWallTexture(
 function paintTownRoofTexture(
   context: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
-  baseColor: string,
-  trimColor: string,
-  paletteIndex: number,
   roofPatternVariant: number
 ) {
-  const patternSeedX = paletteIndex * 19 + roofPatternVariant * 13;
-  const patternSeedY = paletteIndex * 11 + roofPatternVariant * 17;
-  context.fillStyle = baseColor;
+  const patternSeedX = roofPatternVariant * 13;
+  const patternSeedY = roofPatternVariant * 17;
+  context.fillStyle = '#b7a89a';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   for (let row = 0; row < canvas.height; row += 6) {
-    context.fillStyle = row % 12 === 0 ? trimColor : 'rgba(255,255,255,0.08)';
+    context.fillStyle =
+      row % 12 === 0 ? 'rgba(72, 52, 42, 0.24)' : 'rgba(255,255,255,0.08)';
     context.fillRect(0, row, canvas.width, 2);
   }
 
@@ -1195,6 +1180,66 @@ function getTownStyleVariant(
     wallPatternVariant,
     roofPatternVariant,
   };
+}
+
+function createTownSurfaceMaterial(
+  three: ThreeHostLike,
+  options: {
+    textureCache: ReturnType<
+      typeof createBoundedCache<string, ThreeTextureLike>
+    >;
+    textureKey: string;
+    color: string;
+    roughness: number;
+    metalness: number;
+    quality: RenderBudgetQualityLevel | null | undefined;
+    paint: (
+      context: CanvasRenderingContext2D,
+      canvas: HTMLCanvasElement
+    ) => void;
+  }
+): ThreeMaterialLike {
+  const texture = getOrCreatePaintedCanvasTexture(
+    options.textureCache,
+    options.textureKey,
+    three,
+    {
+      width: 64,
+      height: 64,
+      repeatX: options.textureKey.startsWith('wall:') ? 1.1 : 1.35,
+      repeatY: options.textureKey.startsWith('wall:') ? 1.1 : 1.35,
+      paint: options.paint,
+    }
+  );
+  applySurfaceTextureSampling(texture, three, options.quality);
+  return new three.MeshStandardMaterial({
+    color: options.color,
+    map: texture,
+    roughness: options.roughness,
+    metalness: options.metalness,
+  });
+}
+
+function getTownWallTextureCache(three: object) {
+  let cache = townWallTextureCache.get(three);
+  if (!cache) {
+    cache = createBoundedCache<string, ThreeTextureLike>(
+      TOWN_STYLE_CACHE_LIMIT
+    );
+    townWallTextureCache.set(three, cache);
+  }
+  return cache;
+}
+
+function getTownRoofTextureCache(three: object) {
+  let cache = townRoofTextureCache.get(three);
+  if (!cache) {
+    cache = createBoundedCache<string, ThreeTextureLike>(
+      TOWN_STYLE_CACHE_LIMIT
+    );
+    townRoofTextureCache.set(three, cache);
+  }
+  return cache;
 }
 
 function getTownDescriptors(tileX: number, tileY: number): TownDescriptor[] {

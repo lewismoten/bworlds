@@ -86,7 +86,11 @@
       of paying a fresh material allocation for each repeated town sign build,
       and `tile-dungeon` now reuses one shared host-level gate-bar texture and
       material across all dungeon regions because that barred-gate surface does
-      not vary by region or quality.
+      not vary by region or quality, and `tile-town` wall and roof surfaces now
+      reuse one neutral painted texture per host, per pattern variant, and per
+      quality level, while regional color variation moves into the material
+      tint so matching texture patterns stop paying separate full-color painted
+      textures for every town palette.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`

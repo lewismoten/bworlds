@@ -4,13 +4,34 @@ vi.mock('@bworlds/three-support', async () => {
   const actual = await vi.importActual<typeof import('@bworlds/three-support')>(
     '@bworlds/three-support'
   );
+  const textureCache = new WeakMap<
+    object,
+    Map<string, Record<string, unknown>>
+  >();
+  const createFakeTexture = () => ({
+    colorSpace: '',
+    needsUpdate: false,
+    anisotropy: 0,
+    generateMipmaps: false,
+  });
   return {
     ...actual,
     createPaintedCanvasTexture() {
-      return { colorSpace: '', needsUpdate: false };
+      return createFakeTexture();
     },
-    getOrCreatePaintedCanvasTexture() {
-      return { colorSpace: '', needsUpdate: false };
+    getOrCreatePaintedCanvasTexture(cache: object, key: string) {
+      let bucket = textureCache.get(cache);
+      if (!bucket) {
+        bucket = new Map();
+        textureCache.set(cache, bucket);
+      }
+      const cached = bucket.get(key);
+      if (cached) {
+        return cached;
+      }
+      const texture = createFakeTexture();
+      bucket.set(key, texture);
+      return texture;
     },
     createPaintedStandardMaterial(
       _three: unknown,
@@ -155,6 +176,8 @@ const fakeThree = {
   ConeGeometry: FakeGeometry,
   CylinderGeometry: FakeGeometry,
   PlaneGeometry: FakeGeometry,
+  LinearFilter: 'linear',
+  LinearMipmapLinearFilter: 'linear-mipmap',
   DoubleSide: 2,
 } as const;
 
@@ -441,7 +464,11 @@ describe('tile town', () => {
     >;
 
     expect(
-      paintedMaterials.some((material) => material.quality === 'reduced')
+      paintedMaterials.some((material) => {
+        const map = material.map as
+          { anisotropy?: number; generateMipmaps?: boolean } | undefined;
+        return map?.anisotropy === 2 && map.generateMipmaps === true;
+      })
     ).toBe(true);
   });
 
@@ -944,6 +971,38 @@ describe('tile town', () => {
 
     expect(highestSharedCount).toBeGreaterThanOrEqual(4);
   });
+
+  it('reuses neutral wall and roof texture maps across different regional palettes', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+    const wallMapColors = new Map<unknown, Set<unknown>>();
+    const roofMapColors = new Map<unknown, Set<unknown>>();
+
+    for (let regionY = 0; regionY < 8; regionY += 1) {
+      for (let regionX = 0; regionX < 8; regionX += 1) {
+        const model = tile?.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: {
+            kind: 'town',
+            poi: { type: 'town', name: `Town ${regionX}:${regionY}` },
+          } as never,
+          tileX: regionX * 18,
+          tileY: regionY * 18,
+          detailLevel: 'full',
+        }) as FakeGroup;
+        collectTownSurfaceTextureColors(model, wallMapColors, roofMapColors);
+      }
+    }
+
+    expect([...wallMapColors.values()].some((colors) => colors.size > 1)).toBe(
+      true
+    );
+    expect([...roofMapColors.values()].some((colors) => colors.size > 1)).toBe(
+      true
+    );
+  });
 });
 
 function countSharedMaterialReferences(
@@ -991,4 +1050,34 @@ function findTownBannerMaterial(root: FakeGroup) {
     material = Array.isArray(node.material) ? node.material[0] : node.material;
   });
   return material;
+}
+
+function collectTownSurfaceTextureColors(
+  root: FakeGroup,
+  wallMapColors: Map<unknown, Set<unknown>>,
+  roofMapColors: Map<unknown, Set<unknown>>
+) {
+  root.traverse((node) => {
+    if (
+      !(node instanceof FakeMesh || node instanceof FakeInstancedMesh) ||
+      Array.isArray(node.material) ||
+      !node.material?.options.map
+    ) {
+      return;
+    }
+    const target =
+      node.material.options.roughness === 0.92
+        ? wallMapColors
+        : node.material.options.roughness === 0.88
+          ? roofMapColors
+          : null;
+    if (!target) {
+      return;
+    }
+    const map = node.material.options.map;
+    if (!target.has(map)) {
+      target.set(map, new Set());
+    }
+    target.get(map)!.add(node.material.options.color);
+  });
 }
