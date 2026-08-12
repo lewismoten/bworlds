@@ -299,7 +299,7 @@ describe('runtime performance tracking', () => {
 
     expect(issue).not.toBeNull();
     expect(issue?.summary).toBe(
-      'Latest LOD failure: Upgrade budget exhausted.'
+      'Latest fallback reason: Missing low-cost plains model.'
     );
     expect(issue?.pluginHotspots.rejectedModels).toBe('tile-plains');
     expect(issue?.pluginHotspots.materials).toBe('tile-route');
@@ -343,8 +343,11 @@ describe('runtime performance tracking', () => {
     expect(issue?.reasons).not.toContain(
       'tile-forest starved 2.0 times per second.'
     );
-    expect(issue?.reasons).toContain(
+    expect(issue?.reasons).not.toContain(
       'Latest LOD failure: Upgrade budget exhausted.'
+    );
+    expect(issue?.reasons).toContain(
+      'Latest fallback reason: Missing low-cost plains model.'
     );
     expect(issue?.performanceSnapshot.violations).toEqual(
       expect.arrayContaining([
@@ -382,7 +385,7 @@ describe('runtime performance tracking', () => {
     });
 
     expect(issue?.summary).toBe(
-      'Latest LOD failure: Upgrade budget exhausted.'
+      'Latest fallback reason: Missing low-cost plains model.'
     );
     expect(issue?.renderState.renderQualityLimiterDetails).toEqual([
       'Visibility radius reduced to 10 (full 18, reduced 14, minimum 10)',
@@ -801,6 +804,22 @@ describe('runtime performance tracking', () => {
         lastLodFailureReason:
           '15:-9 / tile-route: visible lod recovery failed after full (full failed) -> low (tile drawCallCount 21>17)',
         lastFallbackReason: 'plugin unique materialCount 13>12',
+        resourceWarnings: [],
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
+  it('skips runtime issue reports when active prefixed placeholder lod and fallback reasons remain', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        lastLodFailureReason:
+          '15:-9 / tile-forest: Upgrade budget exhausted.',
+        lastFallbackReason:
+          '15:-9 / tile-forest: tile plugin returned no model.',
         resourceWarnings: [],
       }),
     });

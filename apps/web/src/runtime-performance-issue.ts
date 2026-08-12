@@ -800,15 +800,41 @@ function isWrappedGenericRuntimePerformanceBudgetReason(
 }
 
 function unwrapRuntimePerformanceIssueReason(reason: string): string {
-  return reason
+  const unwrapped = reason
     .trim()
     .replace(/[.!?]+$/u, '')
     .replace(/^Latest LOD failure:\s*/u, '')
     .replace(/^Latest fallback reason:\s*/u, '');
+  return stripRuntimePerformanceIssueContextPrefix(unwrapped);
+}
+
+function stripRuntimePerformanceIssueContextPrefix(reason: string): string {
+  const separatorIndex = reason.lastIndexOf(': ');
+  if (separatorIndex <= 0) {
+    return reason.trim();
+  }
+  const candidate = reason.slice(separatorIndex + 2).trim();
+  if (!looksLikeGenericRuntimePerformancePayload(candidate)) {
+    return reason.trim();
+  }
+  return candidate;
+}
+
+function looksLikeGenericRuntimePerformancePayload(reason: string): boolean {
+  const normalized = reason.trim().replace(/[.!?]+$/u, '');
+  return (
+    normalized.startsWith('visible lod recovery failed after ') ||
+    normalized.startsWith('recovered at low after ') ||
+    isNumericBudgetThresholdReason(normalized) ||
+    isGenericBudgetPlaceholderReason(normalized) ||
+    isExpectedTileFallbackReason(normalized)
+  );
 }
 
 function isGenericBudgetIssuePayload(reason: string): boolean {
-  const normalized = reason.trim().replace(/[.!?]+$/u, '');
+  const normalized = stripRuntimePerformanceIssueContextPrefix(
+    reason.trim().replace(/[.!?]+$/u, '')
+  );
   if (
     isGenericRuntimePerformanceBudgetReason(normalized) ||
     isNumericBudgetThresholdReason(normalized) ||
@@ -845,12 +871,14 @@ function isNumericBudgetThresholdReason(reason: string): boolean {
 }
 
 function isGenericBudgetPlaceholderReason(reason: string): boolean {
-  return /^(?:full failed|low failed|budget rejection)$/iu.test(reason.trim());
+  return /^(?:full failed|low failed|cached low failed|final low failed|budget rejection|upgrade budget exhausted|tile plugin returned no model)$/iu.test(
+    stripRuntimePerformanceIssueContextPrefix(reason.trim())
+  );
 }
 
 function isExpectedTileFallbackReason(reason: string): boolean {
   return /^(?:tile has no plugin model(?: and uses the wall-height fallback)?)$/iu.test(
-    reason.trim()
+    stripRuntimePerformanceIssueContextPrefix(reason.trim())
   );
 }
 

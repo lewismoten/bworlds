@@ -19,7 +19,10 @@
       and expected non-plugin tile fallback reasons such as
       `tile has no plugin model` and
       `tile has no plugin model and uses the wall-height fallback` now also
-      stay local to the client instead of being escalated as runtime issues.
+      stay local to the client instead of being escalated as runtime issues,
+      and active tile/plugin-prefixed placeholder failures such as
+      `Upgrade budget exhausted` or `tile plugin returned no model` now also
+      stay local unless a more specific actionable reason is present.
 - [x] Limit each tree species to 10 material variants per part type.
 - [x] Reuse bark, foliage, and branch materials across nearby trees.
 - [x] Prefer tinting shared materials over creating new textures.
