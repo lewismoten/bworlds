@@ -15,6 +15,7 @@ import {
 import { CLIENT_ERROR_SNAPSHOT_API_PATH } from './src/client-error-snapshot.ts';
 import { resolveDebugRouteRedirect } from './src/debug-route-aliases.ts';
 import { resolveRootEntryHtmlPath } from './src/root-entry-route.ts';
+import { validateRuntimePerformanceSnapshot } from './src/runtime-performance-snapshot-validation.ts';
 import { RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH } from './src/runtime-performance-tracking.ts';
 import { RUNTIME_PERFORMANCE_ISSUE_API_PATH } from './src/runtime-performance-issue.ts';
 import { buildWorkspaceAliases } from './vite.workspace.ts';
@@ -270,6 +271,14 @@ function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
       ) {
         sendJson(res, 400, {
           error: 'Expected a runtime performance snapshot JSON payload.',
+        });
+        return;
+      }
+
+      const validation = validateRuntimePerformanceSnapshot(snapshot);
+      if (validation.errors.length > 0) {
+        sendJson(res, 400, {
+          error: validation.errors.join(' '),
         });
         return;
       }

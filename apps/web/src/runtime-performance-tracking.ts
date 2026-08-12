@@ -1,6 +1,6 @@
 import type { DebugSnapshot } from './debug-panel.ts';
 
-const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
+export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
   initialWorldGenerationMs: 4_000,
   visibleTileGenerationMs: 16,
   maximumFrameMs: 50,
@@ -21,6 +21,16 @@ export type RuntimePerformanceTrackingPreferences = {
   enabled: boolean;
 };
 
+export const RUNTIME_PERFORMANCE_SNAPSHOT_TRIGGERS = [
+  'startup',
+  'region-change',
+  'runtime-issue',
+  'song-generated',
+  'midi-export',
+  'wav-export',
+  'bundle-export',
+] as const;
+
 export type RuntimePerformanceSnapshotTrigger =
   | 'startup'
   | 'region-change'
@@ -29,6 +39,11 @@ export type RuntimePerformanceSnapshotTrigger =
   | 'midi-export'
   | 'wav-export'
   | 'bundle-export';
+
+export const RUNTIME_PERFORMANCE_SNAPSHOT_SOURCES = [
+  'game',
+  'music-debug',
+] as const;
 
 export type RuntimePerformanceSnapshotSource = 'game' | 'music-debug';
 
@@ -157,7 +172,7 @@ export function buildRuntimePerformanceSnapshotMetricsFromDebugSnapshot(
   };
 }
 
-function collectRuntimePerformanceViolations(
+export function collectRuntimePerformanceViolations(
   metrics: RuntimePerformanceSnapshot['metrics'],
   limits: typeof DEFAULT_RUNTIME_PERFORMANCE_LIMITS
 ): string[] {
