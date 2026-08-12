@@ -15,6 +15,7 @@ or globe plugins land.
 
 Current built-in support:
 
+- `createGenericConicMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
 - `createTransverseMercatorMapProjectionPlugin()`
@@ -96,6 +97,28 @@ The projected range is normalized to:
 
 This gives later map UIs one stable starting projection before the rest of the
 projection catalog is implemented.
+
+## Generic Conic
+
+`createGenericConicMapProjectionPlugin()` provides a reusable equidistant
+conic projection with configurable standard parallels, central meridian, and
+latitude of origin.
+
+It currently:
+
+- uses `id: 'generic-conic'` by default
+- declares `distortion: 'equidistant'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- defaults to standard parallels `20` and `60`
+- defaults to central meridian `0` and latitude of origin `0`
+
+The default normalized range is based on sampled projected extents across the
+configured world bounds.
+
+This gives later map UIs one reusable conic base that can be customized
+without forcing every conic variant to reimplement the same spherical forward
+and inverse plumbing.
 
 ## Miller Cylindrical
 

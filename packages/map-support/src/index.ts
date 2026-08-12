@@ -14,10 +14,17 @@ import type {
 } from '@bworlds/plugin-api';
 export type * from './map-projections.ts';
 export {
+  createGenericConicMapProjectionPlugin,
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
   createTransverseMercatorMapProjectionPlugin,
+  GENERIC_CONIC_CENTRAL_MERIDIAN,
+  GENERIC_CONIC_LATITUDE_OF_ORIGIN,
+  GENERIC_CONIC_MAX_WORLD_LATITUDE,
+  GENERIC_CONIC_MAX_WORLD_LONGITUDE,
+  GENERIC_CONIC_STANDARD_PARALLEL_1,
+  GENERIC_CONIC_STANDARD_PARALLEL_2,
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,

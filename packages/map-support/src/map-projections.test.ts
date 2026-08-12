@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createGenericConicMapProjectionPlugin,
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
   createTransverseMercatorMapProjectionPlugin,
+  GENERIC_CONIC_CENTRAL_MERIDIAN,
+  GENERIC_CONIC_LATITUDE_OF_ORIGIN,
+  GENERIC_CONIC_MAX_WORLD_LATITUDE,
+  GENERIC_CONIC_MAX_WORLD_LONGITUDE,
+  GENERIC_CONIC_STANDARD_PARALLEL_1,
+  GENERIC_CONIC_STANDARD_PARALLEL_2,
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
@@ -261,5 +268,55 @@ describe('map projections', () => {
     expect(TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE).toBe(80);
     expect(TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE).toBe(90);
     expect(TRANSVERSE_MERCATOR_MAX_PROJECTED_X).toBeGreaterThan(0);
+  });
+
+  it('projects and inverts generic conic coordinates with the default configuration', () => {
+    const projection = createGenericConicMapProjectionPlugin();
+
+    expect(projection.id).toBe('generic-conic');
+    expect(projection.label).toBe('Generic Conic');
+    expect(projection.distortion).toBe('equidistant');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+
+    const forward = projection.project({
+      worldX: 20,
+      worldY: 35,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(20, 10);
+    expect(inverted?.worldY).toBeCloseTo(35, 10);
+    expect(GENERIC_CONIC_STANDARD_PARALLEL_1).toBe(20);
+    expect(GENERIC_CONIC_STANDARD_PARALLEL_2).toBe(60);
+    expect(GENERIC_CONIC_CENTRAL_MERIDIAN).toBe(0);
+    expect(GENERIC_CONIC_LATITUDE_OF_ORIGIN).toBe(0);
+    expect(GENERIC_CONIC_MAX_WORLD_LONGITUDE).toBe(180);
+    expect(GENERIC_CONIC_MAX_WORLD_LATITUDE).toBe(90);
+  });
+
+  it('supports custom generic conic configurations with matching inverse projection', () => {
+    const projection = createGenericConicMapProjectionPlugin({
+      id: 'regional-conic',
+      label: 'Regional Conic',
+      centralMeridianDegrees: -96,
+      latitudeOfOriginDegrees: 23,
+      standardParallel1Degrees: 29.5,
+      standardParallel2Degrees: 45.5,
+      maxWorldLongitude: 60,
+      maxWorldLatitude: 75,
+    });
+
+    expect(projection.id).toBe('regional-conic');
+    expect(projection.label).toBe('Regional Conic');
+
+    const forward = projection.project({
+      worldX: -90,
+      worldY: 40,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(-90, 10);
+    expect(inverted?.worldY).toBeCloseTo(40, 10);
   });
 });
