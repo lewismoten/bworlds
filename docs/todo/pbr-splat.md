@@ -195,13 +195,13 @@
 ## Debug View
 
 - [ ] Add a splat debug mode to the terrain viewer.
-- [ ] Show active layer IDs per terrain sample.
-- [ ] Show blend weights as debug colors.
-- [ ] Show one layer at a time.
-- [ ] Show terrain texture array indices.
-- [ ] Show chunk splat memory usage.
-- [ ] Show active layer count per chunk.
-- [ ] Show dominant terrain layer per cell.
+- [x] Show active layer IDs per terrain sample.
+- [x] Show blend weights as debug colors.
+- [x] Show one layer at a time.
+- [x] Show terrain texture array indices.
+- [x] Show chunk splat memory usage.
+- [x] Show active layer count per chunk.
+- [x] Show dominant terrain layer per cell.
 - [ ] Add toggles for color, normal, and roughness maps.
 - [ ] Add a toggle to disable splat blending.
 
@@ -341,6 +341,10 @@
 - Added `@bworlds/terrain-splat-support/chunk-build` so terrain chunk builders
   can generate packed splat weights through one cache-aware entry point without
   coupling splat generation to mesh creation.
+- Added `@bworlds/terrain-splat-support/debug-view` so chunk splat grids can
+  expose per-sample active layer IDs, dominant layers, one-layer weight views,
+  blend colors, texture-array indices, and packed memory usage before any
+  terrain viewer UI is wired up.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
