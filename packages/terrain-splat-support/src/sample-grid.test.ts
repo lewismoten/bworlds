@@ -9,6 +9,7 @@ import {
   createTerrainSplatSampleGrid,
   getTerrainSplatGridSample,
   packTerrainSplatSampleGrid,
+  summarizeTerrainSplatSampleGridUsage,
   unpackTerrainSplatSampleGrid,
 } from './sample-grid.ts';
 
@@ -167,6 +168,147 @@ describe('terrain splat sample grid', () => {
     ).toThrowError(
       'Terrain splat grid x-axis span 3 must divide evenly by step 2.'
     );
+  });
+
+  it('summarizes chunk layer usage and identifies unused layers', () => {
+    const { layerCatalog, kindCatalog } = createGridCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'usage-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x === 1 ? 'road' : y === 2 ? 'shore' : 'plains',
+        signals: {
+          moisture: normalizeSignal(y, 0.55),
+          roadSignal: x === 1 ? 0.9 : 0,
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+    });
+
+    const summary = summarizeTerrainSplatSampleGridUsage(grid, layerCatalog, {
+      maxActiveLayers: 6,
+      maxUniqueLayerCombinations: 4,
+    });
+
+    expect(summary.activeLayerIds).toEqual([
+      'dirt-road',
+      'grass-a',
+      'grass-b',
+      'gravel-road',
+      'sand',
+      'soil',
+    ]);
+    expect(summary.unusedLayerIds).toEqual(['leaf', 'rock']);
+    expect(summary.dominantLayerId).toBe('dirt-road');
+    expect(summary.uniqueLayerCombinationCount).toBeGreaterThan(1);
+    expect(summary.perSampleActiveLayerCount).toHaveLength(grid.samples.length);
+    expect(summary.warnings).toEqual([]);
+  });
+
+  it('warns when one chunk activates too many layers or layer combinations', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'base-a',
+        baseColorTextureId: 'base-a/base',
+        normalTextureId: 'base-a/normal',
+        roughnessTextureId: 'base-a/roughness',
+        textureScale: 3,
+        defaultTint: '#888888',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'base-b',
+        baseColorTextureId: 'base-b/base',
+        normalTextureId: 'base-b/normal',
+        roughnessTextureId: 'base-b/roughness',
+        textureScale: 3,
+        defaultTint: '#777777',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'base-c',
+        baseColorTextureId: 'base-c/base',
+        normalTextureId: 'base-c/normal',
+        roughnessTextureId: 'base-c/roughness',
+        textureScale: 3,
+        defaultTint: '#666666',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'blend-d',
+        baseColorTextureId: 'blend-d/base',
+        normalTextureId: 'blend-d/normal',
+        roughnessTextureId: 'blend-d/roughness',
+        textureScale: 3,
+        defaultTint: '#555555',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'blend-e',
+        baseColorTextureId: 'blend-e/base',
+        normalTextureId: 'blend-e/normal',
+        roughnessTextureId: 'blend-e/roughness',
+        textureScale: 3,
+        defaultTint: '#444444',
+        defaultRoughness: 0.8,
+      },
+    ]);
+    const grid = {
+      minX: 0,
+      maxX: 1,
+      minY: 0,
+      maxY: 1,
+      step: 1,
+      width: 2,
+      height: 2,
+      samples: [
+        {
+          entries: [{ layerId: 'base-a', weight: 1 }],
+        },
+        {
+          entries: [
+            { layerId: 'base-b', weight: 0.7 },
+            { layerId: 'blend-d', weight: 0.3 },
+          ],
+        },
+        {
+          entries: [
+            { layerId: 'base-c', weight: 0.6 },
+            { layerId: 'blend-e', weight: 0.4 },
+          ],
+        },
+        {
+          entries: [
+            { layerId: 'base-a', weight: 0.5 },
+            { layerId: 'blend-d', weight: 0.25 },
+            { layerId: 'blend-e', weight: 0.25 },
+          ],
+        },
+      ],
+    } as const;
+
+    const summary = summarizeTerrainSplatSampleGridUsage(grid, layerCatalog, {
+      maxActiveLayers: 4,
+      maxUniqueLayerCombinations: 2,
+    });
+
+    expect(summary.activeLayerIds).toEqual([
+      'base-a',
+      'base-b',
+      'base-c',
+      'blend-d',
+      'blend-e',
+    ]);
+    expect(summary.warnings.map((warning) => warning.code)).toEqual([
+      'too-many-active-layers',
+      'too-many-unique-layer-combinations',
+    ]);
   });
 });
 

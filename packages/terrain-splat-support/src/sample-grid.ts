@@ -49,6 +49,24 @@ export type PackedTerrainSplatSampleGrid = Omit<
   weights: Uint8Array;
 };
 
+export type TerrainSplatGridUsageWarningCode =
+  'too-many-active-layers' | 'too-many-unique-layer-combinations';
+
+export type TerrainSplatGridUsageWarning = {
+  code: TerrainSplatGridUsageWarningCode;
+  message: string;
+};
+
+export type TerrainSplatGridUsageSummary = {
+  activeLayerIds: readonly TerrainMaterialLayerId[];
+  activeLayerCounts: Readonly<Record<TerrainMaterialLayerId, number>>;
+  uniqueLayerCombinationCount: number;
+  dominantLayerId: TerrainMaterialLayerId | null;
+  perSampleActiveLayerCount: readonly number[];
+  unusedLayerIds: readonly TerrainMaterialLayerId[];
+  warnings: readonly TerrainSplatGridUsageWarning[];
+};
+
 export function createTerrainSplatSampleGrid(params: {
   seed: Seed;
   bounds: TerrainSplatGridBounds;
@@ -192,6 +210,93 @@ export function createTerrainSplatGridTileResolver(
   ) => TerrainSplatGridTile
 ): ResolveTerrainSplatGridTile {
   return resolveInput;
+}
+
+export function summarizeTerrainSplatSampleGridUsage(
+  grid: TerrainSplatSampleGrid,
+  catalog:
+    | readonly TerrainMaterialLayerCatalogEntry[]
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        entries?: readonly TerrainMaterialLayerCatalogEntry[];
+        byId?: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      },
+  options: {
+    maxActiveLayers?: number;
+    maxUniqueLayerCombinations?: number;
+  } = {}
+): TerrainSplatGridUsageSummary {
+  const catalogEntries = Array.isArray(catalog)
+    ? catalog
+    : catalog instanceof Map
+      ? [...catalog.values()]
+      : (catalog.entries ?? (catalog.byId ? [...catalog.byId.values()] : []));
+  const activeLayerCounts = new Map<TerrainMaterialLayerId, number>();
+  const layerCombinationKeys = new Set<string>();
+  const perSampleActiveLayerCount: number[] = [];
+
+  for (const sample of grid.samples) {
+    perSampleActiveLayerCount.push(sample.entries.length);
+    const combinationKey = sample.entries
+      .map((entry) => entry.layerId)
+      .sort()
+      .join('|');
+    layerCombinationKeys.add(combinationKey);
+
+    for (const entry of sample.entries) {
+      activeLayerCounts.set(
+        entry.layerId,
+        (activeLayerCounts.get(entry.layerId) ?? 0) + 1
+      );
+    }
+  }
+
+  const activeLayerIds = [...activeLayerCounts.keys()].sort();
+  const unusedLayerIds = catalogEntries
+    .map((entry) => entry.id)
+    .filter((layerId) => !activeLayerCounts.has(layerId))
+    .sort();
+  const dominantLayerId =
+    [...activeLayerCounts.entries()].sort((left, right) =>
+      right[1] === left[1]
+        ? left[0].localeCompare(right[0])
+        : right[1] - left[1]
+    )[0]?.[0] ?? null;
+  const warnings: TerrainSplatGridUsageWarning[] = [];
+  const maxActiveLayers = options.maxActiveLayers;
+  const maxUniqueLayerCombinations = options.maxUniqueLayerCombinations;
+
+  if (
+    typeof maxActiveLayers === 'number' &&
+    activeLayerIds.length > maxActiveLayers
+  ) {
+    warnings.push({
+      code: 'too-many-active-layers',
+      message: `Terrain splat grid uses ${activeLayerIds.length} active layers, exceeding the chunk budget ${maxActiveLayers}.`,
+    });
+  }
+  if (
+    typeof maxUniqueLayerCombinations === 'number' &&
+    layerCombinationKeys.size > maxUniqueLayerCombinations
+  ) {
+    warnings.push({
+      code: 'too-many-unique-layer-combinations',
+      message: `Terrain splat grid uses ${layerCombinationKeys.size} unique layer combinations, exceeding the chunk budget ${maxUniqueLayerCombinations}.`,
+    });
+  }
+
+  return {
+    activeLayerIds,
+    activeLayerCounts: Object.freeze(Object.fromEntries(activeLayerCounts)),
+    uniqueLayerCombinationCount: layerCombinationKeys.size,
+    dominantLayerId,
+    perSampleActiveLayerCount,
+    unusedLayerIds,
+    warnings,
+  };
 }
 
 function normalizeTerrainSplatGridBounds(bounds: TerrainSplatGridBounds): {

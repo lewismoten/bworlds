@@ -36,11 +36,11 @@
 
 ## Terrain Layer Limits
 
-- [ ] Set a maximum number of terrain material layers.
+- [x] Set a maximum number of terrain material layers.
 - [ ] Limit nearby terrain to a small active layer set.
-- [ ] Keep unused terrain layers out of chunk data.
+- [x] Keep unused terrain layers out of chunk data.
 - [ ] Reuse common layers across neighboring chunks.
-- [ ] Warn when too many layers are active in one chunk.
+- [x] Warn when too many layers are active in one chunk.
 - [ ] Prefer shared layers over creating new variants.
 
 ## Splat Weights
@@ -253,6 +253,10 @@
 - Added `@bworlds/terrain-splat-support/sample-grid` to build chunk-like
   splat sample grids, preserve matching border samples across adjacent chunks,
   and flatten packed samples into contiguous `Uint8Array` buffers for transfer.
+- Added chunk usage summaries in
+  `@bworlds/terrain-splat-support/sample-grid` to report active and unused
+  layers, dominant layer usage, unique layer combinations, and chunk-level
+  warnings when terrain layer budgets are exceeded.
 - [ ] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -285,8 +289,8 @@ deterministic terrain-kind mapping from seed plus world signals. Architecture
 notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/deterministic-mapping.md`, plus
 `packages/terrain-splat-support/docs/chunk-sample-grids.md`, and focused tests
-cover normalization, packing, validation, deterministic mapping, and chunk
-border stability.
+cover normalization, packing, validation, deterministic mapping, chunk border
+stability, and chunk layer-usage analysis.
 
 # Roads and Paths as Terrain Splats
 

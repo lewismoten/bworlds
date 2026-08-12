@@ -18,6 +18,7 @@ Current API:
 - `getTerrainSplatGridSample(...)`
 - `packTerrainSplatSampleGrid(...)`
 - `unpackTerrainSplatSampleGrid(...)`
+- `summarizeTerrainSplatSampleGridUsage(...)`
 
 Important constraints:
 
@@ -32,3 +33,11 @@ Why this exists:
 - worker pipelines can transfer one compact buffer pair instead of nested
   objects
 - chunk border continuity can be tested independently from rendering
+
+Usage summaries:
+
+- report sorted active layer IDs for one grid
+- report unused layer IDs relative to the shared layer catalog
+- count unique layer combinations across samples
+- identify one dominant layer by usage count
+- emit warnings when chunk-level active-layer or variation budgets are exceeded

@@ -19,6 +19,7 @@ Current responsibilities:
 - keep overworld terrain-to-splat mapping renderer-free and reusable
 - build chunk-like sample grids without coupling splat generation to meshes
 - flatten packed splat grids into transferable typed arrays
+- summarize chunk layer usage before renderer integration decides budgets
 
 Why this comes first:
 
