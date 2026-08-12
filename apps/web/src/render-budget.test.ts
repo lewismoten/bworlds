@@ -90,6 +90,7 @@ describe('render budget', () => {
       averageFps: 1000 / 36,
       worstRecentFrameMs: 38,
       severeFrameStreak: 12,
+      recoveryFrameStreak: 0,
       drawCalls: 0,
       maxChunkDrawCalls: 0,
       maxChunkObjectCount: 0,
@@ -108,7 +109,18 @@ describe('render budget', () => {
       weatherVisibilityRadiusCap: DEFAULT_VISIBILITY_RADIUS,
     };
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 4; index += 1) {
+      state = advanceRenderBudgetState(state, {
+        deltaMs: 16.67,
+        active3d: true,
+        weatherVisibility: 1,
+      });
+    }
+    expect(state.visibilityRadius).toBe(REDUCED_VISIBILITY_RADIUS);
+    expect(state.targetFps).toBe(30);
+    expect(state.recoveryFrameStreak).toBe(0);
+
+    for (let index = 0; index < 20; index += 1) {
       state = advanceRenderBudgetState(state, {
         deltaMs: 16.67,
         active3d: true,
@@ -117,6 +129,7 @@ describe('render budget', () => {
     }
     expect(state.visibilityRadius).toBe(DEFAULT_VISIBILITY_RADIUS);
     expect(state.targetFps).toBe(60);
+    expect(state.recoveryFrameStreak).toBeGreaterThanOrEqual(8);
 
     state = advanceRenderBudgetState(state, {
       deltaMs: 16.67,
@@ -126,6 +139,7 @@ describe('render budget', () => {
     expect(state.targetFps).toBe(60);
     expect(state.averageFps).toBe(60);
     expect(state.worstRecentFrameMs).toBeCloseTo(16.67, 2);
+    expect(state.recoveryFrameStreak).toBe(0);
   });
 
   it('tracks a rolling average fps and worst recent frame time over the recent window', () => {

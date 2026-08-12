@@ -201,8 +201,13 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       the player while farther tiles fall back to a stable sparse subset so
       chunk draw calls stop spending half the visible forest budget on distant
       silhouettes.
-- [ ] Track recovery back to full quality.
-- [ ] Add hysteresis before restoring full graphics quality.
+- [x] Track recovery back to full quality.
+- [x] Add hysteresis before restoring full graphics quality.
+      Progress: `render-budget` now requires a short healthy-frame recovery
+      streak before it restores `60 FPS` plus the full visibility radius after
+      a performance-driven quality downgrade, so the existing graphics-quality
+      change tracking records a more stable `reduced/minimal -> full` recovery
+      instead of immediately bouncing back on the first healthy smoothed frame.
 
 ## Build Scheduler
 

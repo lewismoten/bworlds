@@ -40,6 +40,7 @@ export type RenderBudgetState = {
   averageFps: number;
   worstRecentFrameMs: number;
   severeFrameStreak: number;
+  recoveryFrameStreak: number;
 };
 
 export type PendingWorldBuildBudget = {
@@ -155,6 +156,7 @@ export const DEFAULT_RENDER_BUDGET_STATE: RenderBudgetState = {
   averageFps: 60,
   worstRecentFrameMs: 16.67,
   severeFrameStreak: 0,
+  recoveryFrameStreak: 0,
 };
 
 const FRAME_SMOOTHING = 0.14;
@@ -162,6 +164,7 @@ const RECENT_FRAME_WINDOW_SIZE = 60;
 const LOW_FPS_FRAME_MS = 1000 / 42;
 const CRITICAL_FPS_FRAME_MS = 1000 / 28;
 const RECOVERED_FPS_FRAME_MS = 1000 / 54;
+const FULL_QUALITY_RECOVERY_FRAME_STREAK_THRESHOLD = 8;
 const SEVERE_FPS_FRAME_MS = 1000 / 24;
 const SEVERE_FRAME_STREAK_THRESHOLD = 10;
 const SEVERE_FRAME_STREAK_RECOVERY_STEP = 2;
@@ -222,6 +225,7 @@ function resetRenderBudgetStateInPlace(
   state.averageFps = 60;
   state.worstRecentFrameMs = 16.67;
   state.severeFrameStreak = 0;
+  state.recoveryFrameStreak = 0;
   return state;
 }
 
@@ -461,6 +465,28 @@ export function updateRenderBudgetStateInPlace(
     visibilityRadius = Math.min(visibilityRadius, REDUCED_VISIBILITY_RADIUS);
   }
 
+  const wantsFullQualityRecovery =
+    targetFps === 60 &&
+    visibilityRadius === DEFAULT_VISIBILITY_RADIUS &&
+    weatherVisibilityRadiusCap >= DEFAULT_VISIBILITY_RADIUS;
+  const recoveringFromPerformanceReduction =
+    state.targetFps !== 60 ||
+    (state.visibilityRadius < DEFAULT_VISIBILITY_RADIUS &&
+      state.weatherVisibilityRadiusCap >= DEFAULT_VISIBILITY_RADIUS);
+  const recoveryFrameStreak = wantsFullQualityRecovery
+    ? recoveringFromPerformanceReduction
+      ? state.recoveryFrameStreak + 1
+      : FULL_QUALITY_RECOVERY_FRAME_STREAK_THRESHOLD
+    : 0;
+  if (
+    wantsFullQualityRecovery &&
+    recoveringFromPerformanceReduction &&
+    recoveryFrameStreak < FULL_QUALITY_RECOVERY_FRAME_STREAK_THRESHOLD
+  ) {
+    targetFps = state.targetFps;
+    visibilityRadius = state.visibilityRadius;
+  }
+
   state.currentFrameMs = clampedDeltaMs;
   state.smoothedFrameMs = smoothedFrameMs;
   state.drawCalls = normalizedDrawCalls;
@@ -487,6 +513,7 @@ export function updateRenderBudgetStateInPlace(
   state.averageFps = averageFps;
   state.worstRecentFrameMs = worstRecentFrameMs;
   state.severeFrameStreak = severeFrameStreak;
+  state.recoveryFrameStreak = recoveryFrameStreak;
   return state;
 }
 
