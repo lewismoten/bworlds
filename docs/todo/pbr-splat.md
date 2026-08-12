@@ -163,9 +163,9 @@
 
 ## Roads and Trails
 
-- [ ] Decide whether roads use splats or separate overlays.
+- [x] Decide whether roads use splats or separate overlays.
 - [x] Use splat weights for broad dirt roads where suitable.
-- [ ] Use overlays for narrow trails where suitable.
+- [x] Use overlays for narrow trails where suitable.
 - [ ] Project road overlays onto terrain height.
 - [x] Blend road shoulders into terrain splats.
 - [ ] Reuse road materials across all chunks.
@@ -299,6 +299,9 @@
   deterministic legacy-vs-splat draw calls, materials, programs, texture
   memory, and terrain frame-time estimates from one shared helper before live
   renderer instrumentation lands.
+- Added `@bworlds/terrain-splat-support/route-surface-plan` to keep broad roads
+  on splats by default, move narrow trails to overlays, and resolve
+  deterministic dirt/gravel route surface families from route kind and signal.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
@@ -421,6 +424,7 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/shader-sources.md`, plus
 `packages/terrain-splat-support/docs/height-fields.md`, plus
 `packages/terrain-splat-support/docs/lod-transitions.md`, plus
+`packages/terrain-splat-support/docs/route-surface-plans.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
 `packages/terrain-splat-support/docs/tint-variation.md`, plus
 `packages/terrain-splat-support/docs/weather-effects.md`, plus

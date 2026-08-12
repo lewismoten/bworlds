@@ -17,6 +17,7 @@
     "./material-plan": "./src/material-plan.ts",
     "./lod-transition": "./src/lod-transition.ts",
     "./performance-estimate": "./src/performance-estimate.ts",
+    "./route-surface-plan": "./src/route-surface-plan.ts",
     "./sample-grid": "./src/sample-grid.ts",
     "./shader-source": "./src/shader-source.ts",
     "./texture-binding-runtime-plan": "./src/texture-binding-runtime-plan.ts",
