@@ -27,6 +27,10 @@ Current mapping model:
 - `createOverworldTerrainSplatDefinitions(...)` provides one recommended
   overworld mapping set for `plains`, `forest`, `mountain`, `shore`, `road`,
   and water/crossing exclusions
+- `createTerrainSplatSampleGrid(...)` resolves chunk-like bounds into a stable
+  sample grid that adjacent chunks can share along matching borders
+- `packTerrainSplatSampleGrid(...)` flattens that grid into contiguous
+  `Uint8Array` buffers for worker or renderer handoff
 
 Why this matters:
 
@@ -43,5 +47,7 @@ Current scope:
 - moisture, elevation, and road signal thresholds can influence blend weights
 - `river`, `ocean`, `bridge`, and `dock` are excluded from normal ground
   splatting in the recommended overworld definitions
+- packed sample grids quantize weights to `Uint8`, so unpacked weights preserve
+  layer identity and normalized totals with small bounded error
 - this layer does not yet generate per-vertex geometry attributes or render
   terrain materials

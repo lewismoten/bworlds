@@ -45,7 +45,7 @@
 
 ## Splat Weights
 
-- [ ] Store terrain blend weights per vertex or sample.
+- [x] Store terrain blend weights per vertex or sample.
 - [x] Keep splat weights normalized to a total of one.
 - [x] Clamp invalid splat weights.
 - [x] Allow up to four active layers per splat sample.
@@ -146,7 +146,7 @@
 - [ ] Generate splat weights while building terrain chunks.
 - [ ] Keep splat generation separate from mesh creation.
 - [ ] Generate weight data in workers where practical.
-- [ ] Transfer compact splat buffers to the main thread.
+- [x] Transfer compact splat buffers to the main thread.
 - [ ] Cache splat data with terrain chunk data.
 - [ ] Rebuild splat data only when terrain state changes.
 - [ ] Avoid rebuilding splat data for camera movement.
@@ -219,7 +219,7 @@
 ## Tests
 
 - [x] Test splat weights always normalize to one.
-- [ ] Test adjacent chunks share border splat weights.
+- [x] Test adjacent chunks share border splat weights.
 - [ ] Test terrain layers stay stable for one seed.
 - [ ] Test mixed terrain renders in one chunk.
 - [ ] Test texture rotation does not add new materials.
@@ -250,6 +250,9 @@
   overworld terrain signals resolve to normalized reusable splat samples
   without renderer coupling. The recommended overworld mapping currently covers
   plains, forest, mountain, shore, road, and water/crossing exclusions.
+- Added `@bworlds/terrain-splat-support/sample-grid` to build chunk-like
+  splat sample grids, preserve matching border samples across adjacent chunks,
+  and flatten packed samples into contiguous `Uint8Array` buffers for transfer.
 - [ ] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -280,8 +283,10 @@ entries, stable catalog indexing by layer ID, bounded `TerrainSplatSample` /
 `TerrainSplatWeight` normalization, compact packed sample buffers, and
 deterministic terrain-kind mapping from seed plus world signals. Architecture
 notes live in `packages/terrain-splat-support/docs/foundations.md` and
-`packages/terrain-splat-support/docs/deterministic-mapping.md`, and focused
-tests cover normalization, packing, validation, and deterministic mapping.
+`packages/terrain-splat-support/docs/deterministic-mapping.md`, plus
+`packages/terrain-splat-support/docs/chunk-sample-grids.md`, and focused tests
+cover normalization, packing, validation, deterministic mapping, and chunk
+border stability.
 
 # Roads and Paths as Terrain Splats
 

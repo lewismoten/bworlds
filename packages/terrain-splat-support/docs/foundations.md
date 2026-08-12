@@ -17,6 +17,8 @@ Current responsibilities:
 - validate packed samples before worker transfer or attribute upload
 - derive deterministic splat samples from seed, tile kind, and terrain signals
 - keep overworld terrain-to-splat mapping renderer-free and reusable
+- build chunk-like sample grids without coupling splat generation to meshes
+- flatten packed splat grids into transferable typed arrays
 
 Why this comes first:
 

@@ -7,6 +7,7 @@
     "@bworlds/plugin-api": "file:../plugin-api"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./sample-grid": "./src/sample-grid.ts"
   }
 }
