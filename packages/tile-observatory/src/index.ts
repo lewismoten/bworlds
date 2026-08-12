@@ -93,7 +93,6 @@ function* createObservatoryModelProgressive({
   const { wallMaterial, trimMaterial, domeMaterial, telescopeMaterial } =
     getObservatorySharedMaterials(three);
 
-  const group = new three.Group();
   const totalSteps = 3;
 
   const base = new three.Mesh(
@@ -101,21 +100,20 @@ function* createObservatoryModelProgressive({
     mountainMaterial
   );
   base.position.set(tileX, 0.19, tileY);
-  group.add(base);
 
   const tower = new three.Mesh(
     getSharedCylinderGeometry(three, 0.46, 0.52, 0.82, 10),
     wallMaterial
   );
-  tower.position.set(tileX, 0.7, tileY);
-  group.add(tower);
+  tower.position.set(0, 0.51, 0);
+  base.add(tower);
 
   const ring = new three.Mesh(
     getSharedCylinderGeometry(three, 0.5, 0.54, 0.08, 10),
     trimMaterial
   );
-  ring.position.set(tileX, 1.08, tileY);
-  group.add(ring);
+  ring.position.set(0, 0.89, 0);
+  base.add(ring);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -127,7 +125,7 @@ function* createObservatoryModelProgressive({
     ...(domePivot.userData ?? {}),
     [OBSERVATORY_DOME_KEY]: true,
   };
-  domePivot.position.set(tileX, 1.08, tileY);
+  domePivot.position.set(0, 0.89, 0);
 
   const dome = new three.Mesh(
     getSharedSphereGeometry(three, 0.42, 12, 8),
@@ -142,7 +140,7 @@ function* createObservatoryModelProgressive({
   );
   slit.position.set(0, 0.06, 0.2);
   domePivot.add(slit);
-  group.add(domePivot);
+  base.add(domePivot);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -154,7 +152,7 @@ function* createObservatoryModelProgressive({
     ...(telescope.userData ?? {}),
     [OBSERVATORY_TELESCOPE_KEY]: true,
   };
-  telescope.position.set(tileX, 0.92, tileY - 0.02);
+  telescope.position.set(0, 0.73, -0.02);
   telescope.visible = false;
 
   const telescopeBase = new three.Mesh(
@@ -181,14 +179,14 @@ function* createObservatoryModelProgressive({
   eyepiece.rotation.y = telescopeTube.rotation.y;
   eyepiece.position.set(-0.08, 0.27, 0.05);
   telescope.add(eyepiece);
-  group.add(telescope);
+  base.add(telescope);
   yield {
     completedSteps: 3,
     totalSteps,
     label: 'telescope',
   };
 
-  return group;
+  return base;
 }
 
 function runObservatoryModelBuildToCompletion(

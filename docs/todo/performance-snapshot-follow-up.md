@@ -242,7 +242,12 @@
       floor mesh as the root and hangs the hall, roof, canopy, lamp mesh, and
       point light beneath it instead of wrapping the station in a dedicated
       `Group`, which removes one static `Object3D` from each station tile
-      without changing the silhouette or night-light placement.
+      without changing the silhouette or night-light placement, and
+      `tile-observatory` now uses its base mountain plinth mesh as the root and
+      hangs the tower, trim ring, dome pivot, and telescope pivot beneath it
+      instead of wrapping the observatory in a dedicated `Group`, which removes
+      one static `Object3D` from each observatory tile without changing the
+      dome-opening or telescope animation behavior.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so

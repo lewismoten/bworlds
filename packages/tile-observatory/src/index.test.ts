@@ -124,7 +124,7 @@ function createFakeThreeHost() {
   } as const;
 }
 
-function createModelSignature(model: FakeGroup | undefined) {
+function createModelSignature(model: FakeNode | undefined) {
   const signature: Array<Record<string, unknown>> = [];
   model?.traverse((node) => {
     signature.push({
@@ -223,7 +223,7 @@ describe('tile observatory', () => {
     }
 
     expect(createModelSignature(progressiveModel as FakeGroup)).toEqual(
-      createModelSignature(syncModel as FakeGroup)
+      createModelSignature(syncModel as FakeNode)
     );
   });
 
@@ -246,8 +246,8 @@ describe('tile observatory', () => {
     }) as FakeNode | undefined;
     const firstChildren = first?.children as FakeNode[] | undefined;
     const secondChildren = second?.children as FakeNode[] | undefined;
-    const firstDomePivot = firstChildren?.[3] as FakeGroup | undefined;
-    const secondDomePivot = secondChildren?.[3] as FakeGroup | undefined;
+    const firstDomePivot = firstChildren?.[2] as FakeGroup | undefined;
+    const secondDomePivot = secondChildren?.[2] as FakeGroup | undefined;
 
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
       4
@@ -355,12 +355,28 @@ describe('tile observatory', () => {
       tileY: 5,
     }) as FakeNode | undefined;
 
-    const firstTower = first?.children[1] as FakeMesh | undefined;
-    const secondTower = second?.children[1] as FakeMesh | undefined;
+    const firstTower = first?.children[0] as FakeMesh | undefined;
+    const secondTower = second?.children[0] as FakeMesh | undefined;
 
     expect(firstTower?.material).toBeDefined();
     expect(secondTower?.material).toBeDefined();
     expect(secondTower?.material).not.toBe(firstTower?.material);
+  });
+
+  it('uses the observatory base mesh as the root instead of a wrapper group', () => {
+    const plugin = createObservatoryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'observatory' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 4, y: 0.19, z: 5 });
+    expect(model?.children).toHaveLength(4);
   });
 });
 
