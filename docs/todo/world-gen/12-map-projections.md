@@ -30,7 +30,7 @@
 ## Interaction
 
 - [x] Add mouse pan and wheel zoom to 2D maps.
-- [ ] Add touch pan and pinch zoom to 2D maps.
+- [x] Add touch pan and pinch zoom to 2D maps.
 - [ ] Add mouse rotate, pan, and zoom to 3D maps.
 - [ ] Preserve selected position across projection changes.
 
@@ -114,6 +114,10 @@ Current support:
   mouse pan deltas, cursor-anchored wheel zoom, and world-space selection
   reprojection so future projected 2D map viewers can share one interaction
   math layer instead of reimplementing viewport transforms.
+- `@bworlds/map-support` now also exposes `gesturePanAndZoomMapViewport(...)`
+  so future projected 2D map viewers can share one touch gesture path for
+  one-finger pan, two-finger midpoint motion, and pinch zoom without
+  reimplementing touch math around projected coordinates.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

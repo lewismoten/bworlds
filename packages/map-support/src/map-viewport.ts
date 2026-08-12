@@ -16,6 +16,8 @@ export type MapViewportScreenPoint = {
   screenY: number;
 };
 
+export type MapViewportTouchPoint = MapViewportScreenPoint;
+
 export type MapViewportMapPoint = {
   mapX: number;
   mapY: number;
@@ -32,6 +34,7 @@ export const DEFAULT_MAP_VIEWPORT_ZOOM = 1;
 export const DEFAULT_MAP_VIEWPORT_MIN_ZOOM = 0.25;
 export const DEFAULT_MAP_VIEWPORT_MAX_ZOOM = 16;
 export const DEFAULT_MAP_VIEWPORT_WHEEL_ZOOM_STEP = 240;
+export const DEFAULT_MAP_VIEWPORT_TOUCH_ZOOM_DEADZONE = 1e-6;
 
 export function createMapViewportState(
   options: Partial<MapViewportState> = {}
@@ -197,6 +200,88 @@ export function reprojectMapViewportSelection(options: {
   );
 }
 
+export function gesturePanAndZoomMapViewport(
+  viewport: MapViewportState,
+  frame: MapViewportFrame,
+  gesture: {
+    previousTouches: readonly [MapViewportTouchPoint] | readonly [
+      MapViewportTouchPoint,
+      MapViewportTouchPoint,
+    ];
+    nextTouches: readonly [MapViewportTouchPoint] | readonly [
+      MapViewportTouchPoint,
+      MapViewportTouchPoint,
+    ];
+    touchZoomDeadzone?: number;
+  }
+): MapViewportState {
+  const normalizedViewport = createMapViewportState(viewport);
+  const normalizedFrame = normalizeMapViewportFrame(frame);
+  const previousTouches = normalizeMapViewportTouchList(
+    gesture.previousTouches,
+    'Map viewport previousTouches'
+  );
+  const nextTouches = normalizeMapViewportTouchList(
+    gesture.nextTouches,
+    'Map viewport nextTouches'
+  );
+  if (previousTouches.length !== nextTouches.length) {
+    throw new Error(
+      'Map viewport touch gesture must keep the same touch count between samples.'
+    );
+  }
+
+  if (previousTouches.length === 1) {
+    const previousTouch = previousTouches[0];
+    const nextTouch = nextTouches[0];
+    if (!previousTouch || !nextTouch) {
+      throw new Error('Map viewport single-touch gestures require one touch.');
+    }
+    return panMapViewport(normalizedViewport, normalizedFrame, {
+      deltaScreenX: nextTouch.screenX - previousTouch.screenX,
+      deltaScreenY: nextTouch.screenY - previousTouch.screenY,
+    });
+  }
+
+  const touchZoomDeadzone = normalizePositiveFiniteNumber(
+    gesture.touchZoomDeadzone ?? DEFAULT_MAP_VIEWPORT_TOUCH_ZOOM_DEADZONE,
+    'Map viewport touchZoomDeadzone'
+  );
+  const previousMidpoint = resolveTouchMidpoint(previousTouches);
+  const nextMidpoint = resolveTouchMidpoint(nextTouches);
+  const previousDistance = resolveTouchDistance(previousTouches);
+  const nextDistance = resolveTouchDistance(nextTouches);
+  const anchorBefore = mapViewportScreenToMapCoordinate(
+    normalizedViewport,
+    normalizedFrame,
+    previousMidpoint
+  );
+  const zoomFactor =
+    previousDistance <= touchZoomDeadzone || nextDistance <= touchZoomDeadzone
+      ? 1
+      : nextDistance / previousDistance;
+  const zoomedViewport = {
+    ...normalizedViewport,
+    zoom: clamp(
+      normalizedViewport.zoom * zoomFactor,
+      normalizedViewport.minZoom,
+      normalizedViewport.maxZoom
+    ),
+  };
+  const anchorAfter = mapViewportScreenToMapCoordinate(
+    zoomedViewport,
+    normalizedFrame,
+    nextMidpoint
+  );
+  const deltaCenterX = anchorBefore.mapX - anchorAfter.mapX;
+  const deltaCenterY = anchorBefore.mapY - anchorAfter.mapY;
+  return {
+    ...zoomedViewport,
+    centerMapX: zoomedViewport.centerMapX + deltaCenterX,
+    centerMapY: zoomedViewport.centerMapY + deltaCenterY,
+  };
+}
+
 function normalizeMapViewportFrame(frame: MapViewportFrame): MapViewportFrame {
   return {
     width: normalizePositiveFiniteNumber(frame.width, 'Map viewport width'),
@@ -228,6 +313,18 @@ function normalizeMapViewportMapPoint(
   };
 }
 
+function normalizeMapViewportTouchList(
+  touches:
+    | readonly [MapViewportTouchPoint]
+    | readonly [MapViewportTouchPoint, MapViewportTouchPoint],
+  label: string
+): MapViewportTouchPoint[] {
+  if (touches.length !== 1 && touches.length !== 2) {
+    throw new Error(`${label} must contain one or two touches.`);
+  }
+  return touches.map((touch) => normalizeMapViewportScreenPoint(touch));
+}
+
 function normalizeMapViewportWorldSelection(
   selection: MapViewportWorldSelection
 ): MapViewportWorldSelection {
@@ -242,6 +339,40 @@ function resolveViewportPixelsPerMapUnit(
   frame: MapViewportFrame
 ): number {
   return (Math.min(frame.width, frame.height) / 2) * viewport.zoom;
+}
+
+function resolveTouchMidpoint(
+  touches: readonly MapViewportTouchPoint[]
+): MapViewportScreenPoint {
+  if (touches.length === 1) {
+    return touches[0];
+  }
+  const firstTouch = touches[0];
+  const secondTouch = touches[1];
+  if (!firstTouch || !secondTouch) {
+    throw new Error('Map viewport two-touch gestures require two touches.');
+  }
+  return {
+    screenX: (firstTouch.screenX + secondTouch.screenX) / 2,
+    screenY: (firstTouch.screenY + secondTouch.screenY) / 2,
+  };
+}
+
+function resolveTouchDistance(
+  touches: readonly MapViewportTouchPoint[]
+): number {
+  if (touches.length === 1) {
+    return 0;
+  }
+  const firstTouch = touches[0];
+  const secondTouch = touches[1];
+  if (!firstTouch || !secondTouch) {
+    throw new Error('Map viewport two-touch gestures require two touches.');
+  }
+  return Math.hypot(
+    secondTouch.screenX - firstTouch.screenX,
+    secondTouch.screenY - firstTouch.screenY
+  );
 }
 
 function normalizeFiniteNumber(value: number, label: string): number {

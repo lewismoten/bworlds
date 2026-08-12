@@ -2,6 +2,7 @@
 for projected map interactions:
 
 - `createMapViewportState(...)`
+- `gesturePanAndZoomMapViewport(...)`
 - `mapViewportMapToScreenCoordinate(...)`
 - `mapViewportScreenToMapCoordinate(...)`
 - `panMapViewport(...)`
@@ -64,6 +65,18 @@ That means wheel zoom behaves as:
 - zoom toward the cursor
 - zoom out from the cursor
 - no jump under the pointer while zoom changes
+
+## Touch Pan And Pinch Zoom
+
+`gesturePanAndZoomMapViewport(...)` handles:
+
+- one-finger drag panning
+- two-finger midpoint motion
+- two-finger pinch zoom
+
+For two-touch gestures, the helper preserves the projected map coordinate
+under the gesture midpoint while also applying the pinch scale. That keeps the
+touch interaction consistent with cursor-anchored wheel zoom.
 
 ## Selection Reprojection
 
