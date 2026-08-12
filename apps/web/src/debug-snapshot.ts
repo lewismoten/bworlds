@@ -35,11 +35,16 @@ export type DebugSnapshotRecentEvent = {
     | 'fallback-box'
     | 'lod-changed'
     | 'model-rejected'
+    | 'plugin-error'
     | 'plugin-exceeded-budget'
     | 'plugin-performance-warning';
   tileKey?: string;
   plugin?: string | null;
+  source?: string | null;
   summary?: string;
+  details?: unknown;
+  severity?: string;
+  eventTimestamp?: string;
   fromDetailLevel?: string;
   toDetailLevel?: string;
   fromTargetFps?: 60 | 30;

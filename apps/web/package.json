@@ -13,6 +13,7 @@
   "dependencies": {
     "@bworlds/atlas": "0.1.0",
     "@bworlds/core": "0.1.0",
+    "@bworlds/plugin-event-channel": "0.1.0",
     "@bworlds/plugin-api": "0.1.0",
     "@bworlds/render2d": "0.1.0",
     "@bworlds/render3d": "0.1.0",

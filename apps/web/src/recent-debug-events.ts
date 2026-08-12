@@ -63,11 +63,14 @@ export function getMostRecentDebugEventByType(
 }
 
 export function formatRecentDebugEventReason(
-  event: Pick<DebugSnapshotRecentEvent, 'tileKey' | 'plugin' | 'summary'>
+  event: Pick<
+    DebugSnapshotRecentEvent,
+    'tileKey' | 'plugin' | 'source' | 'summary'
+  >
 ): string | null {
   const summary = event.summary?.trim() || '';
   const tileKey = event.tileKey?.trim() || '';
-  const plugin = event.plugin?.trim() || '';
+  const plugin = event.plugin?.trim() || event.source?.trim() || '';
   const source =
     tileKey && plugin ? `${tileKey} / ${plugin}` : tileKey || plugin || '';
   if (!summary) {

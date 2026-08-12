@@ -98,5 +98,11 @@ describe('recent debug events', () => {
         summary: '   ',
       })
     ).toBe('15:-9 / tile-forest');
+    expect(
+      formatRecentDebugEventReason({
+        source: 'tile-route.labels',
+        summary: 'Dock label cache failed.',
+      })
+    ).toBe('tile-route.labels: Dock label cache failed.');
   });
 });
