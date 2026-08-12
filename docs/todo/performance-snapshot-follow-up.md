@@ -168,7 +168,11 @@
       allowing the material set to grow between passes, and `tile-ruins` now
       keeps repeated builds on one Three host within one shared painted
       stone/accent/glow material set so ruins regional style churn cannot
-      quietly add extra unique materials without failing the regression test.
+      quietly add extra unique materials without failing the regression test,
+      and `tile-lighthouse` now keeps repeated full-detail lighthouse builds
+      on one host that resolve the same local style within one shared
+      ten-material palette so tower, lantern, balcony, pane, beam, and base
+      materials cannot quietly grow between passes.
 
 ## Instancing
 

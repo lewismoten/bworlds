@@ -29,6 +29,15 @@ and beacon beneath it, so lighthouse tiles avoid one otherwise empty wrapper
 `Group` without changing the lantern-room layout, beam animation, or night
 lighting.
 
+Material reuse:
+
+- repeated full-detail lighthouse builds on one Three host that resolve the
+  same local style are expected to stay within one shared ten-material
+  palette for the shell, stone, lantern-room, balcony, and beam surfaces
+- the regression test locks that budget so equivalent region builds cannot
+  quietly start allocating extra material instances while still appearing to
+  share some obvious tower parts
+
 Progressive loading:
 
 - The full-detail lighthouse progressive path now yields after

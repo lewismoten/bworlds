@@ -372,6 +372,41 @@ describe('tile lighthouse', () => {
     expect(highestSharedCount).toBeGreaterThanOrEqual(8);
   });
 
+  it('keeps repeated local lighthouse builds on one host within the shared material budget', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const repeatedModels: FakeNode[] = [];
+
+    for (const [tileX, tileY] of [
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 8],
+    ]) {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state: {} as never,
+        tile: { kind: 'lighthouse' } as never,
+        tileX,
+        tileY,
+        detailLevel: 'full',
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(10);
+  });
+
   it('varies lighthouse sweep configuration by region while keeping local settings shared', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
