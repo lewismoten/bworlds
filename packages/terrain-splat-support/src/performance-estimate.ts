@@ -2,7 +2,14 @@ import type {
   TerrainMaterialLayerCatalogEntry,
   TerrainMaterialLayerId,
 } from './index.ts';
+import {
+  createTerrainSplatMaterialPlan,
+  summarizeTerrainSplatMaterialReuse,
+  type TerrainSplatMaterialReuseSummary,
+} from './material-plan.ts';
 import type { TerrainSplatSampleGrid } from './sample-grid.ts';
+import type { TerrainTextureArraySource } from './texture-array-plan.ts';
+import { createTerrainTextureBindingPlanSet } from './texture-array-plan.ts';
 
 export type TerrainSplatChunkPerformanceEstimate = {
   cellCount: number;
@@ -31,6 +38,18 @@ export type TerrainSplatChunkPerformanceComparison = {
     programCount: number;
     textureBindingCount: number;
   };
+};
+
+export type TerrainSplatChunkMaterialReuseEstimate = {
+  chunkId: string;
+  activeLayerIds: readonly TerrainMaterialLayerId[];
+  materialKey: string;
+  bindingMode: 'texture-array' | 'per-layer-textures';
+  estimatedTextureBytes: number;
+};
+
+export type TerrainSplatMaterialReuseEstimate = TerrainSplatMaterialReuseSummary & {
+  chunks: readonly TerrainSplatChunkMaterialReuseEstimate[];
 };
 
 export function compareTerrainSplatChunkPerformance(
@@ -143,8 +162,83 @@ export function compareTerrainSplatChunkPerformance(
   };
 }
 
+export function estimateTerrainSplatMaterialReuse(params: {
+  chunks: readonly {
+    chunkId: string;
+    grid: TerrainSplatSampleGrid;
+  }[];
+  catalog:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        byId: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      };
+  resolveTexture: (textureId: string) => TerrainTextureArraySource | undefined;
+  supportsTextureArrays: boolean;
+}): TerrainSplatMaterialReuseEstimate {
+  const chunks = params.chunks.map(({ chunkId, grid }) => {
+    const activeLayerIds = collectActiveLayerIds(grid);
+    const plan = createTerrainSplatMaterialPlan(
+      createTerrainTextureBindingPlanSet({
+        catalog: params.catalog,
+        activeLayerIds,
+        resolveTexture: params.resolveTexture,
+        supportsTextureArrays: params.supportsTextureArrays,
+      })
+    );
+
+    return {
+      chunkId,
+      activeLayerIds,
+      materialKey: plan.materialKey,
+      bindingMode: plan.bindingMode,
+      estimatedTextureBytes: plan.estimatedTextureBytes,
+      plan,
+    };
+  });
+  const summary = summarizeTerrainSplatMaterialReuse(
+    chunks.map(({ chunkId, plan }) => ({
+      chunkId,
+      plan,
+    }))
+  );
+
+  return {
+    ...summary,
+    chunks: chunks.map(
+      ({
+        chunkId,
+        activeLayerIds,
+        materialKey,
+        bindingMode,
+        estimatedTextureBytes,
+      }) => ({
+        chunkId,
+        activeLayerIds,
+        materialKey,
+        bindingMode,
+        estimatedTextureBytes,
+      })
+    ),
+  };
+}
+
 function countDistinct(values: readonly string[]): number {
   return new Set(values.filter((value) => value.length > 0)).size;
+}
+
+function collectActiveLayerIds(
+  grid: TerrainSplatSampleGrid
+): readonly TerrainMaterialLayerId[] {
+  const activeLayerIds = new Set<TerrainMaterialLayerId>();
+  for (const sample of grid.samples) {
+    for (const entry of sample.entries) {
+      activeLayerIds.add(entry.layerId);
+    }
+  }
+  return [...activeLayerIds].sort();
 }
 
 function toReductionRatio(before: number, after: number): number {

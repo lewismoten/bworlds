@@ -4,7 +4,10 @@ import {
   createTerrainKindSplatCatalog,
   createTerrainMaterialLayerCatalog,
 } from './index.ts';
-import { compareTerrainSplatChunkPerformance } from './performance-estimate.ts';
+import {
+  compareTerrainSplatChunkPerformance,
+  estimateTerrainSplatMaterialReuse,
+} from './performance-estimate.ts';
 import {
   createTerrainSplatGridTileResolver,
   createTerrainSplatSampleGrid,
@@ -38,9 +41,90 @@ describe('terrain splat performance estimate', () => {
     expect(comparison.reductions.drawCallCount).toBeGreaterThan(0);
     expect(comparison.reductionRatios.drawCallCount).toBeGreaterThan(0.8);
   });
+
+  it('reports shared splat material reuse across compatible chunks', () => {
+    const first = createComparisonFixture();
+    const second = createComparisonFixture();
+
+    const summary = estimateTerrainSplatMaterialReuse({
+      chunks: [
+        { chunkId: '0:0', grid: first.grid },
+        { chunkId: '1:0', grid: second.grid },
+      ],
+      catalog: first.layerCatalog,
+      resolveTexture: createTextureResolver(),
+      supportsTextureArrays: true,
+    });
+
+    expect(summary.chunkCount).toBe(2);
+    expect(summary.uniqueMaterialCount).toBe(1);
+    expect(summary.materialReuseCount).toBe(1);
+    expect(summary.chunks).toHaveLength(2);
+    expect(summary.chunks[0]?.materialKey).toBe(summary.chunks[1]?.materialKey);
+    expect(summary.chunks.every((chunk) => chunk.bindingMode === 'texture-array')).toBe(true);
+  });
+
+  it('warns when one chunk falls back to a unique per-layer terrain material path', () => {
+    const first = createComparisonFixture();
+    const second = createComparisonFixture({
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 4,
+        maxY: 7,
+      },
+      resolveKind: ({ x, y }) => ({
+        kind: x >= 2 ? 'mountain' : y >= 6 ? 'shore' : 'forest',
+        signals: {
+          moisture: x >= 2 ? 0.18 : 0.82,
+          roadSignal: 0,
+          season: 'winter',
+          slope: x >= 2 ? 0.72 : 0.18,
+          temperature: x >= 2 ? 0.22 : 0.34,
+        },
+      }),
+    });
+
+    const summary = estimateTerrainSplatMaterialReuse({
+      chunks: [
+        { chunkId: '0:0', grid: first.grid },
+        { chunkId: '0:1', grid: second.grid },
+      ],
+      catalog: first.layerCatalog,
+      resolveTexture: createTextureResolver(),
+      supportsTextureArrays: false,
+    });
+
+    expect(summary.uniqueMaterialCount).toBe(2);
+    expect(summary.warnings).toContainEqual({
+      code: 'texture-array-fallback',
+      message:
+        'Terrain texture binding plan is using per-layer texture fallback because texture arrays are unavailable.',
+    });
+    expect(summary.warnings.some((warning) => warning.code === 'unique-splat-material')).toBe(true);
+  });
 });
 
-function createComparisonFixture() {
+function createComparisonFixture(
+  options: {
+    bounds?: {
+      minX: number;
+      maxX: number;
+      minY: number;
+      maxY: number;
+    };
+    resolveKind?: (coords: { x: number; y: number }) => {
+      kind: string;
+      signals: {
+        moisture: number;
+        roadSignal: number;
+        season: 'summer' | 'winter';
+        slope: number;
+        temperature: number;
+      };
+    };
+  } = {}
+) {
   const layerCatalog = createTerrainMaterialLayerCatalog([
     {
       id: 'grass-a',
@@ -169,30 +253,33 @@ function createComparisonFixture() {
   );
   const grid = createTerrainSplatSampleGrid({
     seed: 'terrain-splat-performance-seed',
-    bounds: {
+    bounds: options.bounds ?? {
       minX: 0,
       maxX: 3,
       minY: 0,
       maxY: 3,
     },
     kindCatalog,
-    resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
-      kind:
-        x >= 2 && y <= 1
-          ? 'forest'
-          : y >= 2
-            ? 'road'
-            : x === 1
-              ? 'shore'
-              : 'plains',
-      signals: {
-        moisture: x === 1 ? 0.72 : 0.45,
-        roadSignal: y >= 2 ? 0.85 : 0,
-        season: 'summer',
-        slope: x >= 2 ? 0.42 : 0.08,
-        temperature: 0.68,
-      },
-    })),
+    resolveTile: createTerrainSplatGridTileResolver(
+      options.resolveKind ??
+        (({ x, y }) => ({
+          kind:
+            x >= 2 && y <= 1
+              ? 'forest'
+              : y >= 2
+                ? 'road'
+                : x === 1
+                  ? 'shore'
+                  : 'plains',
+          signals: {
+            moisture: x === 1 ? 0.72 : 0.45,
+            roadSignal: y >= 2 ? 0.85 : 0,
+            season: 'summer',
+            slope: x >= 2 ? 0.42 : 0.08,
+            temperature: 0.68,
+          },
+        }))
+    ),
     fallbackLayerId: 'grass-a',
     blendWidth: 1,
   });
@@ -200,5 +287,58 @@ function createComparisonFixture() {
   return {
     grid,
     layerCatalog,
+  };
+}
+
+function createTextureResolver() {
+  const descriptors = {
+    'grass-a/base': createTextureSource('grass-a/base'),
+    'grass-a/normal': createTextureSource('grass-a/normal'),
+    'grass-a/roughness': createTextureSource('grass-a/roughness'),
+    'grass-b/base': createTextureSource('grass-b/base'),
+    'grass-b/normal': createTextureSource('grass-b/normal'),
+    'grass-b/roughness': createTextureSource('grass-b/roughness'),
+    'soil/base': createTextureSource('soil/base'),
+    'soil/normal': createTextureSource('soil/normal'),
+    'soil/roughness': createTextureSource('soil/roughness'),
+    'leaf/base': createTextureSource('leaf/base'),
+    'leaf/normal': createTextureSource('leaf/normal'),
+    'leaf/roughness': createTextureSource('leaf/roughness'),
+    'rock/base': createTextureSource('rock/base'),
+    'rock/normal': createTextureSource('rock/normal'),
+    'rock/roughness': createTextureSource('rock/roughness'),
+    'sand/base': createTextureSource('sand/base'),
+    'sand/normal': createTextureSource('sand/normal'),
+    'sand/roughness': createTextureSource('sand/roughness'),
+    'dirt/base': createTextureSource('dirt/base'),
+    'dirt/normal': createTextureSource('dirt/normal'),
+    'dirt/roughness': createTextureSource('dirt/roughness'),
+    'gravel/base': createTextureSource('gravel/base'),
+    'gravel/normal': createTextureSource('gravel/normal'),
+    'gravel/roughness': createTextureSource('gravel/roughness'),
+    'mud/base': createTextureSource('mud/base'),
+    'mud/normal': createTextureSource('mud/normal'),
+    'mud/roughness': createTextureSource('mud/roughness'),
+    'snow/base': createTextureSource('snow/base'),
+    'snow/normal': createTextureSource('snow/normal'),
+    'snow/roughness': createTextureSource('snow/roughness'),
+    'dirt-road/base': createTextureSource('dirt-road/base'),
+    'dirt-road/normal': createTextureSource('dirt-road/normal'),
+    'dirt-road/roughness': createTextureSource('dirt-road/roughness'),
+    'gravel-road/base': createTextureSource('gravel-road/base'),
+    'gravel-road/normal': createTextureSource('gravel-road/normal'),
+    'gravel-road/roughness': createTextureSource('gravel-road/roughness'),
+  } as const;
+
+  return (textureId: string) => descriptors[textureId as keyof typeof descriptors];
+}
+
+function createTextureSource(id: string) {
+  return {
+    id,
+    width: 256,
+    height: 256,
+    format: 'rgba8',
+    bytesPerPixel: 4,
   };
 }

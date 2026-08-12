@@ -138,7 +138,7 @@
 - [ ] Pass chunk data through geometry attributes.
 - [x] Pass global settings through shared uniforms.
 - [ ] Share texture arrays across terrain chunks.
-- [ ] Report shared material reuse counts.
+- [x] Report shared material reuse counts.
 - [x] Warn when a chunk creates a unique splat material.
 
 ## Chunk Generation
@@ -279,6 +279,10 @@
   binding plans, keep chunk splat data in geometry attributes instead of
   per-chunk clones, define shared runtime uniforms for blend/wetness/snow, and
   warn when a chunk falls off the shared material path.
+- Extended `@bworlds/terrain-splat-support/performance-estimate` to summarize
+  cross-chunk splat material reuse, emit per-chunk material keys and binding
+  modes, and surface warnings when texture-array fallback or unique terrain
+  material paths break compatibility.
 - Added active-layer subset support to
   `@bworlds/terrain-splat-support/texture-array-plan` so optional metalness and
   ambient-occlusion arrays can be planned only for participating chunk layers.

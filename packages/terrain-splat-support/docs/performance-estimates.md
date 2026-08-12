@@ -14,6 +14,7 @@ renderer-free splat grid against one naive per-cell terrain path.
 ## Main API
 
 - `compareTerrainSplatChunkPerformance(...)`
+- `estimateTerrainSplatMaterialReuse(...)`
 
 ## Comparison model
 
@@ -30,6 +31,8 @@ renderer-free splat grid against one naive per-cell terrain path.
   bindings
 - distinct texture counts per map type
 - absolute reductions and normalized reduction ratios
+- cross-chunk material reuse counts, per-chunk material keys, and warnings when
+  a chunk falls off the shared splat material path
 
 ## Current limits
 
