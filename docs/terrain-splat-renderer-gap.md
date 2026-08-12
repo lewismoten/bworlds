@@ -10,7 +10,10 @@ The live renderer has not switched to that path yet.
 Current live behavior:
 
 - `packages/tile-route/src/index.ts` still renders roads as explicit ribbon and
-  branch meshes.
+  branch meshes when `render3d` leaves a route on `legacy-mesh`.
+- `packages/render3d` now switches flat `road` tiles to `shared-splat` mode
+  and draws them through the shared floor batching path instead of the route
+  ribbon mesh.
 - Those road meshes still create `MeshStandardMaterial` road and shoulder
   materials instead of feeding route appearance into one shared terrain splat
   material.
@@ -19,7 +22,8 @@ Current live behavior:
 
 User-visible consequence:
 
-- Roads still appear as physical road meshes.
+- Flat roads no longer need physical ribbon meshes, but they still render as
+  shared atlas-backed floor surfaces rather than the final PBR splat shader.
 - Ground still appears through plugin-owned geometry/material choices rather
   than shared splat blending.
 - The existing splat work is mostly visible through tests, debug planning, and

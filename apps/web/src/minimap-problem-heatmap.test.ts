@@ -176,7 +176,7 @@ describe('minimap problem heatmap', () => {
     expect(roadTile).toEqual(
       expect.objectContaining({
         tileKind: 'road',
-        terrainSurfaceMode: 'legacy-mesh',
+        terrainSurfaceMode: 'shared-splat',
         sharedSplatEligible: true,
         terrainSurfaceReason:
           'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',

@@ -5,11 +5,13 @@ import {
 } from './terrain-surface-mode.ts';
 
 describe('terrain surface mode selection', () => {
-  it('keeps roads on legacy terrain today while marking them as shared-splat eligible', () => {
-    expect(resolveTileTerrainSurfaceMode({ kind: 'road' })).toBe('legacy-mesh');
+  it('switches simple roads to the shared terrain surface path', () => {
+    expect(resolveTileTerrainSurfaceMode({ kind: 'road' })).toBe(
+      'shared-splat'
+    );
     expect(resolveTileTerrainSurfaceSelection({ kind: 'road' })).toEqual(
       expect.objectContaining({
-        activeMode: 'legacy-mesh',
+        activeMode: 'shared-splat',
         sharedSplatEligible: true,
       })
     );

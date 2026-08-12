@@ -21,10 +21,11 @@ export function resolveTileTerrainSurfaceSelection(
       gravelTrailLayerId: 'trail-gravel',
       grassTrailLayerId: 'trail-grass',
     });
+    const sharedSplatEligible =
+      routePlan.mode === 'splat' && routePlan.removeSeparateRoadMesh;
     return {
-      activeMode: 'legacy-mesh',
-      sharedSplatEligible:
-        routePlan.mode === 'splat' && routePlan.removeSeparateRoadMesh,
+      activeMode: sharedSplatEligible ? 'shared-splat' : 'legacy-mesh',
+      sharedSplatEligible,
       reason: routePlan.reason,
     };
   }

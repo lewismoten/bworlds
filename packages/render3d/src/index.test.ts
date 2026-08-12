@@ -2106,8 +2106,10 @@ describe('render3d visibility helpers', () => {
     );
   });
 
-  it('keeps road tiles on the legacy terrain surface path until shared splat rendering exists', () => {
-    expect(resolveTileTerrainSurfaceMode({ kind: 'road' })).toBe('legacy-mesh');
+  it('switches road tiles to the shared terrain surface path', () => {
+    expect(resolveTileTerrainSurfaceMode({ kind: 'road' })).toBe(
+      'shared-splat'
+    );
     expect(resolveTileTerrainSurfaceMode({ kind: 'plains' })).toBe(
       'legacy-mesh'
     );
@@ -5007,12 +5009,21 @@ describe('render3d visibility helpers', () => {
               requestedDetailLevel: 'full',
               detailLevel: 'full',
               fallbackReason: null,
-              modelRoot: { type: 'Group' },
+              modelRoot: null,
               supportsModel: true,
-              terrainSurfaceMode: 'legacy-mesh',
+              terrainSurfaceMode: 'shared-splat',
               sharedSplatEligible: true,
               terrainSurfaceReason:
                 'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
+              sharedFloorInstance: {
+                kind: 'road',
+                variant: 0,
+                tileX: 2,
+                tileY: 1,
+                surfaceHeight: 0.2,
+                thickness: 0.03,
+                tilePluginOwnerLabel: 'tile-route',
+              },
             },
           ],
         ]),
@@ -5029,7 +5040,7 @@ describe('render3d visibility helpers', () => {
       fallbackReason: null,
       hasVisibleModel: true,
       supportsModel: true,
-      terrainSurfaceMode: 'legacy-mesh',
+      terrainSurfaceMode: 'shared-splat',
       sharedSplatEligible: true,
       terrainSurfaceReason:
         'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
@@ -6708,7 +6719,7 @@ describe('render3d visibility helpers', () => {
     expect(getWorldCurvatureOffset(24)).toBeCloseTo(-1.2, 6);
   });
 
-  it('batches shared plains floors by variant and applies curvature to each instance height', () => {
+  it('batches shared plains and road floors by kind, variant, and curvature-adjusted height', () => {
     expect(
       collectSharedVisibleFloorBatches(
         [
@@ -6732,6 +6743,17 @@ describe('render3d visibility helpers', () => {
               surfaceHeight: 0.2,
               thickness: 0.03,
               tilePluginOwnerLabel: 'tile-plains',
+            },
+          },
+          {
+            sharedFloorInstance: {
+              kind: 'road',
+              variant: 0,
+              tileX: 2,
+              tileY: 0,
+              surfaceHeight: 0.25,
+              thickness: 0.03,
+              tilePluginOwnerLabel: 'tile-route',
             },
           },
           {
@@ -6769,6 +6791,19 @@ describe('render3d visibility helpers', () => {
             tileX: 12,
             tileY: 0,
             positionY: expect.closeTo(0.185 + getWorldCurvatureOffset(12), 6),
+          },
+        ],
+      },
+      {
+        kind: 'road',
+        variant: 0,
+        thickness: 0.03,
+        tilePluginOwnerLabel: 'tile-route',
+        instances: [
+          {
+            tileX: 2,
+            tileY: 0,
+            positionY: 0.235,
           },
         ],
       },

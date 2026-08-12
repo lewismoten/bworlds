@@ -2057,7 +2057,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       y,
       variant,
       buildCache,
-      tilePluginOwnerLabel
+      tilePluginOwnerLabel,
+      terrainSurfaceSelection.activeMode
     );
     if (floorContent.floorNode) {
       freezeStaticObjectTransforms(floorContent.floorNode);
@@ -3881,7 +3882,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     tileY,
     variant,
     buildCache: TileBuildCache,
-    tilePluginOwnerLabel: string
+    tilePluginOwnerLabel: string,
+    terrainSurfaceMode: TerrainSurfaceRenderMode
   ): {
     floorNode: THREE.Object3D | null;
     sharedFloorInstance: SharedVisibleFloorInstance | null;
@@ -3900,13 +3902,17 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       };
     }
 
-    const floorKind =
+    const resolvedFloorKind =
       getActivePluginRegistry().resolveFloorKind3D({
         state,
         tile,
         tileX,
         tileY,
       }) ?? tile.kind;
+    const floorKind =
+      terrainSurfaceMode === 'shared-splat' && tile.kind === 'road'
+        ? tile.kind
+        : resolvedFloorKind;
     const floorVariant = getTileVariantIndex(floorKind, tileX, tileY);
     const material = getTileMaterial(floorKind, floorVariant);
     const surfaceHeight = surfaceProfile.surfaceHeight;
@@ -3934,7 +3940,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           sharedFloorInstance: null,
         };
       }
-      if (floorKind === 'plains') {
+      if (
+        floorKind === 'plains' ||
+        (terrainSurfaceMode === 'shared-splat' && floorKind === 'road')
+      ) {
         return {
           floorNode: null,
           sharedFloorInstance: {

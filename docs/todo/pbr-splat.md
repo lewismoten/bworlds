@@ -598,8 +598,12 @@ adopted that path yet.
 
 - `packages/tile-route/src/index.ts` still builds explicit road ribbon meshes
   with `MeshStandardMaterial` instances for `roadMaterial` and
-  `shoulderMaterial`.
+  `shoulderMaterial` when the renderer leaves a route on `legacy-mesh`.
 - `apps/web` and `packages/render3d` do not currently consume packed terrain
   splat chunk data for live terrain rendering.
-- Until that renderer integration lands, roads and field-like ground visuals
-  continue to come from plugin mesh geometry rather than shared splat terrain.
+- Flat `road` tiles now move through the renderer-owned shared floor batching
+  path and suppress the route ribbon mesh in `terrainSurfaceMode:
+'shared-splat'`, but that path is still atlas-backed shared flooring rather
+  than the final packed PBR terrain splat shader.
+- Field-like ground visuals still come from plugin mesh geometry rather than
+  shared splat terrain.
