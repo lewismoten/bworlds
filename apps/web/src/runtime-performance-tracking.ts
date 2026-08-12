@@ -169,6 +169,21 @@ export function buildRuntimePerformanceSnapshot(
   };
 }
 
+export function shouldDeferRuntimePerformanceSnapshot(
+  snapshot: Pick<RuntimePerformanceSnapshot, 'trigger' | 'metrics' | 'limits'>
+): boolean {
+  if (snapshot.trigger !== 'startup' && snapshot.trigger !== 'region-change') {
+    return false;
+  }
+
+  return (
+    typeof snapshot.metrics.visibleTileGeneration?.pendingTileCount ===
+      'number' &&
+    snapshot.metrics.visibleTileGeneration.pendingTileCount >
+      snapshot.limits.pendingTileCount
+  );
+}
+
 export function buildRuntimePerformanceSnapshotMetricsFromDebugSnapshot(
   debugSnapshot: DebugSnapshot,
   options: {

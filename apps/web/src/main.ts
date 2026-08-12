@@ -153,6 +153,10 @@ import {
   createRuntimePerformancePluginEventTracker,
   installRuntimePerformancePluginErrorTracking,
 } from './runtime-performance-plugin-events.ts';
+import {
+  DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
+  shouldDeferRuntimePerformanceSnapshot,
+} from './runtime-performance-tracking.ts';
 import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
 import {
   findRandomTileDestination,
@@ -2047,22 +2051,44 @@ function toggleRuntimePerformanceTrackingSetting(): void {
 function reportRuntimePerformanceSnapshot(
   trigger: RuntimePerformanceSnapshotTrigger,
   spatial: ReturnType<typeof getPlayerSpatialSummary>,
-  metrics: Record<string, number | null | object> = {}
-): void {
+  metrics: Record<string, number | null | object> = {},
+  debugSnapshot = collectCurrentDebugSnapshot(performance.now(), spatial, {
+    recordDiagnostics: false,
+  })
+): boolean {
   if (!runtimePerformanceTrackingState.enabled) {
-    return;
+    return false;
+  }
+
+  if (
+    shouldDeferRuntimePerformanceSnapshot({
+      trigger,
+      limits: DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
+      metrics: {
+        initialWorldGenerationMs: null,
+        visibleTileGeneration: {
+          averageMs: debugSnapshot.averageTileBuildMs,
+          maxMs: debugSnapshot.maxTileBuildMs,
+          buildsPerSecond: debugSnapshot.tileBuildsPerSecond,
+          pendingTileCount: debugSnapshot.pendingTileCount,
+        },
+        maximumFrameMs: null,
+        memoryAfterRegionChangeMb: null,
+        activeThreeObjectCount: null,
+        drawCalls: null,
+        audioNodeCount: null,
+        songGenerationMs: null,
+        midiExportMs: null,
+        wavExportMs: null,
+      },
+    })
+  ) {
+    return false;
   }
 
   void (async () => {
     const runtimePerformanceTracking =
       await import('./runtime-performance-tracking.ts');
-    const debugSnapshot = collectCurrentDebugSnapshot(
-      performance.now(),
-      spatial,
-      {
-        recordDiagnostics: false,
-      }
-    );
     const snapshot = runtimePerformanceTracking.buildRuntimePerformanceSnapshot(
       {
         source: 'game',
@@ -2094,6 +2120,8 @@ function reportRuntimePerformanceSnapshot(
 
     await runtimePerformanceTracking.postRuntimePerformanceSnapshot(snapshot);
   })();
+
+  return true;
 }
 
 function maybeReportRuntimePerformanceIssue(
@@ -4349,14 +4377,31 @@ function render(): FrameLoopActivityLike {
   }
   maybeReportRuntimePerformanceIssue(nowMs, spatial);
   if (!runtimePerformanceTrackingState.startupReported) {
-    reportRuntimePerformanceSnapshot('startup', spatial);
-    runtimePerformanceTrackingState.startupReported = true;
-    runtimePerformanceTrackingState.lastReportedContextId = context.id;
+    const debugSnapshot = collectCurrentDebugSnapshot(nowMs, spatial, {
+      recordDiagnostics: false,
+    });
+    if (
+      reportRuntimePerformanceSnapshot('startup', spatial, {}, debugSnapshot)
+    ) {
+      runtimePerformanceTrackingState.startupReported = true;
+      runtimePerformanceTrackingState.lastReportedContextId = context.id;
+    }
   } else if (
     runtimePerformanceTrackingState.lastReportedContextId !== context.id
   ) {
-    reportRuntimePerformanceSnapshot('region-change', spatial);
-    runtimePerformanceTrackingState.lastReportedContextId = context.id;
+    const debugSnapshot = collectCurrentDebugSnapshot(nowMs, spatial, {
+      recordDiagnostics: false,
+    });
+    if (
+      reportRuntimePerformanceSnapshot(
+        'region-change',
+        spatial,
+        {},
+        debugSnapshot
+      )
+    ) {
+      runtimePerformanceTrackingState.lastReportedContextId = context.id;
+    }
   }
   return getFrameLoopActivity({
     nowMs,

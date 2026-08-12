@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildRuntimePerformanceSnapshot,
+  DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
   normalizeRuntimePerformanceTrackingPreferences,
   postRuntimePerformanceSnapshot,
+  shouldDeferRuntimePerformanceSnapshot,
 } from './runtime-performance-tracking.ts';
 import {
   buildRuntimePerformanceIssueReport,
@@ -262,6 +264,54 @@ describe('runtime performance tracking', () => {
         'tile-forest.materials': 1,
       },
     });
+  });
+
+  it('defers startup snapshots while the visible tile queue still exceeds the pending-tile limit', () => {
+    const deferred = buildRuntimePerformanceSnapshot({
+      source: 'game',
+      trigger: 'startup',
+      route: '/',
+      metrics: {
+        visibleTileGeneration: {
+          averageMs: 0.7,
+          maxMs: 1.4,
+          buildsPerSecond: 3,
+          pendingTileCount:
+            DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount + 1,
+        },
+      },
+    });
+    const ready = buildRuntimePerformanceSnapshot({
+      source: 'game',
+      trigger: 'startup',
+      route: '/',
+      metrics: {
+        visibleTileGeneration: {
+          averageMs: 0.7,
+          maxMs: 1.4,
+          buildsPerSecond: 3,
+          pendingTileCount: DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount,
+        },
+      },
+    });
+    const runtimeIssue = buildRuntimePerformanceSnapshot({
+      source: 'game',
+      trigger: 'runtime-issue',
+      route: '/',
+      metrics: {
+        visibleTileGeneration: {
+          averageMs: 0.7,
+          maxMs: 1.4,
+          buildsPerSecond: 3,
+          pendingTileCount:
+            DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount + 20,
+        },
+      },
+    });
+
+    expect(shouldDeferRuntimePerformanceSnapshot(deferred)).toBe(true);
+    expect(shouldDeferRuntimePerformanceSnapshot(ready)).toBe(false);
+    expect(shouldDeferRuntimePerformanceSnapshot(runtimeIssue)).toBe(false);
   });
 
   it('posts runtime performance snapshots to the vite endpoint when fetch is available', async () => {
