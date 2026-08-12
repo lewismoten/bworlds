@@ -196,6 +196,18 @@ describe('debug snapshot', () => {
           plugin: 'tile-forest',
           summary: 'vertexCount 10000>8000',
         },
+        {
+          nowMs: 1975,
+          type: 'plugin-error',
+          plugin: 'tile-forest.materials',
+          source: 'tile-forest.materials',
+          summary: 'Forest bark cache failed.',
+          details: {
+            code: 'forest-bark-cache',
+          },
+          severity: 'error',
+          eventTimestamp: '2026-08-12T14:45:00.000Z',
+        },
       ],
       snapshot: {
         fps: 44.6,
@@ -776,6 +788,18 @@ describe('debug snapshot', () => {
         tileKey: '15:-9',
         plugin: 'tile-forest',
         summary: 'vertexCount 10000>8000',
+      },
+      {
+        t: 0,
+        type: 'plugin-error',
+        plugin: 'tile-forest.materials',
+        source: 'tile-forest.materials',
+        summary: 'Forest bark cache failed.',
+        details: {
+          code: 'forest-bark-cache',
+        },
+        severity: 'error',
+        eventTimestamp: '2026-08-12T14:45:00.000Z',
       },
     ]);
     expect(result.resourceBudget).toEqual({

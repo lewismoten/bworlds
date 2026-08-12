@@ -162,7 +162,7 @@
 - [x] Test error details preserve the stack trace.
 - [x] Test circular details serialize safely.
 - [x] Test history never exceeds its configured limit.
-- [ ] Test error events appear in debug snapshots.
+- [x] Test error events appear in debug snapshots.
 - [x] Test disabled tracking does not persist errors.
 - [ ] Test recursive event loops are prevented.
 
@@ -183,6 +183,9 @@
   recent-event stream as `plugin-error`, and attach bounded recent event
   history plus per-type and per-source counts to runtime performance snapshot
   payloads.
+- Added exported debug snapshot coverage for `plugin-error` recent events so
+  source, severity, timestamp, and serialized details stay visible in the
+  saved snapshot payload instead of only being validated at the tracker layer.
 - Added plugin error forwarding to `apps/web/src/client-error-snapshot.ts` so
   shared plugin `error` events reuse the existing client error snapshot
   endpoint, message-hash dedupe, tracking gate, and console-loop protections.
