@@ -16,3 +16,11 @@ The observatory now also uses the base mountain plinth mesh as its root and
 attaches the tower, trim ring, dome pivot, and telescope pivot beneath it, so
 observatory tiles avoid one otherwise empty wrapper `Group` without changing
 the dome-opening or telescope animation behavior.
+
+Material reuse:
+
+- repeated full-detail observatory builds on one Three host are expected to
+  stay within one shared six-material palette for the mountain plinth, snow
+  eyepiece, tower shell, trim, dome, and telescope surfaces
+- the regression test locks that budget so repeated nearby observatory builds
+  cannot quietly start allocating extra equivalent materials on the same host

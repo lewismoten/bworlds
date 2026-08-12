@@ -4,13 +4,22 @@ vi.mock('@bworlds/three-support', () => {
   const boxCache = new Map<string, FakeGeometry>();
   const cylinderCache = new Map<string, FakeGeometry>();
   const sphereCache = new Map<string, FakeGeometry>();
+  const mountainTerrainMaterialCache = new WeakMap<
+    object,
+    { mountainMaterial: object; snowMaterial: object }
+  >();
 
   return {
-    createMountainTerrainMaterials() {
-      return {
-        mountainMaterial: { id: 'mountain-material' },
-        snowMaterial: { id: 'snow-material' },
-      };
+    createMountainTerrainMaterials(three: object) {
+      let cached = mountainTerrainMaterialCache.get(three);
+      if (!cached) {
+        cached = {
+          mountainMaterial: { id: 'mountain-material' },
+          snowMaterial: { id: 'snow-material' },
+        };
+        mountainTerrainMaterialCache.set(three, cached);
+      }
+      return cached;
     },
     getSharedBoxGeometry(three: unknown, ...args: number[]) {
       void three;
@@ -361,6 +370,40 @@ describe('tile observatory', () => {
     expect(firstTower?.material).toBeDefined();
     expect(secondTower?.material).toBeDefined();
     expect(secondTower?.material).not.toBe(firstTower?.material);
+  });
+
+  it('keeps repeated observatory builds on one host within the shared material budget', () => {
+    const plugin = createObservatoryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'observatory');
+    const repeatedModels: FakeNode[] = [];
+
+    for (const [tileX, tileY] of [
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 8],
+    ]) {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state: {} as never,
+        tile: { kind: 'observatory' } as never,
+        tileX,
+        tileY,
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial | object>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(6);
   });
 
   it('uses the observatory base mesh as the root instead of a wrapper group', () => {

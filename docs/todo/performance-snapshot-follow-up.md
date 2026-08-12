@@ -172,7 +172,10 @@
       and `tile-lighthouse` now keeps repeated full-detail lighthouse builds
       on one host that resolve the same local style within one shared
       ten-material palette so tower, lantern, balcony, pane, beam, and base
-      materials cannot quietly grow between passes.
+      materials cannot quietly grow between passes, and
+      `tile-observatory` now keeps repeated full-detail observatory builds on
+      one host within one shared six-material palette so plinth, snow, tower,
+      trim, dome, and telescope materials cannot quietly grow between passes.
 
 ## Instancing
 
