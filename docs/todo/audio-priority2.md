@@ -58,9 +58,15 @@
       and settling back before release, and the integration tests now verify
       that long supported notes receive the extra swell ramps while short notes
       do not.
-- [ ] Change filter brightness with note velocity.
-- [ ] Change filter brightness across a phrase.
-- [ ] Make louder notes slightly brighter when appropriate.
+- [x] Change filter brightness with note velocity.
+- [x] Change filter brightness across a phrase.
+- [x] Make louder notes slightly brighter when appropriate.
+      Progress: velocity-shaped timbre generation already makes louder notes
+      brighter by raising their filter cutoff, transient cutoff, and related
+      timbre energy, and section-level note shaping now adds a phrase-position
+      brightness contour on top so later lead and support notes can open up as
+      a phrase rises; integration and variation tests now verify both the
+      velocity-driven and phrase-driven brightness changes.
 - [ ] Give each track its own expressive performance profile.
 - [ ] Keep one performer profile consistent through a song.
 - [ ] Add small pan motion only where musically appropriate.

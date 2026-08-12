@@ -131,6 +131,12 @@ export function transformSongSectionNote(
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
   const articulationEnvelope = resolveNoteArticulationEnvelope(note);
+  const phraseBrightnessMultiplier = resolvePhraseBrightnessMultiplier({
+    role: note.role,
+    sectionId: section.id,
+    phrasePosition: sectionContext.phrasePosition,
+    preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+  });
 
   switch (section.id) {
     case 'intro':
@@ -153,6 +159,7 @@ export function transformSongSectionNote(
           phraseBoundaryArticulation.attackMultiplier *
           articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
+        phraseBrightnessMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -186,6 +193,7 @@ export function transformSongSectionNote(
           phraseBoundaryArticulation.attackMultiplier *
           articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
+        phraseBrightnessMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -218,6 +226,7 @@ export function transformSongSectionNote(
           phraseBoundaryArticulation.attackMultiplier *
           articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
+        phraseBrightnessMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -241,6 +250,7 @@ export function transformSongSectionNote(
           phraseBoundaryArticulation.attackMultiplier *
           articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
+        phraseBrightnessMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -262,6 +272,7 @@ export function transformSongSectionNote(
           phraseBoundaryArticulation.attackMultiplier *
           articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
+        phraseBrightnessMultiplier,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -331,6 +342,12 @@ function transformAprimeSectionNote(
     }).attackMultiplier,
     pitchBend: resolvePhraseBoundaryPitchBend({
       note,
+      phrasePosition,
+      preserveRepairPitch,
+    }),
+    phraseBrightnessMultiplier: resolvePhraseBrightnessMultiplier({
+      role: note.role,
+      sectionId: 'a-prime',
       phrasePosition,
       preserveRepairPitch,
     }),
@@ -406,6 +423,12 @@ function transformVariationSectionNote(
       (leadRhythmOptions?.releaseMultiplier ?? 1),
     pitchBend: resolvePhraseBoundaryPitchBend({
       note,
+      phrasePosition,
+      preserveRepairPitch,
+    }),
+    phraseBrightnessMultiplier: resolvePhraseBrightnessMultiplier({
+      role: note.role,
+      sectionId: 'variation',
       phrasePosition,
       preserveRepairPitch,
     }),
@@ -612,6 +635,62 @@ function resolveStructuralAccentVelocityMultiplier(options: {
   }
 
   return cadenceMeasure ? 1.04 : phraseAccent ? 1.02 : 1;
+}
+
+function resolvePhraseBrightnessMultiplier(options: {
+  role: ProceduralMusicNote['role'];
+  sectionId: ProceduralMusicSongSection['id'];
+  phrasePosition: number;
+  preserveRepairPitch: boolean;
+}): number {
+  if (options.role === 'percussion') {
+    return 1;
+  }
+  if (options.preserveRepairPitch && options.role === 'lead') {
+    return 1;
+  }
+
+  const patternIndex = options.phrasePosition % 8;
+  switch (options.role) {
+    case 'lead':
+      return (
+        {
+          intro: [0.96, 0.99, 1.02, 1.05, 1.08, 1.1, 1.12, 1.06],
+          a: [0.98, 1, 1.02, 1.04, 1.06, 1.08, 1.1, 1.04],
+          'a-prime': [0.98, 1.01, 1.03, 1.06, 1.08, 1.1, 1.12, 1.06],
+          b: [0.97, 1, 1.02, 1.05, 1.07, 1.09, 1.11, 1.05],
+          variation: [0.98, 1.01, 1.04, 1.08, 1.1, 1.12, 1.14, 1.08],
+          return: [0.98, 1, 1.03, 1.05, 1.07, 1.09, 1.11, 1.05],
+          outro: [0.96, 0.99, 1.02, 1.05, 1.08, 1.1, 1.12, 1.06],
+        }[options.sectionId]?.[patternIndex] ?? 1
+      );
+    case 'harmony':
+      return (
+        {
+          intro: [0.97, 0.99, 1, 1.02, 1.03, 1.04, 1.05, 1.02],
+          a: [0.98, 0.99, 1, 1.01, 1.02, 1.03, 1.04, 1.01],
+          'a-prime': [0.98, 1, 1.01, 1.03, 1.04, 1.05, 1.06, 1.02],
+          b: [0.97, 0.99, 1, 1.02, 1.03, 1.04, 1.05, 1.02],
+          variation: [0.98, 1, 1.02, 1.03, 1.04, 1.05, 1.06, 1.03],
+          return: [0.98, 0.99, 1.01, 1.02, 1.03, 1.04, 1.05, 1.02],
+          outro: [0.97, 0.99, 1, 1.02, 1.03, 1.04, 1.05, 1.01],
+        }[options.sectionId]?.[patternIndex] ?? 1
+      );
+    case 'bass':
+      return (
+        {
+          intro: [0.94, 0.96, 0.98, 1, 1.01, 1.02, 1.03, 1],
+          a: [0.95, 0.97, 0.99, 1, 1.01, 1.02, 1.03, 1],
+          'a-prime': [0.95, 0.97, 0.99, 1.01, 1.02, 1.03, 1.04, 1.01],
+          b: [0.95, 0.97, 0.99, 1, 1.01, 1.02, 1.03, 1],
+          variation: [0.96, 0.98, 1, 1.02, 1.03, 1.04, 1.05, 1.02],
+          return: [0.95, 0.97, 0.99, 1, 1.01, 1.02, 1.03, 1],
+          outro: [0.94, 0.96, 0.98, 1, 1.01, 1.02, 1.03, 1],
+        }[options.sectionId]?.[patternIndex] ?? 1
+      );
+    default:
+      return 1;
+  }
 }
 
 function resolveSectionRoleIdentity(
@@ -825,6 +904,7 @@ function scaleSongNote(
     startOffsetMs?: number;
     transposeSemitones?: number;
     pitchBend?: PhraseBoundaryPitchBend | null;
+    phraseBrightnessMultiplier?: number;
   }
 ): ProceduralMusicNote {
   const durationMultiplier = options.durationMultiplier ?? 1;
@@ -866,15 +946,44 @@ function scaleSongNote(
     velocity: nextVelocity,
     attackMs: Math.max(4, Math.round(note.attackMs * attackMultiplier)),
     timbre: applyPitchBendToTimbre(
-      nextVelocity === undefined
-        ? note.timbre
-        : resolveVelocityShapedInstrumentTimbre({
-            timbre: note.timbre,
-            velocity: nextVelocity,
-          }),
+      applyPhraseBrightnessToTimbre(
+        nextVelocity === undefined
+          ? note.timbre
+          : resolveVelocityShapedInstrumentTimbre({
+              timbre: note.timbre,
+              velocity: nextVelocity,
+            }),
+        options.phraseBrightnessMultiplier
+      ),
       options.pitchBend
     ),
     releaseMs,
+  };
+}
+
+function applyPhraseBrightnessToTimbre(
+  timbre: ProceduralMusicNote['timbre'],
+  brightnessMultiplier: number | undefined
+): ProceduralMusicNote['timbre'] {
+  if (
+    brightnessMultiplier === undefined ||
+    !Number.isFinite(brightnessMultiplier) ||
+    brightnessMultiplier === 1
+  ) {
+    return timbre;
+  }
+
+  return {
+    ...timbre,
+    filterCutoffHz: Math.max(60, timbre.filterCutoffHz * brightnessMultiplier),
+    transientFilterCutoffHz:
+      timbre.transientFilterCutoffHz === undefined
+        ? undefined
+        : Math.max(80, timbre.transientFilterCutoffHz * brightnessMultiplier),
+    noiseFilterCutoffHz:
+      timbre.noiseFilterCutoffHz === undefined
+        ? undefined
+        : Math.max(80, timbre.noiseFilterCutoffHz * brightnessMultiplier),
   };
 }
 

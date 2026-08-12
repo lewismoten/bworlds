@@ -752,6 +752,38 @@ describe('procedural music song variation', () => {
     );
   });
 
+  it('brightens lead filters as a phrase moves toward its later peak positions', () => {
+    const section = createSection('variation');
+    const earlyLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        family: 'flute',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      1,
+      0
+    );
+    const lateLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        family: 'flute',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      6,
+      0
+    );
+
+    expect(earlyLead).not.toBeNull();
+    expect(lateLead).not.toBeNull();
+    expect(lateLead?.timbre.filterCutoffHz ?? 0).toBeGreaterThan(
+      earlyLead?.timbre.filterCutoffHz ?? 0
+    );
+  });
+
   it('assigns deterministic lead rhythm identities to each named song section', () => {
     const noteIndexInSection = 2;
     const intro = transformSongSectionNote(
@@ -804,7 +836,10 @@ describe('procedural music song variation', () => {
     expect(variation).not.toBeNull();
     expect(sectionReturn).not.toBeNull();
     expect(outro).not.toBeNull();
-    expect(sectionA).toEqual(BASE_NOTE);
+    expect(sectionA?.startMs).toBe(BASE_NOTE.startMs);
+    expect(sectionA?.durationMs).toBe(BASE_NOTE.durationMs);
+    expect(sectionA?.frequency).toBe(BASE_NOTE.frequency);
+    expect(sectionA?.timbre.filterCutoffHz).toBeGreaterThan(0);
     expect(sectionAPrime?.startMs).toBe(sectionA?.startMs);
     expect(sectionAPrime?.durationMs).toBeGreaterThanOrEqual(
       sectionA?.durationMs ?? 0
@@ -843,7 +878,12 @@ describe('procedural music song variation', () => {
 
   it('keeps the base A section unchanged', () => {
     expect(
-      transformSongSectionNote(BASE_NOTE, createSection('a'), 3, 0)
-    ).toEqual(BASE_NOTE);
+      transformSongSectionNote(BASE_NOTE, createSection('a'), 1, 0)
+    ).toMatchObject({
+      ...BASE_NOTE,
+      timbre: {
+        ...BASE_NOTE.timbre,
+      },
+    });
   });
 });
