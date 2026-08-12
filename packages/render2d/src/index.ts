@@ -1,6 +1,11 @@
 import { getOrCreateMapValue } from '@bworlds/cache-support';
 import { drawTileSprite, getTileVariantIndex } from '@bworlds/atlas';
 import { getDaylightCycleState } from '@bworlds/core';
+import {
+  getMapTileReliefStrength,
+  getMapTileSymbolGlyph,
+  resolveMapTileSymbolDescriptor,
+} from '@bworlds/map-support';
 import type {
   TileLike,
   TileDefinitionLike,
@@ -180,13 +185,17 @@ export function buildTextViewportGrid(
       const tile = tileAt(worldX, worldY);
       const isPlayer = rowIndex === centerRow && columnIndex === centerColumn;
       row.push({
-        glyph: isPlayer
-          ? '@'
-          : getTextViewportGlyph(tile.kind, resolveTileName(state, tile.kind)),
-        color: isPlayer ? '#ffbf69' : resolveTileColor(state, tile.kind),
+        glyph: isPlayer ? '@' : resolveMapTileSymbolGlyphForState(state, tile),
+        color: isPlayer ? '#ffbf69' : resolveMapTileSymbolColorForState(state, tile),
         kind: tile.kind,
         worldX,
         worldY,
+        ...(isPlayer
+          ? {}
+          : {
+              annotation:
+                resolveMapTileSymbolAnnotationForState(state, tile) ?? undefined,
+            }),
       });
     }
     gridRows.push(row);
@@ -200,25 +209,11 @@ export function buildTextViewportGrid(
 }
 
 export function getTextViewportGlyph(kind: string, tileName?: string): string {
-  const fallbackGlyph =
-    tileName?.trim().charAt(0) || kind.trim().charAt(0) || '?';
-  const glyph = ASCII_TILE_GLYPHS[kind] ?? fallbackGlyph;
-  return glyph.toUpperCase();
+  return getMapTileSymbolGlyph(kind, tileName);
 }
 
 export function getTileReliefStrength(tile: ReliefTile): number {
-  if (
-    tile.kind === 'river' ||
-    tile.kind === 'ocean' ||
-    tile.kind === 'bridge' ||
-    tile.kind === 'dock' ||
-    tile.kind === 'mountain'
-  ) {
-    return 0;
-  }
-  const height =
-    typeof tile.surfaceHeight === 'number' ? tile.surfaceHeight : 0;
-  return Math.max(0, Math.min(1, height / 0.36));
+  return getMapTileReliefStrength(tile);
 }
 
 function resolveTileDefinition(
@@ -229,18 +224,6 @@ function resolveTileDefinition(
     return null;
   }
   return state.getTileDefinition(kind) ?? null;
-}
-
-function resolveTileName(
-  state: Render2DState,
-  kind: string
-): string | undefined {
-  return resolveTileDefinition(state, kind)?.name;
-}
-
-function resolveTileColor(state: Render2DState, kind: string): string {
-  const definition = resolveTileDefinition(state, kind);
-  return definition?.miniColor ?? definition?.color ?? '#d9e8f4';
 }
 
 function drawReliefOverlay(
@@ -353,32 +336,50 @@ function drawBoatOverlay(
   );
 }
 
-const ASCII_TILE_GLYPHS: Record<string, string> = {
-  plains: '.',
-  floor: '.',
-  interior: '.',
-  shore: ',',
-  road: '=',
-  rail: '=',
-  river: '~',
-  ocean: '~',
-  bridge: '#',
-  dock: '#',
-  mountain: '^',
-  forest: 'T',
-  wall: '#',
-  door: '+',
-  town: 'T',
-  cave: 'C',
-  dungeon: 'D',
-  sign: '!',
-  ruins: 'R',
-  quarry: 'Q',
-  lighthouse: 'L',
-  ship: 'S',
-  observatory: 'O',
-  unknown: '?',
-};
+function resolveMapTileSymbolDefinition(
+  state: Render2DState,
+  kind: string
+): Pick<TileDefinitionLike, 'name' | 'color' | 'miniColor'> | null {
+  const definition = resolveTileDefinition(state, kind);
+  if (!definition) {
+    return null;
+  }
+  return {
+    name: definition.name,
+    color: definition.color,
+    miniColor: definition.miniColor,
+  };
+}
+
+function resolveMapTileSymbolGlyphForState(
+  state: Render2DState,
+  tile: TileLike
+): string {
+  return resolveMapTileSymbolDescriptor({
+    tile,
+    tileDefinition: resolveMapTileSymbolDefinition(state, tile.kind),
+  }).glyph;
+}
+
+function resolveMapTileSymbolColorForState(
+  state: Render2DState,
+  tile: TileLike
+): string {
+  return resolveMapTileSymbolDescriptor({
+    tile,
+    tileDefinition: resolveMapTileSymbolDefinition(state, tile.kind),
+  }).color;
+}
+
+function resolveMapTileSymbolAnnotationForState(
+  state: Render2DState,
+  tile: TileLike
+): string | undefined {
+  return resolveMapTileSymbolDescriptor({
+    tile,
+    tileDefinition: resolveMapTileSymbolDefinition(state, tile.kind),
+  }).annotation;
+}
 
 export interface RiverOverlayDirection {
   id:

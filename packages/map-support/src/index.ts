@@ -20,6 +20,7 @@ export type * from './map-pmtiles.ts';
 export type * from './map-network-lines.ts';
 export type * from './map-regional-records.ts';
 export type * from './map-terrain-surface.ts';
+export type * from './map-tile-symbols.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
 export {
@@ -94,6 +95,11 @@ export {
   createTerrainSurfaceMapFeatureGeneratorPlugin,
   DEFAULT_MAP_TERRAIN_SURFACE_LAYER_ID,
 } from './map-terrain-surface.ts';
+export {
+  getMapTileReliefStrength,
+  getMapTileSymbolGlyph,
+  resolveMapTileSymbolDescriptor,
+} from './map-tile-symbols.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,
   AZIMUTHAL_CENTER_LONGITUDE,

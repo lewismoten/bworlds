@@ -149,7 +149,7 @@ Current support:
 - [x] Derive 2D terrain from the same world data as 3D.
 - [x] Derive roads and rivers from the same graphs as 3D.
 - [x] Derive settlements and borders from shared records.
-- [ ] Keep 2D tile symbols representative of 3D state.
+- [x] Keep 2D tile symbols representative of 3D state.
 - [ ] Avoid separate hand-authored map-only world state.
 
 Current support:
@@ -177,3 +177,9 @@ Current support:
   and border map products can convert shared overworld anchors and shared
   region-border records into canonical `settlement-record` and `border-record`
   features instead of inventing separate 2D-only regional models.
+- `@bworlds/map-support` now also exposes
+  `resolveMapTileSymbolDescriptor(...)`, `getMapTileSymbolGlyph(...)`, and
+  `getMapTileReliefStrength(...)`, and `@bworlds/render2d` now consumes that
+  shared symbol contract so 2D text viewport glyphs, relief cues, and compact
+  traffic annotations stay derived from shared decorated tile state such as
+  `surfaceHeight`, `train`, and `boat` instead of renderer-local heuristics.

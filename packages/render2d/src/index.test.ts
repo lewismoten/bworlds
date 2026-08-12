@@ -320,6 +320,59 @@ describe('render2D night sky overlay', () => {
     );
   });
 
+  it('adds representative shared-state annotations to text viewport cells', () => {
+    const state = {
+      player: { x: 0, y: 0, facing: 0 },
+      getCurrentTile(x: number, y: number) {
+        if (x === 1 && y === 0) {
+          return {
+            kind: 'rail',
+            train: {
+              x: 1,
+              y: 0,
+              direction: 'forward' as const,
+              progress: 0.25,
+            },
+          };
+        }
+        if (x === 0 && y === 1) {
+          return {
+            kind: 'plains',
+            surfaceHeight: 0.2,
+          };
+        }
+        return { kind: 'plains' };
+      },
+      getTileDefinition(kind: string) {
+        return {
+          name: kind === 'rail' ? 'Rail' : 'Plains',
+          color: '#84cc16',
+          miniColor: kind === 'rail' ? '#94a3b8' : '#84cc16',
+          walkable: true,
+          wallHeight: 0,
+        };
+      },
+    };
+
+    const grid = buildTextViewportGrid(state, {
+      columns: 3,
+      rows: 3,
+    });
+
+    expect(grid.rows[1][2]).toEqual(
+      expect.objectContaining({
+        glyph: '=',
+        annotation: 'TRN',
+      })
+    );
+    expect(grid.rows[2][1]).toEqual(
+      expect.objectContaining({
+        glyph: '.',
+        annotation: 'RLF',
+      })
+    );
+  });
+
   it('uses tuned ascii glyphs with a name fallback for unmapped kinds', () => {
     expect(getTextViewportGlyph('mountain', 'Mountain')).toBe('^');
     expect(getTextViewportGlyph('custom-obelisk', 'obelisk')).toBe('O');
