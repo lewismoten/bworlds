@@ -5,11 +5,13 @@ import {
   createMapFeaturePolygonRecord,
 } from './map-features.ts';
 import {
+  createClimateMapFeatureGeneratorPlugin,
   createElevationMapFeatureGeneratorPlugin,
   createGeologyMapFeatureGeneratorPlugin,
   createPhysicalMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
   createSlopeMapFeatureGeneratorPlugin,
+  createTemperatureZoneMapFeatureGeneratorPlugin,
   createTopographicMapFeatureGeneratorPlugin,
 } from './map-layer-generators.ts';
 
@@ -244,6 +246,83 @@ describe('map layer generators', () => {
       {
         kind: 'line',
         layerId: 'geology',
+      },
+    ]);
+  });
+
+  it('creates climate layer generators with conventional climate layer ids', () => {
+    const plugin = createClimateMapFeatureGeneratorPlugin({
+      getClimateFeatures(request) {
+        return [
+          createMapFeaturePolygonRecord({
+            sourceWorldObjectId: `climate:${request.tile.zoom}`,
+            layerId: 'climate',
+            rings: [
+              [
+                { worldX: 0, worldY: 0 },
+                { worldX: 3, worldY: 0 },
+                { worldX: 3, worldY: 2 },
+                { worldX: 0, worldY: 0 },
+              ],
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('climate-map-layer');
+    expect(plugin.layerId).toBe('climate');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-7',
+        tile: {
+          zoom: 4,
+          x: 5,
+          y: 6,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'polygon',
+        layerId: 'climate',
+      },
+    ]);
+  });
+
+  it('creates temperature zone layer generators with conventional temperature zone layer ids', () => {
+    const plugin = createTemperatureZoneMapFeatureGeneratorPlugin({
+      id: 'temperature-bands',
+      label: 'Temperature Bands',
+      getTemperatureZoneFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `temperature-band:${request.tile.y}`,
+            layerId: 'temperature-zone',
+            coordinates: [
+              { worldX: 0, worldY: request.tile.y },
+              { worldX: 5, worldY: request.tile.y + 1 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('temperature-bands');
+    expect(plugin.label).toBe('Temperature Bands');
+    expect(plugin.layerId).toBe('temperature-zone');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-8',
+        tile: {
+          zoom: 4,
+          x: 1,
+          y: 8,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'temperature-zone',
       },
     ]);
   });

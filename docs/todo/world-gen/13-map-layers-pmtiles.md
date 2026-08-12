@@ -90,9 +90,17 @@ Current support:
 
 ## Climate Layers
 
-- [ ] Add climate and temperature zone plugins.
+- [x] Add climate and temperature zone plugins.
 - [ ] Add humidity, pressure, weather, and wind plugins.
 - [ ] Add ocean current and river flow plugins.
+
+Current support:
+
+- `@bworlds/map-support` now exposes
+  `createClimateMapFeatureGeneratorPlugin(...)` and
+  `createTemperatureZoneMapFeatureGeneratorPlugin(...)`, so later climate map
+  products can share conventional `climate` and `temperature-zone` PMTiles
+  generator wrappers instead of introducing another set of ad hoc layer ids.
 
 ## Human Layers
 

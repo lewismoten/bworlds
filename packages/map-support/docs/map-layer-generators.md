@@ -7,6 +7,8 @@ for physical map products built on canonical map features:
 - `createElevationMapFeatureGeneratorPlugin(...)`
 - `createSlopeMapFeatureGeneratorPlugin(...)`
 - `createGeologyMapFeatureGeneratorPlugin(...)`
+- `createClimateMapFeatureGeneratorPlugin(...)`
+- `createTemperatureZoneMapFeatureGeneratorPlugin(...)`
 
 ## Purpose
 
@@ -30,6 +32,8 @@ The helpers currently reserve these layer ids:
 - `elevation`
 - `slope`
 - `geology`
+- `climate`
+- `temperature-zone`
 
 That gives later PMTiles export, map styling, and viewer code one stable layer
 vocabulary instead of forcing each feature generator to invent its own names.
@@ -98,3 +102,26 @@ and:
 These wrappers intentionally accept canonical `MapFeatureRecord` values so
 later terrain analysis or geology products can choose point, line, or polygon
 features without changing the shared layer-generator contract.
+
+## Climate And Temperature Zone Layers
+
+`createClimateMapFeatureGeneratorPlugin(...)` and
+`createTemperatureZoneMapFeatureGeneratorPlugin(...)` follow the same PMTiles
+generator contract with conventional layer ids:
+
+- `layerId: 'climate'`
+- `layerId: 'temperature-zone'`
+
+They default to:
+
+- `id: 'climate-map-layer'`
+- `id: 'temperature-zone-map-layer'`
+
+and:
+
+- `label: 'Climate Layer'`
+- `label: 'Temperature Zone Layer'`
+
+These wrappers intentionally accept canonical `MapFeatureRecord` values so
+later biome-band, Koppen-style, or temperature-region products can share one
+layer contract before the concrete climate analysis logic exists.

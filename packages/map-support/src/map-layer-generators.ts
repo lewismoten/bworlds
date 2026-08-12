@@ -106,3 +106,37 @@ export function createGeologyMapFeatureGeneratorPlugin(options: {
     },
   });
 }
+
+export function createClimateMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getClimateFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'climate-map-layer',
+    label: options.label ?? 'Climate Layer',
+    layerId: 'climate',
+    getFeatures(request) {
+      return options.getClimateFeatures(request);
+    },
+  });
+}
+
+export function createTemperatureZoneMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getTemperatureZoneFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'temperature-zone-map-layer',
+    label: options.label ?? 'Temperature Zone Layer',
+    layerId: 'temperature-zone',
+    getFeatures(request) {
+      return options.getTemperatureZoneFeatures(request);
+    },
+  });
+}
