@@ -105,6 +105,11 @@ Current support:
   existing shared terrain chunk render-data pipeline, so render3d can now
   materialize chunk-local geometry and packed splat attributes without
   rebuilding seam-safe height or splat data by hand.
+- `@bworlds/render3d/visible-terrain-chunk-materials` now derives one binding
+  runtime plan, one terrain splat material plan, and one compatibility bucket
+  set across visible terrain chunks, so the live renderer can detect which
+  chunks can share one future PBR splat material instance before the scene path
+  swaps away from legacy floor meshes.
 
 ## Sextant Panel
 

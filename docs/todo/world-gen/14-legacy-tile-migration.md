@@ -30,6 +30,10 @@ Current support:
   those visible chunk groups, builds shared splat chunk render data, and turns
   each chunk into one `BufferGeometry` backed by shared height samples and
   packed terrain splat attributes.
+- `packages/render3d/src/visible-terrain-chunk-materials.ts` now derives active
+  layer sets, texture binding runtime plans, terrain splat material plans, and
+  compatibility buckets across visible chunks so later scene integration can
+  share one splat material instance across compatible terrain chunks.
 
 ## Replace Floor Meshes
 
