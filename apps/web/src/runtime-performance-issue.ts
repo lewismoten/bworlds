@@ -102,6 +102,11 @@ export function buildRuntimePerformanceIssueReport(
     return null;
   }
 
+  const summary = selectRuntimePerformanceIssueSummary(
+    reasons,
+    renderQualityLimiterDetails
+  );
+
   return {
     schemaVersion: 1,
     createdAt: (options.createdAt ?? new Date()).toISOString(),
@@ -109,21 +114,8 @@ export function buildRuntimePerformanceIssueReport(
     route: options.route,
     worldSeed: options.worldSeed ?? null,
     context: options.context ?? null,
-    issueHash: createRuntimePerformanceIssueHash(
-      [
-        options.route,
-        options.context?.id ?? '',
-        options.debugSnapshot.performanceTier,
-        options.debugSnapshot.renderQualityLevel,
-        reasons.join('|'),
-        renderQualityLimiterDetails.join('|'),
-        options.debugSnapshot.currentTilePlugin ?? '',
-      ].join('\n')
-    ),
-    summary: selectRuntimePerformanceIssueSummary(
-      reasons,
-      renderQualityLimiterDetails
-    ),
+    issueHash: createRuntimePerformanceIssueHash(summary),
+    summary,
     reasons,
     performanceSnapshot,
     renderState: {

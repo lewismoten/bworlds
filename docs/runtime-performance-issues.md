@@ -9,12 +9,13 @@ startup and region-change checkpoints. It now also posts a separate throttled
 issue report when live rendering diagnostics detect an active problem during
 play.
 
-Issue reports are throttled by stable issue hash for five seconds so repeated
-frame stalls or budget rejections do not thrash the local endpoint.
+Issue reports are throttled by a stable issue hash derived from the saved issue
+summary for five seconds so repeated reports of the same user-visible problem
+do not thrash the local endpoint.
 
 Saved issue files are also keyed by `source + issueHash` instead of timestamp.
-When the same issue hash is reported again, the existing file is overwritten
-with the latest payload instead of creating another duplicate file on disk.
+When the same summary is reported again, the existing file is overwritten with
+the latest payload instead of creating another duplicate file on disk.
 
 Recent mitigation work:
 

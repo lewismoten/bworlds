@@ -502,4 +502,31 @@ describe('runtime performance tracking', () => {
     await expect(reporter(issue)).resolves.toBe(true);
     expect(postIssue).toHaveBeenCalledTimes(2);
   });
+
+  it('treats matching issue summaries as the same issue hash even when other details differ', () => {
+    const firstIssue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        route: '/',
+        currentTilePlugin: 'tile-forest',
+        resourceWarnings: ['Instanced meshes are missing from the visible scene.'],
+      }),
+    });
+    const secondIssue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/debug',
+      debugSnapshot: createDebugSnapshot({
+        currentTilePlugin: 'tile-route',
+        drawCallTopPluginLabel: 'tile-route',
+        drawCallSummary: 'tile-route dominates draw calls.',
+        resourceWarnings: ['Chunk-generation queue is backing up.'],
+      }),
+    });
+
+    expect(firstIssue).not.toBeNull();
+    expect(secondIssue).not.toBeNull();
+    expect(firstIssue?.summary).toBe(secondIssue?.summary);
+    expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
+  });
 });
