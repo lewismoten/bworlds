@@ -708,6 +708,25 @@ describe('world generator', () => {
     expect(sample.sampleCount).toBe(9);
   });
 
+  it('reuses cached terrain height-range summaries for identical regional queries', () => {
+    const generator = createGenerator();
+    const bounds = {
+      minX: 10,
+      maxX: 14,
+      minY: 20,
+      maxY: 24,
+      sampleStep: 2,
+      resolution: 'coarse' as const,
+    };
+    const first = generator.sampleTerrainHeightRange(bounds);
+    const second = generator.sampleTerrainHeightRange(bounds);
+
+    expect(second).toBe(first);
+    expect(generator.terrainHeightSampler.sampleHeightRange(bounds)).toBe(
+      first
+    );
+  });
+
   it('samples terrain sea depth explicitly from the shared surface metadata', () => {
     const generator = createGenerator();
     const surface = generator.sampleTerrainSurface(10, 20);
@@ -925,6 +944,14 @@ describe('world generator', () => {
     expect(generator.sampleTerrainCurvature(10, 20)).toEqual(
       baselineTerrainCurvature
     );
+    expect(
+      generator.sampleTerrainHeightRange({
+        minX: 10,
+        maxX: 12,
+        minY: 20,
+        maxY: 21,
+      })
+    ).toEqual(baselineTerrainRange);
     expect(
       generator.sampleTerrainHeightRange({
         minX: 10,

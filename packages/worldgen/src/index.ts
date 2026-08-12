@@ -228,6 +228,7 @@ const OVERWORLD_CONTEXT: Context = {
 };
 const MAP_CACHE_LIMIT = 256;
 const PREVIEW_TILE_CACHE_LIMIT = 8192;
+const TERRAIN_HEIGHT_RANGE_CACHE_LIMIT = 2048;
 const EMPTY_PREVIEW_ANCHORS: Array<never> = [];
 
 function makeKey(...parts: Array<string | number>): string {
@@ -293,6 +294,10 @@ export function createWorldGenerator({
   const previewSurfaceHeightCache = createBoundedCache<string, number>(
     PREVIEW_TILE_CACHE_LIMIT
   );
+  const terrainHeightRangeCache = createBoundedCache<
+    string,
+    WorldTerrainHeightRangeSample
+  >(TERRAIN_HEIGHT_RANGE_CACHE_LIMIT);
   const getPreviewKey = (x: number, y: number) => makeKey('preview', x, y);
   const defaultPreviewTileKind =
     plugins.getDefaultTileKind?.('plains') ?? 'plains';
@@ -512,43 +517,58 @@ export function createWorldGenerator({
     bounds: WorldTerrainHeightRangeQueryOptions
   ): WorldTerrainHeightRangeSample => {
     const normalizedBounds = normalizeTerrainHeightRangeBounds(bounds);
-    let minHeight = Number.POSITIVE_INFINITY;
-    let maxHeight = Number.NEGATIVE_INFINITY;
-    let sampleCount = 0;
+    const key = makeKey(
+      'terrain-height-range',
+      normalizedBounds.minX,
+      normalizedBounds.maxX,
+      normalizedBounds.minY,
+      normalizedBounds.maxY,
+      normalizedBounds.sampleStep,
+      normalizedBounds.resolution
+    );
+    return terrainHeightRangeCache.getOrCreate(key, () => {
+      let minHeight = Number.POSITIVE_INFINITY;
+      let maxHeight = Number.NEGATIVE_INFINITY;
+      let sampleCount = 0;
 
-    for (
-      let sampleY = normalizedBounds.minY;
-      sampleY <= normalizedBounds.maxY;
-      sampleY += normalizedBounds.sampleStep
-    ) {
       for (
-        let sampleX = normalizedBounds.minX;
-        sampleX <= normalizedBounds.maxX;
-        sampleX += normalizedBounds.sampleStep
+        let sampleY = normalizedBounds.minY;
+        sampleY <= normalizedBounds.maxY;
+        sampleY += normalizedBounds.sampleStep
       ) {
-        const height = sampleTerrainHeight(sampleX, sampleY, normalizedBounds);
-        minHeight = Math.min(minHeight, height);
-        maxHeight = Math.max(maxHeight, height);
-        sampleCount += 1;
+        for (
+          let sampleX = normalizedBounds.minX;
+          sampleX <= normalizedBounds.maxX;
+          sampleX += normalizedBounds.sampleStep
+        ) {
+          const height = sampleTerrainHeight(
+            sampleX,
+            sampleY,
+            normalizedBounds
+          );
+          minHeight = Math.min(minHeight, height);
+          maxHeight = Math.max(maxHeight, height);
+          sampleCount += 1;
+        }
       }
-    }
 
-    return {
-      ...normalizedBounds,
-      sampleCount,
-      minHeight: validateTerrainHeightValue(
-        minHeight,
-        'Terrain height range minimum'
-      ),
-      maxHeight: validateTerrainHeightValue(
-        maxHeight,
-        'Terrain height range maximum'
-      ),
-      heightRange: validateTerrainHeightValue(
-        maxHeight - minHeight,
-        'Terrain height range span'
-      ),
-    };
+      return {
+        ...normalizedBounds,
+        sampleCount,
+        minHeight: validateTerrainHeightValue(
+          minHeight,
+          'Terrain height range minimum'
+        ),
+        maxHeight: validateTerrainHeightValue(
+          maxHeight,
+          'Terrain height range maximum'
+        ),
+        heightRange: validateTerrainHeightValue(
+          maxHeight - minHeight,
+          'Terrain height range span'
+        ),
+      };
+    });
   };
   const sampleTerrainSeaDepth = (
     x: number,

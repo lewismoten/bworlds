@@ -19,7 +19,7 @@ Current surface:
   local second-difference curvature sample from the same height path
 - `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep?,
 resolution? })` derives one sampled min/max height summary for an explicit
-  world-space region
+  world-space region and reuses cached summaries for repeated identical bounds
 - `sampleTerrainSeaDepth(worldX, worldY, { resolution? })` exposes one explicit
   below-sea summary from the shared surface sample
 - `terrainHeightSampler` exposes the same height, surface, slope, aspect,

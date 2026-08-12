@@ -8,7 +8,7 @@
 - [x] Add feet to world-unit conversion helpers.
 - [x] Keep sea level at one stable reference.
 - [x] Support coarse and fine height queries.
-- [ ] Cache expensive regional height inputs.
+- [x] Cache expensive regional height inputs.
 
 ## Layer Composition
 
@@ -85,6 +85,9 @@ Current support:
   `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep? })`, which
   derives one sampled min/max height summary for an explicit world-space
   region.
+- Repeated identical regional height-range queries now reuse one bounded cache
+  entry keyed by normalized bounds, sample step, and coarse-or-fine query
+  resolution instead of rescanning the same world-space region each time.
 - It now also exposes `sampleTerrainSeaDepth(worldX, worldY)`, which turns the
   shared surface sample into one explicit sea-depth result with
   `depthBelowSeaLevel` and `isBelowSeaLevel`.
