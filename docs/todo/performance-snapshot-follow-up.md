@@ -66,7 +66,10 @@
       texture and render-state values match, and `tile-town` now applies the
       same per-host, per-label material caching to town name sign faces so
       repeated front/back placard labels reuse one `MeshBasicMaterial` instead
-      of paying a fresh material allocation for each repeated town sign build.
+      of paying a fresh material allocation for each repeated town sign build,
+      and `tile-dungeon` now reuses one shared host-level gate-bar texture and
+      material across all dungeon regions because that barred-gate surface does
+      not vary by region or quality.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`

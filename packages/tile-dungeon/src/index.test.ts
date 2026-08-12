@@ -800,6 +800,31 @@ describe('tile dungeon', () => {
     expect(findGateVoidMaterial(first)).toBe(findGateVoidMaterial(second));
   });
 
+  it('reuses the dungeon bar material across different regions on the same host', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 41,
+      tileY: 22,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    expect(findDungeonBarMaterial(first)).toBe(findDungeonBarMaterial(second));
+  });
+
   it('bounds shared dungeon glow material variants within a region', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
@@ -969,6 +994,29 @@ function findGateVoidMaterial(root: FakeGroup) {
       typeof resolved === 'object' &&
       'options' in resolved &&
       resolved.options?.color === '#000000'
+    ) {
+      material = resolved;
+    }
+  });
+  return material;
+}
+
+function findDungeonBarMaterial(root: FakeGroup) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (material || !(node instanceof FakeMesh)) {
+      return;
+    }
+
+    const resolved = Array.isArray(node.material)
+      ? node.material[0]
+      : node.material;
+    if (
+      resolved &&
+      typeof resolved === 'object' &&
+      'options' in resolved &&
+      resolved.options?.metalness === 0.18 &&
+      resolved.options?.roughness === 0.7
     ) {
       material = resolved;
     }

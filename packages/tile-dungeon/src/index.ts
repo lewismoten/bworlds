@@ -70,6 +70,8 @@ const DUNGEON_STONE_CHIP_Y_SEED = registerHashLabel('dungeon-stone-chip-y');
 const DUNGEON_ROOF_X_SEED = registerHashLabel('dungeon-roof-x');
 const DUNGEON_ROOF_Y_SEED = registerHashLabel('dungeon-roof-y');
 const DUNGEON_GLOW_INTENSITY_STEP = 0.02;
+const dungeonBarTextureCache = new WeakMap<object, ThreeTextureLike>();
+const dungeonBarMaterialCache = new WeakMap<object, ThreeMaterialLike>();
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -644,7 +646,6 @@ const resolveDungeonStyle = createRegionalValueResolver(
     );
     return createHostVariantValueResolver(
       (three: ThreeHostLike, quality: RenderBudgetQualityLevel) => {
-        const barTexture = createDungeonBarTexture(three);
         const bannerMaterials = createHostVariantMaterialResolver(
           (host: ThreeHostLike, color: string): ThreeMaterialLike =>
             new host.MeshStandardMaterial({
@@ -717,12 +718,7 @@ const resolveDungeonStyle = createRegionalValueResolver(
             roughness: 0.88,
             metalness: 0.05,
           }),
-          barMaterial: new three.MeshStandardMaterial({
-            color: '#ffffff',
-            map: barTexture,
-            roughness: 0.7,
-            metalness: 0.18,
-          }),
+          barMaterial: getSharedDungeonBarMaterial(three),
           gateVoidMaterial: createBasicMaterial(three, {
             color: '#000000',
             side: three.DoubleSide,
@@ -1014,6 +1010,31 @@ function createDungeonBarTexture(three: ThreeHostLike): ThreeTextureLike {
       }
     },
   });
+}
+
+function getSharedDungeonBarTexture(three: ThreeHostLike): ThreeTextureLike {
+  const cached = dungeonBarTextureCache.get(three);
+  if (cached) {
+    return cached;
+  }
+  const texture = createDungeonBarTexture(three);
+  dungeonBarTextureCache.set(three, texture);
+  return texture;
+}
+
+function getSharedDungeonBarMaterial(three: ThreeHostLike): ThreeMaterialLike {
+  const cached = dungeonBarMaterialCache.get(three);
+  if (cached) {
+    return cached;
+  }
+  const material = new three.MeshStandardMaterial({
+    color: '#ffffff',
+    map: getSharedDungeonBarTexture(three),
+    roughness: 0.7,
+    metalness: 0.18,
+  });
+  dungeonBarMaterialCache.set(three, material);
+  return material;
 }
 
 interface DungeonStyle {
