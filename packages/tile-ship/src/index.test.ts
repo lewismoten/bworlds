@@ -276,6 +276,39 @@ describe('tile ship', () => {
     expect(tallLantern?.material).toBe(brokenLantern?.material);
   });
 
+  it('keeps mixed ship variants on one host within the shared material budget', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    const variants = new Map<string, FakeNode>();
+
+    for (let tileY = 0; tileY < 24 && variants.size < 2; tileY += 1) {
+      for (let tileX = 0; tileX < 24 && variants.size < 2; tileX += 1) {
+        const model = tile?.create3DModel?.({
+          three: fakeThree as never,
+          state: createShipState(),
+          tile: { kind: 'ship' } as never,
+          tileX,
+          tileY,
+        }) as FakeNode | undefined;
+        const variant = model?.userData?.shipPoiVariant;
+        if (typeof variant === 'string' && model && !variants.has(variant)) {
+          variants.set(variant, model);
+        }
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    variants.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(variants.get('tall-ship')).toBeDefined();
+    expect(variants.get('broken-ship')).toBeDefined();
+    expect(sharedMaterials.size).toBeLessThanOrEqual(6);
+  });
+
   it('creates an enterable ship model with a deterministic variant and night light', () => {
     const plugin = createShipTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');

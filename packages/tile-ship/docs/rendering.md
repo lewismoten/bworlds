@@ -38,7 +38,9 @@ selection, and light placement.
 Material reuse:
 
 - repeated ship builds on one Three host are expected to stay within one
-  shared five-material palette per resolved ship variant for hull, trim, mast,
-  sail, and lantern surfaces
-- the regression test locks that budget so repeated nearby ship builds cannot
+  shared five-material palette for any single resolved ship variant
+- mixed tall-ship and broken-ship builds on one Three host are expected to stay
+  within one shared six-material palette, where only the hull surface remains
+  variant-specific while trim, mast, sail, and lantern surfaces are shared
+- the regression tests lock both budgets so repeated nearby ship builds cannot
   quietly start allocating extra equivalent materials on the same host

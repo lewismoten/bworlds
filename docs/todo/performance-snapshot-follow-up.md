@@ -211,8 +211,10 @@
       repeated river builds on one host within one shared two-material palette
       so body and highlight materials cannot quietly grow between passes, and
       `tile-ship` now keeps repeated ship builds on one host within one shared
-      five-material palette per resolved variant so hull, trim, mast, sail,
-      and lantern materials cannot quietly grow between passes, and
+      five-material palette per resolved variant, while mixed tall-ship and
+      broken-ship builds on that same host now also stay within one shared
+      six-material palette because only the hull surface remains variant-
+      specific while trim, mast, sail, and lantern materials stay shared, and
       `tile-quarry` now keeps repeated quarry builds on one host within one
       shared six-material palette so rim, timber, rope, rubble, dark-metal,
       and lantern materials cannot quietly grow between passes, and
