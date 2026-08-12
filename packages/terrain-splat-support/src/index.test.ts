@@ -890,6 +890,7 @@ describe('terrain splat support', () => {
           biome: 'wetland',
           moisture: 0.85,
           elevation: 0.33,
+          slope: 0.22,
           temperature: 0.22,
           season: 'winter',
         },
@@ -906,6 +907,7 @@ describe('terrain splat support', () => {
           biome: 'wetland',
           moisture: 0.85,
           elevation: 0.33,
+          slope: 0.22,
           temperature: 0.22,
           season: 'winter',
         },
@@ -1131,6 +1133,7 @@ describe('terrain splat support', () => {
         kind: 'rocky',
         signals: {
           moisture: 0.2,
+          slope: 0.34,
         },
       },
       kindCatalog
@@ -1203,6 +1206,38 @@ describe('terrain splat support', () => {
       },
       kindCatalog
     );
+    const gentlePlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 18,
+        y: 19,
+        kind: 'plains',
+        signals: {
+          biome: 'plains',
+          slope: 0.12,
+          moisture: 0.8,
+          temperature: 0.55,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const steepPlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 18,
+        y: 19,
+        kind: 'plains',
+        signals: {
+          biome: 'plains',
+          slope: 0.74,
+          moisture: 0.8,
+          temperature: 0.55,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
     const coastalPlains = resolveTerrainKindSplatSample(
       {
         seed: 'pbr-splat-seed',
@@ -1213,6 +1248,38 @@ describe('terrain splat support', () => {
           biome: 'shore',
           moisture: 0.45,
           temperature: 0.68,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const gentleMountain = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 20,
+        y: 21,
+        kind: 'mountain',
+        signals: {
+          slope: 0.24,
+          elevation: 0.7,
+          moisture: 0.35,
+          temperature: 0.42,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const steepMountain = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 20,
+        y: 21,
+        kind: 'mountain',
+        signals: {
+          slope: 0.84,
+          elevation: 0.7,
+          moisture: 0.35,
+          temperature: 0.42,
           season: 'summer',
         },
       },
@@ -1291,6 +1358,9 @@ describe('terrain splat support', () => {
     expect(warmWinterPlains.entries.map((entry) => entry.layerId)).not.toEqual(
       expect.arrayContaining(['snow'])
     );
+    expect(findEntryWeight(gentlePlains, 'soil')).toBeGreaterThan(
+      findEntryWeight(steepPlains, 'soil')
+    );
     expect(coastalPlains.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['sand'])
     );
@@ -1299,6 +1369,9 @@ describe('terrain splat support', () => {
     );
     expect(findEntryWeight(swampForest, 'soil')).toBeGreaterThan(
       findEntryWeight(uplandForest, 'soil')
+    );
+    expect(findEntryWeight(steepMountain, 'rock')).toBeGreaterThan(
+      findEntryWeight(gentleMountain, 'rock')
     );
   });
 
@@ -1552,6 +1625,45 @@ describe('terrain splat support', () => {
     ).toEqual(
       expect.arrayContaining([
         'Terrain splat kind "plains" biomes must only contain non-empty biome labels.',
+      ])
+    );
+  });
+
+  it('rejects invalid slope conditions on terrain kinds', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    expect(
+      validateTerrainKindSplatDefinition(
+        {
+          kind: 'plains',
+          baseLayerIds: ['grass'],
+          blends: [
+            {
+              layerId: 'grass',
+              weight: 0.2,
+              when: {
+                minSlope: -0.1,
+                maxSlope: 1.3,
+              },
+            },
+          ],
+        },
+        layerCatalog
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        'Terrain splat kind "plains" must keep minSlope within 0..1.',
+        'Terrain splat kind "plains" must keep maxSlope within 0..1.',
       ])
     );
   });

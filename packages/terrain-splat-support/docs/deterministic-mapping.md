@@ -11,7 +11,9 @@ Inputs:
 - optional `OverworldSignals` such as `moisture`, `elevation`, `riverSignal`,
   and `roadSignal`, plus terrain-local `temperature` and `season` inputs when
   the caller wants climate-sensitive ground blending, plus an optional `biome`
-  label when neighboring-world context should influence the chosen ground mix
+  label when neighboring-world context should influence the chosen ground mix,
+  and an optional normalized `slope` value when local terrain steepness should
+  influence the selected ground blend
 
 Outputs:
 
@@ -48,14 +50,15 @@ Why this matters:
 Current scope:
 
 - base-layer variation is deterministic from seed plus world coordinates
-- moisture, elevation, road signal, temperature, season, and biome thresholds
-  can influence blend weights
+- moisture, elevation, slope, road signal, temperature, season, and biome
+  thresholds can influence blend weights
 - recommended mappings now cover exposed-ground snow blends plus dirt, mud, and
   rocky surface mixes without renderer-specific rules, and can now add light
   winter snow cover to plains and forest ground when the caller resolves cold
   seasonal signals through the shared mapping layer, plus coastal sand or
   wetland soil bias when the caller resolves biome labels through the same
-  deterministic contract
+  deterministic contract, plus gentler soil bias or steeper rock bias when the
+  caller resolves local slope through that same shared mapping contract
 - `river`, `ocean`, `bridge`, and `dock` are excluded from normal ground
   splatting in the recommended overworld definitions
 - packed sample grids quantize weights to `Uint8`, so unpacked weights preserve

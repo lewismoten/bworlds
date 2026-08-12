@@ -83,6 +83,8 @@ export type TerrainSplatSeason = 'spring' | 'summer' | 'autumn' | 'winter';
 export type TerrainKindSplatCondition = {
   minElevation?: number;
   maxElevation?: number;
+  minSlope?: number;
+  maxSlope?: number;
   minMoisture?: number;
   maxMoisture?: number;
   minTemperature?: number;
@@ -120,6 +122,7 @@ export type ResolveTerrainKindSplatSampleInput = {
   kind: Kind;
   signals?: Partial<OverworldSignals> & {
     biome?: string;
+    slope?: number;
     temperature?: number;
     season?: TerrainSplatSeason;
   };
@@ -127,6 +130,7 @@ export type ResolveTerrainKindSplatSampleInput = {
 
 type ResolvedTerrainKindSignals = OverworldSignals & {
   biome: string;
+  slope: number;
   temperature: number;
   season: TerrainSplatSeason;
 };
@@ -724,6 +728,7 @@ export function createOverworldTerrainSplatDefinitions(
           layerId: layers.soilLayerId,
           weight: 0.16,
           when: {
+            maxSlope: 0.34,
             minMoisture: 0.72,
           },
         },
@@ -751,6 +756,13 @@ export function createOverworldTerrainSplatDefinitions(
         {
           layerId: layers.soilLayerId,
           weight: 0.22,
+        },
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.08,
+          when: {
+            maxSlope: 0.3,
+          },
         },
         {
           layerId: layers.leafLayerId,
@@ -789,6 +801,14 @@ export function createOverworldTerrainSplatDefinitions(
           weight: 0.2,
           when: {
             maxElevation: 0.78,
+            maxSlope: 0.48,
+          },
+        },
+        {
+          layerId: layers.rockLayerId,
+          weight: 0.16,
+          when: {
+            minSlope: 0.72,
           },
         },
       ],
@@ -860,12 +880,23 @@ export function createOverworldTerrainSplatDefinitions(
         {
           layerId: layers.soilLayerId,
           weight: 0.24,
+          when: {
+            maxSlope: 0.42,
+          },
         },
         {
           layerId: layers.gravelLayerId,
           weight: 0.12,
           when: {
+            minSlope: 0.28,
             maxMoisture: 0.42,
+          },
+        },
+        {
+          layerId: layers.rockLayerId,
+          weight: 0.14,
+          when: {
+            minSlope: 0.7,
           },
         },
       ],
@@ -1389,6 +1420,8 @@ function validateTerrainKindSplatCondition(
   const pairs: Array<[keyof TerrainKindSplatCondition, unknown]> = [
     ['minElevation', condition.minElevation],
     ['maxElevation', condition.maxElevation],
+    ['minSlope', condition.minSlope],
+    ['maxSlope', condition.maxSlope],
     ['minMoisture', condition.minMoisture],
     ['maxMoisture', condition.maxMoisture],
     ['minTemperature', condition.minTemperature],
@@ -1452,6 +1485,8 @@ function matchesTerrainKindSplatCondition(
   return (
     matchesMinimum(condition.minElevation, signals.elevation) &&
     matchesMaximum(condition.maxElevation, signals.elevation) &&
+    matchesMinimum(condition.minSlope, signals.slope) &&
+    matchesMaximum(condition.maxSlope, signals.slope) &&
     matchesMinimum(condition.minMoisture, signals.moisture) &&
     matchesMaximum(condition.maxMoisture, signals.moisture) &&
     matchesMinimum(condition.minTemperature, signals.temperature) &&
@@ -1469,6 +1504,7 @@ function resolveTerrainKindSignals(
   signals:
     | (Partial<OverworldSignals> & {
         biome?: string;
+        slope?: number;
         temperature?: number;
         season?: TerrainSplatSeason;
       })
@@ -1478,6 +1514,7 @@ function resolveTerrainKindSignals(
     biome: normalizeTerrainBiomeLabel(signals?.biome),
     continent: clampWeight(signals?.continent ?? 0),
     elevation: clampWeight(signals?.elevation ?? 0),
+    slope: clampWeight(signals?.slope ?? 0),
     moisture: clampWeight(signals?.moisture ?? 0),
     temperature: clampWeight(signals?.temperature ?? 0.5),
     riverSignal: clampWeight(signals?.riverSignal ?? 0),

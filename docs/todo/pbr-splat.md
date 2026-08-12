@@ -80,9 +80,9 @@
 
 - [ ] Use the shared terrain height field for splat geometry.
 - [ ] Keep splat weights independent from terrain height.
-- [ ] Allow slope to influence material selection.
-- [ ] Add more rock weight on steep slopes.
-- [ ] Add more soil weight on gentle slopes.
+- [x] Allow slope to influence material selection.
+- [x] Add more rock weight on steep slopes.
+- [x] Add more soil weight on gentle slopes.
 - [x] Allow elevation to influence terrain layers.
 - [ ] Keep shared chunk edges identical in height.
 
@@ -226,7 +226,7 @@
 - [x] Test tint variation does not add new materials.
 - [ ] Test distant LOD keeps major terrain boundaries.
 - [ ] Test roads blend with surrounding terrain.
-- [ ] Test slope can increase rock material weight.
+- [x] Test slope can increase rock material weight.
 - [ ] Test weather can alter wetness without new materials.
 - [ ] Test splatting reduces terrain material count.
 - [ ] Test splatting reduces terrain draw calls.
@@ -312,7 +312,7 @@
 - [ ] Add deterministic texture variants.
 - [x] Add UV rotation and mirroring.
 - [ ] Add biome-driven splat weights.
-- [ ] Add slope-driven splat weights.
+- [x] Add slope-driven splat weights.
 - [ ] Add LOD support.
 
 ## Third Delivery
@@ -348,7 +348,9 @@ overworld splat mapping can add cold winter snow cover to plains and forest
 ground without coupling climate-sensitive terrain blending to renderer code,
 plus deterministic biome-aware blend conditions so the same shared mapping can
 shift plains and forest ground toward coastal or wetland mixes without
-inventing plugin-specific splat rules.
+inventing plugin-specific splat rules, plus deterministic slope-aware blend
+conditions so the shared overworld splat mapping can favor gentler soil mixes
+or steeper exposed rock without coupling slope rules to renderer code.
 
 # Roads and Paths as Terrain Splats
 
