@@ -23,6 +23,7 @@ import {
   FakeInstancedMesh,
   FakeMesh,
   FakeNode,
+  FakePoints,
   createForestTestState,
   fakeThree,
 } from './testing/forest-test-support.ts';
@@ -640,6 +641,60 @@ describe('tile forest', () => {
 
     expect(reducedTreeGroups.length).toBeLessThan(defaultTreeGroups.length);
     expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
+  });
+
+  it('renders forest fireflies only at full quality close detail', () => {
+    const tile = getForestTile();
+    const state = createForestTestState(8, 6);
+
+    const fullModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'full',
+        detailLevel: 'full',
+        targetFps: 60,
+        visibilityRadius: 18,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+    const reducedModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'full',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    const fullFireflies: FakePoints[] = [];
+    const reducedFireflies: FakePoints[] = [];
+    fullModel.traverse((node) => {
+      if (node instanceof FakePoints && node.userData?.forestFirefly) {
+        fullFireflies.push(node);
+      }
+    });
+    reducedModel.traverse((node) => {
+      if (node instanceof FakePoints && node.userData?.forestFirefly) {
+        reducedFireflies.push(node);
+      }
+    });
+
+    expect(fullFireflies.length).toBeGreaterThan(0);
+    expect(reducedFireflies).toHaveLength(0);
   });
 
   it('renders meadow grass only in full-detail forest models', () => {

@@ -22,7 +22,10 @@
       shared field, stem, light-accent, or dark-wildlife material instead of
       paying separate material instances for visually similar meadow stems,
       breadcrumb markers, owl eyes, bird bodies, spiders, and flower accent
-      colors.
+      colors, and forest fireflies now stay disabled outside full-quality
+      close-detail rendering so reduced/minimal forest scenes do not pay one
+      extra `PointsMaterial` that pushes the visible forest plugin material
+      budget from `12` to `13`.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First

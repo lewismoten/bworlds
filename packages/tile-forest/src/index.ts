@@ -1408,6 +1408,7 @@ function* createForestModelProgressive({
   renderBudget,
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
   const group = new three.Group();
+  const renderQuality = renderBudget?.quality;
   const renderCloseDetails = shouldRenderForestCloseDetails(
     state,
     tileX,
@@ -1439,10 +1440,10 @@ function* createForestModelProgressive({
   } = splitForestFullDetailTreeDescriptors(
     descriptors,
     state,
-    tileX,
-    tileY,
-    renderBudget?.quality
-  );
+      tileX,
+      tileY,
+      renderBudget?.quality
+    );
   if (backgroundInstanceDescriptors.length > 0) {
     addLowDetailForestTreeInstances(
       three,
@@ -1924,7 +1925,7 @@ function* createForestModelProgressive({
     label: 'landmarks-and-floor',
   };
 
-  if (renderCloseDetails) {
+  if (shouldRenderForestFireflies(renderCloseDetails, renderQuality)) {
     for (const firefly of getForestFireflies(three, state, tileX, tileY)) {
       group.add(firefly);
     }
@@ -4333,6 +4334,13 @@ function shouldRenderForestCloseDetails(
   return (
     deltaX * deltaX + deltaY * deltaY <= FOREST_CLOSE_DETAIL_DISTANCE_SQUARED
   );
+}
+
+function shouldRenderForestFireflies(
+  renderCloseDetails: boolean,
+  quality: RenderBudgetQualityLevel | null | undefined
+) {
+  return renderCloseDetails && (quality === 'full' || quality == null);
 }
 
 function addLowDetailForestTreeInstances(
