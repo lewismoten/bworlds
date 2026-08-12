@@ -13,6 +13,8 @@ import type {
   ThreeTextureLike,
 } from '@bworlds/plugin-api';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
+import type { TerrainSplatGeometryAttributePlanSet } from '../../terrain-splat-support/src/attribute-plan.ts';
+import type { TerrainSplatHeightGeometryPlan } from '../../terrain-splat-support/src/height-field.ts';
 
 type TextureHostLike<TTexture> = {
   CanvasTexture: new (canvas: HTMLCanvasElement) => TTexture;
@@ -35,6 +37,19 @@ type BasicMaterialHostLike<TMaterial> = {
 type PlaneMeshHostLike<TMaterial, TMesh> = BasicMaterialHostLike<TMaterial> & {
   PlaneGeometry: new (width: number, height: number) => ThreeGeometryLike;
   Mesh: new (geometry?: ThreeGeometryLike, material?: TMaterial) => TMesh;
+};
+
+type BufferAttributeHostLike = {
+  BufferGeometry: new () => ThreeBufferGeometryLike;
+  Float32BufferAttribute: new (
+    values: ArrayLike<number> | number[],
+    itemSize: number
+  ) => unknown;
+  BufferAttribute: new (
+    values: ArrayLike<number> | number[],
+    itemSize: number,
+    normalized?: boolean
+  ) => unknown;
 };
 
 const mountainTerrainMaterialCache = new WeakMap<
@@ -408,6 +423,25 @@ function compactMaterialOptions<T extends Record<string, unknown>>(
   ) as T;
 }
 
+function assertCompatibleTerrainChunkAttributePlanSet(
+  geometryPlan: TerrainSplatHeightGeometryPlan,
+  attributePlanSet: TerrainSplatGeometryAttributePlanSet
+): void {
+  if (
+    attributePlanSet.width !== geometryPlan.width ||
+    attributePlanSet.height !== geometryPlan.height
+  ) {
+    throw new Error(
+      `Terrain chunk attribute plan dimensions ${attributePlanSet.width}x${attributePlanSet.height} must match geometry plan dimensions ${geometryPlan.width}x${geometryPlan.height}.`
+    );
+  }
+  if (attributePlanSet.sampleCount !== geometryPlan.vertexCount) {
+    throw new Error(
+      `Terrain chunk attribute plan sampleCount ${attributePlanSet.sampleCount} must match geometry plan vertexCount ${geometryPlan.vertexCount}.`
+    );
+  }
+}
+
 export function createQuadraticBezierPoints(
   three: ThreeHostLike,
   start: PathPointLike,
@@ -489,6 +523,47 @@ export function createRibbonMesh(
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return new three.Mesh(geometry, material);
+}
+
+export function createTerrainChunkBufferGeometry(
+  three: BufferAttributeHostLike,
+  params: {
+    geometryPlan: TerrainSplatHeightGeometryPlan;
+    attributePlanSet?: TerrainSplatGeometryAttributePlanSet | null;
+  }
+): ThreeBufferGeometryLike {
+  const geometry: ThreeBufferGeometryLike = new three.BufferGeometry();
+  const { geometryPlan, attributePlanSet } = params;
+
+  geometry.setAttribute(
+    'position',
+    new three.Float32BufferAttribute(geometryPlan.positions, 3)
+  );
+  geometry.setAttribute(
+    'normal',
+    new three.Float32BufferAttribute(geometryPlan.normals, 3)
+  );
+  geometry.setAttribute(
+    'uv',
+    new three.Float32BufferAttribute(geometryPlan.uvs, 2)
+  );
+  geometry.setIndex(geometryPlan.indices);
+
+  if (attributePlanSet) {
+    assertCompatibleTerrainChunkAttributePlanSet(geometryPlan, attributePlanSet);
+    for (const attribute of attributePlanSet.attributes) {
+      geometry.setAttribute(
+        attribute.name,
+        new three.BufferAttribute(
+          attribute.array,
+          attribute.itemSize,
+          attribute.normalized
+        )
+      );
+    }
+  }
+
+  return geometry;
 }
 
 export function createMountainTerrainMaterials(three: ThreeHostLike): {

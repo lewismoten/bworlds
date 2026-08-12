@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ThreeTextureLike } from '@bworlds/plugin-api';
+import { createTerrainSplatGeometryAttributePlanSet } from '../../terrain-splat-support/src/attribute-plan.ts';
+import type { TerrainSplatHeightGeometryPlan } from '../../terrain-splat-support/src/height-field.ts';
 import {
   applyPixelArtTextureSampling,
   applySurfaceTextureSampling,
   createBasicMaterial,
   createPaintedStandardMaterial,
+  createTerrainChunkBufferGeometry,
   createTexturedPlaneMesh,
   getSharedBoxGeometry,
   getSharedConeGeometry,
@@ -526,4 +529,164 @@ describe('three support', () => {
     expect(material.options).not.toHaveProperty('opacity');
     expect(material.options).not.toHaveProperty('side');
   });
+
+  it('creates one terrain chunk buffer geometry from shared height and splat plans', () => {
+    class FakeBufferAttribute {
+      constructor(
+        public values: ArrayLike<number> | number[],
+        public itemSize: number,
+        public normalized = false
+      ) {}
+    }
+
+    class FakeFloat32BufferAttribute extends FakeBufferAttribute {}
+
+    class FakeBufferGeometry {
+      attributes = new Map<string, FakeBufferAttribute>();
+      index: unknown = null;
+
+      computeVertexNormals() {}
+
+      setAttribute(name: string, attribute: unknown) {
+        this.attributes.set(name, attribute as FakeBufferAttribute);
+        return this;
+      }
+
+      setIndex(index: unknown) {
+        this.index = index;
+        return this;
+      }
+    }
+
+    const geometryPlan = createTestTerrainChunkGeometryPlan();
+    const attributePlanSet = createTerrainSplatGeometryAttributePlanSet({
+      width: 2,
+      height: 2,
+      step: 1,
+      layerIndices: new Uint8Array([
+        1, 2, 3, 4, 4, 3, 2, 1, 5, 6, 7, 8, 8, 7, 6, 5,
+      ]),
+      weights: new Uint8Array([
+        255, 0, 0, 0, 128, 127, 0, 0, 64, 64, 64, 63, 0, 0, 255, 0,
+      ]),
+    });
+
+    const geometry = createTerrainChunkBufferGeometry(
+      {
+        BufferGeometry: FakeBufferGeometry,
+        Float32BufferAttribute: FakeFloat32BufferAttribute,
+        BufferAttribute: FakeBufferAttribute,
+      },
+      {
+        geometryPlan,
+        attributePlanSet,
+      }
+    ) as FakeBufferGeometry;
+
+    expect(Array.from(geometry.attributes.keys())).toEqual([
+      'position',
+      'normal',
+      'uv',
+      'terrainSplatLayerIndices',
+      'terrainSplatLayerWeights',
+    ]);
+    expect(geometry.attributes.get('position')).toEqual(
+      expect.objectContaining({
+        values: geometryPlan.positions,
+        itemSize: 3,
+      })
+    );
+    expect(geometry.attributes.get('normal')).toEqual(
+      expect.objectContaining({
+        values: geometryPlan.normals,
+        itemSize: 3,
+      })
+    );
+    expect(geometry.attributes.get('uv')).toEqual(
+      expect.objectContaining({
+        values: geometryPlan.uvs,
+        itemSize: 2,
+      })
+    );
+    expect(geometry.attributes.get('terrainSplatLayerIndices')).toEqual(
+      expect.objectContaining({
+        values: attributePlanSet.attributes[0]?.array,
+        itemSize: 4,
+        normalized: false,
+      })
+    );
+    expect(geometry.attributes.get('terrainSplatLayerWeights')).toEqual(
+      expect.objectContaining({
+        values: attributePlanSet.attributes[1]?.array,
+        itemSize: 4,
+        normalized: true,
+      })
+    );
+    expect(geometry.index).toBe(geometryPlan.indices);
+  });
+
+  it('rejects terrain chunk splat attributes whose dimensions do not match the geometry plan', () => {
+    class FakeBufferAttribute {
+      constructor(
+        public values: ArrayLike<number> | number[],
+        public itemSize: number,
+        public normalized = false
+      ) {}
+    }
+
+    class FakeFloat32BufferAttribute extends FakeBufferAttribute {}
+
+    class FakeBufferGeometry {
+      setAttribute() {
+        return this;
+      }
+
+      setIndex() {
+        return this;
+      }
+
+      computeVertexNormals() {}
+    }
+
+    expect(() =>
+      createTerrainChunkBufferGeometry(
+        {
+          BufferGeometry: FakeBufferGeometry,
+          Float32BufferAttribute: FakeFloat32BufferAttribute,
+          BufferAttribute: FakeBufferAttribute,
+        },
+        {
+          geometryPlan: createTestTerrainChunkGeometryPlan(),
+          attributePlanSet: createTerrainSplatGeometryAttributePlanSet({
+            width: 3,
+            height: 2,
+            step: 1,
+            layerIndices: new Uint8Array(24),
+            weights: new Uint8Array(24),
+          }),
+        }
+      )
+    ).toThrow(
+      'Terrain chunk attribute plan dimensions 3x2 must match geometry plan dimensions 2x2.'
+    );
+  });
 });
+
+function createTestTerrainChunkGeometryPlan(): TerrainSplatHeightGeometryPlan {
+  return {
+    width: 2,
+    height: 2,
+    step: 1,
+    lodStepMultiplier: 1,
+    vertexCount: 4,
+    triangleCount: 2,
+    positions: new Float32Array([
+      0, 0, 0, 1, 0.1, 0, 0, 0.2, 1, 1, 0.3, 1,
+    ]),
+    normals: new Float32Array([
+      0, 1, 0, 0.1, 0.99, 0, 0, 0.98, 0.2, 0.1, 0.97, 0.2,
+    ]),
+    uvs: new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]),
+    indices: new Uint32Array([0, 2, 1, 2, 3, 1]),
+  };
+}

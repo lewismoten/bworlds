@@ -75,6 +75,10 @@ Current support:
   neighboring chunks, and keeps reduced-LOD index buffers aligned to the actual
   vertex grid so chunk renderers can reuse one normal contract without
   introducing coarse-mesh seam bugs.
+- `@bworlds/three-support` now converts one shared terrain chunk height plan
+  plus packed splat attribute plan into a real `BufferGeometry`, so the live
+  renderer can consume the shared chunk pipeline without rebuilding positions,
+  normals, uvs, or packed splat attributes by hand inside `render3d`.
 
 ## Sextant Panel
 
