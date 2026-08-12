@@ -186,7 +186,10 @@
       and lantern materials cannot quietly grow between passes, and
       `tile-quarry` now keeps repeated quarry builds on one host within one
       shared six-material palette so rim, timber, rope, rubble, dark-metal,
-      and lantern materials cannot quietly grow between passes.
+      and lantern materials cannot quietly grow between passes, and
+      `tile-mountain` now keeps repeated mountain builds on one host within
+      one shared two-material palette so rock and snow materials cannot
+      quietly grow between passes.
 
 ## Instancing
 

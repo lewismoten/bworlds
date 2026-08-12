@@ -1,14 +1,26 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMountainTilePlugin } from './index.ts';
 
-vi.mock('@bworlds/three-support', () => ({
-  createMountainTerrainMaterials() {
-    return {
-      mountainMaterial: new FakeMaterial({ color: '#6b7280' }),
-      snowMaterial: new FakeMaterial({ color: '#f8fafc' }),
-    };
-  },
-}));
+vi.mock('@bworlds/three-support', () => {
+  const mountainTerrainMaterialCache = new WeakMap<
+    object,
+    { mountainMaterial: FakeMaterial; snowMaterial: FakeMaterial }
+  >();
+
+  return {
+    createMountainTerrainMaterials(three: object) {
+      let cached = mountainTerrainMaterialCache.get(three);
+      if (!cached) {
+        cached = {
+          mountainMaterial: new FakeMaterial({ color: '#6b7280' }),
+          snowMaterial: new FakeMaterial({ color: '#f8fafc' }),
+        };
+        mountainTerrainMaterialCache.set(three, cached);
+      }
+      return cached;
+    },
+  };
+});
 
 class FakeGeometry {
   constructor(...args: number[]) {
@@ -302,6 +314,42 @@ describe('tile mountain', () => {
     expect(secondBase?.material).not.toBe(firstBase?.material);
   });
 
+  it('keeps repeated mountain builds on one host within the shared material budget', () => {
+    const plugin = createMountainTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'mountain');
+    const state = createMountainState(() => 'plains');
+    const sharedHost = createFakeThreeHost();
+    const repeatedModels: FakeNode[] = [];
+
+    for (const [tileX, tileY] of [
+      [4, -3],
+      [5, -3],
+      [6, -3],
+      [7, -3],
+    ]) {
+      const model = tile?.create3DModel?.({
+        three: sharedHost as never,
+        state,
+        tile: { kind: 'mountain' } as never,
+        tileX,
+        tileY,
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(2);
+  });
+
   it('uses the mountain base cone as the root instead of a wrapper group', () => {
     const plugin = createMountainTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'mountain');
@@ -321,3 +369,17 @@ describe('tile mountain', () => {
     expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(1);
   });
 });
+
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
+  const materials = new Set<FakeMaterial>();
+  root?.traverse((node) => {
+    if (node instanceof FakeMesh) {
+      if (Array.isArray(node.material)) {
+        node.material.forEach((material) => materials.add(material));
+      } else if (node.material) {
+        materials.add(node.material);
+      }
+    }
+  });
+  return materials;
+}
