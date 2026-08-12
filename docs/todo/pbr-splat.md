@@ -120,16 +120,16 @@
 
 ## Shader
 
-- [ ] Sample terrain layers from texture arrays.
-- [ ] Blend base color using splat weights.
-- [ ] Blend normal maps using splat weights.
-- [ ] Blend roughness using splat weights.
-- [ ] Blend metalness only where required.
-- [ ] Blend ambient occlusion when enabled.
-- [ ] Apply terrain tint after texture blending.
-- [ ] Normalize blended normals correctly.
+- [x] Sample terrain layers from texture arrays.
+- [x] Blend base color using splat weights.
+- [x] Blend normal maps using splat weights.
+- [x] Blend roughness using splat weights.
+- [x] Blend metalness only where required.
+- [x] Blend ambient occlusion when enabled.
+- [x] Apply terrain tint after texture blending.
+- [x] Normalize blended normals correctly.
 - [ ] Keep shader branches minimal.
-- [ ] Keep shader variants bounded.
+- [x] Keep shader variants bounded.
 
 ## Material Reuse
 
@@ -287,6 +287,11 @@
   texture binding plans into shared runtime cache keys and per-purpose upload
   descriptors so compatible chunks can reuse one terrain texture-array binding
   path.
+- Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
+  splat shader variants that sample shared texture-array bindings, blend
+  weighted base-color/normal/roughness inputs, include optional metalness and
+  ambient-occlusion paths only when present, apply tint after blending, and
+  normalize the resolved normal.
 - Extended `@bworlds/terrain-splat-support/performance-estimate` to summarize
   cross-chunk splat material reuse, emit per-chunk material keys and binding
   modes, and surface warnings when texture-array fallback or unique terrain
@@ -400,6 +405,7 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/texture-binding-runtime-plans.md`, plus
 `packages/terrain-splat-support/docs/material-plans.md`, plus
 `packages/terrain-splat-support/docs/attribute-plans.md`, plus
+`packages/terrain-splat-support/docs/shader-sources.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
 `packages/terrain-splat-support/docs/tint-variation.md`, plus
 `packages/terrain-splat-support/docs/weather-effects.md`, plus

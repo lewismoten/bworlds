@@ -16,6 +16,7 @@
     "./material-plan": "./src/material-plan.ts",
     "./performance-estimate": "./src/performance-estimate.ts",
     "./sample-grid": "./src/sample-grid.ts",
+    "./shader-source": "./src/shader-source.ts",
     "./texture-binding-runtime-plan": "./src/texture-binding-runtime-plan.ts",
     "./worker-contract": "./src/worker-contract.ts",
     "./variant-pool": "./src/variant-pool.ts",
