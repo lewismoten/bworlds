@@ -535,12 +535,12 @@ worker-backed generation. The worker runtime notes live in
 - [x] Blend roads gradually into surrounding terrain.
 - [x] Let trails use narrower blend zones than roads.
 - [x] Allow road surface type to choose a PBR layer.
-- [ ] Support dirt road splat layers.
-- [ ] Support gravel road splat layers.
+- [x] Support dirt road splat layers.
+- [x] Support gravel road splat layers.
 - [x] Support stone road splat layers.
-- [ ] Support grass trail splat layers.
+- [x] Support grass trail splat layers.
 - [x] Support muddy road splat layers.
-- [ ] Keep road splats continuous across chunk boundaries.
+- [x] Keep road splats continuous across chunk boundaries.
 - [ ] Keep road width continuous across chunk boundaries.
 - [ ] Keep route intersections continuous across chunks.
 - [ ] Blend junctions without overlapping road meshes.
@@ -567,5 +567,5 @@ worker-backed generation. The worker runtime notes live in
 - [x] Add a toggle for road and path splat layers.
 - [ ] Compare splat roads against mesh road draw calls.
 - [ ] Test roads follow terrain height without gaps.
-- [ ] Test roads remain continuous across chunk borders.
+- [x] Test roads remain continuous across chunk borders.
 - [ ] Test intersections blend without visible seams.

@@ -54,7 +54,7 @@ describe('terrain splat sample grid', () => {
 
     expect(first).toEqual(second);
     expect(first.samples).toHaveLength(9);
-    expect(layerCatalog.entries).toHaveLength(12);
+    expect(layerCatalog.entries).toHaveLength(15);
   });
 
   it('keeps adjacent chunk borders identical when the world inputs match', () => {
@@ -352,6 +352,100 @@ describe('terrain splat sample grid', () => {
       expect(
         getTerrainSplatGridSample(leftGrid, leftGrid.width - 1, row)
       ).toEqual(getTerrainSplatGridSample(rightGrid, 0, row));
+    }
+  });
+
+  it('keeps road splat border weights identical across separately built chunks', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x === 2 ? 'road' : x >= 3 ? 'forest' : 'plains',
+      signals: {
+        moisture: normalizeSignal(y, 0.58),
+        roadSignal: x === 2 ? 0.84 : 0,
+        season: 'summer',
+        temperature: 0.68,
+      },
+    }));
+
+    const leftGrid = createTerrainSplatSampleGrid({
+      seed: 'route-road-border-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+    const rightGrid = createTerrainSplatSampleGrid({
+      seed: 'route-road-border-seed',
+      bounds: {
+        minX: 2,
+        maxX: 4,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    for (let row = 0; row < leftGrid.height; row += 1) {
+      expect(
+        pickRouteEntries(getTerrainSplatGridSample(leftGrid, leftGrid.width - 1, row))
+      ).toEqual(pickRouteEntries(getTerrainSplatGridSample(rightGrid, 0, row)));
+    }
+  });
+
+  it('keeps trail splat border weights identical across stacked chunks', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: y === 2 ? 'path' : y >= 3 ? 'forest' : 'plains',
+      signals: {
+        moisture: normalizeSignal(x, 0.44),
+        roadSignal: y === 2 ? 0.12 : 0,
+        season: 'summer',
+        temperature: 0.68,
+      },
+    }));
+
+    const topGrid = createTerrainSplatSampleGrid({
+      seed: 'route-trail-border-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+    const bottomGrid = createTerrainSplatSampleGrid({
+      seed: 'route-trail-border-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 2,
+        maxY: 4,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    for (let column = 0; column < topGrid.width; column += 1) {
+      expect(
+        pickRouteEntries(getTerrainSplatGridSample(topGrid, column, topGrid.height - 1))
+      ).toEqual(
+        pickRouteEntries(getTerrainSplatGridSample(bottomGrid, column, 0))
+      );
     }
   });
 
@@ -664,7 +758,10 @@ describe('terrain splat sample grid', () => {
     ]);
     expect(summary.unusedLayerIds).toEqual([
       'dirt',
+      'dirt-trail',
+      'grass-trail',
       'gravel',
+      'gravel-trail',
       'leaf',
       'mud',
       'rock',
@@ -1062,6 +1159,33 @@ function createGridCatalogs() {
       defaultTint: '#8d897f',
       defaultRoughness: 0.72,
     },
+    {
+      id: 'dirt-trail',
+      baseColorTextureId: 'dirt-trail/base',
+      normalTextureId: 'dirt-trail/normal',
+      roughnessTextureId: 'dirt-trail/roughness',
+      textureScale: 3.2,
+      defaultTint: '#7d674d',
+      defaultRoughness: 0.79,
+    },
+    {
+      id: 'gravel-trail',
+      baseColorTextureId: 'gravel-trail/base',
+      normalTextureId: 'gravel-trail/normal',
+      roughnessTextureId: 'gravel-trail/roughness',
+      textureScale: 2.8,
+      defaultTint: '#90867b',
+      defaultRoughness: 0.76,
+    },
+    {
+      id: 'grass-trail',
+      baseColorTextureId: 'grass-trail/base',
+      normalTextureId: 'grass-trail/normal',
+      roughnessTextureId: 'grass-trail/roughness',
+      textureScale: 3.5,
+      defaultTint: '#739050',
+      defaultRoughness: 0.74,
+    },
   ]);
   const kindCatalog = createTerrainKindSplatCatalog(
     createOverworldTerrainSplatDefinitions({
@@ -1076,6 +1200,9 @@ function createGridCatalogs() {
       snowLayerId: 'snow',
       dirtRoadLayerId: 'dirt-road',
       gravelRoadLayerId: 'gravel-road',
+      dirtTrailLayerId: 'dirt-trail',
+      gravelTrailLayerId: 'gravel-trail',
+      grassTrailLayerId: 'grass-trail',
     }),
     layerCatalog
   );
@@ -1097,4 +1224,12 @@ function createMockNowMs(values: readonly number[]): () => number {
     index += 1;
     return value;
   };
+}
+
+function pickRouteEntries(
+  sample: { entries: readonly { layerId: string; weight: number }[] }
+) {
+  return sample.entries.filter((entry) =>
+    entry.layerId.endsWith('-road') || entry.layerId.endsWith('-trail')
+  );
 }

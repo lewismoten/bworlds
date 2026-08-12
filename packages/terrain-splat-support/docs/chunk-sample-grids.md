@@ -58,6 +58,10 @@ Blend zones:
 - when one side of a boundary is a broad road or path tile, the same blend-zone
   pass gives that road edge extra weight so adjacent terrain samples pick up a
   deterministic dirt or gravel shoulder instead of stopping at a hard seam
+- the same border rule applies to route-only layers as well: separately built
+  chunks that share a road or path coordinate resolve the same `*-road` or
+  `*-trail` layer weights at that shared edge, so route splats remain
+  continuous before any renderer-specific road mesh fallback is considered
 
 LOD grids:
 
