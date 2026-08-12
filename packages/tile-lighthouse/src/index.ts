@@ -154,10 +154,60 @@ type LighthouseStyleMaterials = {
   >;
 };
 
-type LighthouseAppearanceMaterials = Omit<
+type LighthouseAppearanceMaterials = Pick<
   LighthouseStyleMaterials,
-  'rotationDurationMs' | 'rotationDirection'
+  'paneMaterial' | 'glassMaterial' | 'lensMaterial' | 'beamColor' | 'beamMaterials'
 >;
+type LighthouseSharedStaticMaterials = Pick<
+  LighthouseStyleMaterials,
+  | 'wallMaterial'
+  | 'stripeMaterial'
+  | 'stoneMaterial'
+  | 'frameMaterial'
+  | 'balconyMaterial'
+  | 'wallGlowMaterial'
+>;
+
+const sharedLighthouseStaticMaterials = createHostMaterialResolver<
+  LighthouseSharedStaticMaterials,
+  Create3DModelContext['three']
+>((host) => ({
+  wallMaterial: new host.MeshStandardMaterial({
+    color: '#f7f0e1',
+    roughness: 0.88,
+    metalness: 0.02,
+  }),
+  stripeMaterial: new host.MeshStandardMaterial({
+    color: '#c2410c',
+    roughness: 0.82,
+    metalness: 0.02,
+  }),
+  stoneMaterial: new host.MeshStandardMaterial({
+    color: '#9aa4b2',
+    roughness: 0.96,
+    metalness: 0.02,
+  }),
+  frameMaterial: new host.MeshStandardMaterial({
+    color: '#5d6673',
+    roughness: 0.64,
+    metalness: 0.28,
+  }),
+  balconyMaterial: new host.MeshStandardMaterial({
+    color: '#8b7358',
+    roughness: 0.84,
+    metalness: 0.08,
+  }),
+  wallGlowMaterial: new host.MeshStandardMaterial({
+    color: '#f8d7a1',
+    emissive: '#f8d7a1',
+    emissiveIntensity: 0.03,
+    transparent: true,
+    opacity: 0.68,
+    roughness: 0.4,
+    metalness: 0.02,
+    side: host.DoubleSide,
+  }),
+}));
 
 const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
   lighthouseStyleCache,
@@ -185,27 +235,14 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
       createMaterials(
         three: Create3DModelContext['three']
       ): LighthouseStyleMaterials {
+        const staticMaterials =
+          sharedLighthouseStaticMaterials.createMaterials(three);
         const appearance = lighthouseAppearanceCache
           .getOrCreate(appearanceKey, () =>
             createHostMaterialResolver(
               (
                 host: Create3DModelContext['three']
               ): LighthouseAppearanceMaterials => ({
-                wallMaterial: new host.MeshStandardMaterial({
-                  color: '#f7f0e1',
-                  roughness: 0.88,
-                  metalness: 0.02,
-                }),
-                stripeMaterial: new host.MeshStandardMaterial({
-                  color: '#c2410c',
-                  roughness: 0.82,
-                  metalness: 0.02,
-                }),
-                stoneMaterial: new host.MeshStandardMaterial({
-                  color: '#9aa4b2',
-                  roughness: 0.96,
-                  metalness: 0.02,
-                }),
                 paneMaterial: new host.MeshStandardMaterial({
                   color: paneColor,
                   emissive: paneColor,
@@ -224,11 +261,6 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
                   metalness: 0.06,
                   side: host.DoubleSide,
                 }),
-                frameMaterial: new host.MeshStandardMaterial({
-                  color: '#5d6673',
-                  roughness: 0.64,
-                  metalness: 0.28,
-                }),
                 lensMaterial: new host.MeshStandardMaterial({
                   color: beamColor,
                   emissive: beamColor,
@@ -237,21 +269,6 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
                   opacity: 0.96,
                   roughness: 0.18,
                   metalness: 0.04,
-                }),
-                balconyMaterial: new host.MeshStandardMaterial({
-                  color: '#8b7358',
-                  roughness: 0.84,
-                  metalness: 0.08,
-                }),
-                wallGlowMaterial: new host.MeshStandardMaterial({
-                  color: '#f8d7a1',
-                  emissive: '#f8d7a1',
-                  emissiveIntensity: 0.03,
-                  transparent: true,
-                  opacity: 0.68,
-                  roughness: 0.4,
-                  metalness: 0.02,
-                  side: host.DoubleSide,
                 }),
                 beamColor,
                 beamMaterials: Object.fromEntries(
@@ -279,6 +296,7 @@ const resolveRegionalLighthouseStyle = createRegionalMaterialResolver(
           .createMaterials(three);
 
         return {
+          ...staticMaterials,
           ...appearance,
           rotationDurationMs,
           rotationDirection,

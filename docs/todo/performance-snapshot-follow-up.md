@@ -147,7 +147,12 @@
       `MeshStandardMaterial` instances through host-level color-keyed caches and
       resolves its invariant lantern material through one host-level shared
       material, so different regional sign variants that land on the same
-      effective palette stop duplicating equivalent roadside-sign materials.
+      effective palette stop duplicating equivalent roadside-sign materials,
+      and `tile-lighthouse` now resolves its invariant wall, stripe, stone,
+      frame, balcony, and wall-glow materials through one host-level shared
+      bundle instead of duplicating those same materials for every distinct
+      `beamColor:paneColor` appearance key, so only pane, glass, lens, and
+      beam materials remain appearance-specific across lighthouse regions.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`

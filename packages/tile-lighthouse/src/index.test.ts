@@ -341,6 +341,88 @@ describe('tile lighthouse', () => {
     expect(beamColors.size).toBeGreaterThan(1);
   });
 
+  it('shares invariant lighthouse materials across different regions even when beam colors differ', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const candidates = [
+      { x: 4, y: 5 },
+      { x: 40, y: 5 },
+      { x: 4, y: 40 },
+      { x: 40, y: 40 },
+    ]
+      .map(({ x, y }) => {
+        const model = tile?.create3DModel?.({
+          three: fakeThree as never,
+          state: {} as never,
+          tile: { kind: 'lighthouse' } as never,
+          tileX: x,
+          tileY: y,
+        }) as FakeNode | undefined;
+        const beamColor = (
+          collectBeamMeshes(model)[0]?.material as FakeMaterial | undefined
+        )?.options.color;
+        const rootMaterial = (model as FakeMesh | undefined)?.material as
+          | FakeMaterial
+          | undefined;
+        const stripeMaterial = (model?.children[1] as FakeMesh | undefined)
+          ?.material as FakeMaterial | undefined;
+        const frameRingMaterial = (
+          collectTaggedInstancedMeshes(model, 'lighthouseFrameRingInstanced')[0]
+            ?.material as FakeMaterial | undefined
+        );
+        return {
+          model,
+          beamColor,
+          rootMaterial,
+          stripeMaterial,
+          frameRingMaterial,
+        };
+      })
+      .filter(
+        (
+          entry
+        ): entry is {
+          model: FakeNode;
+          beamColor: string;
+          rootMaterial: FakeMaterial;
+          stripeMaterial: FakeMaterial;
+          frameRingMaterial: FakeMaterial;
+        } =>
+          typeof entry.beamColor === 'string' &&
+          Boolean(entry.model) &&
+          Boolean(entry.rootMaterial) &&
+          Boolean(entry.stripeMaterial) &&
+          Boolean(entry.frameRingMaterial)
+      );
+
+    let mismatchedPair:
+      | [
+          (typeof candidates)[number],
+          (typeof candidates)[number],
+        ]
+      | null = null;
+    for (let index = 0; index < candidates.length && !mismatchedPair; index += 1) {
+      for (let otherIndex = index + 1; otherIndex < candidates.length; otherIndex += 1) {
+        if (candidates[index]!.beamColor !== candidates[otherIndex]!.beamColor) {
+          mismatchedPair = [candidates[index]!, candidates[otherIndex]!];
+          break;
+        }
+      }
+    }
+
+    expect(mismatchedPair).not.toBeNull();
+    expect(mismatchedPair?.[0].rootMaterial).toBe(mismatchedPair?.[1].rootMaterial);
+    expect(mismatchedPair?.[0].stripeMaterial).toBe(
+      mismatchedPair?.[1].stripeMaterial
+    );
+    expect(mismatchedPair?.[0].frameRingMaterial).toBe(
+      mismatchedPair?.[1].frameRingMaterial
+    );
+    expect(collectBeamMeshes(mismatchedPair?.[0].model)[0]?.material).not.toBe(
+      collectBeamMeshes(mismatchedPair?.[1].model)[0]?.material
+    );
+  });
+
   it('reuses lighthouse appearance materials across different regions with matching colors', () => {
     const plugin = createLighthouseTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
