@@ -14,12 +14,16 @@ import type {
 } from '@bworlds/plugin-api';
 export type * from './map-projections.ts';
 export {
+  AZIMUTHAL_CENTER_LATITUDE,
+  AZIMUTHAL_CENTER_LONGITUDE,
+  AZIMUTHAL_MAX_PROJECTED_RADIUS,
   ALBERS_CENTRAL_MERIDIAN,
   ALBERS_LATITUDE_OF_ORIGIN,
   ALBERS_MAX_WORLD_LATITUDE,
   ALBERS_MAX_WORLD_LONGITUDE,
   ALBERS_STANDARD_PARALLEL_1,
   ALBERS_STANDARD_PARALLEL_2,
+  createAzimuthalMapProjectionPlugin,
   createAlbersEqualAreaConicMapProjectionPlugin,
   createGenericConicMapProjectionPlugin,
   createMapProjectionPlugin,

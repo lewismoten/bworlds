@@ -15,7 +15,7 @@
 - [x] Add a Miller cylindrical plugin.
 - [x] Add a generic conic projection plugin.
 - [x] Add an Albers equal-area conic plugin.
-- [ ] Add an azimuthal projection plugin.
+- [x] Add an azimuthal projection plugin.
 - [ ] Add an azimuthal equidistant plugin.
 - [ ] Add a stereographic projection plugin.
 - [ ] Add an orthographic projection plugin.
@@ -61,6 +61,10 @@ Current support:
   `createAlbersEqualAreaConicMapProjectionPlugin()`, which gives the map
   stack a configurable spherical equal-area conic option with inverse
   projection support and practical default parallels for regional maps.
+- `@bworlds/map-support` now also exposes
+  `createAzimuthalMapProjectionPlugin()`, which gives the map stack a
+  centered spherical azimuthal equal-area option with inverse projection
+  support and configurable center longitude and latitude.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

@@ -15,6 +15,7 @@ or globe plugins land.
 
 Current built-in support:
 
+- `createAzimuthalMapProjectionPlugin()`
 - `createAlbersEqualAreaConicMapProjectionPlugin()`
 - `createGenericConicMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
@@ -142,6 +143,27 @@ configured world bounds.
 This gives later map UIs one equal-area conic option built directly on the
 same normalized plugin contract instead of leaving Albers as a one-off
 special case.
+
+## Azimuthal
+
+`createAzimuthalMapProjectionPlugin()` provides a centered spherical
+azimuthal equal-area projection with configurable center longitude and
+latitude.
+
+It currently:
+
+- uses `id: 'azimuthal'` by default
+- declares `distortion: 'equal-area'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- defaults to a `0,0` center
+
+The projected range is normalized to a circular disk with radius `2`, which
+maps to `mapX/mapY` within `-1..1`.
+
+This gives later map UIs one general-purpose azimuthal option while leaving
+equidistant, stereographic, and orthographic azimuthal variants available as
+separate focused implementations.
 
 ## Miller Cylindrical
 

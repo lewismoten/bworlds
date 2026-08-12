@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AZIMUTHAL_CENTER_LATITUDE,
+  AZIMUTHAL_CENTER_LONGITUDE,
+  AZIMUTHAL_MAX_PROJECTED_RADIUS,
   ALBERS_CENTRAL_MERIDIAN,
   ALBERS_LATITUDE_OF_ORIGIN,
   ALBERS_MAX_WORLD_LATITUDE,
   ALBERS_MAX_WORLD_LONGITUDE,
   ALBERS_STANDARD_PARALLEL_1,
   ALBERS_STANDARD_PARALLEL_2,
+  createAzimuthalMapProjectionPlugin,
   createAlbersEqualAreaConicMapProjectionPlugin,
   createGenericConicMapProjectionPlugin,
   createMapProjectionPlugin,
@@ -375,5 +379,52 @@ describe('map projections', () => {
     const inverted = projection.invert?.(forward);
     expect(inverted?.worldX).toBeCloseTo(25, 10);
     expect(inverted?.worldY).toBeCloseTo(42, 10);
+  });
+
+  it('projects and inverts azimuthal coordinates with the default center', () => {
+    const projection = createAzimuthalMapProjectionPlugin();
+
+    expect(projection.id).toBe('azimuthal');
+    expect(projection.label).toBe('Azimuthal');
+    expect(projection.distortion).toBe('equal-area');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 30,
+      worldY: 20,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(30, 10);
+    expect(inverted?.worldY).toBeCloseTo(20, 10);
+    expect(AZIMUTHAL_CENTER_LONGITUDE).toBe(0);
+    expect(AZIMUTHAL_CENTER_LATITUDE).toBe(0);
+    expect(AZIMUTHAL_MAX_PROJECTED_RADIUS).toBe(2);
+  });
+
+  it('supports custom azimuthal centers with matching inverse projection', () => {
+    const projection = createAzimuthalMapProjectionPlugin({
+      id: 'regional-azimuthal',
+      label: 'Regional Azimuthal',
+      centerLongitudeDegrees: -100,
+      centerLatitudeDegrees: 40,
+    });
+
+    expect(projection.id).toBe('regional-azimuthal');
+    expect(projection.label).toBe('Regional Azimuthal');
+
+    const forward = projection.project({
+      worldX: -80,
+      worldY: 30,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(-80, 10);
+    expect(inverted?.worldY).toBeCloseTo(30, 10);
   });
 });
