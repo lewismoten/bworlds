@@ -99,7 +99,7 @@ export function buildRuntimePerformanceIssueReport(
     options.debugSnapshot
   );
   const reasons = filterReportableRuntimePerformanceIssueReasons(rawReasons);
-  if (reasons.length === 0 && !hasActionableLimiterDetails(renderQualityLimiterDetails)) {
+  if (reasons.length === 0) {
     return null;
   }
 
@@ -724,13 +724,18 @@ function hasActionableLimiterDetails(details: string[]): boolean {
 function filterReportableRuntimePerformanceIssueReasons(
   reasons: readonly string[]
 ): string[] {
-  return reasons.filter((reason) => isReportableRuntimePerformanceReason(reason));
+  return reasons.filter((reason) =>
+    isReportableRuntimePerformanceReason(reason)
+  );
 }
 
 function isReportableRuntimePerformanceReason(reason: string): boolean {
   return (
     !reason.startsWith('Performance tier is ') &&
     !reason.startsWith('Reduced graphics quality has persisted for ') &&
+    !reason.startsWith('Graphics quality is constrained by ') &&
+    !reason.startsWith('Latest quality change was triggered by ') &&
+    !reason.startsWith('Visibility radius is currently reduced to ') &&
     !reason.startsWith('Top ') &&
     !/^[a-z0-9-]+:\d+(?:,\s*[a-z0-9-]+:\d+)*$/iu.test(reason.trim())
   );

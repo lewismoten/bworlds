@@ -9,6 +9,13 @@ startup and region-change checkpoints. It now also posts a separate throttled
 issue report when live rendering diagnostics detect an active problem during
 play.
 
+Reduced-quality narration is still preserved inside each saved report's
+`renderState`, but it no longer triggers an issue report by itself. The client
+now suppresses API posts when the only remaining details are derivative
+render-quality consequences such as limiter narration, visibility-radius
+explanations, or latest-quality-change summaries without a separate direct
+warning, violation, fallback, or resource issue.
+
 Issue reports are throttled by a stable issue hash derived from the saved issue
 summary for five seconds so repeated reports of the same user-visible problem
 do not thrash the local endpoint.

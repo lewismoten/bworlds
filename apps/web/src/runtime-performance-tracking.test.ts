@@ -279,14 +279,14 @@ describe('runtime performance tracking', () => {
     expect(issue?.renderState.latestQualityChangeSummary).toContain(
       'Scene materials exceeded the hard cap'
     );
-    expect(issue?.reasons).toContain(
-      'Latest quality change was triggered by Scene materials 467 exceeded hard cap 48.'
-    );
-    expect(issue?.reasons).toContain(
-      'Visibility radius is currently reduced to 6 from full 18. Weather currently caps draw distance at 6. Weather is pushing draw distance below the minimum-quality radius 10.'
-    );
     expect(issue?.reasons).not.toContain(
       'Reduced graphics quality has persisted for 2.5 seconds.'
+    );
+    expect(issue?.reasons).not.toContain(
+      'Latest quality change was triggered by Scene materials 467 exceeded hard cap 48.'
+    );
+    expect(issue?.reasons).not.toContain(
+      'Visibility radius is currently reduced to 6 from full 18. Weather currently caps draw distance at 6. Weather is pushing draw distance below the minimum-quality radius 10.'
     );
     expect(issue?.reasons.some((reason) => reason.startsWith('Top '))).toBe(
       false
@@ -339,10 +339,10 @@ describe('runtime performance tracking', () => {
     expect(issue?.renderState.visibilityRadiusDetail).toBe(
       'Visibility radius is currently reduced to 10 from full 18. Weather currently caps draw distance at 10. The renderer is operating at the minimum visibility radius 10.'
     );
-    expect(issue?.reasons).toContain(
+    expect(issue?.reasons).not.toContain(
       'Graphics quality is constrained by Visibility radius reduced to 10 (full 18, reduced 14, minimum 10); Weather visibility capped draw distance at 10 (full 18, weather cap 10); Chunk draw calls 184 exceeded soft cap 160; Scene materials 52 exceeded hard cap 48.'
     );
-    expect(issue?.reasons).toContain(
+    expect(issue?.reasons).not.toContain(
       'Latest quality change was triggered by Scene materials 52 exceeded hard cap 48.'
     );
   });
@@ -494,6 +494,62 @@ describe('runtime performance tracking', () => {
     expect(issue).toBeNull();
   });
 
+  it('skips runtime issue reports when reduced quality only contributes limiter narration', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        fps: 60,
+        averageFps: 60,
+        frameMs: 16.7,
+        worstRecentFrameMs: 16.7,
+        targetFps: 60,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters:
+          'Visibility radius reduced to 10, Weather visibility reduced draw distance, Chunk draw calls exceeded the soft cap, Scene materials exceeded the soft cap',
+        reducedQualityDurationSec: 8.4,
+        latestQualityChangeLimiter: 'Scene materials exceeded the soft cap',
+        latestQualityChangeSummary:
+          'Target FPS 60 -> 60, visibility radius 18.0 -> 10.0, quality Full -> Reduced, limiters: Scene materials exceeded the soft cap',
+        visibilityRadius: 10,
+        weatherVisibilityRadiusCap: 10,
+        drawCalls: 120,
+        object3dCount: 900,
+        visibleObjectCount: 300,
+        maxChunkDrawCalls: 184,
+        maxChunkObjectCount: 36,
+        maxChunkMeshes: 16,
+        maxChunkTriangleCount: 5000,
+        materialCount: 32,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 40,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 8,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxSummary: undefined,
+        fallbackBoxTopPluginLabel: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [],
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
   it('filters unactionable runtime issue reasons before reporting to the api', () => {
     const issue = buildRuntimePerformanceIssueReport({
       source: 'game',
@@ -606,7 +662,9 @@ describe('runtime performance tracking', () => {
       debugSnapshot: createDebugSnapshot({
         route: '/',
         currentTilePlugin: 'tile-forest',
-        resourceWarnings: ['Instanced meshes are missing from the visible scene.'],
+        resourceWarnings: [
+          'Instanced meshes are missing from the visible scene.',
+        ],
       }),
     });
     const secondIssue = buildRuntimePerformanceIssueReport({
@@ -650,8 +708,12 @@ describe('runtime performance tracking', () => {
       }),
     });
 
-    expect(firstIssue?.summary).toBe('Scene materials 52 exceeded hard cap 48.');
-    expect(secondIssue?.summary).toBe('Scene materials 85 exceeded hard cap 48.');
+    expect(firstIssue?.summary).toBe(
+      'Scene materials 52 exceeded hard cap 48.'
+    );
+    expect(secondIssue?.summary).toBe(
+      'Scene materials 85 exceeded hard cap 48.'
+    );
     expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
   });
 });
