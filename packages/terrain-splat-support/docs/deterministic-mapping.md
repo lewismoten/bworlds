@@ -13,7 +13,9 @@ Inputs:
   the caller wants climate-sensitive ground blending, plus an optional `biome`
   label when neighboring-world context should influence the chosen ground mix,
   and an optional normalized `slope` value when local terrain steepness should
-  influence the selected ground blend
+  influence the selected ground blend, plus optional normalized `poiSignal`,
+  `settlementSignal`, and `poiType` inputs when nearby landmarks or settlement
+  footprints should change the ground mix deterministically
 
 Outputs:
 
@@ -51,14 +53,17 @@ Current scope:
 
 - base-layer variation is deterministic from seed plus world coordinates
 - moisture, elevation, slope, road signal, temperature, season, and biome
-  thresholds can influence blend weights
+  thresholds can influence blend weights, along with optional POI and
+  settlement influence thresholds and POI-type filters
 - recommended mappings now cover exposed-ground snow blends plus dirt, mud, and
   rocky surface mixes without renderer-specific rules, and can now add light
   winter snow cover to plains and forest ground when the caller resolves cold
   seasonal signals through the shared mapping layer, plus coastal sand or
   wetland soil bias when the caller resolves biome labels through the same
   deterministic contract, plus gentler soil bias or steeper rock bias when the
-  caller resolves local slope through that same shared mapping contract
+  caller resolves local slope through that same shared mapping contract, plus
+  dirt/gravel clearing bias near POIs or settlement footprints when the caller
+  resolves those world influences through the same shared mapping contract
 - `river`, `ocean`, `bridge`, and `dock` are excluded from normal ground
   splatting in the recommended overworld definitions
 - packed sample grids quantize weights to `Uint8`, so unpacked weights preserve

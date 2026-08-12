@@ -93,8 +93,8 @@
 - [x] Allow temperature to influence splat material weights.
 - [x] Allow season to influence splat material weights.
 - [x] Allow roads to override local splat weights.
-- [ ] Allow POIs to influence nearby ground appearance.
-- [ ] Allow settlement footprints to alter ground layers.
+- [x] Allow POIs to influence nearby ground appearance.
+- [x] Allow settlement footprints to alter ground layers.
 - [x] Keep world influences deterministic.
 
 ## Texture Variation
@@ -350,7 +350,10 @@ plus deterministic biome-aware blend conditions so the same shared mapping can
 shift plains and forest ground toward coastal or wetland mixes without
 inventing plugin-specific splat rules, plus deterministic slope-aware blend
 conditions so the shared overworld splat mapping can favor gentler soil mixes
-or steeper exposed rock without coupling slope rules to renderer code.
+or steeper exposed rock without coupling slope rules to renderer code, plus
+deterministic POI and settlement influence conditions so nearby landmarks and
+settlement footprints can bias dirt, gravel, or clearing layers without
+embedding plugin-specific ground rules into renderer code.
 
 # Roads and Paths as Terrain Splats
 

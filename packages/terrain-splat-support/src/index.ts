@@ -93,7 +93,12 @@ export type TerrainKindSplatCondition = {
   maxRiverSignal?: number;
   minRoadSignal?: number;
   maxRoadSignal?: number;
+  minPoiSignal?: number;
+  maxPoiSignal?: number;
+  minSettlementSignal?: number;
+  maxSettlementSignal?: number;
   biomes?: readonly string[];
+  poiTypes?: readonly string[];
   seasons?: readonly TerrainSplatSeason[];
 };
 
@@ -122,6 +127,9 @@ export type ResolveTerrainKindSplatSampleInput = {
   kind: Kind;
   signals?: Partial<OverworldSignals> & {
     biome?: string;
+    poiSignal?: number;
+    poiType?: string;
+    settlementSignal?: number;
     slope?: number;
     temperature?: number;
     season?: TerrainSplatSeason;
@@ -130,6 +138,9 @@ export type ResolveTerrainKindSplatSampleInput = {
 
 type ResolvedTerrainKindSignals = OverworldSignals & {
   biome: string;
+  poiSignal: number;
+  poiType: string;
+  settlementSignal: number;
   slope: number;
   temperature: number;
   season: TerrainSplatSeason;
@@ -740,6 +751,20 @@ export function createOverworldTerrainSplatDefinitions(
           },
         },
         {
+          layerId: layers.dirtLayerId,
+          weight: 0.18,
+          when: {
+            minPoiSignal: 0.44,
+          },
+        },
+        {
+          layerId: layers.gravelLayerId,
+          weight: 0.16,
+          when: {
+            minSettlementSignal: 0.56,
+          },
+        },
+        {
           layerId: layers.snowLayerId,
           weight: 0.2,
           when: {
@@ -780,6 +805,21 @@ export function createOverworldTerrainSplatDefinitions(
           weight: 0.1,
           when: {
             biomes: ['swamp', 'wetland'],
+          },
+        },
+        {
+          layerId: layers.dirtLayerId,
+          weight: 0.14,
+          when: {
+            minPoiSignal: 0.42,
+            poiTypes: ['tower', 'quarry', 'observatory', 'station', 'cave'],
+          },
+        },
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.12,
+          when: {
+            minSettlementSignal: 0.52,
           },
         },
         {
@@ -1430,6 +1470,10 @@ function validateTerrainKindSplatCondition(
     ['maxRiverSignal', condition.maxRiverSignal],
     ['minRoadSignal', condition.minRoadSignal],
     ['maxRoadSignal', condition.maxRoadSignal],
+    ['minPoiSignal', condition.minPoiSignal],
+    ['maxPoiSignal', condition.maxPoiSignal],
+    ['minSettlementSignal', condition.minSettlementSignal],
+    ['maxSettlementSignal', condition.maxSettlementSignal],
   ];
 
   for (const [label, value] of pairs) {
@@ -1471,6 +1515,22 @@ function validateTerrainKindSplatCondition(
     }
   }
 
+  if (condition.poiTypes !== undefined) {
+    if (!Array.isArray(condition.poiTypes) || condition.poiTypes.length === 0) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(kind)} must omit poiTypes or define a non-empty array of poi labels.`
+      );
+    } else if (
+      condition.poiTypes.some(
+        (poiType) => typeof poiType !== 'string' || poiType.trim().length === 0
+      )
+    ) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(kind)} poiTypes must only contain non-empty poi labels.`
+      );
+    }
+  }
+
   return errors;
 }
 
@@ -1495,7 +1555,18 @@ function matchesTerrainKindSplatCondition(
     matchesMaximum(condition.maxRiverSignal, signals.riverSignal) &&
     matchesMinimum(condition.minRoadSignal, signals.roadSignal) &&
     matchesMaximum(condition.maxRoadSignal, signals.roadSignal) &&
+    matchesMinimum(condition.minPoiSignal, signals.poiSignal) &&
+    matchesMaximum(condition.maxPoiSignal, signals.poiSignal) &&
+    matchesMinimum(
+      condition.minSettlementSignal,
+      signals.settlementSignal
+    ) &&
+    matchesMaximum(
+      condition.maxSettlementSignal,
+      signals.settlementSignal
+    ) &&
     matchesBiome(condition.biomes, signals.biome) &&
+    matchesPoiType(condition.poiTypes, signals.poiType) &&
     matchesSeason(condition.seasons, signals.season)
   );
 }
@@ -1504,6 +1575,9 @@ function resolveTerrainKindSignals(
   signals:
     | (Partial<OverworldSignals> & {
         biome?: string;
+        poiSignal?: number;
+        poiType?: string;
+        settlementSignal?: number;
         slope?: number;
         temperature?: number;
         season?: TerrainSplatSeason;
@@ -1514,6 +1588,9 @@ function resolveTerrainKindSignals(
     biome: normalizeTerrainBiomeLabel(signals?.biome),
     continent: clampWeight(signals?.continent ?? 0),
     elevation: clampWeight(signals?.elevation ?? 0),
+    poiSignal: clampWeight(signals?.poiSignal ?? 0),
+    poiType: normalizeTerrainPoiLabel(signals?.poiType),
+    settlementSignal: clampWeight(signals?.settlementSignal ?? 0),
     slope: clampWeight(signals?.slope ?? 0),
     moisture: clampWeight(signals?.moisture ?? 0),
     temperature: clampWeight(signals?.temperature ?? 0.5),
@@ -1541,6 +1618,16 @@ function matchesBiome(
   );
 }
 
+function matchesPoiType(
+  poiTypes: readonly string[] | undefined,
+  poiType: string
+): boolean {
+  return (
+    poiTypes === undefined ||
+    poiTypes.some((candidate) => normalizeTerrainPoiLabel(candidate) === poiType)
+  );
+}
+
 function matchesSeason(
   seasons: readonly TerrainSplatSeason[] | undefined,
   season: TerrainSplatSeason
@@ -1549,6 +1636,10 @@ function matchesSeason(
 }
 
 function normalizeTerrainBiomeLabel(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function normalizeTerrainPoiLabel(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 

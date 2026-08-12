@@ -890,6 +890,8 @@ describe('terrain splat support', () => {
           biome: 'wetland',
           moisture: 0.85,
           elevation: 0.33,
+          poiSignal: 0.18,
+          settlementSignal: 0.12,
           slope: 0.22,
           temperature: 0.22,
           season: 'winter',
@@ -907,6 +909,8 @@ describe('terrain splat support', () => {
           biome: 'wetland',
           moisture: 0.85,
           elevation: 0.33,
+          poiSignal: 0.18,
+          settlementSignal: 0.12,
           slope: 0.22,
           temperature: 0.22,
           season: 'winter',
@@ -1238,6 +1242,43 @@ describe('terrain splat support', () => {
       },
       kindCatalog
     );
+    const poiPlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 22,
+        y: 23,
+        kind: 'plains',
+        signals: {
+          biome: 'plains',
+          poiSignal: 0.7,
+          poiType: 'tower',
+          settlementSignal: 0.1,
+          slope: 0.2,
+          moisture: 0.5,
+          temperature: 0.64,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const settlementPlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 24,
+        y: 25,
+        kind: 'plains',
+        signals: {
+          biome: 'plains',
+          poiSignal: 0.1,
+          settlementSignal: 0.74,
+          slope: 0.18,
+          moisture: 0.48,
+          temperature: 0.64,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
     const coastalPlains = resolveTerrainKindSplatSample(
       {
         seed: 'pbr-splat-seed',
@@ -1248,6 +1289,62 @@ describe('terrain splat support', () => {
           biome: 'shore',
           moisture: 0.45,
           temperature: 0.68,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const poiForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 26,
+        y: 27,
+        kind: 'forest',
+        signals: {
+          biome: 'forest',
+          poiSignal: 0.66,
+          poiType: 'observatory',
+          settlementSignal: 0.12,
+          slope: 0.26,
+          moisture: 0.66,
+          temperature: 0.62,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const nonPoiForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 26,
+        y: 27,
+        kind: 'forest',
+        signals: {
+          biome: 'forest',
+          poiSignal: 0.66,
+          poiType: 'town',
+          settlementSignal: 0.12,
+          slope: 0.26,
+          moisture: 0.66,
+          temperature: 0.62,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const settlementForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 28,
+        y: 29,
+        kind: 'forest',
+        signals: {
+          biome: 'forest',
+          poiSignal: 0.1,
+          settlementSignal: 0.68,
+          slope: 0.24,
+          moisture: 0.66,
+          temperature: 0.62,
           season: 'summer',
         },
       },
@@ -1361,6 +1458,12 @@ describe('terrain splat support', () => {
     expect(findEntryWeight(gentlePlains, 'soil')).toBeGreaterThan(
       findEntryWeight(steepPlains, 'soil')
     );
+    expect(poiPlains.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['dirt'])
+    );
+    expect(settlementPlains.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['gravel'])
+    );
     expect(coastalPlains.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['sand'])
     );
@@ -1369,6 +1472,15 @@ describe('terrain splat support', () => {
     );
     expect(findEntryWeight(swampForest, 'soil')).toBeGreaterThan(
       findEntryWeight(uplandForest, 'soil')
+    );
+    expect(poiForest.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['dirt'])
+    );
+    expect(nonPoiForest.entries.map((entry) => entry.layerId)).not.toEqual(
+      expect.arrayContaining(['dirt'])
+    );
+    expect(findEntryWeight(settlementForest, 'soil')).toBeGreaterThan(
+      findEntryWeight(nonPoiForest, 'soil')
     );
     expect(findEntryWeight(steepMountain, 'rock')).toBeGreaterThan(
       findEntryWeight(gentleMountain, 'rock')
@@ -1664,6 +1776,47 @@ describe('terrain splat support', () => {
       expect.arrayContaining([
         'Terrain splat kind "plains" must keep minSlope within 0..1.',
         'Terrain splat kind "plains" must keep maxSlope within 0..1.',
+      ])
+    );
+  });
+
+  it('rejects invalid poi and settlement conditions on terrain kinds', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    expect(
+      validateTerrainKindSplatDefinition(
+        {
+          kind: 'plains',
+          baseLayerIds: ['grass'],
+          blends: [
+            {
+              layerId: 'grass',
+              weight: 0.2,
+              when: {
+                minPoiSignal: 1.1,
+                maxSettlementSignal: -0.1,
+                poiTypes: ['tower', ''],
+              },
+            },
+          ],
+        },
+        layerCatalog
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        'Terrain splat kind "plains" must keep minPoiSignal within 0..1.',
+        'Terrain splat kind "plains" must keep maxSettlementSignal within 0..1.',
+        'Terrain splat kind "plains" poiTypes must only contain non-empty poi labels.',
       ])
     );
   });
