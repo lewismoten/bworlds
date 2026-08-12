@@ -125,9 +125,10 @@ export function createTerrainSplatDebugView(
 function resolveTerrainSplatDebugCell(params: {
   mode: TerrainSplatDebugViewMode;
   sample: TerrainSplatSample;
-  layerMap:
-    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
-    | null;
+  layerMap: ReadonlyMap<
+    TerrainMaterialLayerId,
+    TerrainMaterialLayerCatalogEntry
+  > | null;
   activeLayerIds: readonly TerrainMaterialLayerId[];
   dominantLayerId: TerrainMaterialLayerId | null;
   dominantWeight: number;
@@ -201,21 +202,21 @@ function resolveTerrainSplatDebugCell(params: {
 }
 
 function resolveTerrainSplatTextureDebugCell(
-  layerMap:
-    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
-    | null,
+  layerMap: ReadonlyMap<
+    TerrainMaterialLayerId,
+    TerrainMaterialLayerCatalogEntry
+  > | null,
   dominantLayerId: TerrainMaterialLayerId | null,
-  property:
-    | 'baseColorTextureId'
-    | 'normalTextureId'
-    | 'roughnessTextureId'
+  property: 'baseColorTextureId' | 'normalTextureId' | 'roughnessTextureId'
 ): {
   colorHex: string;
   textureId: string | null;
   value: number;
 } {
   const textureId =
-    dominantLayerId && layerMap ? layerMap.get(dominantLayerId)?.[property] : null;
+    dominantLayerId && layerMap
+      ? layerMap.get(dominantLayerId)?.[property]
+      : null;
   return {
     colorHex: colorFromLabel(textureId ?? dominantLayerId ?? property),
     textureId: textureId ?? null,
@@ -279,7 +280,11 @@ function mixColor(
   return blendRgbColors(midHex, highHex, (normalized - 0.5) * 2);
 }
 
-function blendRgbColors(fromHex: string, toHex: string, amount: number): string {
+function blendRgbColors(
+  fromHex: string,
+  toHex: string,
+  amount: number
+): string {
   const from = parseHexColor(fromHex);
   const to = parseHexColor(toHex);
   const mix = clamp01(amount);
@@ -291,7 +296,11 @@ function blendRgbColors(fromHex: string, toHex: string, amount: number): string 
   });
 }
 
-function parseHexColor(hex: string): { red: number; green: number; blue: number } {
+function parseHexColor(hex: string): {
+  red: number;
+  green: number;
+  blue: number;
+} {
   const normalized = hex.trim().replace(/^#/, '');
   return {
     red: Number.parseInt(normalized.slice(0, 2), 16),
@@ -300,7 +309,11 @@ function parseHexColor(hex: string): { red: number; green: number; blue: number 
   };
 }
 
-function formatRgbColor(rgb: { red: number; green: number; blue: number }): string {
+function formatRgbColor(rgb: {
+  red: number;
+  green: number;
+  blue: number;
+}): string {
   return `#${rgb.red.toString(16).padStart(2, '0')}${rgb.green
     .toString(16)
     .padStart(2, '0')}${rgb.blue.toString(16).padStart(2, '0')}`;

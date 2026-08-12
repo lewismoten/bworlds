@@ -46,7 +46,8 @@ export function compareTerrainSplatChunkPerformance(
         };
   }
 ): TerrainSplatChunkPerformanceComparison {
-  const layerMap = 'byId' in options.catalog ? options.catalog.byId : options.catalog;
+  const layerMap =
+    'byId' in options.catalog ? options.catalog.byId : options.catalog;
   const legacyMaterialSignatures = new Set<string>();
   const activeLayerIds = new Set<TerrainMaterialLayerId>();
 
@@ -69,7 +70,9 @@ export function compareTerrainSplatChunkPerformance(
 
   const activeLayers = [...activeLayerIds]
     .map((layerId) => layerMap.get(layerId))
-    .filter((layer): layer is TerrainMaterialLayerCatalogEntry => layer !== undefined);
+    .filter(
+      (layer): layer is TerrainMaterialLayerCatalogEntry => layer !== undefined
+    );
   const textureBindingCount =
     countDistinct(activeLayers.map((layer) => layer.baseColorTextureId)) +
     countDistinct(activeLayers.map((layer) => layer.normalTextureId)) +
@@ -119,7 +122,8 @@ export function compareTerrainSplatChunkPerformance(
       drawCallCount: legacy.drawCallCount - splat.drawCallCount,
       materialCount: legacy.materialCount - splat.materialCount,
       programCount: legacy.programCount - splat.programCount,
-      textureBindingCount: legacy.textureBindingCount - splat.textureBindingCount,
+      textureBindingCount:
+        legacy.textureBindingCount - splat.textureBindingCount,
     },
     reductionRatios: {
       drawCallCount: toReductionRatio(

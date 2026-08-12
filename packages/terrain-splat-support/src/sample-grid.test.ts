@@ -102,7 +102,7 @@ describe('terrain splat sample grid', () => {
 
   it('blends neighboring terrain kinds into deterministic boundary samples', () => {
     const { kindCatalog } = createGridCatalogs();
-    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+    const resolveTile = createTerrainSplatGridTileResolver(({ x }) => ({
       kind: x >= 2 ? 'forest' : 'plains',
       signals: {
         moisture: x >= 2 ? 0.95 : 0.55,
@@ -156,7 +156,7 @@ describe('terrain splat sample grid', () => {
 
   it('blends snow coverage gradually from neighboring cold terrain', () => {
     const { kindCatalog } = createGridCatalogs();
-    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+    const resolveTile = createTerrainSplatGridTileResolver(({ y }) => ({
       kind: y >= 2 ? 'snow' : 'plains',
       signals: {
         moisture: 0.55,
@@ -188,7 +188,7 @@ describe('terrain splat sample grid', () => {
 
   it('blends broad road shoulders into adjacent terrain samples', () => {
     const { kindCatalog } = createGridCatalogs();
-    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+    const resolveTile = createTerrainSplatGridTileResolver(({ x }) => ({
       kind: x === 2 ? 'road' : 'plains',
       signals: {
         moisture: 0.5,
@@ -301,9 +301,10 @@ describe('terrain splat sample grid', () => {
     expect(preview.mixedCellCount).toBe(mixedCells.length);
     expect(mixedCells.length).toBeGreaterThan(0);
     expect(
-      mixedCells.some((cell) =>
-        cell.activeLayerIds.includes('dirt-road') &&
-        cell.activeLayerIds.includes('grass-a')
+      mixedCells.some(
+        (cell) =>
+          cell.activeLayerIds.includes('dirt-road') &&
+          cell.activeLayerIds.includes('grass-a')
       )
     ).toBe(true);
   });

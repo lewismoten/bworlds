@@ -1,6 +1,5 @@
 import type { Kind, Seed } from '@bworlds/plugin-api';
 import type {
-  ResolveTerrainKindSplatSampleInput,
   TerrainKindSplatCatalogEntry,
   TerrainMaterialLayerCatalogEntry,
   TerrainMaterialLayerId,
@@ -13,7 +12,6 @@ import {
   packTerrainSplatSampleGrid,
   type PackedTerrainSplatSampleGrid,
   type ResolveTerrainSplatGridTile,
-  type TerrainSplatAdaptiveSampleGrid,
   type TerrainSplatGridBounds,
   type TerrainSplatGridBuildMetrics,
   type TerrainSplatGridTile,
@@ -137,7 +135,11 @@ export function buildTerrainSplatWorkerResult(
         nowMs: options.nowMs,
       })
     : {
-        grid: buildTerrainSplatGridFromWorkerRequest(request, kindCatalog, resolveTile),
+        grid: buildTerrainSplatGridFromWorkerRequest(
+          request,
+          kindCatalog,
+          resolveTile
+        ),
         metrics: null,
       };
 

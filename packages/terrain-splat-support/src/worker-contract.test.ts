@@ -105,9 +105,14 @@ describe('terrain splat worker contract', () => {
       fallbackLodStepMultiplier: 2,
     });
 
-    const result = buildTerrainSplatWorkerResult(request, kindCatalog, layerCatalog, {
-      nowMs: createMockNowMs([10, 15, 20, 21]),
-    });
+    const result = buildTerrainSplatWorkerResult(
+      request,
+      kindCatalog,
+      layerCatalog,
+      {
+        nowMs: createMockNowMs([10, 15, 20, 21]),
+      }
+    );
 
     expect(result.packedGrid.step).toBe(2);
     expect(result.metrics).toMatchObject({

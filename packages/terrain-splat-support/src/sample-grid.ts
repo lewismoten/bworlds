@@ -280,12 +280,12 @@ export function createAdaptiveTerrainSplatSampleGrid(
   } & Partial<TerrainSplatSampleGridLodOptions>
 ): TerrainSplatAdaptiveSampleGrid {
   const nowMs = params.nowMs ?? (() => Date.now());
-  const primaryLodStepMultiplier = normalizeTerrainSplatOptionalLodStepMultiplier(
-    params.lodStepMultiplier
-  );
-  const fallbackLodStepMultiplier = normalizeTerrainSplatOptionalLodStepMultiplier(
-    params.fallbackLodStepMultiplier
-  );
+  const primaryLodStepMultiplier =
+    normalizeTerrainSplatOptionalLodStepMultiplier(params.lodStepMultiplier);
+  const fallbackLodStepMultiplier =
+    normalizeTerrainSplatOptionalLodStepMultiplier(
+      params.fallbackLodStepMultiplier
+    );
   const buildGrid = (lodStepMultiplier: number): TerrainSplatSampleGrid => {
     if (lodStepMultiplier > 1) {
       return createTerrainSplatSampleGridLod({
@@ -566,7 +566,10 @@ export function createTerrainSplatChunkPreview(
         mixedCellCount += 1;
       }
       for (const layerId of activeLayerIds) {
-        activeLayerCounts.set(layerId, (activeLayerCounts.get(layerId) ?? 0) + 1);
+        activeLayerCounts.set(
+          layerId,
+          (activeLayerCounts.get(layerId) ?? 0) + 1
+        );
       }
 
       cells.push({

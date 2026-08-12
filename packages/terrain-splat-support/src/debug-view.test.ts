@@ -85,7 +85,9 @@ describe('terrain splat debug view', () => {
     expect(layerWeightView.targetLayerId).toBe('leaf');
     expect(layerWeightView.cells.some((cell) => cell.value > 0)).toBe(true);
     expect(
-      blendColorView.cells.every((cell) => /^#[0-9a-f]{6}$/u.test(cell.colorHex))
+      blendColorView.cells.every((cell) =>
+        /^#[0-9a-f]{6}$/u.test(cell.colorHex)
+      )
     ).toBe(true);
   });
 
@@ -166,12 +168,12 @@ describe('terrain splat debug view', () => {
       catalog: layerCatalog,
     });
 
-    expect(baseColorView.cells.some((cell) => cell.textureId?.includes('/base'))).toBe(
-      true
-    );
-    expect(normalView.cells.some((cell) => cell.textureId?.includes('/normal'))).toBe(
-      true
-    );
+    expect(
+      baseColorView.cells.some((cell) => cell.textureId?.includes('/base'))
+    ).toBe(true);
+    expect(
+      normalView.cells.some((cell) => cell.textureId?.includes('/normal'))
+    ).toBe(true);
     expect(
       roughnessView.cells.some((cell) => cell.textureId?.includes('/roughness'))
     ).toBe(true);
@@ -213,7 +215,9 @@ describe('terrain splat debug view', () => {
 
     expect(blendedView.blendEnabled).toBe(true);
     expect(disabledBlendView.blendEnabled).toBe(false);
-    expect(blendedView.cells.some((cell) => cell.activeLayerCount > 1)).toBe(true);
+    expect(blendedView.cells.some((cell) => cell.activeLayerCount > 1)).toBe(
+      true
+    );
     expect(
       disabledBlendView.cells.every((cell) => cell.activeLayerCount <= 1)
     ).toBe(true);

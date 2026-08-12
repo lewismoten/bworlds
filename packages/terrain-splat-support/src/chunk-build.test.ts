@@ -46,9 +46,8 @@ describe('terrain splat chunk build', () => {
 
   it('reuses cached chunk splat data until the terrain state changes', () => {
     const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
-    const cache = createTerrainSplatChunkBuildCache<TerrainSplatWorkerBuildResult>(
-      8
-    );
+    const cache =
+      createTerrainSplatChunkBuildCache<TerrainSplatWorkerBuildResult>(8);
     let resolveTileCalls = 0;
     const resolveTile = createTerrainSplatGridTileResolver(({ x }) => {
       resolveTileCalls += 1;

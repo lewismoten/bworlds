@@ -1348,8 +1348,12 @@ export function resolveTerrainMaterialLayerWorldUvSample(
     layer,
     input
   );
-  let u = wrapUnitCoordinate(input.x / transform.textureScale + macroVariation.u);
-  let v = wrapUnitCoordinate(input.y / transform.textureScale + macroVariation.v);
+  let u = wrapUnitCoordinate(
+    input.x / transform.textureScale + macroVariation.u
+  );
+  let v = wrapUnitCoordinate(
+    input.y / transform.textureScale + macroVariation.v
+  );
 
   if (transform.mirrorU) {
     u = wrapUnitCoordinate(1 - u);

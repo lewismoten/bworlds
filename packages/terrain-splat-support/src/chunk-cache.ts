@@ -79,7 +79,9 @@ export function createTerrainSplatChunkBuildCache<TResult>(
   };
 }
 
-function normalizeCacheScalar(value: string | number | undefined): string | number | null {
+function normalizeCacheScalar(
+  value: string | number | undefined
+): string | number | null {
   return value ?? null;
 }
 
