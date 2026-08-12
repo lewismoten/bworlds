@@ -15,6 +15,7 @@ or globe plugins land.
 
 Current built-in support:
 
+- `createAlbersEqualAreaConicMapProjectionPlugin()`
 - `createGenericConicMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
@@ -119,6 +120,28 @@ configured world bounds.
 This gives later map UIs one reusable conic base that can be customized
 without forcing every conic variant to reimplement the same spherical forward
 and inverse plumbing.
+
+## Albers Equal-Area Conic
+
+`createAlbersEqualAreaConicMapProjectionPlugin()` provides a spherical
+equal-area conic projection with configurable standard parallels, central
+meridian, and latitude of origin.
+
+It currently:
+
+- uses `id: 'albers-equal-area-conic'` by default
+- declares `distortion: 'equal-area'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- defaults to standard parallels `29.5` and `45.5`
+- defaults to central meridian `-96` and latitude of origin `23`
+
+The default normalized range is based on sampled projected extents across the
+configured world bounds.
+
+This gives later map UIs one equal-area conic option built directly on the
+same normalized plugin contract instead of leaving Albers as a one-off
+special case.
 
 ## Miller Cylindrical
 

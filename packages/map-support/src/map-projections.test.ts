@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALBERS_CENTRAL_MERIDIAN,
+  ALBERS_LATITUDE_OF_ORIGIN,
+  ALBERS_MAX_WORLD_LATITUDE,
+  ALBERS_MAX_WORLD_LONGITUDE,
+  ALBERS_STANDARD_PARALLEL_1,
+  ALBERS_STANDARD_PARALLEL_2,
+  createAlbersEqualAreaConicMapProjectionPlugin,
   createGenericConicMapProjectionPlugin,
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
@@ -318,5 +325,55 @@ describe('map projections', () => {
     const inverted = projection.invert?.(forward);
     expect(inverted?.worldX).toBeCloseTo(-90, 10);
     expect(inverted?.worldY).toBeCloseTo(40, 10);
+  });
+
+  it('projects and inverts Albers equal-area coordinates with the default configuration', () => {
+    const projection = createAlbersEqualAreaConicMapProjectionPlugin();
+
+    expect(projection.id).toBe('albers-equal-area-conic');
+    expect(projection.label).toBe('Albers Equal-Area Conic');
+    expect(projection.distortion).toBe('equal-area');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+
+    const forward = projection.project({
+      worldX: -90,
+      worldY: 40,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(-90, 10);
+    expect(inverted?.worldY).toBeCloseTo(40, 10);
+    expect(ALBERS_STANDARD_PARALLEL_1).toBe(29.5);
+    expect(ALBERS_STANDARD_PARALLEL_2).toBe(45.5);
+    expect(ALBERS_CENTRAL_MERIDIAN).toBe(-96);
+    expect(ALBERS_LATITUDE_OF_ORIGIN).toBe(23);
+    expect(ALBERS_MAX_WORLD_LONGITUDE).toBe(90);
+    expect(ALBERS_MAX_WORLD_LATITUDE).toBe(90);
+  });
+
+  it('supports custom Albers equal-area configurations with matching inverse projection', () => {
+    const projection = createAlbersEqualAreaConicMapProjectionPlugin({
+      id: 'regional-albers',
+      label: 'Regional Albers',
+      centralMeridianDegrees: 10,
+      latitudeOfOriginDegrees: 30,
+      standardParallel1Degrees: 20,
+      standardParallel2Degrees: 50,
+      maxWorldLongitude: 70,
+      maxWorldLatitude: 80,
+    });
+
+    expect(projection.id).toBe('regional-albers');
+    expect(projection.label).toBe('Regional Albers');
+
+    const forward = projection.project({
+      worldX: 25,
+      worldY: 42,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(25, 10);
+    expect(inverted?.worldY).toBeCloseTo(42, 10);
   });
 });

@@ -70,6 +70,12 @@ export const GENERIC_CONIC_CENTRAL_MERIDIAN = 0;
 export const GENERIC_CONIC_LATITUDE_OF_ORIGIN = 0;
 export const GENERIC_CONIC_MAX_WORLD_LONGITUDE = 180;
 export const GENERIC_CONIC_MAX_WORLD_LATITUDE = 90;
+export const ALBERS_STANDARD_PARALLEL_1 = 29.5;
+export const ALBERS_STANDARD_PARALLEL_2 = 45.5;
+export const ALBERS_CENTRAL_MERIDIAN = -96;
+export const ALBERS_LATITUDE_OF_ORIGIN = 23;
+export const ALBERS_MAX_WORLD_LONGITUDE = 90;
+export const ALBERS_MAX_WORLD_LATITUDE = 90;
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -378,6 +384,131 @@ export function createGenericConicMapProjectionPlugin(
   });
 }
 
+export function createAlbersEqualAreaConicMapProjectionPlugin(
+  options: GenericConicMapProjectionOptions = {}
+): MapProjectionPlugin {
+  const centralMeridianDegrees = normalizeFiniteNumber(
+    options.centralMeridianDegrees ?? ALBERS_CENTRAL_MERIDIAN,
+    'Albers equal-area centralMeridianDegrees'
+  );
+  const latitudeOfOriginDegrees = normalizeFiniteNumber(
+    options.latitudeOfOriginDegrees ?? ALBERS_LATITUDE_OF_ORIGIN,
+    'Albers equal-area latitudeOfOriginDegrees'
+  );
+  const standardParallel1Degrees = normalizeFiniteNumber(
+    options.standardParallel1Degrees ?? ALBERS_STANDARD_PARALLEL_1,
+    'Albers equal-area standardParallel1Degrees'
+  );
+  const standardParallel2Degrees = normalizeFiniteNumber(
+    options.standardParallel2Degrees ?? ALBERS_STANDARD_PARALLEL_2,
+    'Albers equal-area standardParallel2Degrees'
+  );
+  const maxWorldLongitude = normalizePositiveFiniteNumber(
+    options.maxWorldLongitude ?? ALBERS_MAX_WORLD_LONGITUDE,
+    'Albers equal-area maxWorldLongitude'
+  );
+  const maxWorldLatitude = normalizePositiveFiniteNumber(
+    options.maxWorldLatitude ?? ALBERS_MAX_WORLD_LATITUDE,
+    'Albers equal-area maxWorldLatitude'
+  );
+
+  const centralMeridianRadians = degreesToRadians(centralMeridianDegrees);
+  const latitudeOfOriginRadians = degreesToRadians(latitudeOfOriginDegrees);
+  const standardParallel1Radians = degreesToRadians(standardParallel1Degrees);
+  const standardParallel2Radians = degreesToRadians(standardParallel2Degrees);
+
+  const coneConstant = resolveAlbersConeConstant(
+    standardParallel1Radians,
+    standardParallel2Radians
+  );
+  const projectionConstant =
+    Math.cos(standardParallel1Radians) ** 2 +
+    2 * coneConstant * Math.sin(standardParallel1Radians);
+  const originRadius = resolveAlbersRadius(
+    projectionConstant,
+    coneConstant,
+    latitudeOfOriginRadians
+  );
+
+  const rawProject = ({
+    worldX,
+    worldY,
+  }: MapProjectionWorldCoordinate): MapProjectionMapCoordinate => {
+    const clampedLongitude = clamp(
+      worldX,
+      centralMeridianDegrees - maxWorldLongitude,
+      centralMeridianDegrees + maxWorldLongitude
+    );
+    const clampedLatitude = clamp(
+      worldY,
+      -maxWorldLatitude,
+      maxWorldLatitude
+    );
+    const longitudeRadians =
+      degreesToRadians(clampedLongitude) - centralMeridianRadians;
+    const latitudeRadians = degreesToRadians(clampedLatitude);
+    const theta = coneConstant * longitudeRadians;
+    const radius = resolveAlbersRadius(
+      projectionConstant,
+      coneConstant,
+      latitudeRadians
+    );
+    return {
+      mapX: radius * Math.sin(theta),
+      mapY: originRadius - radius * Math.cos(theta),
+    };
+  };
+
+  const extent = sampleProjectionExtent({
+    maxWorldLongitude,
+    maxWorldLatitude,
+    rawProject,
+  });
+
+  return createMapProjectionPlugin({
+    id: options.id ?? 'albers-equal-area-conic',
+    label: options.label ?? 'Albers Equal-Area Conic',
+    distortion: 'equal-area',
+    bounds: {
+      minWorldX: centralMeridianDegrees - maxWorldLongitude,
+      maxWorldX: centralMeridianDegrees + maxWorldLongitude,
+      minWorldY: -maxWorldLatitude,
+      maxWorldY: maxWorldLatitude,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project(coordinate) {
+      const projected = rawProject(coordinate);
+      return {
+        mapX: snapNearZero(projected.mapX / extent.maxAbsX),
+        mapY: snapNearZero(projected.mapY / extent.maxAbsY),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * extent.maxAbsX;
+      const projectedY = mapY * extent.maxAbsY;
+      const radius =
+        Math.sign(coneConstant || 1) *
+        Math.hypot(projectedX, originRadius - projectedY);
+      const theta = Math.atan2(projectedX, originRadius - projectedY);
+      const latitudeTerm =
+        (projectionConstant - (radius * coneConstant) ** 2) /
+        (2 * coneConstant);
+      return {
+        worldX:
+          radiansToDegrees(theta / coneConstant + centralMeridianRadians),
+        worldY: radiansToDegrees(Math.asin(clamp(latitudeTerm, -1, 1))),
+      };
+    },
+  });
+}
+
 function normalizeMapProjectionWorldCoordinate(
   coordinate: MapProjectionWorldCoordinate
 ): MapProjectionWorldCoordinate {
@@ -539,6 +670,39 @@ function resolveGenericConicConeConstant(
     );
   }
   return coneConstant;
+}
+
+function resolveAlbersConeConstant(
+  standardParallel1Radians: number,
+  standardParallel2Radians: number
+): number {
+  const difference = Math.abs(
+    standardParallel1Radians - standardParallel2Radians
+  );
+  const coneConstant =
+    difference <= 1e-12
+      ? Math.sin(standardParallel1Radians)
+      : (Math.sin(standardParallel1Radians) +
+          Math.sin(standardParallel2Radians)) /
+        2;
+  if (Math.abs(coneConstant) <= 1e-12) {
+    throw new Error(
+      'Albers equal-area standard parallels must not cancel the cone constant to zero.'
+    );
+  }
+  return coneConstant;
+}
+
+function resolveAlbersRadius(
+  projectionConstant: number,
+  coneConstant: number,
+  latitudeRadians: number
+): number {
+  return (
+    Math.sqrt(
+      Math.max(0, projectionConstant - 2 * coneConstant * Math.sin(latitudeRadians))
+    ) / coneConstant
+  );
 }
 
 function sampleProjectionExtent(params: {
