@@ -67,7 +67,8 @@ Always run tests to make sure all tests pass
       repeated stems and caps into two `InstancedMesh` nodes, cave dripstone
       tiles now collapse their repeated floor spires into one `InstancedMesh`,
       cave obstacle tiles now collapse their repeated fallen-rock boulders
-      into one `InstancedMesh`, and full-detail dungeons now collapse their
+      into one `InstancedMesh` and now return that instanced boulder mesh
+      directly instead of wrapping it in a one-child group, and full-detail dungeons now collapse their
       repeated tower bodies, caps, gate posts, tower beacon braziers, banner
       poles, and banner crossbars into instanced sets, and full-detail
       dungeons now place their gate arch, portcullis, bars, darkness, and

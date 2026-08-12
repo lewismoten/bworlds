@@ -508,32 +508,52 @@ describe('tile cave', () => {
         tileY: 3,
       }) as
         | {
-            children?: Array<{
-              userData?: Record<string, unknown>;
-              count?: number;
-              matrices?: Array<{
-                scale: { x: number; y: number; z: number };
-              }>;
+            userData?: Record<string, unknown>;
+            count?: number;
+            matrices?: Array<{
+              scale: { x: number; y: number; z: number };
             }>;
+            children?: unknown[];
           }
         | null
         | undefined;
 
-      const boulderInstances = model?.children?.filter(
-        (child) => child.userData?.caveInstancedPart === 'obstacle-boulder'
-      );
+      expect(model?.userData?.caveInstancedPart).toBe('obstacle-boulder');
+      expect((model?.count ?? 0) >= 2).toBe(true);
+      expect(model?.matrices?.length).toBe(model?.count);
+      expect(model?.matrices?.some((matrix) => matrix.scale.x > 1)).toBe(true);
+      expect(model?.matrices?.some((matrix) => matrix.scale.y > 1)).toBe(true);
+      expect(model?.children ?? []).toHaveLength(0);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
 
-      expect(boulderInstances).toHaveLength(1);
-      expect((boulderInstances?.[0]?.count ?? 0) >= 2).toBe(true);
-      expect(boulderInstances?.[0]?.matrices?.length).toBe(
-        boulderInstances?.[0]?.count
+  it('returns cave obstacle boulder instances directly without a wrapper group', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+
+    try {
+      const three = createFakeThree() as never;
+      const obstacleTile = plugin.tiles?.find(
+        (tile) => tile.kind === 'cave-obstacle'
       );
-      expect(
-        boulderInstances?.[0]?.matrices?.some((matrix) => matrix.scale.x > 1)
-      ).toBe(true);
-      expect(
-        boulderInstances?.[0]?.matrices?.some((matrix) => matrix.scale.y > 1)
-      ).toBe(true);
+      const model = obstacleTile?.create3DModel?.({
+        tile: { kind: 'cave-obstacle' },
+        three,
+        state: {} as never,
+        tileX: 2,
+        tileY: 3,
+      }) as
+        | {
+            userData?: Record<string, unknown>;
+            children?: unknown[];
+          }
+        | null
+        | undefined;
+
+      expect(model?.userData?.caveInstancedPart).toBe('obstacle-boulder');
+      expect(model?.children ?? []).toHaveLength(0);
     } finally {
       globalThis.document = previousDocument;
     }

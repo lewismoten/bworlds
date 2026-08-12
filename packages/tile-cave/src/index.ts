@@ -1036,7 +1036,6 @@ function createCaveObstacleGroup(
   tileY: number
 ) {
   const { mountainMaterial } = createMountainTerrainMaterials(three);
-  const group = new three.Group();
   const count =
     2 + Math.floor(hash2D(CAVE_OBSTACLE_COUNT_SEED, tileX, tileY) * 3);
   const boulderInstances = new three.InstancedMesh(
@@ -1068,9 +1067,8 @@ function createCaveObstacleGroup(
       )
     );
   }
-  group.add(boulderInstances);
 
-  return group;
+  return boulderInstances;
 }
 
 function writeInstancedScalePositionMatrix(
