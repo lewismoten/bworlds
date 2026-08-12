@@ -28,8 +28,8 @@
 - [x] Test visible tile maximum duration enforcement.
 - [x] Add a pending tile count limit.
 - [x] Test pending tile count enforcement.
-- [ ] Add a minimum tile build rate if useful.
-- [ ] Test minimum tile build rate enforcement.
+- [x] Add a minimum tile build rate if useful.
+- [x] Test minimum tile build rate enforcement.
 - [x] Test active Three.js object count enforcement.
 - [x] Test draw call count enforcement.
 - [x] Test audio node count enforcement.
@@ -42,7 +42,7 @@
 - [x] Warn when suspicious metrics are near zero.
 - [x] Keep warnings separate from hard violations.
 - [x] Test snapshot JSON can round-trip without data loss.
-- [ ] Test old schema versions can be migrated.
+- [x] Test old schema versions can be migrated.
 - [x] Test unknown schema versions are rejected.
 
 Progress: runtime snapshots now pass through
@@ -72,4 +72,8 @@ now returns non-fatal `warnings` separately from hard `errors`, with coverage
 for missing startup metrics, suspicious near-zero runtime measurements, and the
 latest-snapshot regression path accepting warnings without treating them as
 schema failures, and the validator now rejects snapshots that claim positive
-draw calls while reporting `0` active Three.js objects.
+draw calls while reporting `0` active Three.js objects, and runtime snapshots
+now enforce a minimum visible tile build rate of `1.0` builds/s through the
+same aligned hard-limit map, and legacy snapshot payloads can now be migrated
+forward by normalizing the older `visibleTileGenerationMs` limit field and
+upgrading `schemaVersion: 0` payloads before validation.

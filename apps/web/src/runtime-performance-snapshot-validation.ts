@@ -78,52 +78,66 @@ const LEGACY_RUNTIME_PERFORMANCE_LIMIT_ALIASES = new Set([
   'visibleTileGenerationMs',
 ]);
 
+export function migrateRuntimePerformanceSnapshot(
+  snapshot: RuntimePerformanceSnapshot
+): RuntimePerformanceSnapshot {
+  return {
+    ...snapshot,
+    schemaVersion:
+      snapshot.schemaVersion === 0 ? 1 : (snapshot.schemaVersion as 1),
+    limits: normalizeRuntimePerformanceSnapshotLimits(snapshot.limits),
+  };
+}
+
 export function validateRuntimePerformanceSnapshot(
   snapshot: RuntimePerformanceSnapshot
 ): RuntimePerformanceSnapshotValidationResult {
+  const normalizedSnapshot = migrateRuntimePerformanceSnapshot(snapshot);
   const errors: string[] = [];
   const warnings: string[] = [];
-  const normalizedLimits = normalizeRuntimePerformanceSnapshotLimits(
-    snapshot.limits
-  );
+  const normalizedLimits = normalizedSnapshot.limits;
 
-  if (snapshot.schemaVersion !== 1) {
+  if (normalizedSnapshot.schemaVersion !== 1) {
     errors.push(
       `Unsupported runtime performance snapshot schema version ${String(snapshot.schemaVersion)}.`
     );
   }
-  if (!isIsoTimestamp(snapshot.createdAt)) {
+  if (!isIsoTimestamp(normalizedSnapshot.createdAt)) {
     errors.push(
       'Runtime performance snapshot createdAt must be a valid ISO-8601 timestamp.'
     );
   }
-  if (!RUNTIME_PERFORMANCE_SNAPSHOT_SOURCES.includes(snapshot.source)) {
+  if (
+    !RUNTIME_PERFORMANCE_SNAPSHOT_SOURCES.includes(normalizedSnapshot.source)
+  ) {
     errors.push(
       `Runtime performance snapshot source must be one of ${RUNTIME_PERFORMANCE_SNAPSHOT_SOURCES.join(', ')}.`
     );
   }
-  if (!RUNTIME_PERFORMANCE_SNAPSHOT_TRIGGERS.includes(snapshot.trigger)) {
+  if (
+    !RUNTIME_PERFORMANCE_SNAPSHOT_TRIGGERS.includes(normalizedSnapshot.trigger)
+  ) {
     errors.push(
       `Runtime performance snapshot trigger must be one of ${RUNTIME_PERFORMANCE_SNAPSHOT_TRIGGERS.join(', ')}.`
     );
   }
   if (
-    typeof snapshot.route !== 'string' ||
-    snapshot.route.trim().length === 0
+    typeof normalizedSnapshot.route !== 'string' ||
+    normalizedSnapshot.route.trim().length === 0
   ) {
     errors.push(
       'Runtime performance snapshot route must be a non-empty string.'
     );
   }
   if (
-    typeof snapshot.worldSeed !== 'string' ||
-    snapshot.worldSeed.trim().length === 0
+    typeof normalizedSnapshot.worldSeed !== 'string' ||
+    normalizedSnapshot.worldSeed.trim().length === 0
   ) {
     errors.push(
       'Runtime performance snapshot worldSeed must be a non-empty string.'
     );
   }
-  if (!isValidRuntimePerformanceContext(snapshot.context)) {
+  if (!isValidRuntimePerformanceContext(normalizedSnapshot.context)) {
     errors.push(
       'Runtime performance snapshot context must be null or include a non-empty id, optional non-empty label, and finite depth when present.'
     );
@@ -140,47 +154,60 @@ export function validateRuntimePerformanceSnapshot(
   validateMetricValue(
     errors,
     'initialWorldGenerationMs',
-    snapshot.metrics.initialWorldGenerationMs
+    normalizedSnapshot.metrics.initialWorldGenerationMs
   );
   validateMetricValue(
     errors,
     'maximumFrameMs',
-    snapshot.metrics.maximumFrameMs
+    normalizedSnapshot.metrics.maximumFrameMs
   );
   validateMetricValue(
     errors,
     'memoryAfterRegionChangeMb',
-    snapshot.metrics.memoryAfterRegionChangeMb
+    normalizedSnapshot.metrics.memoryAfterRegionChangeMb
   );
   validateMetricValue(
     errors,
     'activeThreeObjectCount',
-    snapshot.metrics.activeThreeObjectCount
+    normalizedSnapshot.metrics.activeThreeObjectCount
   );
-  validateMetricValue(errors, 'drawCalls', snapshot.metrics.drawCalls);
+  validateMetricValue(
+    errors,
+    'drawCalls',
+    normalizedSnapshot.metrics.drawCalls
+  );
   if (
-    snapshot.metrics.activeThreeObjectCount === 0 &&
-    typeof snapshot.metrics.drawCalls === 'number' &&
-    snapshot.metrics.drawCalls > 0
+    normalizedSnapshot.metrics.activeThreeObjectCount === 0 &&
+    typeof normalizedSnapshot.metrics.drawCalls === 'number' &&
+    normalizedSnapshot.metrics.drawCalls > 0
   ) {
     errors.push(
-      `Runtime performance snapshot drawCalls ${snapshot.metrics.drawCalls} cannot be positive when activeThreeObjectCount is 0.`
+      `Runtime performance snapshot drawCalls ${normalizedSnapshot.metrics.drawCalls} cannot be positive when activeThreeObjectCount is 0.`
     );
   }
   validateMetricValue(
     errors,
     'audioNodeCount',
-    snapshot.metrics.audioNodeCount
+    normalizedSnapshot.metrics.audioNodeCount
   );
   validateMetricValue(
     errors,
     'songGenerationMs',
-    snapshot.metrics.songGenerationMs
+    normalizedSnapshot.metrics.songGenerationMs
   );
-  validateMetricValue(errors, 'midiExportMs', snapshot.metrics.midiExportMs);
-  validateMetricValue(errors, 'wavExportMs', snapshot.metrics.wavExportMs);
+  validateMetricValue(
+    errors,
+    'midiExportMs',
+    normalizedSnapshot.metrics.midiExportMs
+  );
+  validateMetricValue(
+    errors,
+    'wavExportMs',
+    normalizedSnapshot.metrics.wavExportMs
+  );
 
-  const visibleTileGeneration = snapshot.metrics.visibleTileGeneration;
+  const visibleTileGeneration =
+    normalizedSnapshot.metrics.visibleTileGeneration;
   if (visibleTileGeneration !== null) {
     if (
       typeof visibleTileGeneration !== 'object' ||
@@ -213,10 +240,10 @@ export function validateRuntimePerformanceSnapshot(
     }
   }
 
-  if (!Array.isArray(snapshot.violations)) {
+  if (!Array.isArray(normalizedSnapshot.violations)) {
     errors.push('Runtime performance snapshot violations must be an array.');
   } else {
-    const invalidViolation = snapshot.violations.find(
+    const invalidViolation = normalizedSnapshot.violations.find(
       (violation) =>
         typeof violation !== 'string' || violation.trim().length === 0
     );
@@ -228,12 +255,17 @@ export function validateRuntimePerformanceSnapshot(
   }
 
   const requiredMetricPaths =
-    REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER[snapshot.trigger] ?? [];
+    REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER[
+      normalizedSnapshot.trigger
+    ] ?? [];
   for (const metricPath of requiredMetricPaths) {
-    const value = getRuntimePerformanceMetricPathValue(snapshot, metricPath);
+    const value = getRuntimePerformanceMetricPathValue(
+      normalizedSnapshot,
+      metricPath
+    );
     if (value === null || value === undefined) {
       errors.push(
-        `Runtime performance snapshot trigger ${snapshot.trigger} requires metric ${metricPath}.`
+        `Runtime performance snapshot trigger ${normalizedSnapshot.trigger} requires metric ${metricPath}.`
       );
     }
   }
@@ -242,7 +274,9 @@ export function validateRuntimePerformanceSnapshot(
   const alignedLimitNames = Object.keys(
     RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS
   ).sort();
-  const unexpectedLimitNames = Object.keys(snapshot.limits ?? {}).filter(
+  const unexpectedLimitNames = Object.keys(
+    normalizedSnapshot.limits ?? {}
+  ).filter(
     (limitName) =>
       !(
         limitName in DEFAULT_RUNTIME_PERFORMANCE_LIMITS ||
@@ -264,7 +298,10 @@ export function validateRuntimePerformanceSnapshot(
   for (const [limitName, metricPath] of Object.entries(
     RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS
   )) {
-    const value = getRuntimePerformanceMetricPathValue(snapshot, metricPath);
+    const value = getRuntimePerformanceMetricPathValue(
+      normalizedSnapshot,
+      metricPath
+    );
     if (value === undefined) {
       errors.push(
         `Runtime performance snapshot limit ${limitName} is not aligned with metric ${metricPath}.`
@@ -272,15 +309,17 @@ export function validateRuntimePerformanceSnapshot(
     }
   }
 
-  warnings.push(...collectRuntimePerformanceSnapshotWarnings(snapshot));
+  warnings.push(
+    ...collectRuntimePerformanceSnapshotWarnings(normalizedSnapshot)
+  );
 
   if (errors.length === 0) {
     const expectedViolations = collectRuntimePerformanceViolations(
-      snapshot.metrics,
+      normalizedSnapshot.metrics,
       normalizedLimits
     );
-    const actualViolations = Array.isArray(snapshot.violations)
-      ? snapshot.violations
+    const actualViolations = Array.isArray(normalizedSnapshot.violations)
+      ? normalizedSnapshot.violations
       : [];
     for (const expectedViolation of expectedViolations) {
       if (!actualViolations.includes(expectedViolation)) {

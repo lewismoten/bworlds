@@ -16,6 +16,7 @@ import { CLIENT_ERROR_SNAPSHOT_API_PATH } from './src/client-error-snapshot.ts';
 import { resolveDebugRouteRedirect } from './src/debug-route-aliases.ts';
 import { resolveRootEntryHtmlPath } from './src/root-entry-route.ts';
 import { validateRuntimePerformanceSnapshot } from './src/runtime-performance-snapshot-validation.ts';
+import { migrateRuntimePerformanceSnapshot } from './src/runtime-performance-snapshot-validation.ts';
 import { RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH } from './src/runtime-performance-tracking.ts';
 import { RUNTIME_PERFORMANCE_ISSUE_API_PATH } from './src/runtime-performance-issue.ts';
 import { buildWorkspaceAliases } from './vite.workspace.ts';
@@ -275,7 +276,8 @@ function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
         return;
       }
 
-      const validation = validateRuntimePerformanceSnapshot(snapshot);
+      const migratedSnapshot = migrateRuntimePerformanceSnapshot(snapshot);
+      const validation = validateRuntimePerformanceSnapshot(migratedSnapshot);
       if (validation.errors.length > 0) {
         sendJson(res, 400, {
           error: validation.errors.join(' '),
@@ -283,7 +285,7 @@ function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
         return;
       }
 
-      const fileName = saveRuntimePerformanceSnapshot(snapshot);
+      const fileName = saveRuntimePerformanceSnapshot(migratedSnapshot);
       sendJson(res, 201, {
         fileName,
       });

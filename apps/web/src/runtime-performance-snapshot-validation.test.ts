@@ -8,6 +8,7 @@ import {
   REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER,
   RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS,
   createValidRuntimePerformanceSnapshot,
+  migrateRuntimePerformanceSnapshot,
   validateRuntimePerformanceSnapshot,
 } from './runtime-performance-snapshot-validation.ts';
 
@@ -201,6 +202,46 @@ describe('runtime performance snapshot validation', () => {
 
     expect(
       validateRuntimePerformanceSnapshot(snapshot as never).errors
+    ).toEqual([]);
+  });
+
+  it('migrates legacy runtime snapshots to the current limit shape before validation', () => {
+    const legacySnapshot =
+      createValidRuntimePerformanceSnapshot() as ReturnType<
+        typeof createValidRuntimePerformanceSnapshot
+      > & {
+        schemaVersion: 0 | 1;
+        limits: Record<string, number>;
+      };
+    legacySnapshot.schemaVersion = 0;
+    delete legacySnapshot.limits.pendingTileCount;
+    delete legacySnapshot.limits.visibleTileGenerationAverageMs;
+    delete legacySnapshot.limits.visibleTileGenerationBuildsPerSecondMin;
+    delete legacySnapshot.limits.visibleTileGenerationMaxMs;
+    legacySnapshot.limits.visibleTileGenerationMs = 14;
+
+    const migratedSnapshot = migrateRuntimePerformanceSnapshot(
+      legacySnapshot as never
+    );
+
+    expect(migratedSnapshot.schemaVersion).toBe(1);
+    expect(migratedSnapshot.limits.visibleTileGenerationMaxMs).toBe(14);
+    expect(migratedSnapshot.limits.visibleTileGenerationAverageMs).toBe(
+      DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationAverageMs
+    );
+    expect(
+      migratedSnapshot.limits.visibleTileGenerationBuildsPerSecondMin
+    ).toBe(
+      DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationBuildsPerSecondMin
+    );
+    expect(migratedSnapshot.limits.pendingTileCount).toBe(
+      DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount
+    );
+    expect(migratedSnapshot.limits).not.toHaveProperty(
+      'visibleTileGenerationMs'
+    );
+    expect(
+      validateRuntimePerformanceSnapshot(legacySnapshot as never).errors
     ).toEqual([]);
   });
 
