@@ -57,6 +57,10 @@ type SextantSignatureOptions = {
   longitude: number;
   gridX: number;
   gridY: number;
+  chunkX: number;
+  chunkY: number;
+  localX: number;
+  localY: number;
 };
 
 type TimekeeperMiniSignatureOptions = {
@@ -147,6 +151,10 @@ export function getSextantSignature(options: SextantSignatureOptions): string {
     options.longitude.toFixed(4),
     options.gridX,
     options.gridY,
+    options.chunkX,
+    options.chunkY,
+    options.localX,
+    options.localY,
   ].join('|');
 }
 
@@ -312,5 +320,7 @@ export function buildSextantMarkup(options: SextantSignatureOptions): string {
   return `
       <div><dt>GPS</dt><dd>${options.latitude.toFixed(4)}, ${options.longitude.toFixed(4)}</dd></div>
       <div><dt>World</dt><dd>${options.gridX}, ${options.gridY}</dd></div>
+      <div><dt>Chunk</dt><dd>${options.chunkX}, ${options.chunkY}</dd></div>
+      <div><dt>Local</dt><dd>${options.localX}, ${options.localY}</dd></div>
     `;
 }

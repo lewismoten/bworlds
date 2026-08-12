@@ -7,8 +7,8 @@
 - [ ] Replace nearby flat floor tiles with chunk geometry.
 - [ ] Keep logical tile state separate from chunk geometry.
 - [ ] Keep old floor rendering behind a temporary debug toggle.
-- [ ] Add chunk X and Y to the sextant panel.
-- [ ] Add local X and Y inside the current chunk.
+- [x] Add chunk X and Y to the sextant panel.
+- [x] Add local X and Y inside the current chunk.
 - [ ] Verify adjacent chunks share identical border heights.
 - [ ] Verify the player crosses chunk seams without a visible step.
 - [ ] Verify the 2D tile map still represents the 3D world.

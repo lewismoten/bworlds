@@ -31,6 +31,7 @@ import {
 import {
   createBuiltinContentPackCatalog,
   createWorldRuntime,
+  getTerrainChunkCoordinates,
 } from '@bworlds/worldgen';
 import { registerHashSeed } from '@bworlds/core/hash';
 import type { WorldEnvironmentLike } from '@bworlds/plugin-api';
@@ -4381,11 +4382,16 @@ function render(): FrameLoopActivityLike {
   const gridX = needsCoordinateSummary ? spatial.gridX : 0;
   const gridY = needsCoordinateSummary ? spatial.gridY : 0;
   if (sextantSummary && sextantInspectorVisible && gps) {
+    const terrainChunkCoordinates = getTerrainChunkCoordinates(gridX, gridY);
     const sextantSignature = getSextantSignature({
       latitude: gps.latitude,
       longitude: gps.longitude,
       gridX,
       gridY,
+      chunkX: terrainChunkCoordinates.chunkX,
+      chunkY: terrainChunkCoordinates.chunkY,
+      localX: terrainChunkCoordinates.localX,
+      localY: terrainChunkCoordinates.localY,
     });
     if (sextantSignature !== uiRenderState.lastSextantSignature) {
       sextantSummary.innerHTML = buildSextantMarkup({
@@ -4393,6 +4399,10 @@ function render(): FrameLoopActivityLike {
         longitude: gps.longitude,
         gridX,
         gridY,
+        chunkX: terrainChunkCoordinates.chunkX,
+        chunkY: terrainChunkCoordinates.chunkY,
+        localX: terrainChunkCoordinates.localX,
+        localY: terrainChunkCoordinates.localY,
       });
       uiRenderState.lastSextantSignature = sextantSignature;
     }

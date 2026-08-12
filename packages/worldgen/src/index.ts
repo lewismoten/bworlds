@@ -32,6 +32,12 @@ import {
   getOverworldPlacementChance,
   isNearOverworldLand,
 } from '@bworlds/overworld-support';
+export {
+  getTerrainChunkCoordinates,
+  TERRAIN_CHUNK_CELL_SIZE,
+  TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE,
+  type TerrainChunkCoordinates,
+} from './terrain-chunks.ts';
 
 type Point = { x: number; y: number };
 type SpawnTile = TileLike & {

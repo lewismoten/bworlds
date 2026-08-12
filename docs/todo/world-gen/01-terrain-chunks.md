@@ -2,14 +2,14 @@
 
 ## Chunk Coordinates
 
-- [ ] Choose a logical chunk size for the first live renderer.
-- [ ] Start with sixteen by sixteen logical cells per chunk.
-- [ ] Use seventeen by seventeen height samples per chunk.
-- [ ] Define signed integer chunk X and Y coordinates.
-- [ ] Define local cell X and Y inside each chunk.
-- [ ] Convert world cells to chunk and local coordinates.
-- [ ] Keep conversions correct for negative world coordinates.
-- [ ] Add tests around zero and negative chunk boundaries.
+- [x] Choose a logical chunk size for the first live renderer.
+- [x] Start with sixteen by sixteen logical cells per chunk.
+- [x] Use seventeen by seventeen height samples per chunk.
+- [x] Define signed integer chunk X and Y coordinates.
+- [x] Define local cell X and Y inside each chunk.
+- [x] Convert world cells to chunk and local coordinates.
+- [x] Keep conversions correct for negative world coordinates.
+- [x] Add tests around zero and negative chunk boundaries.
 
 ## Live Renderer
 
@@ -38,12 +38,12 @@
 
 ## Sextant Panel
 
-- [ ] Show current chunk X.
-- [ ] Show current chunk Y.
-- [ ] Show local cell X.
-- [ ] Show local cell Y.
-- [ ] Show world cell X.
-- [ ] Show world cell Y.
+- [x] Show current chunk X.
+- [x] Show current chunk Y.
+- [x] Show local cell X.
+- [x] Show local cell Y.
+- [x] Show world cell X.
+- [x] Show world cell Y.
 - [ ] Show sampled terrain height.
 - [ ] Show dominant splat layer.
 - [ ] Show current biome ID.

@@ -133,6 +133,10 @@ describe('ui signature helpers', () => {
       longitude: -80.98765,
       gridX: 128,
       gridY: -64,
+      chunkX: 8,
+      chunkY: -4,
+      localX: 0,
+      localY: 0,
     };
 
     expect(getSextantSignature(sextant)).toBe(
@@ -143,6 +147,8 @@ describe('ui signature helpers', () => {
     ).not.toBe(getSextantSignature(sextant));
     expect(buildSextantMarkup(sextant)).toContain('GPS');
     expect(buildSextantMarkup(sextant)).toContain('World');
+    expect(buildSextantMarkup(sextant)).toContain('Chunk');
+    expect(buildSextantMarkup(sextant)).toContain('Local');
     expect(buildSextantMarkup(sextant)).toContain('24.1234');
   });
 

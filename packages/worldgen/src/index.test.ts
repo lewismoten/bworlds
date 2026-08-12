@@ -13,8 +13,11 @@ import {
   createPluginRegistryFromPacks,
   createWorldRuntime,
   createWorldGenerator,
+  getTerrainChunkCoordinates,
   listContentPacks,
   listBuiltinContentPacks,
+  TERRAIN_CHUNK_CELL_SIZE,
+  TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE,
 } from './index.ts';
 import type {
   PluginPackDefinitionLike,
@@ -59,6 +62,56 @@ const customPackDefinition: PluginPackDefinitionLike = {
 };
 
 describe('world generator', () => {
+  it('uses sixteen logical cells and seventeen height samples per terrain chunk', () => {
+    expect(TERRAIN_CHUNK_CELL_SIZE).toBe(16);
+    expect(TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE).toBe(17);
+  });
+
+  it('converts world cells to terrain chunk coordinates across zero and negative boundaries', () => {
+    expect(getTerrainChunkCoordinates(0, 0)).toEqual({
+      chunkX: 0,
+      chunkY: 0,
+      localX: 0,
+      localY: 0,
+    });
+    expect(getTerrainChunkCoordinates(15, 15)).toEqual({
+      chunkX: 0,
+      chunkY: 0,
+      localX: 15,
+      localY: 15,
+    });
+    expect(getTerrainChunkCoordinates(16, 16)).toEqual({
+      chunkX: 1,
+      chunkY: 1,
+      localX: 0,
+      localY: 0,
+    });
+    expect(getTerrainChunkCoordinates(-1, -1)).toEqual({
+      chunkX: -1,
+      chunkY: -1,
+      localX: 15,
+      localY: 15,
+    });
+    expect(getTerrainChunkCoordinates(-16, -16)).toEqual({
+      chunkX: -1,
+      chunkY: -1,
+      localX: 0,
+      localY: 0,
+    });
+    expect(getTerrainChunkCoordinates(-17, -17)).toEqual({
+      chunkX: -2,
+      chunkY: -2,
+      localX: 15,
+      localY: 15,
+    });
+    expect(getTerrainChunkCoordinates(31, -17)).toEqual({
+      chunkX: 1,
+      chunkY: -2,
+      localX: 15,
+      localY: 15,
+    });
+  });
+
   it('lists built-in content packs with manifest metadata', () => {
     expect(listBuiltinContentPacks()).toEqual(
       expect.arrayContaining([
