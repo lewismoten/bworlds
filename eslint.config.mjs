@@ -38,6 +38,15 @@ export default tseslint.config(
     },
   },
   {
+    files: ['apps/landing/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.es2022,
+      },
+    },
+  },
+  {
     files: ['scripts/**/*.mjs'],
     languageOptions: {
       globals: {

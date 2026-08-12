@@ -1,22 +1,22 @@
-const meaning = document.querySelector("#meaning");
-const reroll = document.querySelector("#reroll");
+const meaning = document.querySelector('#meaning');
+const reroll = document.querySelector('#reroll');
 
 let grammar;
 let meanings = [];
 let meaningIndex = 0;
 
-const initialsOf = value =>
+const initialsOf = (value) =>
   value
-    .replace(/[^A-Za-z\s]/g, " ")
+    .replace(/[^A-Za-z\s]/g, ' ')
     .trim()
     .split(/\s+/)
     .filter(Boolean)
-    .map(word => word[0]?.toUpperCase())
-    .join("");
+    .map((word) => word[0]?.toUpperCase())
+    .join('');
 
 const getRange = ([start, end]) => `${start}-${end}`;
 
-const shuffle = items => {
+const shuffle = (items) => {
   const result = [...items];
 
   for (let i = result.length - 1; i > 0; i -= 1) {
@@ -50,32 +50,26 @@ const applyPunctuation = (parts, pattern) => {
 
       return value;
     })
-    .join(pattern.join ?? " ");
+    .join(pattern.join ?? ' ');
 
-  return /[.!?]$/.test(output)
-    ? output
-    : `${output}.`;
+  return /[.!?]$/.test(output) ? output : `${output}.`;
 };
 
-const combinations = pools => {
+const combinations = (pools) => {
   return pools.reduce(
     (results, pool) =>
-      results.flatMap(result =>
-        pool.map(value => [...result, value]),
-      ),
-    [[]],
+      results.flatMap((result) => pool.map((value) => [...result, value])),
+    [[]]
   );
 };
 
-const buildPatternMeanings = pattern => {
-  const segmentPools = pattern.segments.map(segment => {
+const buildPatternMeanings = (pattern) => {
+  const segmentPools = pattern.segments.map((segment) => {
     const range = getRange(segment);
     const pool = pattern.pools?.[range];
 
     if (!Array.isArray(pool) || pool.length === 0) {
-      console.warn(
-        `Skipping "${pattern.id}": missing pool ${range}.`,
-      );
+      console.warn(`Skipping "${pattern.id}": missing pool ${range}.`);
 
       return null;
     }
@@ -90,10 +84,10 @@ const buildPatternMeanings = pattern => {
     return [];
   }
 
-  const pools = segmentPools.map(item => item.pool);
+  const pools = segmentPools.map((item) => item.pool);
 
   return combinations(pools)
-    .map(values => {
+    .map((values) => {
       const parts = values.map((text, index) => ({
         range: segmentPools[index].range,
         text,
@@ -101,20 +95,16 @@ const buildPatternMeanings = pattern => {
 
       return applyPunctuation(parts, pattern);
     })
-    .filter(value => initialsOf(value) === grammar.acronym);
+    .filter((value) => initialsOf(value) === grammar.acronym);
 };
 
 const buildAllMeanings = () => {
-  const generated = grammar.patterns.flatMap(
-    buildPatternMeanings,
-  );
+  const generated = grammar.patterns.flatMap(buildPatternMeanings);
 
   meanings = shuffle([...new Set(generated)]);
   meaningIndex = 0;
 
-  console.info(
-    `Generated ${meanings.length} unique KOGNABO meanings.`,
-  );
+  console.info(`Generated ${meanings.length} unique KOGNABO meanings.`);
 };
 
 const showNextMeaning = () => {
@@ -129,14 +119,8 @@ const showNextMeaning = () => {
     /*
      * Avoid showing the same phrase across the shuffle boundary.
      */
-    if (
-      meanings.length > 1 &&
-      meanings[0] === meaning.textContent
-    ) {
-      [meanings[0], meanings[1]] = [
-        meanings[1],
-        meanings[0],
-      ];
+    if (meanings.length > 1 && meanings[0] === meaning.textContent) {
+      [meanings[0], meanings[1]] = [meanings[1], meanings[0]];
     }
   }
 
@@ -144,7 +128,7 @@ const showNextMeaning = () => {
 
   meaningIndex += 1;
 
-  meaning.classList.remove("changing");
+  meaning.classList.remove('changing');
 
   /*
    * Force the browser to observe the removed class so the animation
@@ -153,39 +137,34 @@ const showNextMeaning = () => {
   void meaning.offsetWidth;
 
   meaning.textContent = output;
-  meaning.classList.add("changing");
+  meaning.classList.add('changing');
 };
 
 const loadGenerator = async () => {
-  const response = await fetch("index.json", {
-    cache: "no-store",
+  const response = await fetch('index.json', {
+    cache: 'no-store',
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Unable to load index.json: ${response.status}`,
-    );
+    throw new Error(`Unable to load index.json: ${response.status}`);
   }
 
   grammar = await response.json();
 
-  if (grammar.acronym !== "KOGNABO") {
-    throw new Error(
-      "index.json does not contain a KOGNABO grammar.",
-    );
+  if (grammar.acronym !== 'KOGNABO') {
+    throw new Error('index.json does not contain a KOGNABO grammar.');
   }
 
   buildAllMeanings();
   showNextMeaning();
 };
 
-reroll.addEventListener("click", showNextMeaning);
+reroll.addEventListener('click', showNextMeaning);
 
-loadGenerator().catch(error => {
+loadGenerator().catch((error) => {
   console.error(error);
 
-  meaning.textContent =
-    "Keep On Going. Nothing Actually Broke Obviously.";
+  meaning.textContent = 'Keep On Going. Nothing Actually Broke Obviously.';
 
   reroll.disabled = true;
 });

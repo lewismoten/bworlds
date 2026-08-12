@@ -23,7 +23,7 @@
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
 
   background: var(--bg);
@@ -62,8 +62,12 @@ a {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 50% 0%, #111a27 0, #090b10 38%, var(--bg) 72%);
+  background: radial-gradient(
+    circle at 50% 0%,
+    #111a27 0,
+    #090b10 38%,
+    var(--bg) 72%
+  );
 }
 
 .glow {
@@ -102,13 +106,12 @@ a {
   position: absolute;
   inset: 0;
   opacity: 0.02;
-  background-image:
-    repeating-radial-gradient(
-      circle at 0 0,
-      white 0,
-      transparent 1px,
-      transparent 3px
-    );
+  background-image: repeating-radial-gradient(
+    circle at 0 0,
+    white 0,
+    transparent 1px,
+    transparent 3px
+  );
 }
 
 .site-header,
@@ -197,8 +200,7 @@ h1 {
   font-size: clamp(5rem, 12vw, 9.3rem);
   line-height: 0.8;
   letter-spacing: -0.075em;
-  background:
-    linear-gradient(180deg, #ffffff 20%, #a9b7ca 100%);
+  background: linear-gradient(180deg, #ffffff 20%, #a9b7ca 100%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -320,9 +322,14 @@ h1 {
   width: 46%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 28%, #c7fbff 0, #70dff6 11%, #1f6e8c 30%,
-      #173247 58%, #0b1722 78%);
+  background: radial-gradient(
+    circle at 32% 28%,
+    #c7fbff 0,
+    #70dff6 11%,
+    #1f6e8c 30%,
+    #173247 58%,
+    #0b1722 78%
+  );
   box-shadow:
     inset -30px -22px 55px rgba(0, 0, 0, 0.55),
     0 0 80px rgba(91, 217, 245, 0.18);
@@ -330,7 +337,7 @@ h1 {
 
 .planet::before,
 .planet::after {
-  content: "";
+  content: '';
   position: absolute;
   border-radius: 50%;
   opacity: 0.5;
