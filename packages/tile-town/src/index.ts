@@ -1,4 +1,7 @@
-import { createBoundedCache } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  getOrCreateCacheValue,
+} from '@bworlds/cache-support';
 import { createRandom } from '@bworlds/core';
 import {
   appendHashSeedPart,
@@ -19,7 +22,8 @@ import {
 } from '@bworlds/procedural-style';
 import { getTownProfile } from '@bworlds/town-support';
 import {
-  createTexturedPlaneMesh,
+  createBasicMaterial,
+  getSharedPlaneGeometry,
   getOrCreatePaintedCanvasTexture,
   createPaintedStandardMaterial,
 } from '@bworlds/three-support';
@@ -127,9 +131,14 @@ const TOWN_WALL_CRACK_WIDTH_SEED = registerHashLabel('town-wall-crack-w');
 const TOWN_WALL_BEAM_X_SEED = registerHashLabel('town-wall-beam-x');
 const TOWN_ROOF_CHIP_X_SEED = registerHashLabel('town-roof-chip-x');
 const TOWN_ROOF_CHIP_Y_SEED = registerHashLabel('town-roof-chip-y');
-const signLabelCache = createBoundedCache<string, ThreeTextureLike>(
-  TOWN_SIGN_LABEL_CACHE_LIMIT
-);
+const townSignLabelTextureCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, ThreeTextureLike>>
+>();
+const townSignLabelMaterialCache = new WeakMap<
+  object,
+  ReturnType<typeof createBoundedCache<string, ThreeMaterialLike>>
+>();
 const townStyleCache = createBoundedCache<string, TownStyleBlueprint>(
   TOWN_STYLE_CACHE_LIMIT
 );
@@ -903,12 +912,22 @@ function createTownLabelSprite(
   height: number,
   style: TownStyle
 ) {
-  const texture = getTownLabelTexture(three, name, style);
-  return createTexturedPlaneMesh(three, {
-    width: width * 0.9,
-    height: height * 0.76,
-    texture,
-  });
+  const key = `${style.key}:town:${name}`;
+  const material = getOrCreateCacheValue(
+    getTownSignLabelMaterialCache(three),
+    key,
+    () =>
+      createBasicMaterial(three, {
+        map: getTownLabelTexture(three, name, style),
+        transparent: true,
+        depthWrite: false,
+        side: three.DoubleSide,
+      })
+  );
+  return new three.Mesh(
+    getSharedPlaneGeometry(three, width * 0.9, height * 0.76),
+    material
+  ) as ThreeObject3DLike;
 }
 
 function createTownBannerCloth(
@@ -1003,24 +1022,51 @@ function getTownLabelTexture(
   style: TownStyle
 ) {
   const key = `${style.key}:town:${name}`;
-  return getOrCreatePaintedCanvasTexture(signLabelCache, key, three, {
-    width: 320,
-    height: 96,
-    wrap: false,
-    paint(context, canvas) {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = style.signBaseColor;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.strokeStyle = style.trimColor;
-      context.lineWidth = 6;
-      context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
-      context.fillStyle = style.signTextColor;
-      context.font = 'bold 28px sans-serif';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText(name, canvas.width * 0.5, canvas.height * 0.5);
-    },
-  });
+  return getOrCreatePaintedCanvasTexture(
+    getTownSignLabelTextureCache(three),
+    key,
+    three,
+    {
+      width: 320,
+      height: 96,
+      wrap: false,
+      paint(context, canvas) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = style.signBaseColor;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.strokeStyle = style.trimColor;
+        context.lineWidth = 6;
+        context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+        context.fillStyle = style.signTextColor;
+        context.font = 'bold 28px sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(name, canvas.width * 0.5, canvas.height * 0.5);
+      },
+    }
+  );
+}
+
+function getTownSignLabelTextureCache(three: object) {
+  let cache = townSignLabelTextureCache.get(three);
+  if (!cache) {
+    cache = createBoundedCache<string, ThreeTextureLike>(
+      TOWN_SIGN_LABEL_CACHE_LIMIT
+    );
+    townSignLabelTextureCache.set(three, cache);
+  }
+  return cache;
+}
+
+function getTownSignLabelMaterialCache(three: object) {
+  let cache = townSignLabelMaterialCache.get(three);
+  if (!cache) {
+    cache = createBoundedCache<string, ThreeMaterialLike>(
+      TOWN_SIGN_LABEL_CACHE_LIMIT
+    );
+    townSignLabelMaterialCache.set(three, cache);
+  }
+  return cache;
 }
 
 function getTownStyle(

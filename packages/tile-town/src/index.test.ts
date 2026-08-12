@@ -1,48 +1,25 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@bworlds/three-support', () => ({
-  createPaintedCanvasTexture() {
-    return { colorSpace: '', needsUpdate: false };
-  },
-  getOrCreatePaintedCanvasTexture() {
-    return { colorSpace: '', needsUpdate: false };
-  },
-  createTexturedPlaneMesh(
-    _three: unknown,
-    _texture: unknown,
-    width: number,
-    height: number
-  ) {
-    return {
-      position: {
-        x: 0,
-        y: 0,
-        z: 0,
-        set(x: number, y: number, z: number) {
-          this.x = x;
-          this.y = y;
-          this.z = z;
-          return this;
-        },
-      },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: width, y: height, z: 1 },
-      userData: {},
-      visible: true,
-      children: [],
-      add() {},
-      traverse(visit: (child: unknown) => void) {
-        visit(this);
-      },
-    };
-  },
-  createPaintedStandardMaterial(
-    _three: unknown,
-    options: Record<string, unknown>
-  ) {
-    return { options };
-  },
-}));
+vi.mock('@bworlds/three-support', async () => {
+  const actual = await vi.importActual<typeof import('@bworlds/three-support')>(
+    '@bworlds/three-support'
+  );
+  return {
+    ...actual,
+    createPaintedCanvasTexture() {
+      return { colorSpace: '', needsUpdate: false };
+    },
+    getOrCreatePaintedCanvasTexture() {
+      return { colorSpace: '', needsUpdate: false };
+    },
+    createPaintedStandardMaterial(
+      _three: unknown,
+      options: Record<string, unknown>
+    ) {
+      return { options };
+    },
+  };
+});
 
 import {
   createTownTilePlugin,
@@ -171,6 +148,7 @@ const fakeThree = {
   Mesh: FakeMesh,
   InstancedMesh: FakeInstancedMesh,
   PointLight: FakeLight,
+  MeshBasicMaterial: FakeMaterial,
   MeshStandardMaterial: FakeMaterial,
   Matrix4: FakeMatrix4,
   BoxGeometry: FakeGeometry,
@@ -669,6 +647,53 @@ describe('tile town', () => {
       signParts.map((child) => child.userData?.townSignPart).sort()
     ).toEqual(['back-label', 'cap', 'front-label', 'placard', 'post']);
     expect(nestedGroups).toHaveLength(0);
+  });
+
+  it('reuses town sign label materials across repeated builds on the same host', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const firstModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const secondModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const firstLabelMaterials = firstModel.children
+      .filter(
+        (child) =>
+          (child.userData?.townSignPart === 'front-label' ||
+            child.userData?.townSignPart === 'back-label') &&
+          child instanceof FakeMesh &&
+          child.material instanceof FakeMaterial
+      )
+      .map((child) => (child as FakeMesh).material as FakeMaterial);
+    const secondLabelMaterials = secondModel.children
+      .filter(
+        (child) =>
+          (child.userData?.townSignPart === 'front-label' ||
+            child.userData?.townSignPart === 'back-label') &&
+          child instanceof FakeMesh &&
+          child.material instanceof FakeMaterial
+      )
+      .map((child) => (child as FakeMesh).material as FakeMaterial);
+
+    expect(firstLabelMaterials).toHaveLength(2);
+    expect(secondLabelMaterials).toHaveLength(2);
+    expect(secondLabelMaterials[0]).toBe(firstLabelMaterials[0]);
+    expect(secondLabelMaterials[1]).toBe(firstLabelMaterials[1]);
   });
 
   it('adds windy banners to full-detail town models and sways them with weather strength', () => {

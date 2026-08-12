@@ -59,12 +59,14 @@
 - [x] Report cloned material count by plugin.
 - [ ] Reuse shared materials instead of cloning them.
 - [ ] Cache materials by their effective property values.
-- [ ] Cache materials by their effective property values.
       Progress: `tile-route` now caches dock route sign label materials per
       Three host and per effective label content instead of allocating a fresh
       `MeshBasicMaterial` for every reused boat/stop label plane, so repeated
       dock-route signs can share the same painted label material whenever the
-      texture and render-state values match.
+      texture and render-state values match, and `tile-town` now applies the
+      same per-host, per-label material caching to town name sign faces so
+      repeated front/back placard labels reuse one `MeshBasicMaterial` instead
+      of paying a fresh material allocation for each repeated town sign build.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`
