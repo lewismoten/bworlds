@@ -240,9 +240,7 @@ function* createSignModelProgressive({
     );
   }
 
-  const group = new three.Group();
   const totalSteps = 3;
-  group.position.set(tileX, 0, tileY);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -262,6 +260,7 @@ function* createSignModelProgressive({
     ...(postInstances.userData ?? {}),
     signInstancedPart: 'post',
   };
+  postInstances.position.set(tileX, 0, tileY);
   const placardBoardInstances = new three.InstancedMesh(
     getSharedSingleMaterialBoxGeometry(three, 1, 1, 1),
     style.placardMaterial,
@@ -330,7 +329,7 @@ function* createSignModelProgressive({
       ...(brace.userData ?? {}),
       signFullDetailPart: 'brace',
     };
-    group.add(brace);
+    postInstances.add(brace);
   }
   if (useSecondPost) {
     writeSignScaledBoxMatrix(
@@ -345,14 +344,12 @@ function* createSignModelProgressive({
       style.postThickness * 0.92
     );
   }
-  group.add(postInstances);
-
   placards.forEach((poi, index) => {
     const mountOffsetX =
       useSecondPost && index === 2 ? 0.18 + style.postThickness * 0.7 : 0;
 
     addDirectionalPlacard(
-      group,
+      postInstances,
       three,
       style,
       poi,
@@ -368,10 +365,10 @@ function* createSignModelProgressive({
       placardArrowHeadMatrixScratch
     );
   });
-  group.add(placardBoardInstances);
-  group.add(placardSupportInstances);
-  group.add(placardEdgeCapInstances);
-  group.add(placardArrowHeadInstances);
+  postInstances.add(placardBoardInstances);
+  postInstances.add(placardSupportInstances);
+  postInstances.add(placardEdgeCapInstances);
+  postInstances.add(placardArrowHeadInstances);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -379,7 +376,7 @@ function* createSignModelProgressive({
   };
 
   addSignLantern(
-    group,
+    postInstances,
     three,
     style,
     style.postThickness * (useSecondPost ? -0.8 : 0),
@@ -392,7 +389,7 @@ function* createSignModelProgressive({
     label: 'lantern',
   };
 
-  return group;
+  return postInstances;
 }
 
 function runSignModelBuildToCompletion(

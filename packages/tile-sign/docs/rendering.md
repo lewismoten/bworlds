@@ -32,3 +32,8 @@ The reduced-quality sign silhouette now also uses its main post mesh as the
 tile root and attaches the simplified placard and optional brace beneath it, so
 each low-detail sign tile avoids one otherwise empty wrapper `Group` without
 changing the silhouette.
+
+The full-detail roadside sign now also uses its post `InstancedMesh` as the
+tile root and attaches the brace, placards, label planes, and lantern pieces
+beneath it, so each sign tile avoids one otherwise empty wrapper `Group`
+without changing the placard layout or night-light placement.

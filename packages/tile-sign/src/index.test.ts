@@ -643,7 +643,7 @@ describe('tile sign', () => {
       tile: { kind: 'sign' },
       tileX: 9,
       tileY: 9,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
       4
@@ -651,7 +651,7 @@ describe('tile sign', () => {
   });
 
   it('reuses bounded sign style materials across different regions', () => {
-    const models: Array<FakeGroup | undefined> = [];
+    const models: Array<FakeNode | undefined> = [];
 
     for (let regionY = 0; regionY < 8; regionY += 1) {
       for (let regionX = 0; regionX < 8; regionX += 1) {
@@ -662,7 +662,7 @@ describe('tile sign', () => {
             tile: { kind: 'sign' },
             tileX: regionX * 10,
             tileY: regionY * 10,
-          }) as FakeGroup | undefined
+          }) as FakeNode | undefined
         );
       }
     }
@@ -685,7 +685,7 @@ describe('tile sign', () => {
       tile: { kind: 'sign' },
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     const postInstances: FakeInstancedMesh[] = [];
     const placardBoardInstances: FakeInstancedMesh[] = [];
@@ -749,7 +749,7 @@ describe('tile sign', () => {
       tile: { kind: 'sign' },
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const second = signTile?.create3DModel?.({
       three: fakeThree as never,
       state: createMultiPlacardSignState() as never,
@@ -779,7 +779,7 @@ describe('tile sign', () => {
       tile: { kind: 'sign' },
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     const rootTaggedParts = model?.children.filter(
       (child) => typeof child.userData?.signFullDetailPart === 'string'
@@ -788,11 +788,7 @@ describe('tile sign', () => {
       (child) => child instanceof FakeGroup
     );
 
-    expect(
-      model?.children.some(
-        (child) => child.userData?.signInstancedPart === 'post'
-      )
-    ).toBe(true);
+    expect(model?.userData?.signInstancedPart).toBe('post');
     expect(
       model?.children.some(
         (child) => child.userData?.signInstancedPart === 'placard-board'
@@ -809,6 +805,21 @@ describe('tile sign', () => {
       )
     ).toBe(false);
     expect(nestedGroups).toHaveLength(0);
+  });
+
+  it('uses the full-detail post instanced mesh as the root instead of a wrapper group', () => {
+    const model = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeInstancedMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeInstancedMesh);
+    expect(model?.position).toMatchObject({ x: 8, y: 0, z: 8 });
+    expect(model?.userData?.signInstancedPart).toBe('post');
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(8);
   });
 
   it('builds a simpler low-detail sign silhouette without lantern or label sprites', () => {

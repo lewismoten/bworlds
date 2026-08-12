@@ -280,7 +280,12 @@
       visible plains tile, and visible shared-floor plains tiles now also skip
       the hidden plugin sentinel group because `render3d` treats those entries
       as tiles that do not support plugin models instead of retrying `full ->
-low` visible recovery, and `render3d` now batches simple visible plains floors by
+low` visible recovery, and full-detail `tile-sign` tiles now use their post
+      `InstancedMesh` as the root and attach the brace, placard hardware,
+      label planes, and lantern pieces beneath it instead of wrapping the sign
+      in a dedicated `Group`, which removes one static `Object3D` from each
+      sign tile without changing the placard layout or night-light placement,
+      and `render3d` now batches simple visible plains floors by
       atlas variant into one shared instanced layer instead of one box mesh per
       visible plains tile, which dropped the live `tile-plains` draw-call
       ownership from `1053` to `15` in the August 12, 2026 runtime issue
