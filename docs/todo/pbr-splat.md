@@ -137,7 +137,7 @@
 - [x] Avoid cloning the splat material per chunk.
 - [x] Pass chunk data through geometry attributes.
 - [x] Pass global settings through shared uniforms.
-- [ ] Share texture arrays across terrain chunks.
+- [x] Share texture arrays across terrain chunks.
 - [x] Report shared material reuse counts.
 - [x] Warn when a chunk creates a unique splat material.
 
@@ -283,6 +283,10 @@
   splat buffers into one shared geometry-attribute layout with stable
   `terrainSplatLayerIndices` and `terrainSplatLayerWeights` conventions for
   renderer upload.
+- Added `@bworlds/terrain-splat-support/texture-binding-runtime-plan` to turn
+  texture binding plans into shared runtime cache keys and per-purpose upload
+  descriptors so compatible chunks can reuse one terrain texture-array binding
+  path.
 - Extended `@bworlds/terrain-splat-support/performance-estimate` to summarize
   cross-chunk splat material reuse, emit per-chunk material keys and binding
   modes, and surface warnings when texture-array fallback or unique terrain
@@ -393,6 +397,7 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/variant-pools.md`, plus
 `packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, plus
 `packages/terrain-splat-support/docs/texture-array-plans.md`, plus
+`packages/terrain-splat-support/docs/texture-binding-runtime-plans.md`, plus
 `packages/terrain-splat-support/docs/material-plans.md`, plus
 `packages/terrain-splat-support/docs/attribute-plans.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
