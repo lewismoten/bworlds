@@ -137,6 +137,7 @@ describe('ui signature helpers', () => {
       chunkY: -4,
       localX: 0,
       localY: 0,
+      terrainHeight: 0.375,
     };
 
     expect(getSextantSignature(sextant)).toBe(
@@ -149,6 +150,8 @@ describe('ui signature helpers', () => {
     expect(buildSextantMarkup(sextant)).toContain('World');
     expect(buildSextantMarkup(sextant)).toContain('Chunk');
     expect(buildSextantMarkup(sextant)).toContain('Local');
+    expect(buildSextantMarkup(sextant)).toContain('Height');
+    expect(buildSextantMarkup(sextant)).toContain('0.375');
     expect(buildSextantMarkup(sextant)).toContain('24.1234');
   });
 

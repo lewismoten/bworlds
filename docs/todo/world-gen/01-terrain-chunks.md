@@ -49,10 +49,17 @@ Current support:
 - [x] Show local cell Y.
 - [x] Show world cell X.
 - [x] Show world cell Y.
-- [ ] Show sampled terrain height.
+- [x] Show sampled terrain height.
 - [ ] Show dominant splat layer.
 - [ ] Show current biome ID.
 - [ ] Show current terrain chunk LOD.
+
+Progress:
+
+- The sextant now shows the current decorated tile `surfaceHeight` as a sampled
+  terrain-height readout beside world/chunk/local coordinates.
+- This is an interim Phase 1 readout based on the current runtime tile
+  decoration, not yet the Phase 2 authoritative shared height API.
 
 ## Visible Milestone
 
