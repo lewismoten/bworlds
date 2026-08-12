@@ -687,10 +687,24 @@ describe('tile sign', () => {
       tileY: 8,
     }) as FakeGroup | undefined;
 
+    const postInstances: FakeInstancedMesh[] = [];
+    const placardBoardInstances: FakeInstancedMesh[] = [];
     const supportInstances: FakeInstancedMesh[] = [];
     const edgeCapInstances: FakeInstancedMesh[] = [];
     const arrowHeadInstances: FakeInstancedMesh[] = [];
     model?.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.signInstancedPart === 'post'
+      ) {
+        postInstances.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.signInstancedPart === 'placard-board'
+      ) {
+        placardBoardInstances.push(node);
+      }
       if (
         node instanceof FakeInstancedMesh &&
         node.userData?.signInstancedPart === 'placard-support'
@@ -711,12 +725,18 @@ describe('tile sign', () => {
       }
     });
 
+    expect(postInstances).toHaveLength(1);
+    expect(placardBoardInstances).toHaveLength(1);
     expect(supportInstances).toHaveLength(1);
     expect(edgeCapInstances).toHaveLength(1);
     expect(arrowHeadInstances).toHaveLength(1);
+    expect(postInstances[0]?.count).toBe(2);
+    expect(placardBoardInstances[0]?.count).toBe(3);
     expect(supportInstances[0]?.count).toBe(3);
     expect(edgeCapInstances[0]?.count).toBe(3);
     expect(arrowHeadInstances[0]?.count).toBe(3);
+    expect(postInstances[0]?.matrices).toHaveLength(2);
+    expect(placardBoardInstances[0]?.matrices).toHaveLength(3);
     expect(supportInstances[0]?.matrices).toHaveLength(3);
     expect(edgeCapInstances[0]?.matrices).toHaveLength(3);
     expect(arrowHeadInstances[0]?.matrices).toHaveLength(3);
@@ -769,20 +789,15 @@ describe('tile sign', () => {
     );
 
     expect(
-      rootTaggedParts?.some(
-        (child) => child.userData?.signFullDetailPart === 'post'
+      model?.children.some(
+        (child) => child.userData?.signInstancedPart === 'post'
       )
     ).toBe(true);
     expect(
-      rootTaggedParts?.some(
-        (child) => child.userData?.signFullDetailPart === 'secondary-post'
+      model?.children.some(
+        (child) => child.userData?.signInstancedPart === 'placard-board'
       )
     ).toBe(true);
-    expect(
-      rootTaggedParts?.filter(
-        (child) => child.userData?.signFullDetailPart === 'placard'
-      )
-    ).toHaveLength(3);
     expect(
       rootTaggedParts?.filter(
         (child) => child.userData?.signFullDetailPart === 'text-plane'

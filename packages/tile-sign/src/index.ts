@@ -243,7 +243,6 @@ function* createSignModelProgressive({
   }
 
   const totalSteps = 3;
-  addSignPost(group, three, style, placardCount, 0);
   group.position.set(tileX, 0, tileY);
   yield {
     completedSteps: 1,
@@ -255,6 +254,24 @@ function* createSignModelProgressive({
     nearbyPois.length > 0
       ? nearbyPois.slice(0, 3)
       : [fallbackPlacard(tileX, tileY)];
+  const postInstances = new three.InstancedMesh(
+    getSharedSingleMaterialBoxGeometry(three, 1, 1, 1),
+    style.postMaterial,
+    useSecondPost ? 2 : 1
+  );
+  postInstances.userData = {
+    ...(postInstances.userData ?? {}),
+    signInstancedPart: 'post',
+  };
+  const placardBoardInstances = new three.InstancedMesh(
+    getSharedSingleMaterialBoxGeometry(three, 1, 1, 1),
+    style.placardMaterial,
+    placards.length
+  );
+  placardBoardInstances.userData = {
+    ...(placardBoardInstances.userData ?? {}),
+    signInstancedPart: 'placard-board',
+  };
   const placardSupportInstances = new three.InstancedMesh(
     getSharedSingleMaterialBoxGeometry(three, 1, 1, 1),
     style.postMaterial,
@@ -282,17 +299,58 @@ function* createSignModelProgressive({
     ...(placardArrowHeadInstances.userData ?? {}),
     signInstancedPart: 'placard-arrow-head',
   };
+  const postMatrixScratch = new three.Matrix4();
+  const placardBoardMatrixScratch = new three.Matrix4();
   const placardSupportMatrixScratch = new three.Matrix4();
   const placardEdgeCapMatrixScratch = new three.Matrix4();
   const placardArrowHeadMatrixScratch = new three.Matrix4();
 
+  writeSignScaledBoxMatrix(
+    postInstances,
+    postMatrixScratch,
+    0,
+    0,
+    style.postHeight * 0.5,
+    0,
+    style.postThickness,
+    style.postHeight,
+    style.postThickness
+  );
+  if (placardCount > 1) {
+    const brace = new three.Mesh(
+      getSharedSingleMaterialBoxGeometry(
+        three,
+        style.postThickness * 2.1,
+        style.postThickness * 0.8,
+        style.postThickness * 2.1
+      ),
+      style.trimMaterial
+    );
+    brace.position.y = style.postHeight * 0.78;
+    brace.userData = {
+      ...(brace.userData ?? {}),
+      signFullDetailPart: 'brace',
+    };
+    group.add(brace);
+  }
+  if (useSecondPost) {
+    writeSignScaledBoxMatrix(
+      postInstances,
+      postMatrixScratch,
+      1,
+      0.18 + style.postThickness * 0.7,
+      style.postHeight * 0.42,
+      0,
+      style.postThickness * 0.92,
+      style.postHeight * 0.84,
+      style.postThickness * 0.92
+    );
+  }
+  group.add(postInstances);
+
   placards.forEach((poi, index) => {
     const mountOffsetX =
       useSecondPost && index === 2 ? 0.18 + style.postThickness * 0.7 : 0;
-
-    if (useSecondPost && index === 2) {
-      addSecondaryPost(group, three, style, mountOffsetX);
-    }
 
     addDirectionalPlacard(
       group,
@@ -301,6 +359,8 @@ function* createSignModelProgressive({
       poi,
       index,
       mountOffsetX,
+      placardBoardInstances,
+      placardBoardMatrixScratch,
       placardSupportInstances,
       placardSupportMatrixScratch,
       placardEdgeCapInstances,
@@ -309,6 +369,7 @@ function* createSignModelProgressive({
       placardArrowHeadMatrixScratch
     );
   });
+  group.add(placardBoardInstances);
   group.add(placardSupportInstances);
   group.add(placardEdgeCapInstances);
   group.add(placardArrowHeadInstances);
@@ -370,74 +431,6 @@ function findNearestAnchor<
   }
 
   return nearestAnchor;
-}
-
-function addSignPost(
-  group: ThreeObject3DLike,
-  three: ThreeHostLike,
-  style: SignStyle,
-  placardCount: number,
-  x: number
-) {
-  const postMesh = new three.Mesh(
-    getSharedSingleMaterialBoxGeometry(
-      three,
-      style.postThickness,
-      style.postHeight,
-      style.postThickness
-    ),
-    style.postMaterial
-  );
-  postMesh.position.x = x;
-  postMesh.position.y = style.postHeight * 0.5;
-  postMesh.userData = {
-    ...(postMesh.userData ?? {}),
-    signFullDetailPart: 'post',
-  };
-  group.add(postMesh);
-
-  if (placardCount > 1) {
-    const brace = new three.Mesh(
-      getSharedSingleMaterialBoxGeometry(
-        three,
-        style.postThickness * 2.1,
-        style.postThickness * 0.8,
-        style.postThickness * 2.1
-      ),
-      style.trimMaterial
-    );
-    brace.position.x = x;
-    brace.position.y = style.postHeight * 0.78;
-    brace.userData = {
-      ...(brace.userData ?? {}),
-      signFullDetailPart: 'brace',
-    };
-    group.add(brace);
-  }
-}
-
-function addSecondaryPost(
-  group: ThreeObject3DLike,
-  three: ThreeHostLike,
-  style: SignStyle,
-  x: number
-) {
-  const mesh = new three.Mesh(
-    getSharedSingleMaterialBoxGeometry(
-      three,
-      style.postThickness * 0.92,
-      style.postHeight * 0.84,
-      style.postThickness * 0.92
-    ),
-    style.postMaterial
-  );
-  mesh.position.x = x;
-  mesh.position.y = style.postHeight * 0.42;
-  mesh.userData = {
-    ...(mesh.userData ?? {}),
-    signFullDetailPart: 'secondary-post',
-  };
-  group.add(mesh);
 }
 
 function addLowDetailSign(
@@ -514,6 +507,8 @@ function addDirectionalPlacard(
   poi: NearbyPoi,
   index: number,
   mountOffsetX: number,
+  placardBoardInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
+  placardBoardMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>,
   supportInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
   supportMatrixScratch: InstanceType<ThreeHostLike['Matrix4']>,
   edgeCapInstances: InstanceType<ThreeHostLike['InstancedMesh']>,
@@ -527,27 +522,23 @@ function addDirectionalPlacard(
   const heading = Math.atan2(poi.dy, poi.dx);
   const rowOffset = style.postHeight * (0.68 - index * 0.14);
   const armLength = 0.14 + index * 0.035;
-
-  const placard = new three.Mesh(
-    getSharedSingleMaterialBoxGeometry(three, width, height, depth),
-    style.placardMaterial
-  );
   const placardOffset = rotateSignLocalOffset(
     width * 0.5 + armLength,
     0,
     -heading
   );
-  placard.position.set(
+  writeSignScaledBoxMatrix(
+    placardBoardInstances,
+    placardBoardMatrixScratch,
+    index,
     mountOffsetX + placardOffset.x,
     rowOffset,
-    placardOffset.z
+    placardOffset.z,
+    width,
+    height,
+    depth,
+    -heading
   );
-  placard.rotation.y = -heading;
-  placard.userData = {
-    ...(placard.userData ?? {}),
-    signFullDetailPart: 'placard',
-  };
-  group.add(placard);
 
   edgeCapInstances.setMatrixAt(
     index,
@@ -985,6 +976,33 @@ function writeSignRotatedScalePositionMatrix(
     0,
     0,
     1
+  );
+}
+
+function writeSignScaledBoxMatrix(
+  mesh: InstanceType<ThreeHostLike['InstancedMesh']>,
+  target: InstanceType<ThreeHostLike['Matrix4']>,
+  index: number,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number,
+  rotationY = 0
+): void {
+  mesh.setMatrixAt(
+    index,
+    writeSignRotatedScalePositionMatrix(
+      target,
+      x,
+      y,
+      z,
+      scaleX,
+      scaleY,
+      scaleZ,
+      rotationY
+    )
   );
 }
 

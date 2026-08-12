@@ -14,6 +14,8 @@ progressive and eager builds stay structurally aligned.
 
 Current full-detail optimizations:
 
+- the main sign post, optional secondary post, and placard boards now collapse
+  into instanced meshes instead of one standalone box mesh per repeated solid
 - placard support bars, edge caps, and arrow heads are emitted as instanced
   hardware instead of one standalone mesh per placard attachment
 - each placard now uses one double-sided label plane instead of separate front
