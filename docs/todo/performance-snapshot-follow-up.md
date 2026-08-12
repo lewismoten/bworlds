@@ -180,7 +180,10 @@
       one shared four-material palette so floor, roof, trim, and lamp
       materials cannot quietly grow between passes, and `tile-water` now keeps
       repeated river builds on one host within one shared two-material palette
-      so body and highlight materials cannot quietly grow between passes.
+      so body and highlight materials cannot quietly grow between passes, and
+      `tile-ship` now keeps repeated ship builds on one host within one shared
+      five-material palette per resolved variant so hull, trim, mast, sail,
+      and lantern materials cannot quietly grow between passes.
 
 ## Instancing
 

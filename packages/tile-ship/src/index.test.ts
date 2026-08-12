@@ -201,6 +201,35 @@ describe('tile ship', () => {
     );
   });
 
+  it('keeps repeated ship builds on one host within the shared material budget', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    const repeatedModels: FakeNode[] = [];
+
+    for (let index = 0; index < 4; index += 1) {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state: createShipState(),
+        tile: { kind: 'ship' } as never,
+        tileX: 5,
+        tileY: 5,
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(5);
+  });
+
   it('creates an enterable ship model with a deterministic variant and night light', () => {
     const plugin = createShipTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
