@@ -18,6 +18,11 @@ Current layout:
 This trims another small repeated static cluster from the full-detail
 lighthouse while preserving the lantern-room silhouette.
 
+The low-detail lighthouse silhouette now also uses the base cylinder mesh as
+its root and hangs the tower, stripe, cap, and rotating beam pivot beneath it,
+so reduced-quality lighthouse tiles avoid one otherwise empty wrapper `Group`
+without changing the beam animation or silhouette.
+
 Progressive loading:
 
 - The full-detail lighthouse progressive path now yields after

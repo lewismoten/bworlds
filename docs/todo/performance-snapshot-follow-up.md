@@ -224,7 +224,12 @@
       Progress: `tile-rail` now uses its rail `InstancedMesh` as the tile root
       and attaches the sleeper `InstancedMesh` under it instead of wrapping the
       two sets in a dedicated `Group`, which removes one static `Object3D` from
-      every visible rail tile without changing transforms or appearance.
+      every visible rail tile without changing transforms or appearance, and
+      the low-detail lighthouse silhouette now uses its base cylinder mesh as
+      the tile root and hangs the tower, stripe, cap, and rotating beam pivot
+      beneath it instead of wrapping them in a dedicated `Group`, which removes
+      one static `Object3D` from each reduced-quality lighthouse tile while
+      preserving the same beam animation and silhouette.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so

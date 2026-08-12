@@ -509,8 +509,8 @@ describe('tile lighthouse', () => {
       triangleCount: 240,
     });
     expect(lowEstimate).toEqual({
-      object3dCount: 7,
-      groupCount: 2,
+      object3dCount: 6,
+      groupCount: 1,
       meshCount: 6,
       geometryCount: 6,
       materialCount: 3,
@@ -771,6 +771,23 @@ describe('tile lighthouse', () => {
     expect(collectTaggedMeshes(low, 'lighthouseLens')).toHaveLength(0);
     expect(lowPointLights).toHaveLength(0);
     expect(findBeamPivot(low)).not.toBeNull();
+  });
+
+  it('uses the low-detail base mesh as the lighthouse root instead of a wrapper group', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const low = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'low',
+    }) as FakeNode | undefined;
+
+    expect(low).toBeInstanceOf(FakeMesh);
+    expect(low?.position).toMatchObject({ x: 4, y: 0.14, z: 5 });
+    expect(low?.children.length ?? 0).toBeGreaterThanOrEqual(4);
   });
 
   it('activates the lighthouse beam early in dense fog near daytime', () => {

@@ -99,8 +99,8 @@ const LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
   triangleCount: 240,
 };
 const LIGHTHOUSE_LOW_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
-  object3dCount: 7,
-  groupCount: 2,
+  object3dCount: 6,
+  groupCount: 1,
   meshCount: 6,
   geometryCount: 6,
   materialCount: 3,
