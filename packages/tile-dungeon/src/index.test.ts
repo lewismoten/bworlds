@@ -579,6 +579,53 @@ describe('tile dungeon', () => {
     expect(bannerCrossbars[0]?.matrices.length).toBe(bannerCrossbars[0]?.count);
   });
 
+  it('uses instanced low-detail tower silhouettes and omits low-detail beacon point lights', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    }) as FakeNode;
+
+    const towerBodies: FakeInstancedMesh[] = [];
+    const towerCaps: FakeInstancedMesh[] = [];
+    const pointLights: FakePointLight[] = [];
+    lowModel.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.dungeonInstancedPart === 'low-detail-tower-body'
+      ) {
+        towerBodies.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.dungeonInstancedPart === 'low-detail-tower-cap'
+      ) {
+        towerCaps.push(node);
+      }
+      if (
+        node instanceof FakePointLight &&
+        node.userData?.poiNightLightEmitter
+      ) {
+        pointLights.push(node);
+      }
+    });
+
+    expect(towerBodies).toHaveLength(1);
+    expect(towerCaps).toHaveLength(1);
+    expect(towerBodies[0]?.count).toBe(2);
+    expect(towerCaps[0]?.count).toBe(2);
+    expect(towerBodies[0]?.matrices.length).toBe(2);
+    expect(towerCaps[0]?.matrices.length).toBe(2);
+    expect(pointLights).toHaveLength(0);
+  });
+
   it('intensifies red stronghold beacons at night', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');

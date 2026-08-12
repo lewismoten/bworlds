@@ -2,6 +2,7 @@ import { markPoiLightEmitter } from '@bworlds/poi-support';
 import type {
   ThreeHostLike,
   ThreeMaterialLike,
+  ThreeMatrix4Like,
   ThreeObject3DLike,
 } from '@bworlds/plugin-api';
 
@@ -57,23 +58,26 @@ export function createLowDetailDungeonModel(
   keep.position.set(0, baseHeight * 0.28, 0);
   base.add(keep);
 
-  addCornerTower(three, base, {
-    x: -baseWidth * 0.42,
-    y: -baseHeight * 0.5,
-    z: -baseDepth * 0.42,
-    radius: 0.12,
-    height: 0.78,
-    capHeight: 0.18,
+  addCornerTowers(three, base, {
     style,
-  });
-  addCornerTower(three, base, {
-    x: baseWidth * 0.42,
-    y: -baseHeight * 0.5,
-    z: -baseDepth * 0.42,
-    radius: 0.12,
-    height: 0.78,
-    capHeight: 0.18,
-    style,
+    towers: [
+      {
+        x: -baseWidth * 0.42,
+        y: -baseHeight * 0.5,
+        z: -baseDepth * 0.42,
+        radius: 0.12,
+        height: 0.78,
+        capHeight: 0.18,
+      },
+      {
+        x: baseWidth * 0.42,
+        y: -baseHeight * 0.5,
+        z: -baseDepth * 0.42,
+        radius: 0.12,
+        height: 0.78,
+        capHeight: 0.18,
+      },
+    ],
   });
 
   const gateOriginX = tileX + entrance.dx * (baseDepth * 0.42);
@@ -140,67 +144,91 @@ export function createLowDetailDungeonModel(
   };
   base.add(glow);
 
-  const pointLight = markPoiLightEmitter(
-    new three.PointLight('#f87171', 0, 3.6, 1.85),
-    {
-      kind: 'point-light',
-      nightIntensity: 0.95,
-      visibleThreshold: 0.04,
-    }
-  );
-  const pointLightOffset = rotateDungeonLowDetailLocalOffset(
-    0,
-    0.03,
-    entrance.rotationY
-  );
-  pointLight.position.set(
-    gateOriginX + pointLightOffset.x - tileX,
-    0.4 - baseHeight * 0.5,
-    gateOriginZ + pointLightOffset.z - tileY
-  );
-  pointLight.visible = false;
-  pointLight.userData = {
-    ...(pointLight.userData ?? {}),
-    dungeonBeacon: 'gate',
-  };
-  base.add(pointLight);
   return base;
 }
 
-function addCornerTower(
+function addCornerTowers(
   three: ThreeHostLike,
   parent: ThreeObject3DLike,
   {
-    x,
-    y,
-    z,
-    radius,
-    height,
-    capHeight,
     style,
+    towers,
   }: {
-    x: number;
-    y: number;
-    z: number;
-    radius: number;
-    height: number;
-    capHeight: number;
     style: DungeonLowDetailStyle;
+    towers: Array<{
+      x: number;
+      y: number;
+      z: number;
+      radius: number;
+      height: number;
+      capHeight: number;
+    }>;
   }
 ) {
-  const tower = new three.Mesh(
-    new three.CylinderGeometry(radius, radius * 1.04, height, 6),
-    style.wallMaterial
+  const towerBodies = new three.InstancedMesh(
+    new three.CylinderGeometry(1, 1.04, 1, 6),
+    style.wallMaterial,
+    towers.length
   );
-  tower.position.set(x, y + height * 0.5, z);
-  parent.add(tower);
+  towerBodies.userData = {
+    ...(towerBodies.userData ?? {}),
+    dungeonInstancedPart: 'low-detail-tower-body',
+  };
+  const towerCaps = new three.InstancedMesh(
+    new three.ConeGeometry(1.08, 1, 6),
+    style.roofMaterial,
+    towers.length
+  );
+  towerCaps.userData = {
+    ...(towerCaps.userData ?? {}),
+    dungeonInstancedPart: 'low-detail-tower-cap',
+  };
+  const bodyMatrix = new three.Matrix4();
+  const capMatrix = new three.Matrix4();
 
-  const cap = new three.Mesh(
-    new three.ConeGeometry(radius * 1.08, capHeight, 6),
-    style.roofMaterial
-  );
-  cap.position.set(x, y + height + capHeight * 0.5 - 0.02, z);
-  parent.add(cap);
+  for (let index = 0; index < towers.length; index += 1) {
+    const tower = towers[index]!;
+    towerBodies.setMatrixAt(
+      index,
+      writeLowDetailDungeonMatrix(
+        bodyMatrix,
+        tower.x,
+        tower.y + tower.height * 0.5,
+        tower.z,
+        tower.radius,
+        tower.height,
+        tower.radius
+      )
+    );
+    towerCaps.setMatrixAt(
+      index,
+      writeLowDetailDungeonMatrix(
+        capMatrix,
+        tower.x,
+        tower.y + tower.height + tower.capHeight * 0.5 - 0.02,
+        tower.z,
+        tower.radius,
+        tower.capHeight,
+        tower.radius
+      )
+    );
+  }
+
+  parent.add(towerBodies);
+  parent.add(towerCaps);
+}
+
+function writeLowDetailDungeonMatrix(
+  matrix: ThreeMatrix4Like,
+  x: number,
+  y: number,
+  z: number,
+  scaleX: number,
+  scaleY: number,
+  scaleZ: number
+) {
+  matrix.set(scaleX, 0, 0, x, 0, scaleY, 0, y, 0, 0, scaleZ, z, 0, 0, 0, 1);
+  return matrix;
 }
 
 function rotateDungeonLowDetailLocalOffset(

@@ -46,3 +46,9 @@ The low-detail dungeon silhouette now also uses the base keep mesh as its root
 and attaches the smaller keep, corner towers, gate pieces, and beacon nodes
 beneath it, so reduced-quality dungeon tiles avoid one otherwise empty wrapper
 `Group` without changing the silhouette or beacon placement.
+
+The low-detail recovery path now also instances its two repeated corner tower
+bodies and caps, and keeps only the emissive gate glow without a separate
+`PointLight`. That trims distant recovery overhead so visible `full -> low`
+fallbacks have fewer meshes, fewer draw calls, and no low-detail light budget
+pressure while preserving the same landmark silhouette and beacon cue.

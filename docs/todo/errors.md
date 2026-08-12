@@ -7,6 +7,10 @@ Always run tests to make sure all tests pass
 # Next Highest
 
 - [ ] Complete [Performance Snapshot Follow-Up](performance-snapshot-follow-up.md)
+      Progress: low-detail `tile-dungeon` recovery now instances its repeated
+      corner towers and tower caps and drops the separate low-detail beacon
+      `PointLight`, so `full -> low` visible LOD recovery has fewer meshes and
+      no low-detail light budget pressure on that landmark path.
 - [ ] Complete audio-priority2.md
 
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.
