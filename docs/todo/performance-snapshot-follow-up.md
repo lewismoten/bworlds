@@ -18,7 +18,11 @@
       shared trunk material plus the existing family foliage materials so mixed
       broadleaf-and-conifer recovery tiles stay inside the low-detail material
       budget instead of reaching four unique tree materials during LOD
-      recovery.
+      recovery, and several full-detail forest accessory accents now reuse one
+      shared field, stem, light-accent, or dark-wildlife material instead of
+      paying separate material instances for visually similar meadow stems,
+      breadcrumb markers, owl eyes, bird bodies, spiders, and flower accent
+      colors.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First

@@ -438,6 +438,39 @@ describe('tile forest', () => {
     });
   });
 
+  it('keeps sampled full-detail forest materials within a bounded shared palette on one host', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    const materials = new Set<unknown>();
+
+    for (let tileY = 0; tileY < 8; tileY += 1) {
+      for (let tileX = 0; tileX < 8; tileX += 1) {
+        const model = tile.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: { kind: 'forest' },
+          tileX,
+          tileY,
+          detailLevel: 'full',
+        }) as FakeGroup;
+
+        model.traverse((node) => {
+          if (
+            (node instanceof FakeMesh || node instanceof FakeInstancedMesh) &&
+            node.material
+          ) {
+            const nodeMaterials = Array.isArray(node.material)
+              ? node.material
+              : [node.material];
+            nodeMaterials.forEach((material) => materials.add(material));
+          }
+        });
+      }
+    }
+
+    expect(materials.size).toBeLessThanOrEqual(14);
+  });
+
   it('shares full-detail broadleaf trunk and foliage materials across oak and birch trees on one host', () => {
     const tile = getForestTile();
     const state = createForestTestState();

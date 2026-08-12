@@ -3966,6 +3966,26 @@ function getSharedForestAccessoryStyle(
     return cached;
   }
 
+  const sharedFieldMaterial = new three.MeshStandardMaterial({
+    color: '#79a85a',
+    roughness: 0.98,
+    metalness: 0.01,
+  });
+  const sharedLightAccentMaterial = new three.MeshStandardMaterial({
+    color: '#f6dea0',
+    roughness: 0.88,
+    metalness: 0.01,
+  });
+  const sharedStemAccentMaterial = new three.MeshStandardMaterial({
+    color: '#ded6bb',
+    roughness: 0.94,
+    metalness: 0.01,
+  });
+  const sharedDarkWildlifeMaterial = new three.MeshStandardMaterial({
+    color: '#2c211d',
+    roughness: 0.96,
+    metalness: 0.01,
+  });
   const next = {
     stoneMaterial: new three.MeshStandardMaterial({
       color: '#7f847a',
@@ -3979,11 +3999,7 @@ function getSharedForestAccessoryStyle(
       metalness: 0.01,
       flatShading: true,
     }),
-    mushroomStemMaterial: new three.MeshStandardMaterial({
-      color: '#ded6bb',
-      roughness: 0.94,
-      metalness: 0.01,
-    }),
+    mushroomStemMaterial: sharedStemAccentMaterial,
     hollowMaterial: new three.MeshStandardMaterial({
       color: '#120b07',
       roughness: 1,
@@ -3994,16 +4010,8 @@ function getSharedForestAccessoryStyle(
       roughness: 0.98,
       metalness: 0.01,
     }),
-    owlEyeMaterial: new three.MeshStandardMaterial({
-      color: '#f6e6a0',
-      roughness: 0.82,
-      metalness: 0.02,
-    }),
-    spiderMaterial: new three.MeshStandardMaterial({
-      color: '#2c211d',
-      roughness: 0.98,
-      metalness: 0.01,
-    }),
+    owlEyeMaterial: sharedLightAccentMaterial,
+    spiderMaterial: sharedDarkWildlifeMaterial,
     webMaterial: new three.MeshStandardMaterial({
       color: '#d9dfdf',
       roughness: 0.96,
@@ -4016,36 +4024,12 @@ function getSharedForestAccessoryStyle(
       roughness: 0.96,
       metalness: 0.01,
     }),
-    meadowGrassMaterial: new three.MeshStandardMaterial({
-      color: '#79a85a',
-      roughness: 0.98,
-      metalness: 0.01,
-    }),
-    meadowStemMaterial: new three.MeshStandardMaterial({
-      color: '#5f8d41',
-      roughness: 0.98,
-      metalness: 0.01,
-    }),
-    meadowFlowerWhiteMaterial: new three.MeshStandardMaterial({
-      color: '#fff5df',
-      roughness: 0.9,
-      metalness: 0.01,
-    }),
-    meadowFlowerYellowMaterial: new three.MeshStandardMaterial({
-      color: '#f3cf62',
-      roughness: 0.9,
-      metalness: 0.01,
-    }),
-    breadcrumbMaterial: new three.MeshStandardMaterial({
-      color: '#e6d6a8',
-      roughness: 0.98,
-      metalness: 0.01,
-    }),
-    birdMaterial: new three.MeshStandardMaterial({
-      color: '#2f2420',
-      roughness: 0.95,
-      metalness: 0.01,
-    }),
+    meadowGrassMaterial: sharedFieldMaterial,
+    meadowStemMaterial: sharedFieldMaterial,
+    meadowFlowerWhiteMaterial: sharedLightAccentMaterial,
+    meadowFlowerYellowMaterial: sharedLightAccentMaterial,
+    breadcrumbMaterial: sharedStemAccentMaterial,
+    birdMaterial: sharedDarkWildlifeMaterial,
   };
   forestSharedAccessoryStyleCache.set(three, next);
   return next;
