@@ -115,6 +115,11 @@ Current support:
   keyed by chunk render-data and material compatibility, so unchanged terrain
   chunks can preserve renderable identity across repeated builds before the
   live world scene starts attaching those renderables.
+- `@bworlds/render3d/visible-terrain-chunk-meshes` now syncs one dedicated root
+  group from cached chunk renderables, reuses one material instance per
+  compatibility bucket, and preserves mesh identity by renderable cache key, so
+  render3d now has one scene-level handoff for test chunk rendering without
+  replacing the legacy floor path yet.
 
 ## Sextant Panel
 

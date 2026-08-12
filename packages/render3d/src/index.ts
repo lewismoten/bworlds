@@ -68,6 +68,10 @@ export {
   type VisibleTerrainChunkRenderableBuildResult,
   type VisibleTerrainChunkRenderableCache,
 } from './visible-terrain-chunk-renderables.ts';
+export {
+  syncVisibleTerrainChunkMeshes,
+  type VisibleTerrainChunkMeshRenderable,
+} from './visible-terrain-chunk-meshes.ts';
 import {
   countGeometriesExceedingBounds,
   countGeometryTriangles,

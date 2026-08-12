@@ -39,6 +39,11 @@ Current support:
   cached renderable records, so unchanged chunks can preserve geometry and
   material pairing identity across repeated builds before the live renderer
   starts swapping them into the scene.
+- `packages/render3d/src/visible-terrain-chunk-meshes.ts` now syncs those
+  cached chunk renderables into one dedicated root group while reusing one
+  shared material instance per compatibility bucket, which gives the later live
+  renderer one scene-level chunk mesh path without deleting legacy floor meshes
+  yet.
 
 ## Replace Floor Meshes
 
