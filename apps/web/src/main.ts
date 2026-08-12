@@ -159,9 +159,9 @@ import {
 } from './runtime-performance-tracking.ts';
 import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
 import {
-  findRandomTileDestination,
-  listTileTeleportOptions,
-} from './debug-teleport.ts';
+  findRandomTileDestinationLazy,
+  listTileTeleportOptionsLazy,
+} from './debug-teleport-loader.ts';
 import { resetStateToOverworld } from './overworld-travel.ts';
 import { getDebugWorldStats } from './debug-world-stats.ts';
 import {
@@ -1686,7 +1686,7 @@ updateRuntimePerformanceTrackingUi();
 if (debugSeedInput) {
   debugSeedInput.value = currentWorldSeed;
 }
-updateDebugTeleportOptions();
+void updateDebugTeleportOptions();
 
 function updateViewModeUi(): void {
   viewModeButtons.forEach((button) => {
@@ -2308,7 +2308,7 @@ function rebuildRuntime(nextPackIds: string[]): void {
     celestialEventModeState.mode;
   activePackIds = normalizedPackIds;
   drawAtlas(atlasCanvas.getContext('2d'));
-  updateDebugTeleportOptions();
+  void updateDebugTeleportOptions();
   saveSession();
   requestRender();
 }
@@ -2341,31 +2341,37 @@ function syncDebugSeedInput(): void {
   }
 }
 
-function updateDebugTeleportOptions(): void {
+async function updateDebugTeleportOptions(): Promise<void> {
   if (!debugTileKindSelect) {
     return;
   }
 
-  const previousValue = debugTileKindSelect.value;
-  const options = listTileTeleportOptions(
-    registry.listResolvedTileDefinitions().map(([kind, definition]) => [
-      kind,
-      {
-        name: definition.name,
-        walkable: definition.walkable,
-      },
-    ])
-  );
+  try {
+    const previousValue = debugTileKindSelect.value;
+    const options = await listTileTeleportOptionsLazy(
+      registry.listResolvedTileDefinitions().map(([kind, definition]) => [
+        kind,
+        {
+          name: definition.name,
+          walkable: definition.walkable,
+        },
+      ])
+    );
 
-  debugTileKindSelect.innerHTML = options
-    .map((option) => `<option value="${option.kind}">${option.label}</option>`)
-    .join('');
+    debugTileKindSelect.innerHTML = options
+      .map(
+        (option) => `<option value="${option.kind}">${option.label}</option>`
+      )
+      .join('');
 
-  const hasPreviousValue = options.some(
-    (option) => option.kind === previousValue
-  );
-  if (hasPreviousValue) {
-    debugTileKindSelect.value = previousValue;
+    const hasPreviousValue = options.some(
+      (option) => option.kind === previousValue
+    );
+    if (hasPreviousValue) {
+      debugTileKindSelect.value = previousValue;
+    }
+  } catch {
+    showHmrNotice('Unable to load debug teleport options right now.');
   }
 }
 
@@ -3450,22 +3456,36 @@ function travelToOverworld(
 }
 
 function jumpToRandomDestination(targetKind?: string): void {
-  const destination = targetKind
-    ? findRandomTileDestination(targetKind, {
-        sampleOverworld: generator.sampleOverworld,
-        canLandAt: canLandOnOverworldTile,
-      })
-    : findRandomLandingDestination();
-  if (!destination) {
-    showHmrNotice(
-      targetKind
-        ? `Unable to find a random ${targetKind} destination right now.`
-        : 'Unable to find a random destination right now.'
-    );
+  if (!targetKind) {
+    const destination = findRandomLandingDestination();
+    if (!destination) {
+      showHmrNotice('Unable to find a random destination right now.');
+      return;
+    }
+    travelToOverworld(destination.x, destination.y);
+    closeDialog(randomDialog);
     return;
   }
-  travelToOverworld(destination.x, destination.y);
-  closeDialog(randomDialog);
+
+  void findRandomTileDestinationLazy(targetKind, {
+    sampleOverworld: generator.sampleOverworld,
+    canLandAt: canLandOnOverworldTile,
+  })
+    .then((destination) => {
+      if (!destination) {
+        showHmrNotice(
+          `Unable to find a random ${targetKind} destination right now.`
+        );
+        return;
+      }
+      travelToOverworld(destination.x, destination.y);
+      closeDialog(randomDialog);
+    })
+    .catch(() => {
+      showHmrNotice(
+        `Unable to load random ${targetKind} destinations right now.`
+      );
+    });
 }
 
 function jumpHome(): void {
@@ -3659,20 +3679,28 @@ function teleportToSelectedTileKind(): void {
     return;
   }
 
-  const destination = findRandomTileDestination(targetKind, {
+  void findRandomTileDestinationLazy(targetKind, {
     sampleOverworld: generator.sampleOverworld,
     canLandAt: canLandOnOverworldTile,
-  });
+  })
+    .then((destination) => {
+      if (!destination) {
+        showHmrNotice(
+          `Unable to find a nearby landing spot for ${targetKind}.`
+        );
+        return;
+      }
 
-  if (!destination) {
-    showHmrNotice(`Unable to find a nearby landing spot for ${targetKind}.`);
-    return;
-  }
-
-  travelToOverworld(destination.x, destination.y);
-  showHmrNotice(
-    `Jumped to ${targetKind} near ${destination.x}, ${destination.y}.`
-  );
+      travelToOverworld(destination.x, destination.y);
+      showHmrNotice(
+        `Jumped to ${targetKind} near ${destination.x}, ${destination.y}.`
+      );
+    })
+    .catch(() => {
+      showHmrNotice(
+        `Unable to load ${targetKind} teleport destinations right now.`
+      );
+    });
 }
 
 function skipTimeByHours(hours: number): void {
