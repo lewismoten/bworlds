@@ -236,8 +236,8 @@
 - [x] Build one chunk with grass and dirt splat layers.
 - [x] Add one shared PBR splat material.
 - [x] Blend two terrain layers from vertex weights.
-- [ ] Add base color texture array support.
-- [ ] Add normal map texture array support.
+- [x] Add base color texture array support.
+- [x] Add normal map texture array support.
 
 ## Progress Notes
 
