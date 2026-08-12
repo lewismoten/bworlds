@@ -866,6 +866,46 @@ describe('tile dungeon', () => {
     expect(findGateVoidMaterial(first)).toBe(findGateVoidMaterial(second));
   });
 
+  it('reuses dungeon trim materials across regions when the resolved trim color matches', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+    const coordinates = [
+      { tileX: 5, tileY: 4 },
+      { tileX: 41, tileY: 22 },
+      { tileX: 77, tileY: 40 },
+      { tileX: 113, tileY: 58 },
+    ];
+    const sampled = coordinates.map((position) => {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: { kind: 'dungeon' },
+        detailLevel: 'full',
+        ...position,
+      }) as FakeGroup;
+      const material = findDungeonTrimMaterial(model);
+      return {
+        material,
+        color: material?.options?.color,
+      };
+    });
+
+    const pair = sampled
+      .map((entry, index) => {
+        const match = sampled
+          .slice(index + 1)
+          .find((candidate) => candidate.color === entry.color);
+        return match ? [entry, match] : null;
+      })
+      .find((entry) => entry !== null);
+
+    expect(pair).not.toBeNull();
+    expect(pair?.[0].color).toBeDefined();
+    expect(pair?.[0].material).toBeDefined();
+    expect(pair?.[0].material).toBe(pair?.[1].material);
+  });
+
   it('bounds shared dungeon glow material variants within a region', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
@@ -1058,6 +1098,29 @@ function findDungeonBarMaterial(root: FakeGroup) {
       'options' in resolved &&
       resolved.options?.metalness === 0.18 &&
       resolved.options?.roughness === 0.7
+    ) {
+      material = resolved;
+    }
+  });
+  return material;
+}
+
+function findDungeonTrimMaterial(root: FakeGroup) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (material || !(node instanceof FakeMesh || node instanceof FakeInstancedMesh)) {
+      return;
+    }
+
+    const resolved = Array.isArray(node.material)
+      ? node.material[0]
+      : node.material;
+    if (
+      resolved &&
+      typeof resolved === 'object' &&
+      'options' in resolved &&
+      resolved.options?.roughness === 0.88 &&
+      resolved.options?.metalness === 0.05
     ) {
       material = resolved;
     }

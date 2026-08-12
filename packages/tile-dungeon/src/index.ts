@@ -73,6 +73,14 @@ const DUNGEON_GLOW_INTENSITY_STEP = 0.02;
 const dungeonBarTextureCache = new WeakMap<object, ThreeTextureLike>();
 const dungeonBarMaterialCache = new WeakMap<object, ThreeMaterialLike>();
 const dungeonGateVoidMaterialCache = new WeakMap<object, ThreeMaterialLike>();
+const dungeonTrimMaterialResolver = createHostVariantMaterialResolver(
+  (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color,
+      roughness: 0.88,
+      metalness: 0.05,
+    })
+);
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -714,11 +722,10 @@ const resolveDungeonStyle = createRegionalValueResolver(
               );
             },
           }),
-          trimMaterial: new three.MeshStandardMaterial({
-            color: trimBase,
-            roughness: 0.88,
-            metalness: 0.05,
-          }),
+          trimMaterial: dungeonTrimMaterialResolver.getMaterial(
+            three,
+            trimBase
+          ),
           barMaterial: getSharedDungeonBarMaterial(three),
           gateVoidMaterial: getSharedDungeonGateVoidMaterial(three),
           getGlowMaterial(dayIntensity: number, nightIntensity: number) {
