@@ -611,7 +611,6 @@ describe('runtime performance tracking', () => {
     );
     expect(issue?.reasons).toEqual([
       'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).',
-      'Objects per visible tile is high (435.0 > 18).',
     ]);
   });
 

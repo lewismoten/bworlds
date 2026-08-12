@@ -13,8 +13,14 @@ Reduced-quality narration is still preserved inside each saved report's
 `renderState`, but it no longer triggers an issue report by itself. The client
 now suppresses API posts when the only remaining details are derivative
 render-quality consequences such as limiter narration, visibility-radius
-explanations, or latest-quality-change summaries without a separate direct
-warning, violation, fallback, or resource issue.
+explanations, generic frame/draw-call/material/object budget pressure, or
+latest-quality-change summaries without a separate direct tile/plugin/runtime
+diagnostic.
+
+Report creation is now intentionally limited to direct diagnostics such as
+plugin model rejections, queue starvation, synchronous tile-build stalls, LOD
+swap churn, fallback churn, retained-resource leaks, heap growth, stationary
+tile rebuild churn, and explicit latest LOD/fallback failures.
 
 Issue reports are throttled by a stable issue hash derived from the saved issue
 summary for five seconds so repeated reports of the same user-visible problem
