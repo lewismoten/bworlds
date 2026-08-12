@@ -69,6 +69,7 @@ import {
   resolveCarrierEnabled,
   resolveHarmonicEnabled,
   resolveSoundBankDebugPreviewOscillatorDefaults,
+  SOUND_BANK_DEBUG_PREVIEW_OSCILLATOR_WAVEFORMS,
   type SoundBankDebugPreviewOscillatorOverride,
   type SoundBankDebugPreviewOscillatorState,
 } from './sound-bank-debug-preview-oscillators.ts';
@@ -2436,6 +2437,15 @@ function buildSoundBankDebugPreviewOscillatorControlsMarkup(
               Solo
             </button>
           </div>
+          <label>
+            <span>Waveform</span>
+            <select id="sound-bank-debug-oscillator-carrier-waveform">
+              ${renderOptionList(
+                [...SOUND_BANK_DEBUG_PREVIEW_OSCILLATOR_WAVEFORMS],
+                previewOscillators.carrierWaveform
+              )}
+            </select>
+          </label>
         </div>
         <div class="sound-bank-debug-oscillator-row">
           <span>Harmonic Oscillator</span>
@@ -2457,6 +2467,15 @@ function buildSoundBankDebugPreviewOscillatorControlsMarkup(
               Solo
             </button>
           </div>
+          <label>
+            <span>Waveform</span>
+            <select id="sound-bank-debug-oscillator-harmonic-waveform">
+              ${renderOptionList(
+                [...SOUND_BANK_DEBUG_PREVIEW_OSCILLATOR_WAVEFORMS],
+                previewOscillators.harmonicWaveform
+              )}
+            </select>
+          </label>
         </div>
       </div>
     </section>

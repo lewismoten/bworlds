@@ -443,8 +443,18 @@ function readPreviewOscillatorState(): SoundBankDebugPreviewOscillatorState | nu
   }
 
   return normalizeSoundBankDebugPreviewOscillatorState(
-    previewOscillatorState ?? {
-      instrumentId,
+    {
+      ...(previewOscillatorState ?? {
+        instrumentId,
+      }),
+      carrierWaveform: (document.querySelector<HTMLSelectElement>(
+        '#sound-bank-debug-oscillator-carrier-waveform'
+      )?.value ?? previewOscillatorState?.carrierWaveform) as
+        SoundBankDebugPreviewOscillatorState['carrierWaveform'] | undefined,
+      harmonicWaveform: (document.querySelector<HTMLSelectElement>(
+        '#sound-bank-debug-oscillator-harmonic-waveform'
+      )?.value ?? previewOscillatorState?.harmonicWaveform) as
+        SoundBankDebugPreviewOscillatorState['harmonicWaveform'] | undefined,
     },
     {
       instrumentId,
@@ -1229,6 +1239,20 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
       },
       pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
     );
+
+  document
+    .querySelectorAll<HTMLSelectElement>(
+      '#sound-bank-debug-oscillator-carrier-waveform, #sound-bank-debug-oscillator-harmonic-waveform'
+    )
+    .forEach((input) => {
+      input.addEventListener(
+        'input',
+        () => {
+          previewOscillatorState = readPreviewOscillatorState();
+        },
+        pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+      );
+    });
 
   document
     .querySelectorAll<HTMLInputElement>(

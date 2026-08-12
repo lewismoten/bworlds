@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   applySoundBankDebugPreviewOscillatorStateToNote,
+  applySoundBankDebugPreviewOscillatorStateToInstrument,
   normalizeSoundBankDebugPreviewOscillatorState,
   resolveCarrierEnabled,
   resolveHarmonicEnabled,
   resolveSoundBankDebugPreviewOscillatorDefaults,
+  SOUND_BANK_DEBUG_PREVIEW_OSCILLATOR_WAVEFORMS,
 } from './sound-bank-debug-preview-oscillators.ts';
 
 describe('sound bank debug preview oscillators', () => {
@@ -15,6 +17,8 @@ describe('sound bank debug preview oscillators', () => {
           instrumentId: 'lead-square',
           carrierEnabled: false,
           harmonicEnabled: true,
+          carrierWaveform: 'sawtooth',
+          harmonicWaveform: 'triangle',
           soloTarget: 'carrier',
         },
         {
@@ -25,6 +29,8 @@ describe('sound bank debug preview oscillators', () => {
       instrumentId: 'lead-square',
       carrierEnabled: false,
       harmonicEnabled: true,
+      carrierWaveform: 'sawtooth',
+      harmonicWaveform: 'triangle',
       soloTarget: 'carrier',
     });
   });
@@ -34,6 +40,7 @@ describe('sound bank debug preview oscillators', () => {
       resolveSoundBankDebugPreviewOscillatorDefaults({
         id: 'lead-square',
         harmonicGain: 0.22,
+        waveform: 'sine',
         timbre: {
           harmonicWaveform: 'triangle',
           harmonicRatio: 2,
@@ -47,6 +54,8 @@ describe('sound bank debug preview oscillators', () => {
       instrumentId: 'lead-square',
       carrierEnabled: false,
       harmonicEnabled: true,
+      carrierWaveform: 'sine',
+      harmonicWaveform: 'triangle',
       soloTarget: 'all',
     });
   });
@@ -79,12 +88,45 @@ describe('sound bank debug preview oscillators', () => {
       {
         carrierEnabled: false,
         harmonicEnabled: true,
+        carrierWaveform: 'triangle',
+        harmonicWaveform: 'sawtooth',
         soloTarget: 'carrier',
       }
     );
 
     expect(note.timbre.fundamentalGainMultiplier).toBe(1);
     expect(note.harmonicGain).toBe(0);
+    expect(note.waveform).toBe('triangle');
+    expect(note.timbre.harmonicWaveform).toBe('sawtooth');
+  });
+
+  it('applies waveform overrides to instrument diagnostics without mutating other ids', () => {
+    const instrument = applySoundBankDebugPreviewOscillatorStateToInstrument(
+      {
+        id: 'lead-square',
+        waveform: 'square',
+        harmonicGain: 0.22,
+        timbre: {
+          harmonicWaveform: 'triangle',
+          harmonicRatio: 2,
+          filterType: 'lowpass',
+          filterCutoffHz: 2_400,
+          filterQ: 0.9,
+          fundamentalGainMultiplier: 1,
+        },
+      },
+      {
+        instrumentId: 'lead-square',
+        carrierEnabled: true,
+        harmonicEnabled: true,
+        carrierWaveform: 'triangle',
+        harmonicWaveform: 'sawtooth',
+        soloTarget: 'all',
+      }
+    );
+
+    expect(instrument.waveform).toBe('triangle');
+    expect(instrument.timbre.harmonicWaveform).toBe('sawtooth');
   });
 
   it('resolves effective enabled flags from solo state', () => {
@@ -92,6 +134,8 @@ describe('sound bank debug preview oscillators', () => {
       resolveCarrierEnabled({
         carrierEnabled: false,
         harmonicEnabled: true,
+        carrierWaveform: 'square',
+        harmonicWaveform: 'triangle',
         soloTarget: 'carrier',
       })
     ).toBe(true);
@@ -99,6 +143,8 @@ describe('sound bank debug preview oscillators', () => {
       resolveHarmonicEnabled({
         carrierEnabled: true,
         harmonicEnabled: true,
+        carrierWaveform: 'square',
+        harmonicWaveform: 'triangle',
         soloTarget: 'carrier',
       })
     ).toBe(false);
@@ -106,8 +152,16 @@ describe('sound bank debug preview oscillators', () => {
       resolveCarrierEnabled({
         carrierEnabled: true,
         harmonicEnabled: false,
+        carrierWaveform: 'square',
+        harmonicWaveform: 'triangle',
         soloTarget: 'harmonic',
       })
     ).toBe(false);
+    expect(SOUND_BANK_DEBUG_PREVIEW_OSCILLATOR_WAVEFORMS).toEqual([
+      'sine',
+      'triangle',
+      'square',
+      'sawtooth',
+    ]);
   });
 });

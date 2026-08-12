@@ -1,5 +1,13 @@
 import type { ProceduralMusicNote } from './procedural-music.ts';
 import type { ProceduralInstrument } from './procedural-music-sound-bank.ts';
+import type { MusicWaveform } from './music-instrument-timbres.ts';
+
+export const SOUND_BANK_DEBUG_PREVIEW_OSCILLATOR_WAVEFORMS = [
+  'sine',
+  'triangle',
+  'square',
+  'sawtooth',
+] as const satisfies readonly MusicWaveform[];
 
 export type SoundBankDebugPreviewOscillatorSoloTarget =
   'all' | 'carrier' | 'harmonic';
@@ -7,6 +15,8 @@ export type SoundBankDebugPreviewOscillatorSoloTarget =
 export type SoundBankDebugPreviewOscillatorOverride = Readonly<{
   carrierEnabled: boolean;
   harmonicEnabled: boolean;
+  carrierWaveform: MusicWaveform;
+  harmonicWaveform: MusicWaveform;
   soloTarget: SoundBankDebugPreviewOscillatorSoloTarget;
 }>;
 
@@ -17,12 +27,17 @@ export type SoundBankDebugPreviewOscillatorState =
     }>;
 
 export function resolveSoundBankDebugPreviewOscillatorDefaults(
-  instrument: Pick<ProceduralInstrument, 'id' | 'harmonicGain' | 'timbre'>
+  instrument: Pick<
+    ProceduralInstrument,
+    'id' | 'waveform' | 'harmonicGain' | 'timbre'
+  >
 ): SoundBankDebugPreviewOscillatorState {
   return {
     instrumentId: instrument.id,
     carrierEnabled: (instrument.timbre.fundamentalGainMultiplier ?? 1) > 0,
     harmonicEnabled: instrument.harmonicGain > 0,
+    carrierWaveform: instrument.waveform,
+    harmonicWaveform: instrument.timbre.harmonicWaveform,
     soloTarget: 'all',
   };
 }
@@ -36,6 +51,12 @@ export function normalizeSoundBankDebugPreviewOscillatorState(
     instrumentId: value?.instrumentId?.trim() || fallback.instrumentId,
     carrierEnabled: value?.carrierEnabled ?? fallback.carrierEnabled ?? true,
     harmonicEnabled: value?.harmonicEnabled ?? fallback.harmonicEnabled ?? true,
+    carrierWaveform: resolveWaveform(
+      value?.carrierWaveform ?? fallback.carrierWaveform
+    ),
+    harmonicWaveform: resolveWaveform(
+      value?.harmonicWaveform ?? fallback.harmonicWaveform
+    ),
     soloTarget: resolveSoloTarget(value?.soloTarget ?? fallback.soloTarget),
   };
 }
@@ -83,9 +104,11 @@ export function applySoundBankDebugPreviewOscillatorStateToNote(
 
   return {
     ...note,
+    waveform: state.carrierWaveform,
     harmonicGain: harmonicEnabled ? note.harmonicGain : 0,
     timbre: {
       ...note.timbre,
+      harmonicWaveform: state.harmonicWaveform,
       fundamentalGainMultiplier: carrierEnabled
         ? Math.max(0, note.timbre.fundamentalGainMultiplier ?? 1)
         : 0,
@@ -93,10 +116,15 @@ export function applySoundBankDebugPreviewOscillatorStateToNote(
   };
 }
 
-export function applySoundBankDebugPreviewOscillatorStateToInstrument(
-  instrument: ProceduralInstrument,
+export function applySoundBankDebugPreviewOscillatorStateToInstrument<
+  T extends Pick<
+    ProceduralInstrument,
+    'id' | 'waveform' | 'harmonicGain' | 'timbre'
+  >,
+>(
+  instrument: T,
   state: SoundBankDebugPreviewOscillatorState | null | undefined
-): ProceduralInstrument {
+): T {
   if (!state || state.instrumentId !== instrument.id) {
     return instrument;
   }
@@ -106,9 +134,11 @@ export function applySoundBankDebugPreviewOscillatorStateToInstrument(
 
   return {
     ...instrument,
+    waveform: state.carrierWaveform,
     harmonicGain: harmonicEnabled ? instrument.harmonicGain : 0,
     timbre: {
       ...instrument.timbre,
+      harmonicWaveform: state.harmonicWaveform,
       fundamentalGainMultiplier: carrierEnabled
         ? Math.max(0, instrument.timbre.fundamentalGainMultiplier ?? 1)
         : 0,
@@ -123,4 +153,15 @@ function resolveSoloTarget(
     return value;
   }
   return 'all';
+}
+
+function resolveWaveform(
+  value: MusicWaveform | string | null | undefined
+): MusicWaveform {
+  return value === 'triangle' ||
+    value === 'square' ||
+    value === 'sawtooth' ||
+    value === 'sine'
+    ? value
+    : 'sine';
 }

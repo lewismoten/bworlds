@@ -119,9 +119,9 @@
 ## Oscillator Controls
 
 - [x] Show the primary oscillator type.
-- [ ] Allow changing the primary oscillator type.
+- [x] Allow changing the primary oscillator type.
 - [x] Show the harmonic oscillator type.
-- [ ] Allow changing the harmonic oscillator type.
+- [x] Allow changing the harmonic oscillator type.
 - [ ] Add a primary oscillator gain control.
 - [ ] Add a harmonic oscillator gain control.
 - [ ] Add a harmonic frequency ratio control.
