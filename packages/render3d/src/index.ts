@@ -104,7 +104,7 @@ import {
 } from './object-materials.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
-import { resolveTileTerrainSurfaceMode } from './terrain-surface-mode.ts';
+import { resolveTileTerrainSurfaceSelection } from './terrain-surface-mode.ts';
 import {
   createSortedCountSummaryScratch,
   summarizeSortedCountMap,
@@ -1149,6 +1149,9 @@ type DynamicTileNode = {
   modelRoot?: THREE.Object3D | null;
   fallbackReason?: string;
   supportsModel?: boolean;
+  terrainSurfaceMode?: TerrainSurfaceRenderMode;
+  sharedSplatEligible?: boolean;
+  terrainSurfaceReason?: string;
   uniqueMaterials?: readonly THREE.Material[];
   uniqueTextures?: readonly unknown[];
   pluginUniqueTextures?: readonly unknown[];
@@ -1172,6 +1175,9 @@ type TileNodeBuildShell = {
   tilePlugin?: TilePlugin;
   tilePluginOwnerLabel: string;
   detailLevel: RenderBudgetDetailLevel;
+  terrainSurfaceSelection: ReturnType<
+    typeof resolveTileTerrainSurfaceSelection
+  >;
   tilePluginRenderContext: {
     three: typeof THREE;
     state: Render3DState;
@@ -2024,6 +2030,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       y,
       tile
     ).surfaceHeight;
+    const terrainSurfaceSelection = resolveTileTerrainSurfaceSelection(tile);
     const tilePlugin = registry.getTilePlugin(tile.kind);
     const tilePluginOwnerLabel = getTilePluginOwnerLabel(registry, tile.kind);
 
@@ -2055,6 +2062,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tilePlugin,
       tilePluginOwnerLabel,
       detailLevel,
+      terrainSurfaceSelection,
       tilePluginRenderContext: {
         three: THREE,
         state,
@@ -2063,7 +2071,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         tileY: y,
         detailLevel,
         renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
-        terrainSurfaceMode: resolveTileTerrainSurfaceMode(tile),
+        terrainSurfaceMode: terrainSurfaceSelection.activeMode,
       },
     };
   }
@@ -2531,6 +2539,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       modelRoot: pluginModel ?? null,
       fallbackReason,
       supportsModel: usedTilePluginModelFactory,
+      terrainSurfaceMode: shell.terrainSurfaceSelection.activeMode,
+      sharedSplatEligible: shell.terrainSurfaceSelection.sharedSplatEligible,
+      terrainSurfaceReason: shell.terrainSurfaceSelection.reason,
       uniqueMaterials: pluginUniqueMaterials,
       uniqueTextures: finalUniqueTextures,
       pluginUniqueTextures,
@@ -4752,6 +4763,9 @@ export function getVisibleTileDebugInfoFromState(
       | 'fallbackReason'
       | 'modelRoot'
       | 'supportsModel'
+      | 'terrainSurfaceMode'
+      | 'sharedSplatEligible'
+      | 'terrainSurfaceReason'
       | 'sharedFloorInstance'
       | 'sharedWallFallbackInstance'
     >
@@ -4771,6 +4785,9 @@ export function getVisibleTileDebugInfoFromState(
   fallbackReason: string | null;
   hasVisibleModel: boolean;
   supportsModel: boolean | null;
+  terrainSurfaceMode: TerrainSurfaceRenderMode | null;
+  sharedSplatEligible: boolean;
+  terrainSurfaceReason: string | null;
 } | null {
   const key = `${tileX}:${tileY}`;
   const entry = visibleTileNodes.get(key);
@@ -4793,6 +4810,9 @@ export function getVisibleTileDebugInfoFromState(
     ),
     supportsModel:
       typeof entry?.supportsModel === 'boolean' ? entry.supportsModel : null,
+    terrainSurfaceMode: entry?.terrainSurfaceMode ?? null,
+    sharedSplatEligible: entry?.sharedSplatEligible === true,
+    terrainSurfaceReason: entry?.terrainSurfaceReason ?? null,
   };
 }
 

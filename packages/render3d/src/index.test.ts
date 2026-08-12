@@ -4843,6 +4843,9 @@ describe('render3d visibility helpers', () => {
       fallbackReason: 'low failed',
       hasVisibleModel: true,
       supportsModel: true,
+      terrainSurfaceMode: null,
+      sharedSplatEligible: false,
+      terrainSurfaceReason: null,
     });
 
     expect(
@@ -4861,6 +4864,9 @@ describe('render3d visibility helpers', () => {
       fallbackReason: null,
       hasVisibleModel: false,
       supportsModel: null,
+      terrainSurfaceMode: null,
+      sharedSplatEligible: false,
+      terrainSurfaceReason: null,
     });
 
     expect(
@@ -4881,6 +4887,10 @@ describe('render3d visibility helpers', () => {
               fallbackReason: null,
               modelRoot: null,
               supportsModel: false,
+              terrainSurfaceMode: 'legacy-mesh',
+              sharedSplatEligible: false,
+              terrainSurfaceReason:
+                'renderer still uses legacy terrain mesh and shared floor batches',
               sharedFloorInstance: {
                 kind: 'plains',
                 variant: 0,
@@ -4906,6 +4916,10 @@ describe('render3d visibility helpers', () => {
       fallbackReason: null,
       hasVisibleModel: true,
       supportsModel: false,
+      terrainSurfaceMode: 'legacy-mesh',
+      sharedSplatEligible: false,
+      terrainSurfaceReason:
+        'renderer still uses legacy terrain mesh and shared floor batches',
     });
   });
 
@@ -4923,6 +4937,10 @@ describe('render3d visibility helpers', () => {
                 'tile has no plugin model and uses the wall-height fallback',
               modelRoot: null,
               supportsModel: false,
+              terrainSurfaceMode: 'legacy-mesh',
+              sharedSplatEligible: true,
+              terrainSurfaceReason:
+                'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
               sharedFloorInstance: null,
               sharedWallFallbackInstance: {
                 kind: 'plains',
@@ -4950,6 +4968,50 @@ describe('render3d visibility helpers', () => {
         'tile has no plugin model and uses the wall-height fallback',
       hasVisibleModel: true,
       supportsModel: false,
+      terrainSurfaceMode: 'legacy-mesh',
+      sharedSplatEligible: true,
+      terrainSurfaceReason:
+        'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
+    });
+  });
+
+  it('includes terrain-surface selection metadata in visible tile debug info', () => {
+    expect(
+      getVisibleTileDebugInfoFromState(
+        new Map([
+          [
+            '2:1',
+            {
+              tilePluginOwnerLabel: 'tile-route',
+              requestedDetailLevel: 'full',
+              detailLevel: 'full',
+              fallbackReason: null,
+              modelRoot: { type: 'Group' },
+              supportsModel: true,
+              terrainSurfaceMode: 'legacy-mesh',
+              sharedSplatEligible: true,
+              terrainSurfaceReason:
+                'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
+            },
+          ],
+        ]),
+        new Map(),
+        2,
+        1
+      )
+    ).toEqual({
+      tileKey: '2:1',
+      plugin: 'tile-route',
+      requestedDetailLevel: 'full',
+      renderedDetailLevel: 'full',
+      cachedDetailLevel: null,
+      fallbackReason: null,
+      hasVisibleModel: true,
+      supportsModel: true,
+      terrainSurfaceMode: 'legacy-mesh',
+      sharedSplatEligible: true,
+      terrainSurfaceReason:
+        'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
     });
   });
 
