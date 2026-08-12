@@ -17,10 +17,14 @@ surface should stay in terrain splats or switch to a separate overlay.
 
 - `road` defaults to `splat`
 - `path` defaults to `overlay`
-- higher route signal can switch dirt/gravel surface families
+- explicit route surface hints can switch among dirt, gravel, stone, mud, and
+  grass trail families
+- higher route signal can still switch dirt/gravel surface families when no
+  explicit hint is present
+- trails keep tighter blend zones than roads and can opt into splat rendering
 - explicit callers can force road overlays when a renderer path needs that mode
 
 ## Current limits
 
-- this module chooses the route surface mode only
+- this module chooses the route surface mode and layer family only
 - live overlay projection onto terrain height still needs renderer integration

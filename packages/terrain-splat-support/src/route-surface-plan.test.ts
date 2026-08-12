@@ -16,7 +16,7 @@ describe('terrain route surface plan', () => {
       layerId: 'dirt-road',
       overlayWidth: 0,
       shoulderBlendWidth: 0.32,
-      reason: 'broad roads stay in terrain splats by default',
+      reason: 'broad roads stay in terrain splats by default using the dirt route surface',
     });
   });
 
@@ -43,12 +43,12 @@ describe('terrain route surface plan', () => {
 
     expect(plan).toEqual({
       mode: 'overlay',
-      surfaceType: 'narrow-dirt-trail',
+      surfaceType: 'narrow-grass-trail',
       layerId: 'dirt-road',
-      overlayWidth: 0.18,
-      shoulderBlendWidth: 0.12,
+      overlayWidth: 0.14,
+      shoulderBlendWidth: 0.08,
       reason:
-        'narrow trails render as overlays to avoid over-widening terrain splats',
+        'narrow trails render as overlays with tighter blend zones using the grass route surface',
     });
   });
 
@@ -67,6 +67,48 @@ describe('terrain route surface plan', () => {
     expect(plan.layerId).toBe('gravel-trail');
   });
 
+  it('supports explicit stone and muddy road surface hints', () => {
+    const stone = createTerrainRouteSurfacePlan({
+      kind: 'road',
+      routeSurface: 'stone',
+      dirtRoadLayerId: 'dirt-road',
+      gravelRoadLayerId: 'gravel-road',
+      stoneRoadLayerId: 'stone-road',
+    });
+    const mud = createTerrainRouteSurfacePlan({
+      kind: 'road',
+      routeSurface: 'mud',
+      dirtRoadLayerId: 'dirt-road',
+      gravelRoadLayerId: 'gravel-road',
+      muddyRoadLayerId: 'muddy-road',
+    });
+
+    expect(stone.surfaceType).toBe('broad-stone-road');
+    expect(stone.layerId).toBe('stone-road');
+    expect(mud.surfaceType).toBe('broad-muddy-road');
+    expect(mud.layerId).toBe('muddy-road');
+  });
+
+  it('can keep trails on splats with explicit grass trail layers', () => {
+    const plan = createTerrainRouteSurfacePlan({
+      kind: 'path',
+      routeSurface: 'grass',
+      prefersSplat: true,
+      dirtRoadLayerId: 'dirt-road',
+      gravelRoadLayerId: 'gravel-road',
+      grassTrailLayerId: 'grass-trail',
+    });
+
+    expect(plan).toEqual({
+      mode: 'splat',
+      surfaceType: 'narrow-grass-trail',
+      layerId: 'grass-trail',
+      overlayWidth: 0,
+      shoulderBlendWidth: 0.08,
+      reason: 'trail requested splat rendering using the grass route surface',
+    });
+  });
+
   it('can force broad roads onto overlays when an explicit renderer path needs that mode', () => {
     const plan = createTerrainRouteSurfacePlan({
       kind: 'road',
@@ -78,7 +120,9 @@ describe('terrain route surface plan', () => {
 
     expect(plan.mode).toBe('overlay');
     expect(plan.overlayWidth).toBe(0.3);
-    expect(plan.reason).toBe('road requested overlay rendering explicitly');
+    expect(plan.reason).toBe(
+      'road requested overlay rendering explicitly using the gravel route surface'
+    );
   });
 
   it('returns a no-op plan for unrelated terrain kinds', () => {

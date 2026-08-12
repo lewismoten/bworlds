@@ -514,24 +514,32 @@ request/result contract, and preserves the existing chunk cache semantics for
 worker-backed generation. The worker runtime notes live in
 `packages/terrain-splat-support/docs/worker-runtimes.md`.
 
+- Extended `@bworlds/terrain-splat-support/route-surface-plan` so route
+  rendering stays separate from gameplay state while honoring explicit dirt,
+  gravel, stone, mud, and grass surface hints, keeping trail blend zones
+  tighter than roads, and allowing trails to opt into splat rendering. The
+  shared overworld terrain splat definitions now expose optional stone-road,
+  muddy-road, dirt-trail, gravel-trail, and grass-trail layers for the same
+  planner.
+
 # Roads and Paths as Terrain Splats
 
 - [ ] Represent simple roads as terrain splat layers.
 - [ ] Represent trails as terrain splat layers.
 - [ ] Represent worn paths as terrain splat layers.
 - [ ] Remove separate road meshes where splatting is sufficient.
-- [ ] Keep road gameplay data separate from road rendering.
+- [x] Keep road gameplay data separate from road rendering.
 - [x] Project road splat weights onto the terrain height field.
 - [x] Generate road width from route metadata.
 - [x] Generate soft shoulder weights around road edges.
 - [x] Blend roads gradually into surrounding terrain.
-- [ ] Let trails use narrower blend zones than roads.
-- [ ] Allow road surface type to choose a PBR layer.
+- [x] Let trails use narrower blend zones than roads.
+- [x] Allow road surface type to choose a PBR layer.
 - [ ] Support dirt road splat layers.
 - [ ] Support gravel road splat layers.
-- [ ] Support stone road splat layers.
+- [x] Support stone road splat layers.
 - [ ] Support grass trail splat layers.
-- [ ] Support muddy road splat layers.
+- [x] Support muddy road splat layers.
 - [ ] Keep road splats continuous across chunk boundaries.
 - [ ] Keep road width continuous across chunk boundaries.
 - [ ] Keep route intersections continuous across chunks.

@@ -197,6 +197,11 @@ export type OverworldTerrainSplatLayerSet = {
   snowLayerId: TerrainMaterialLayerId;
   dirtRoadLayerId: TerrainMaterialLayerId;
   gravelRoadLayerId: TerrainMaterialLayerId;
+  stoneRoadLayerId?: TerrainMaterialLayerId;
+  muddyRoadLayerId?: TerrainMaterialLayerId;
+  dirtTrailLayerId?: TerrainMaterialLayerId;
+  gravelTrailLayerId?: TerrainMaterialLayerId;
+  grassTrailLayerId?: TerrainMaterialLayerId;
 };
 
 export const MAX_TERRAIN_SPLAT_SAMPLE_LAYERS = 4;
@@ -1051,10 +1056,10 @@ export function createOverworldTerrainSplatDefinitions(
     },
     {
       kind: 'path',
-      baseLayerIds: [layers.dirtLayerId],
+      baseLayerIds: [layers.dirtTrailLayerId ?? layers.dirtLayerId],
       blends: [
         {
-          layerId: layers.gravelLayerId,
+          layerId: layers.gravelTrailLayerId ?? layers.gravelLayerId,
           weight: 0.24,
         },
         {
@@ -1062,6 +1067,14 @@ export function createOverworldTerrainSplatDefinitions(
           weight: 0.1,
           when: {
             minMoisture: 0.52,
+          },
+        },
+        {
+          layerId: layers.grassTrailLayerId ?? layers.dirtTrailLayerId ?? layers.dirtLayerId,
+          weight: 0.22,
+          when: {
+            maxRoadSignal: 0.16,
+            minMoisture: 0.34,
           },
         },
       ],
@@ -1075,6 +1088,21 @@ export function createOverworldTerrainSplatDefinitions(
           weight: 0.28,
           when: {
             minRoadSignal: 0.28,
+          },
+        },
+        {
+          layerId: layers.stoneRoadLayerId ?? layers.gravelRoadLayerId,
+          weight: 0.34,
+          when: {
+            minRoadSignal: 0.86,
+          },
+        },
+        {
+          layerId: layers.muddyRoadLayerId ?? layers.dirtRoadLayerId,
+          weight: 0.18,
+          when: {
+            minRoadSignal: 0.18,
+            minMoisture: 0.68,
           },
         },
       ],

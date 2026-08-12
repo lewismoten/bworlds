@@ -1203,6 +1203,51 @@ describe('terrain splat support', () => {
         defaultTint: '#8d897f',
         defaultRoughness: 0.72,
       },
+      {
+        id: 'stone-road',
+        baseColorTextureId: 'stone-road/base',
+        normalTextureId: 'stone-road/normal',
+        roughnessTextureId: 'stone-road/roughness',
+        textureScale: 2.6,
+        defaultTint: '#8f8d88',
+        defaultRoughness: 0.68,
+      },
+      {
+        id: 'muddy-road',
+        baseColorTextureId: 'muddy-road/base',
+        normalTextureId: 'muddy-road/normal',
+        roughnessTextureId: 'muddy-road/roughness',
+        textureScale: 3.2,
+        defaultTint: '#6f5843',
+        defaultRoughness: 0.88,
+      },
+      {
+        id: 'dirt-trail',
+        baseColorTextureId: 'dirt-trail/base',
+        normalTextureId: 'dirt-trail/normal',
+        roughnessTextureId: 'dirt-trail/roughness',
+        textureScale: 3.2,
+        defaultTint: '#78634b',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'gravel-trail',
+        baseColorTextureId: 'gravel-trail/base',
+        normalTextureId: 'gravel-trail/normal',
+        roughnessTextureId: 'gravel-trail/roughness',
+        textureScale: 2.8,
+        defaultTint: '#90857b',
+        defaultRoughness: 0.78,
+      },
+      {
+        id: 'grass-trail',
+        baseColorTextureId: 'grass-trail/base',
+        normalTextureId: 'grass-trail/normal',
+        roughnessTextureId: 'grass-trail/roughness',
+        textureScale: 3.6,
+        defaultTint: '#6f8750',
+        defaultRoughness: 0.74,
+      },
     ]);
     const kindCatalog = createTerrainKindSplatCatalog(
       createOverworldTerrainSplatDefinitions({
@@ -1217,6 +1262,11 @@ describe('terrain splat support', () => {
         snowLayerId: 'snow',
         dirtRoadLayerId: 'dirt-road',
         gravelRoadLayerId: 'gravel-road',
+        stoneRoadLayerId: 'stone-road',
+        muddyRoadLayerId: 'muddy-road',
+        dirtTrailLayerId: 'dirt-trail',
+        gravelTrailLayerId: 'gravel-trail',
+        grassTrailLayerId: 'grass-trail',
       }),
       layerCatalog
     );
@@ -1263,6 +1313,40 @@ describe('terrain splat support', () => {
     );
     expect(road.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['dirt-road', 'gravel-road'])
+    );
+
+    const wetRoad = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 2,
+        y: 1,
+        kind: 'road',
+        signals: {
+          roadSignal: 0.91,
+          moisture: 0.82,
+        },
+      },
+      kindCatalog
+    );
+    const grassyTrail = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 3,
+        y: 1,
+        kind: 'path',
+        signals: {
+          roadSignal: 0.08,
+          moisture: 0.46,
+        },
+      },
+      kindCatalog
+    );
+
+    expect(wetRoad.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['stone-road', 'muddy-road'])
+    );
+    expect(grassyTrail.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['grass-trail'])
     );
 
     const snowyLowland = resolveTerrainKindSplatSample(
@@ -1615,7 +1699,7 @@ describe('terrain splat support', () => {
       expect.arrayContaining(['rock', 'soil', 'gravel'])
     );
     expect(dirtPath.entries.map((entry) => entry.layerId)).toEqual(
-      expect.arrayContaining(['dirt', 'gravel', 'soil'])
+      expect.arrayContaining(['dirt-trail', 'gravel-trail', 'soil'])
     );
     expect(winterForest.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['snow'])
