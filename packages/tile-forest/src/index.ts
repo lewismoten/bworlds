@@ -4370,6 +4370,8 @@ function addLowDetailForestTreeInstances(
     return;
   }
 
+  const omitTrunksForReducedQuality =
+    quality === 'reduced' || quality === 'minimal';
   const trunkBuckets = new Map<ForestTreeForm, ForestTreeDescriptor[]>();
   for (const descriptor of descriptors) {
     const bucket = trunkBuckets.get(descriptor.form);
@@ -4384,35 +4386,37 @@ function addLowDetailForestTreeInstances(
   const dominantForm = resolveDominantLowDetailForestForm(descriptors);
   const collapseCanopiesToDominantForm =
     quality === 'reduced' || quality === 'minimal';
-  const trunkStyle = getLowDetailTreeStyle(three, dominantForm);
-  const trunkInstances = new three.InstancedMesh(
-    geometry.trunk,
-    trunkStyle.trunkMaterial,
-    descriptors.length
-  );
-  trunkInstances.userData = {
-    ...(trunkInstances.userData ?? {}),
-    [RENDER_STATS_CATEGORY_KEY]: 'tree',
-    [TREE_FORM_KEY]: dominantForm,
-    forestTreeLowDetailInstancedPart: 'trunk',
-  };
-  descriptors.forEach((descriptor, index) => {
-    const trunkRadiusScale =
-      (Math.max(0.04, descriptor.radius) * descriptor.scale) / 0.1;
-    trunkInstances.setMatrixAt(
-      index,
-      writeLowDetailInstancedMatrix(
-        lowDetailMatrixScratch,
-        tileX + descriptor.x,
-        descriptor.trunkHeight * descriptor.scale * 0.5,
-        tileY + descriptor.y,
-        trunkRadiusScale,
-        descriptor.trunkHeight * descriptor.scale,
-        trunkRadiusScale
-      )
+  if (!omitTrunksForReducedQuality) {
+    const trunkStyle = getLowDetailTreeStyle(three, dominantForm);
+    const trunkInstances = new three.InstancedMesh(
+      geometry.trunk,
+      trunkStyle.trunkMaterial,
+      descriptors.length
     );
-  });
-  group.add(trunkInstances);
+    trunkInstances.userData = {
+      ...(trunkInstances.userData ?? {}),
+      [RENDER_STATS_CATEGORY_KEY]: 'tree',
+      [TREE_FORM_KEY]: dominantForm,
+      forestTreeLowDetailInstancedPart: 'trunk',
+    };
+    descriptors.forEach((descriptor, index) => {
+      const trunkRadiusScale =
+        (Math.max(0.04, descriptor.radius) * descriptor.scale) / 0.1;
+      trunkInstances.setMatrixAt(
+        index,
+        writeLowDetailInstancedMatrix(
+          lowDetailMatrixScratch,
+          tileX + descriptor.x,
+          descriptor.trunkHeight * descriptor.scale * 0.5,
+          tileY + descriptor.y,
+          trunkRadiusScale,
+          descriptor.trunkHeight * descriptor.scale,
+          trunkRadiusScale
+        )
+      );
+    });
+    group.add(trunkInstances);
+  }
 
   const canopyBuckets = collapseCanopiesToDominantForm
     ? new Map<ForestTreeForm, ForestTreeDescriptor[]>([
@@ -4434,17 +4438,29 @@ function addLowDetailForestTreeInstances(
       forestTreeLowDetailInstancedPart: 'canopy',
     };
     bucket.forEach((descriptor, index) => {
+      const canopyHeightScale = omitTrunksForReducedQuality
+        ? descriptor.form === 'pine'
+          ? 1.28
+          : 1.18
+        : descriptor.form === 'pine'
+          ? 1.18
+          : 0.72;
+      const canopyYOffset = omitTrunksForReducedQuality
+        ? descriptor.trunkHeight *
+          descriptor.scale *
+          (descriptor.form === 'pine' ? 0.58 : 0.62)
+        : descriptor.trunkHeight *
+          descriptor.scale *
+          (descriptor.form === 'pine' ? 0.74 : 0.9);
       canopyInstances.setMatrixAt(
         index,
         writeLowDetailInstancedMatrix(
           lowDetailMatrixScratch,
           tileX + descriptor.x,
-          descriptor.trunkHeight *
-            descriptor.scale *
-            (descriptor.form === 'pine' ? 0.74 : 0.9),
+          canopyYOffset,
           tileY + descriptor.y,
           descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84),
-          descriptor.scale * (descriptor.form === 'pine' ? 1.18 : 0.72),
+          descriptor.scale * canopyHeightScale,
           descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84)
         )
       );

@@ -145,7 +145,10 @@
       chunk draw calls fall sooner when the renderer is already constrained,
       and reduced-quality forest tiles now skip optional close-detail
       accessories such as hollows, owls, carvings, meadows, birds, webs,
-      breadcrumbs, bushes, landmarks, and floor props.
+      breadcrumbs, bushes, landmarks, and floor props, and reduced-quality
+      low-detail forest tiles now drop separate trunk instances and keep one
+      canopy silhouette pass so the dominant background forest path costs one
+      instanced mesh instead of two per tile.
 - [ ] Track recovery back to full quality.
 - [ ] Add hysteresis before restoring full graphics quality.
 

@@ -747,9 +747,46 @@ describe('tile forest', () => {
       }
     });
 
-    expect(instancedTrunks).toHaveLength(1);
+    expect(instancedTrunks).toHaveLength(0);
     expect(instancedCanopies).toHaveLength(1);
-    expect(instancedCanopies[0]?.count).toBe(instancedTrunks[0]?.count);
+    expect(instancedCanopies[0]?.count).toBeGreaterThan(0);
+  });
+
+  it('omits low-detail trunk instances while reduced quality is active', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const reducedLowModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'low',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'low',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    const instancedTrunks = reducedLowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'trunk'
+    );
+    const instancedCanopies = reducedLowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'canopy'
+    ) as FakeInstancedMesh[];
+
+    expect(instancedTrunks).toHaveLength(0);
+    expect(instancedCanopies).toHaveLength(1);
+    expect(instancedCanopies[0]?.count).toBeGreaterThan(0);
   });
 
   it('renders forest fireflies only at full quality close detail', () => {
