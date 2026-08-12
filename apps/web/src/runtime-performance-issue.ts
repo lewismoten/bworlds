@@ -847,16 +847,6 @@ function isDirectRuntimePerformanceIssueReason(reason: string): boolean {
     reason.startsWith('Initial world generation ') ||
     reason.startsWith('Memory after region change ') ||
     reason.startsWith('Synchronous tile build is too slow ') ||
-    reason.startsWith(
-      'Pending world-build scheduler is starving queued work '
-    ) ||
-    reason.includes(' starved ') ||
-    reason.startsWith('Render budget is rejecting plugin models ') ||
-    reason.includes(' rejected ') ||
-    reason.startsWith('LOD swaps are too frequent ') ||
-    reason.startsWith('Fallback models are dominated by one plugin ') ||
-    reason.startsWith('Heap usage keeps climbing ') ||
-    reason.startsWith('Heap usage keeps climbing while idle ') ||
     reason.startsWith('Latest LOD failure: ') ||
     reason.startsWith('Latest fallback reason: ')
   );

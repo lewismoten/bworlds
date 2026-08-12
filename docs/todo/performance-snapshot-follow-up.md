@@ -9,7 +9,10 @@
       wrapped `Latest LOD failure` / `Latest fallback reason` strings are now
       also suppressed when they only restate generic budget-threshold pressure
       such as `tile drawCallCount 21>17` or
-      `plugin unique materialCount 13>12`.
+      `plugin unique materialCount 13>12`, and aggregate runtime symptom
+      summaries such as plugin rejection totals, scheduler starvation totals,
+      LOD-swap churn, fallback dominance, and heap-growth trend warnings now
+      stay local to the client unless an explicit failure reason is present.
 - [x] Limit each tree species to 10 material variants per part type.
 - [x] Reuse bark, foliage, and branch materials across nearby trees.
 - [ ] Prefer tinting shared materials over creating new textures.

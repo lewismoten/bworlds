@@ -18,15 +18,15 @@ latest-quality-change summaries without a separate direct tile/plugin/runtime
 diagnostic.
 
 Report creation is now intentionally limited to direct diagnostics such as
-plugin model rejections, queue starvation, synchronous tile-build stalls, LOD
-swap churn, fallback churn, retained-resource leaks, heap growth, stationary
-tile rebuild churn, and explicit latest LOD/fallback failures.
+synchronous tile-build stalls, explicit latest LOD/fallback failures, and
+startup or region-change regressions with concrete measured overages.
 
 Symptom-only resource warnings no longer create issue reports on their own.
-Queue backlog narration, retained-resource symptom summaries, stationary rebuild
-symptoms, and missing-instancing hints still appear in the live debug data, but
-the client now keeps them local unless a separate direct plugin/tile/runtime
-failure is active at the same time.
+Queue backlog narration, retained-resource symptom summaries, plugin rejection
+totals, scheduler starvation totals, LOD-swap churn, fallback dominance, heap
+growth trends, stationary rebuild symptoms, and missing-instancing hints still
+appear in the live debug data, but the client now keeps them local unless a
+separate direct plugin/tile/runtime failure is active at the same time.
 
 Issue reports are throttled by a stable issue hash derived from the saved issue
 summary for five seconds, and the client now reports a given hash only when it

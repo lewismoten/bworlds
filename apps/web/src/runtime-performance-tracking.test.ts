@@ -249,7 +249,9 @@ describe('runtime performance tracking', () => {
     });
 
     expect(issue).not.toBeNull();
-    expect(issue?.summary).toBe('tile-plains rejected 2.0 models per second.');
+    expect(issue?.summary).toBe(
+      'Latest LOD failure: Upgrade budget exhausted.'
+    );
     expect(issue?.pluginHotspots.rejectedModels).toBe('tile-plains');
     expect(issue?.pluginHotspots.materials).toBe('tile-route');
     expect(issue?.pluginHotspots.instancedMeshes).toBe('tile-forest');
@@ -289,8 +291,11 @@ describe('runtime performance tracking', () => {
     expect(issue?.reasons.some((reason) => reason.startsWith('Top '))).toBe(
       false
     );
-    expect(issue?.reasons).toContain(
+    expect(issue?.reasons).not.toContain(
       'tile-forest starved 2.0 times per second.'
+    );
+    expect(issue?.reasons).toContain(
+      'Latest LOD failure: Upgrade budget exhausted.'
     );
     expect(issue?.performanceSnapshot.violations).toEqual(
       expect.arrayContaining([
@@ -327,7 +332,9 @@ describe('runtime performance tracking', () => {
       }),
     });
 
-    expect(issue?.summary).toBe('tile-plains rejected 2.0 models per second.');
+    expect(issue?.summary).toBe(
+      'Latest LOD failure: Upgrade budget exhausted.'
+    );
     expect(issue?.renderState.renderQualityLimiterDetails).toEqual([
       'Visibility radius reduced to 10 (full 18, reduced 14, minimum 10)',
       'Weather visibility capped draw distance at 10 (full 18, weather cap 10)',
@@ -696,6 +703,70 @@ describe('runtime performance tracking', () => {
     expect(issue).toBeNull();
   });
 
+  it('skips runtime issue reports when only aggregate runtime pressure summaries remain', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        fps: 60,
+        averageFps: 60,
+        frameMs: 16.7,
+        worstRecentFrameMs: 16.7,
+        targetFps: 60,
+        performanceTier: 'healthy',
+        renderQualityLevel: 'full',
+        renderQualityLimiters: '',
+        reducedQualityDurationSec: 0,
+        latestQualityChangeLimiter: undefined,
+        latestQualityChangeSummary: undefined,
+        drawCalls: 120,
+        object3dCount: 900,
+        visibleObjectCount: 300,
+        maxChunkDrawCalls: 16,
+        maxChunkObjectCount: 36,
+        maxChunkMeshes: 16,
+        maxChunkTriangleCount: 5000,
+        materialCount: 12,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 40,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 8,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        tileModelBudgetViolationsPerSecond: 2,
+        tileModelBudgetViolationTopPluginLabel: 'tile-plains',
+        tileModelBudgetViolationSummary:
+          'tile-plains rejected 2.0 models per second.',
+        schedulerStarvationEventsPerSecond: 2,
+        schedulerStarvationTopPluginLabel: 'tile-forest',
+        schedulerStarvationSummary: 'tile-forest starved 2.0 times per second.',
+        fallbackBoxesPerSecond: 5,
+        fallbackBoxTopPluginLabel: 'tile-plains',
+        fallbackBoxSummary:
+          'tile-plains produced 5.0 fallback boxes per second.',
+        lodReplacementsPerSecond: 5,
+        lodReplacementTopPluginLabel: 'tile-forest',
+        lodReplacementSummary: 'tile-forest:4',
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [
+          'Render budget is rejecting plugin models (2/s, top plugin tile-plains).',
+          'Pending world-build scheduler is starving queued work (2.0/s, top plugin tile-forest).',
+          'LOD swaps are too frequent (5.0/s, top plugin tile-forest at 4.0/s).',
+          'Fallback models are dominated by one plugin (tile-plains accounts for 100% of 5.0/s).',
+          'Heap usage keeps climbing (126.0 -> 164.0 MB).',
+          'Heap usage keeps climbing while idle (120.0 -> 149.0 MB over 0.32 tiles).',
+        ],
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
   it('keeps semantic fallback reasons reportable when they are not generic budget pressure', () => {
     const issue = buildRuntimePerformanceIssueReport({
       source: 'game',
@@ -906,8 +977,10 @@ describe('runtime performance tracking', () => {
         performanceTier: 'reduced',
         renderQualityLevel: 'reduced',
         renderQualityLimiters: '',
-        maxTileBuildMs: 8,
+        maxTileBuildMs: 12.4,
         averageTileBuildMs: 4,
+        maxTilePluginBuildMs: 12.4,
+        slowestTilePluginLabel: 'tile-forest',
         tileModelBudgetViolationsPerSecond: 0,
         tileModelBudgetViolationTopPluginLabel: undefined,
         tileModelBudgetViolationSummary: undefined,
@@ -920,7 +993,7 @@ describe('runtime performance tracking', () => {
         lastLodFailureReason: undefined,
         lastFallbackReason: undefined,
         resourceWarnings: [
-          'LOD swaps are too frequent (5.0/s, top plugin tile-forest at 4.0/s).',
+          'Synchronous tile build is too slow (tile-forest took 12.4 ms > 8.0 ms).',
         ],
       }),
     });
@@ -933,8 +1006,10 @@ describe('runtime performance tracking', () => {
         performanceTier: 'reduced',
         renderQualityLevel: 'reduced',
         renderQualityLimiters: '',
-        maxTileBuildMs: 8,
+        maxTileBuildMs: 14.8,
         averageTileBuildMs: 4,
+        maxTilePluginBuildMs: 14.8,
+        slowestTilePluginLabel: 'tile-forest',
         tileModelBudgetViolationsPerSecond: 0,
         tileModelBudgetViolationTopPluginLabel: undefined,
         tileModelBudgetViolationSummary: undefined,
@@ -947,16 +1022,16 @@ describe('runtime performance tracking', () => {
         lastLodFailureReason: undefined,
         lastFallbackReason: undefined,
         resourceWarnings: [
-          'LOD swaps are too frequent (7.0/s, top plugin tile-forest at 6.0/s).',
+          'Synchronous tile build is too slow (tile-forest took 14.8 ms > 8.0 ms).',
         ],
       }),
     });
 
     expect(firstIssue?.summary).toBe(
-      'LOD swaps are too frequent (5.0/s, top plugin tile-forest at 4.0/s).'
+      'Synchronous tile build is too slow (tile-forest took 12.4 ms > 8.0 ms).'
     );
     expect(secondIssue?.summary).toBe(
-      'LOD swaps are too frequent (7.0/s, top plugin tile-forest at 6.0/s).'
+      'Synchronous tile build is too slow (tile-forest took 14.8 ms > 8.0 ms).'
     );
     expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
   });
