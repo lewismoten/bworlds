@@ -118,9 +118,18 @@ Current support:
 
 ## Human Layers
 
-- [ ] Add political, road, and rail map plugins.
+- [x] Add political, road, and rail map plugins.
 - [ ] Add population heat map and choropleth plugins.
 - [ ] Add dot distribution, vector, and isoline plugins.
+
+Current support:
+
+- `@bworlds/map-support` now exposes
+  `createPoliticalMapFeatureGeneratorPlugin(...)`,
+  `createRoadMapFeatureGeneratorPlugin(...)`, and
+  `createRailMapFeatureGeneratorPlugin(...)`, so later political and transport
+  map products can share conventional `political`, `road`, and `rail` PMTiles
+  generator wrappers instead of inventing another set of human-layer ids.
 
 ## 2D and 3D Parity
 

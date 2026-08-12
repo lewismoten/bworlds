@@ -15,6 +15,9 @@ for physical map products built on canonical map features:
 - `createWindMapFeatureGeneratorPlugin(...)`
 - `createOceanCurrentMapFeatureGeneratorPlugin(...)`
 - `createRiverFlowMapFeatureGeneratorPlugin(...)`
+- `createPoliticalMapFeatureGeneratorPlugin(...)`
+- `createRoadMapFeatureGeneratorPlugin(...)`
+- `createRailMapFeatureGeneratorPlugin(...)`
 
 ## Purpose
 
@@ -46,6 +49,9 @@ The helpers currently reserve these layer ids:
 - `wind`
 - `ocean-current`
 - `river-flow`
+- `political`
+- `road`
+- `rail`
 
 That gives later PMTiles export, map styling, and viewer code one stable layer
 vocabulary instead of forcing each feature generator to invent its own names.
@@ -191,3 +197,30 @@ and:
 These wrappers intentionally accept canonical `MapFeatureRecord` values so
 later ocean circulation and watershed flow products can share one layer
 contract before the concrete current and runoff models exist.
+
+## Political, Road, And Rail Layers
+
+`createPoliticalMapFeatureGeneratorPlugin(...)`,
+`createRoadMapFeatureGeneratorPlugin(...)`, and
+`createRailMapFeatureGeneratorPlugin(...)` follow the same PMTiles generator
+contract with conventional layer ids:
+
+- `layerId: 'political'`
+- `layerId: 'road'`
+- `layerId: 'rail'`
+
+They default to:
+
+- `id: 'political-map-layer'`
+- `id: 'road-map-layer'`
+- `id: 'rail-map-layer'`
+
+and:
+
+- `label: 'Political Layer'`
+- `label: 'Road Layer'`
+- `label: 'Rail Layer'`
+
+These wrappers intentionally accept canonical `MapFeatureRecord` values so
+later border, route, and network map products can share one layer contract
+before the concrete administrative and transport generation logic exists.

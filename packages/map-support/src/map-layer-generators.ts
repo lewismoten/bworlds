@@ -240,3 +240,50 @@ export function createRiverFlowMapFeatureGeneratorPlugin(options: {
     },
   });
 }
+
+export function createPoliticalMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getPoliticalFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'political-map-layer',
+    label: options.label ?? 'Political Layer',
+    layerId: 'political',
+    getFeatures(request) {
+      return options.getPoliticalFeatures(request);
+    },
+  });
+}
+
+export function createRoadMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getRoadFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'road-map-layer',
+    label: options.label ?? 'Road Layer',
+    layerId: 'road',
+    getFeatures(request) {
+      return options.getRoadFeatures(request);
+    },
+  });
+}
+
+export function createRailMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getRailFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'rail-map-layer',
+    label: options.label ?? 'Rail Layer',
+    layerId: 'rail',
+    getFeatures(request) {
+      return options.getRailFeatures(request);
+    },
+  });
+}

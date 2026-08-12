@@ -9,14 +9,17 @@ import {
   createElevationMapFeatureGeneratorPlugin,
   createGeologyMapFeatureGeneratorPlugin,
   createHumidityMapFeatureGeneratorPlugin,
+  createOceanCurrentMapFeatureGeneratorPlugin,
   createPhysicalMapFeatureGeneratorPlugin,
+  createPoliticalMapFeatureGeneratorPlugin,
   createPressureMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
+  createRailMapFeatureGeneratorPlugin,
   createRiverFlowMapFeatureGeneratorPlugin,
+  createRoadMapFeatureGeneratorPlugin,
   createSlopeMapFeatureGeneratorPlugin,
   createTemperatureZoneMapFeatureGeneratorPlugin,
   createTopographicMapFeatureGeneratorPlugin,
-  createOceanCurrentMapFeatureGeneratorPlugin,
   createWeatherMapFeatureGeneratorPlugin,
   createWindMapFeatureGeneratorPlugin,
 } from './map-layer-generators.ts';
@@ -549,6 +552,118 @@ describe('map layer generators', () => {
       {
         kind: 'line',
         layerId: 'river-flow',
+      },
+    ]);
+  });
+
+  it('creates political layer generators with conventional political layer ids', () => {
+    const plugin = createPoliticalMapFeatureGeneratorPlugin({
+      getPoliticalFeatures(request) {
+        return [
+          createMapFeaturePolygonRecord({
+            sourceWorldObjectId: `region:${request.tile.zoom}`,
+            layerId: 'political',
+            rings: [
+              [
+                { worldX: 0, worldY: 0 },
+                { worldX: 4, worldY: 0 },
+                { worldX: 4, worldY: 3 },
+                { worldX: 0, worldY: 0 },
+              ],
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('political-map-layer');
+    expect(plugin.layerId).toBe('political');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-15',
+        tile: {
+          zoom: 4,
+          x: 9,
+          y: 6,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'polygon',
+        layerId: 'political',
+      },
+    ]);
+  });
+
+  it('creates road layer generators with conventional road layer ids', () => {
+    const plugin = createRoadMapFeatureGeneratorPlugin({
+      id: 'surface-roads',
+      label: 'Surface Roads',
+      getRoadFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `road:${request.tile.x}:${request.tile.y}`,
+            layerId: 'road',
+            coordinates: [
+              { worldX: request.tile.x, worldY: request.tile.y },
+              { worldX: request.tile.x + 2, worldY: request.tile.y + 1 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('surface-roads');
+    expect(plugin.label).toBe('Surface Roads');
+    expect(plugin.layerId).toBe('road');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-16',
+        tile: {
+          zoom: 5,
+          x: 7,
+          y: 10,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'road',
+      },
+    ]);
+  });
+
+  it('creates rail layer generators with conventional rail layer ids', () => {
+    const plugin = createRailMapFeatureGeneratorPlugin({
+      getRailFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `rail:${request.tile.zoom}`,
+            layerId: 'rail',
+            coordinates: [
+              { worldX: 0, worldY: request.tile.zoom },
+              { worldX: 3, worldY: request.tile.zoom + 1 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('rail-map-layer');
+    expect(plugin.layerId).toBe('rail');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-17',
+        tile: {
+          zoom: 4,
+          x: 5,
+          y: 11,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'rail',
       },
     ]);
   });
