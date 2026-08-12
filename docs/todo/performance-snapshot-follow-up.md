@@ -229,7 +229,12 @@
       the tile root and hangs the tower, stripe, cap, and rotating beam pivot
       beneath it instead of wrapping them in a dedicated `Group`, which removes
       one static `Object3D` from each reduced-quality lighthouse tile while
-      preserving the same beam animation and silhouette.
+      preserving the same beam animation and silhouette, and the low-detail
+      dungeon silhouette now uses its base keep mesh as the root and hangs the
+      smaller keep, corner towers, gate pieces, and gate beacon nodes beneath
+      it instead of wrapping them in a dedicated `Group`, which removes one
+      static `Object3D` from each reduced-quality dungeon tile without changing
+      the silhouette or beacon placement.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so

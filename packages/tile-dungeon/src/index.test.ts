@@ -452,12 +452,32 @@ describe('tile dungeon', () => {
       tileX: 5,
       tileY: 4,
       detailLevel: 'low',
-    }) as FakeGroup;
+    }) as FakeNode;
 
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
     expect(
       lowModel.children.every((child) => child.children.length === 0)
     ).toBe(true);
+  });
+
+  it('uses the low-detail dungeon base mesh as the root instead of a wrapper group', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'low',
+    }) as FakeNode | undefined;
+
+    expect(lowModel).toBeInstanceOf(FakeMesh);
+    expect(lowModel?.position.x).toBe(5);
+    expect(lowModel?.position.z).toBe(4);
+    expect(lowModel?.position.y ?? 0).toBeGreaterThan(0);
   });
 
   it('instances repeated tower bodies and caps in full-detail dungeon models', () => {

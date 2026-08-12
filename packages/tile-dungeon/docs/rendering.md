@@ -36,3 +36,8 @@ Current layout:
 
 This reduces another repeated static `Object3D` cluster in full-detail
 landmarks while keeping the same silhouette and beacon placement.
+
+The low-detail dungeon silhouette now also uses the base keep mesh as its root
+and attaches the smaller keep, corner towers, gate pieces, and beacon nodes
+beneath it, so reduced-quality dungeon tiles avoid one otherwise empty wrapper
+`Group` without changing the silhouette or beacon placement.

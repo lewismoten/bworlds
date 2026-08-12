@@ -1,5 +1,9 @@
 import { markPoiLightEmitter } from '@bworlds/poi-support';
-import type { ThreeHostLike, ThreeMaterialLike } from '@bworlds/plugin-api';
+import type {
+  ThreeHostLike,
+  ThreeMaterialLike,
+  ThreeObject3DLike,
+} from '@bworlds/plugin-api';
 
 export type DungeonLowDetailStyle = {
   wallMaterial: ThreeMaterialLike;
@@ -36,14 +40,11 @@ export function createLowDetailDungeonModel(
     style: DungeonLowDetailStyle;
   }
 ) {
-  const group = new three.Group();
-
   const base = new three.Mesh(
     new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
     style.wallMaterial
   );
   base.position.set(tileX, baseHeight * 0.5, tileY);
-  group.add(base);
 
   const keep = new three.Mesh(
     new three.BoxGeometry(
@@ -53,22 +54,22 @@ export function createLowDetailDungeonModel(
     ),
     style.wallMaterial
   );
-  keep.position.set(tileX, baseHeight * 0.78, tileY);
-  group.add(keep);
+  keep.position.set(0, baseHeight * 0.28, 0);
+  base.add(keep);
 
-  addCornerTower(three, group, {
-    x: tileX - baseWidth * 0.42,
-    y: 0,
-    z: tileY - baseDepth * 0.42,
+  addCornerTower(three, base, {
+    x: -baseWidth * 0.42,
+    y: -baseHeight * 0.5,
+    z: -baseDepth * 0.42,
     radius: 0.12,
     height: 0.78,
     capHeight: 0.18,
     style,
   });
-  addCornerTower(three, group, {
-    x: tileX + baseWidth * 0.42,
-    y: 0,
-    z: tileY - baseDepth * 0.42,
+  addCornerTower(three, base, {
+    x: baseWidth * 0.42,
+    y: -baseHeight * 0.5,
+    z: -baseDepth * 0.42,
     radius: 0.12,
     height: 0.78,
     capHeight: 0.18,
@@ -88,12 +89,12 @@ export function createLowDetailDungeonModel(
     entrance.rotationY
   );
   gateFrame.position.set(
-    gateOriginX + gateFrameOffset.x,
-    0.14,
-    gateOriginZ + gateFrameOffset.z
+    gateOriginX + gateFrameOffset.x - tileX,
+    0.14 - baseHeight * 0.5,
+    gateOriginZ + gateFrameOffset.z - tileY
   );
   gateFrame.rotation.y = entrance.rotationY;
-  group.add(gateFrame);
+  base.add(gateFrame);
 
   const gateOpening = new three.Mesh(
     new three.BoxGeometry(0.18, 0.22, 0.09),
@@ -105,12 +106,12 @@ export function createLowDetailDungeonModel(
     entrance.rotationY
   );
   gateOpening.position.set(
-    gateOriginX + gateOpeningOffset.x,
-    0.12,
-    gateOriginZ + gateOpeningOffset.z
+    gateOriginX + gateOpeningOffset.x - tileX,
+    0.12 - baseHeight * 0.5,
+    gateOriginZ + gateOpeningOffset.z - tileY
   );
   gateOpening.rotation.y = entrance.rotationY;
-  group.add(gateOpening);
+  base.add(gateOpening);
 
   const glow = markPoiLightEmitter(
     new three.Mesh(
@@ -129,15 +130,15 @@ export function createLowDetailDungeonModel(
     entrance.rotationY
   );
   glow.position.set(
-    gateOriginX + glowOffset.x,
-    0.42,
-    gateOriginZ + glowOffset.z
+    gateOriginX + glowOffset.x - tileX,
+    0.42 - baseHeight * 0.5,
+    gateOriginZ + glowOffset.z - tileY
   );
   glow.userData = {
     ...(glow.userData ?? {}),
     dungeonBeacon: 'gate',
   };
-  group.add(glow);
+  base.add(glow);
 
   const pointLight = markPoiLightEmitter(
     new three.PointLight('#f87171', 0, 3.6, 1.85),
@@ -153,22 +154,22 @@ export function createLowDetailDungeonModel(
     entrance.rotationY
   );
   pointLight.position.set(
-    gateOriginX + pointLightOffset.x,
-    0.4,
-    gateOriginZ + pointLightOffset.z
+    gateOriginX + pointLightOffset.x - tileX,
+    0.4 - baseHeight * 0.5,
+    gateOriginZ + pointLightOffset.z - tileY
   );
   pointLight.visible = false;
   pointLight.userData = {
     ...(pointLight.userData ?? {}),
     dungeonBeacon: 'gate',
   };
-  group.add(pointLight);
-  return group;
+  base.add(pointLight);
+  return base;
 }
 
 function addCornerTower(
   three: ThreeHostLike,
-  parent: InstanceType<ThreeHostLike['Group']>,
+  parent: ThreeObject3DLike,
   {
     x,
     y,
