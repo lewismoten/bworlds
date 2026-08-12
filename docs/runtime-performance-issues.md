@@ -59,6 +59,11 @@ Recent mitigation work:
   and mushroom pieces instead of recreating identical sphere/cylinder geometry
   objects on every landmark tile build. That reduces repeated geometry churn
   in the same visible forest cluster without changing landmark placement.
+- `render3d` now freezes each static visible tile root group as soon as its
+  build shell is created, instead of leaving one always-static container per
+  tile on `matrixAutoUpdate`. Dynamic descendants still opt back in through
+  their existing responder tags, but plain floor-only tiles and other static
+  tile roots stop contributing avoidable per-frame matrix churn.
 
 Captured issue reports currently include:
 

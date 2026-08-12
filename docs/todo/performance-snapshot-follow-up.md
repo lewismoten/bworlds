@@ -58,6 +58,11 @@
 - [ ] Flatten groups that provide no transform or semantic value.
 - [ ] Investigate the 656 static objects using matrix auto-update.
 - [ ] Disable matrix auto-update for truly static objects.
+      Progress: `render3d` now freezes each visible tile root group at build
+      creation time, so floor-only plains tiles and other static tile
+      containers stop contributing one avoidable `matrixAutoUpdate` traversal
+      per visible tile while dynamic descendants still keep their responder-
+      flagged transforms live.
 - [x] Report static matrix updates by plugin.
 - [ ] Reduce total Object3D count without changing visuals.
 

@@ -4454,6 +4454,36 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('freezes tile root groups without muting intentionally dynamic descendants', () => {
+    const tileNode = createMockObject3D(undefined, [
+      createMockObject3D(undefined, [
+        createMockObject3D(createMockMaterial(), [], createMockGeometry(12), {
+          poiWindResponder: {
+            axis: 'y',
+          },
+        }),
+      ]),
+      createMockObject3D(createMockMaterial(), [], createMockGeometry(12)),
+    ]);
+    tileNode.matrixAutoUpdate = true;
+    const dynamicLeaf = tileNode.children[0]?.children[0];
+    const staticLeaf = tileNode.children[1];
+    dynamicLeaf.matrixAutoUpdate = true;
+    staticLeaf.matrixAutoUpdate = true;
+
+    freezeStaticObjectTransforms(tileNode as never);
+
+    expect(tileNode.matrixAutoUpdate).toBe(false);
+    expect(dynamicLeaf.matrixAutoUpdate).toBe(true);
+    expect(staticLeaf.matrixAutoUpdate).toBe(false);
+    expect(collectSceneResourceStats(tileNode as never)).toEqual(
+      expect.objectContaining({
+        matrixAutoUpdateCount: 1,
+        staticMatrixAutoUpdateCount: 0,
+      })
+    );
+  });
+
   it('summarizes visible tile draw calls by plugin', () => {
     expect(
       summarizeVisibleTileDrawCallsByPlugin([

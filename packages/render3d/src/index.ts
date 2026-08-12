@@ -1801,6 +1801,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   ): TileNodeBuildShell {
     recordRecentMetric(renderChurnMetrics.tileNodeBuilds, performance.now());
     const tileNode = new THREE.Group();
+    freezeStaticObjectTransforms(tileNode);
     const buildCache = createTileBuildCache(state);
     const tile = buildCache.getTile(x, y);
     const definition = getTileDefinitionFromRegistry(tile.kind);
