@@ -17,4 +17,11 @@ describe('tile plains', () => {
     expect(tile.create3DModel).toBeUndefined();
     expect(tile.create3DModelProgressive).toBeUndefined();
   });
+
+  it('marks plains as floor-only terrain with no wall-height fallback requirement', () => {
+    const tile = getPlainsTile();
+
+    expect(tile.definition?.wallHeight).toBe(0);
+    expect(tile.definition?.walkable).toBe(true);
+  });
 });

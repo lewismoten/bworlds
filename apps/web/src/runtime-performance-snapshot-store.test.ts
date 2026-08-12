@@ -170,7 +170,7 @@ describe('runtime performance snapshot store', () => {
             meshes: 'tile-town',
             lodSwaps: 'tile-town',
             fallbackBoxes: 'tile-plains',
-            rejectedModels: 'tile-plains',
+            rejectedModels: 'tile-forest',
             staticMatrixUpdates: 'tile-sign',
           },
           currentTile: {
@@ -178,7 +178,8 @@ describe('runtime performance snapshot store', () => {
             requestedDetailLevel: 'full',
             renderedDetailLevel: 'low',
             cachedDetailLevel: 'low',
-            fallbackReason: 'Budget rejection',
+            fallbackReason:
+              'tile has no plugin model and uses the wall-height fallback',
             hasVisibleModel: true,
           },
           resourceWarnings: [
@@ -298,9 +299,9 @@ describe('runtime performance snapshot store', () => {
       maxSnapshots: 10,
     });
 
-    expect(fs.readdirSync(snapshotDir).filter((entry) => entry.endsWith('.json'))).toEqual([
-      'game-repeat-hash.json',
-    ]);
+    expect(
+      fs.readdirSync(snapshotDir).filter((entry) => entry.endsWith('.json'))
+    ).toEqual(['game-repeat-hash.json']);
     expect(
       readRecentRuntimePerformanceIssues({
         snapshotDir,
@@ -374,7 +375,7 @@ describe('runtime performance snapshot store', () => {
         meshes: 'tile-town',
         lodSwaps: 'tile-town',
         fallbackBoxes: 'tile-plains',
-        rejectedModels: 'tile-plains',
+        rejectedModels: 'tile-forest',
         staticMatrixUpdates: 'tile-sign',
       },
       currentTile: {
@@ -382,7 +383,8 @@ describe('runtime performance snapshot store', () => {
         requestedDetailLevel: 'full',
         renderedDetailLevel: 'low',
         cachedDetailLevel: 'low',
-        fallbackReason: 'Budget rejection',
+        fallbackReason:
+          'tile has no plugin model and uses the wall-height fallback',
         hasVisibleModel: true,
       },
       resourceWarnings: [],

@@ -155,7 +155,11 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 
 ## Plains Tile Fallbacks
 
-- [ ] Investigate repeated tile-plains model rejection events.
+- [x] Investigate repeated tile-plains model rejection events.
+      Progress: `tile-plains` remains a renderer-owned shared-floor/fallback
+      tile with no `create3DModel(...)` path and `wallHeight: 0`, so plains now
+      stay associated with fallback-box activity instead of rejected-model
+      hotspots in the regression fixtures and renderer tests.
 - [x] Distinguish missing models from budget rejections.
 - [x] Do not label missing plugin models as budget failures.
 - [x] Add a normal low-cost plains model instead of a wall box.
