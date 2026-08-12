@@ -235,7 +235,11 @@ function resolveTerrainHeightFieldNormal(
     sampleColumn,
     downRow
   );
-  const upHeight = getTerrainHeightFieldNormalSample(field, sampleColumn, upRow);
+  const upHeight = getTerrainHeightFieldNormalSample(
+    field,
+    sampleColumn,
+    upRow
+  );
   const deltaX = (rightColumn - leftColumn) * field.step;
   const deltaZ = (upRow - downRow) * field.step;
   const crossX = -(rightHeight - leftHeight) * deltaZ;
@@ -259,7 +263,12 @@ function getTerrainHeightFieldNormalSample(
   column: number,
   row: number
 ): number {
-  assertInBounds(field.normalSampleWidth, field.normalSampleHeight, column, row);
+  assertInBounds(
+    field.normalSampleWidth,
+    field.normalSampleHeight,
+    column,
+    row
+  );
   return field.normalSampleHeights[row * field.normalSampleWidth + column] ?? 0;
 }
 

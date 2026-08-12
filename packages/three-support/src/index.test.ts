@@ -680,9 +680,7 @@ function createTestTerrainChunkGeometryPlan(): TerrainSplatHeightGeometryPlan {
     lodStepMultiplier: 1,
     vertexCount: 4,
     triangleCount: 2,
-    positions: new Float32Array([
-      0, 0, 0, 1, 0.1, 0, 0, 0.2, 1, 1, 0.3, 1,
-    ]),
+    positions: new Float32Array([0, 0, 0, 1, 0.1, 0, 0, 0.2, 1, 1, 0.3, 1]),
     normals: new Float32Array([
       0, 1, 0, 0.1, 0.99, 0, 0, 0.98, 0.2, 0.1, 0.97, 0.2,
     ]),

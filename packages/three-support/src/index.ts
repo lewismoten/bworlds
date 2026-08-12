@@ -550,7 +550,10 @@ export function createTerrainChunkBufferGeometry(
   geometry.setIndex(geometryPlan.indices);
 
   if (attributePlanSet) {
-    assertCompatibleTerrainChunkAttributePlanSet(geometryPlan, attributePlanSet);
+    assertCompatibleTerrainChunkAttributePlanSet(
+      geometryPlan,
+      attributePlanSet
+    );
     for (const attribute of attributePlanSet.attributes) {
       geometry.setAttribute(
         attribute.name,
