@@ -168,7 +168,7 @@
 - [x] Use overlays for narrow trails where suitable.
 - [x] Project road overlays onto terrain height.
 - [x] Blend road shoulders into terrain splats.
-- [ ] Reuse road materials across all chunks.
+- [x] Reuse road materials across all chunks.
 
 ## Weather Effects
 
@@ -305,6 +305,10 @@
 - Added `@bworlds/terrain-splat-support/route-overlay-projection` to project
   narrow road and trail overlays onto the shared terrain height field with
   bilinear sampling and a small deterministic surface offset.
+- Added `@bworlds/terrain-splat-support/route-overlay-material-plan` to keep
+  overlay route material identities tied to shared terrain-layer inputs instead
+  of per-chunk geometry, summarize cross-chunk reuse, and flag unique overlay
+  material fallbacks before live renderer integration.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and

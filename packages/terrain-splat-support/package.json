@@ -17,6 +17,7 @@
     "./material-plan": "./src/material-plan.ts",
     "./lod-transition": "./src/lod-transition.ts",
     "./performance-estimate": "./src/performance-estimate.ts",
+    "./route-overlay-material-plan": "./src/route-overlay-material-plan.ts",
     "./route-overlay-projection": "./src/route-overlay-projection.ts",
     "./route-surface-plan": "./src/route-surface-plan.ts",
     "./sample-grid": "./src/sample-grid.ts",

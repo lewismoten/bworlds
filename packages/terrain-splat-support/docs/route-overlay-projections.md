@@ -25,4 +25,3 @@ trail overlay points onto the shared terrain height field.
 ## Current limits
 
 - this module only projects overlay points; it does not build ribbons or meshes
-- live road-material reuse still needs renderer integration
