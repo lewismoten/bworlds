@@ -68,7 +68,26 @@ describe('terrain chunk debug', () => {
     expect(first.seamSummaries.every((seam) => seam.heightMaxDelta === 0)).toBe(
       true
     );
+    expect(
+      first.seamSummaries.every(
+        (seam) =>
+          Number.isFinite(seam.normalMaxDelta) && seam.normalMaxDelta >= 0
+      )
+    ).toBe(true);
     expect(first.chunkCells).toEqual(second.chunkCells);
+  });
+
+  it('keeps full-resolution border-normal deltas effectively zero for adjacent preview chunks', () => {
+    const snapshot = createTerrainChunkDebugSnapshot({
+      seed: 'terrain-debug-seed',
+      chunkX: 2,
+      chunkY: -1,
+      lodStepMultiplier: 1,
+    });
+
+    expect(
+      snapshot.seamSummaries.every((seam) => seam.normalMaxDelta <= 0.000001)
+    ).toBe(true);
   });
 
   it('renders a dedicated debug shell with splat, seam, and wireframe sections', () => {
@@ -94,6 +113,7 @@ describe('terrain chunk debug', () => {
     expect(markup).toContain('Seam Analysis');
     expect(markup).toContain('East Seam');
     expect(markup).toContain('South Seam');
+    expect(markup).toContain('Max Normal Delta');
     expect(markup).toContain('Top-down terrain chunk wireframe');
   });
 });

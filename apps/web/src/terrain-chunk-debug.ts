@@ -61,6 +61,7 @@ export type TerrainChunkDebugSeamSummary = {
   matchesExactly: boolean;
   seamLength: number;
   heightMaxDelta: number;
+  normalMaxDelta: number;
   dominantNeighborLayerId: string | null;
   mismatchPreview: readonly {
     code: string;
@@ -242,6 +243,12 @@ export function createTerrainChunkDebugSnapshot(
       adjacentGrid: eastGrid,
       heightField: currentHeightField,
       adjacentHeightField: eastHeightField,
+      geometryPlan,
+      adjacentGeometryPlan: createTerrainSplatHeightGeometryPlan({
+        grid: eastGrid,
+        heightField: eastHeightField,
+        lodStepMultiplier: options.lodStepMultiplier,
+      }),
     }),
     createSeamSummary({
       edge: 'south',
@@ -249,6 +256,12 @@ export function createTerrainChunkDebugSnapshot(
       adjacentGrid: southGrid,
       heightField: currentHeightField,
       adjacentHeightField: southHeightField,
+      geometryPlan,
+      adjacentGeometryPlan: createTerrainSplatHeightGeometryPlan({
+        grid: southGrid,
+        heightField: southHeightField,
+        lodStepMultiplier: options.lodStepMultiplier,
+      }),
     }),
   ];
   const heights = [...currentHeightField.heights];
@@ -342,6 +355,7 @@ export function buildTerrainChunkDebugMarkup(
             <div><dt>Mismatches</dt><dd>${seam.mismatchCount}</dd></div>
             <div><dt>Seam Samples</dt><dd>${seam.seamLength}</dd></div>
             <div><dt>Max Height Delta</dt><dd>${formatNumber(seam.heightMaxDelta)}</dd></div>
+            <div><dt>Max Normal Delta</dt><dd>${formatNumber(seam.normalMaxDelta)}</dd></div>
             <div><dt>Neighbor Dominant</dt><dd>${escapeHtml(seam.dominantNeighborLayerId ?? 'none')}</dd></div>
           </dl>
           ${
@@ -535,6 +549,8 @@ function createSeamSummary(params: {
   adjacentGrid: TerrainSplatSampleGrid;
   heightField: ReturnType<typeof createPreviewHeightField>;
   adjacentHeightField: ReturnType<typeof createPreviewHeightField>;
+  geometryPlan: TerrainSplatHeightGeometryPlan;
+  adjacentGeometryPlan: TerrainSplatHeightGeometryPlan;
 }): TerrainChunkDebugSeamSummary {
   const seamAnalysis = analyzeTerrainSplatChunkSeam({
     primaryGrid: params.grid,
@@ -550,6 +566,11 @@ function createSeamSummary(params: {
       params.edge,
       params.heightField,
       params.adjacentHeightField
+    ),
+    normalMaxDelta: resolveSeamNormalMaxDelta(
+      params.edge,
+      params.geometryPlan,
+      params.adjacentGeometryPlan
     ),
     dominantNeighborLayerId: resolveDominantGridLayerId(params.adjacentGrid),
     mismatchPreview: seamAnalysis.mismatches.slice(0, 6).map((mismatch) => ({
@@ -592,6 +613,43 @@ function resolveSeamHeightMaxDelta(
   return Math.max(0, ...deltas);
 }
 
+function resolveSeamNormalMaxDelta(
+  edge: 'east' | 'south',
+  primary: TerrainSplatHeightGeometryPlan,
+  adjacent: TerrainSplatHeightGeometryPlan
+): number {
+  const deltas: number[] = [];
+
+  if (edge === 'east') {
+    for (let row = 0; row < primary.height; row += 1) {
+      const primaryIndex = row * primary.width + (primary.width - 1);
+      const adjacentIndex = row * adjacent.width;
+      deltas.push(
+        resolveNormalDelta(
+          primary.normals,
+          primaryIndex,
+          adjacent.normals,
+          adjacentIndex
+        )
+      );
+    }
+  } else {
+    const primaryStart = (primary.height - 1) * primary.width;
+    for (let column = 0; column < primary.width; column += 1) {
+      deltas.push(
+        resolveNormalDelta(
+          primary.normals,
+          primaryStart + column,
+          adjacent.normals,
+          column
+        )
+      );
+    }
+  }
+
+  return Math.max(0, ...deltas);
+}
+
 function resolveVerificationChecks(params: {
   seamSummaries: readonly TerrainChunkDebugSeamSummary[];
   parityMismatchCount: number;
@@ -604,9 +662,14 @@ function resolveVerificationChecks(params: {
     0,
     ...params.seamSummaries.map((seam) => seam.heightMaxDelta)
   );
+  const seamNormalDelta = Math.max(
+    0,
+    ...params.seamSummaries.map((seam) => seam.normalMaxDelta)
+  );
   const seamsPassing =
     seamMismatchCount === 0 &&
-    params.seamSummaries.every((seam) => seam.matchesExactly);
+    params.seamSummaries.every((seam) => seam.matchesExactly) &&
+    seamNormalDelta <= 0.000001;
   const parityPassing = params.parityMismatchCount === 0;
 
   return [
@@ -615,10 +678,12 @@ function resolveVerificationChecks(params: {
       label: 'Chunk Seams',
       status: seamsPassing ? 'pass' : 'attention',
       summary: seamsPassing
-        ? 'East and south seam samples match exactly with zero height delta.'
+        ? 'East and south seam samples match exactly with zero height and normal delta.'
         : `${seamMismatchCount} seam mismatch${
             seamMismatchCount === 1 ? '' : 'es'
-          } detected; max sampled height delta ${formatNumber(seamHeightDelta)}.`,
+          } detected; max sampled height delta ${formatNumber(
+            seamHeightDelta
+          )}, max normal delta ${formatNumber(seamNormalDelta)}.`,
     },
     {
       id: 'parity',
@@ -631,6 +696,24 @@ function resolveVerificationChecks(params: {
           } need review.`,
     },
   ];
+}
+
+function resolveNormalDelta(
+  primaryNormals: Float32Array,
+  primaryIndex: number,
+  adjacentNormals: Float32Array,
+  adjacentIndex: number
+): number {
+  const primaryOffset = primaryIndex * 3;
+  const adjacentOffset = adjacentIndex * 3;
+  return Math.hypot(
+    (primaryNormals[primaryOffset] ?? 0) -
+      (adjacentNormals[adjacentOffset] ?? 0),
+    (primaryNormals[primaryOffset + 1] ?? 0) -
+      (adjacentNormals[adjacentOffset + 1] ?? 0),
+    (primaryNormals[primaryOffset + 2] ?? 0) -
+      (adjacentNormals[adjacentOffset + 2] ?? 0)
+  );
 }
 
 function resolveDominantGridLayerId(

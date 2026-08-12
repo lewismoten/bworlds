@@ -14,6 +14,7 @@ Current responsibilities:
 - sample one matching height field from the shared worldgen terrain-height API
 - derive one chunk wireframe view from the shared terrain geometry plan
 - compare east and south neighbor chunk seams using the shared seam analyzer
+  plus sampled height and border-normal deltas
 - show the dominant splat layer grid before a live material/shader path exists
 - compare the `16x16` logical tile mix against the shared terrain-preview
   interpretation so 2D-versus-3D parity drift can be inspected explicitly
@@ -24,6 +25,6 @@ Current limits:
 
 - the page does not attach the chunk geometry to the main Three.js world scene
 - seam analysis currently checks shared splat weights and sampled heights, not
-  final rendered pixels
+  final rendered pixels, though it now also surfaces border-normal continuity
 - the height source still uses the interim preview terrain-height sampler rather
   than the future fully layered authoritative height pipeline
