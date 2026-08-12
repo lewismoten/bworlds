@@ -24,6 +24,7 @@ export type TerrainMaterialLayerDefinition = {
   defaultTint: string;
   defaultRoughness: number;
   defaultMetalness?: number;
+  tintVariation?: number;
   uvRotationQuarterTurns?: readonly TerrainUvRotationQuarterTurn[];
   allowMirrorU?: boolean;
   allowMirrorV?: boolean;
@@ -36,6 +37,12 @@ export type TerrainMaterialLayerUvTransform = {
   rotationQuarterTurns: TerrainUvRotationQuarterTurn;
   mirrorU: boolean;
   mirrorV: boolean;
+};
+
+export type TerrainMaterialLayerTintTransform = {
+  defaultTint: string;
+  resolvedTint: string;
+  variationStrength: number;
 };
 
 export type TerrainMaterialLayerCatalogEntry =
@@ -129,6 +136,9 @@ const TERRAIN_SPLAT_UV_MIRROR_U_LABEL = registerHashLabel(
 const TERRAIN_SPLAT_UV_MIRROR_V_LABEL = registerHashLabel(
   'terrain-splat-uv-mirror-v'
 );
+const TERRAIN_SPLAT_TINT_VARIATION_LABEL = registerHashLabel(
+  'terrain-splat-tint-variation'
+);
 
 export function validateTerrainMaterialLayerDefinition(
   layer: TerrainMaterialLayerDefinition
@@ -208,6 +218,14 @@ export function validateTerrainMaterialLayerDefinition(
   ) {
     errors.push(
       `Terrain material layer ${formatLayerLabel(layer.id)} must omit defaultMetalness or define it within 0..1.`
+    );
+  }
+  if (
+    layer.tintVariation !== undefined &&
+    !isNormalizedScalar(layer.tintVariation)
+  ) {
+    errors.push(
+      `Terrain material layer ${formatLayerLabel(layer.id)} must omit tintVariation or define it within 0..1.`
     );
   }
   if (layer.uvRotationQuarterTurns !== undefined) {
@@ -1019,6 +1037,40 @@ export function resolveTerrainMaterialLayerUvTransform(
   };
 }
 
+export function resolveTerrainMaterialLayerTintTransform(
+  layer: TerrainMaterialLayerDefinition,
+  input: Pick<ResolveTerrainKindSplatSampleInput, 'seed' | 'x' | 'y' | 'kind'>
+): TerrainMaterialLayerTintTransform {
+  const defaultTint = normalizeHexColor(layer.defaultTint);
+  const variationStrength = clampWeight(layer.tintVariation ?? 0);
+  if (variationStrength === 0) {
+    return {
+      defaultTint,
+      resolvedTint: defaultTint,
+      variationStrength,
+    };
+  }
+
+  const seedHash = appendHashSeedLabel(
+    resolveHashSeedInput(input.seed),
+    TERRAIN_SPLAT_TINT_VARIATION_LABEL
+  );
+  const tintNoise =
+    hash2DWithSeed(
+      seedHash,
+      input.x + hashString(layer.id),
+      input.y + hashString(input.kind)
+    ) *
+      2 -
+    1;
+
+  return {
+    defaultTint,
+    resolvedTint: applyTintVariation(defaultTint, tintNoise, variationStrength),
+    variationStrength,
+  };
+}
+
 function collapseTerrainSplatWeights(
   entries: readonly TerrainSplatWeight[]
 ): TerrainSplatWeight[] {
@@ -1136,6 +1188,52 @@ function isTerrainUvRotationQuarterTurn(
   value: unknown
 ): value is TerrainUvRotationQuarterTurn {
   return value === 0 || value === 1 || value === 2 || value === 3;
+}
+
+function normalizeHexColor(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function applyTintVariation(
+  hexColor: string,
+  tintNoise: number,
+  variationStrength: number
+): string {
+  const rgb = parseHexColor(hexColor);
+  const multiplier = 1 + tintNoise * variationStrength;
+
+  return formatHexColor({
+    red: clampColorChannel(rgb.red * multiplier),
+    green: clampColorChannel(rgb.green * multiplier),
+    blue: clampColorChannel(rgb.blue * multiplier),
+  });
+}
+
+function parseHexColor(hexColor: string): {
+  red: number;
+  green: number;
+  blue: number;
+} {
+  const normalized = normalizeHexColor(hexColor).slice(1);
+  return {
+    red: Number.parseInt(normalized.slice(0, 2), 16),
+    green: Number.parseInt(normalized.slice(2, 4), 16),
+    blue: Number.parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function formatHexColor(rgb: {
+  red: number;
+  green: number;
+  blue: number;
+}): string {
+  return `#${rgb.red.toString(16).padStart(2, '0')}${rgb.green
+    .toString(16)
+    .padStart(2, '0')}${rgb.blue.toString(16).padStart(2, '0')}`;
+}
+
+function clampColorChannel(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
 }
 
 function formatLayerLabel(value: string): string {

@@ -25,6 +25,7 @@ Current responsibilities:
 - plan aligned texture-array slots and validate descriptor consistency before
   renderer upload code exists
 - resolve deterministic per-layer UV transforms for rotation and mirroring
+- resolve deterministic per-layer tint variation metadata without new materials
 
 Why this comes first:
 
@@ -51,3 +52,5 @@ Current limits:
   path, road, rocky, snow, and mud surface families
 - UV transform support currently resolves metadata only; renderer code still
   needs to apply the transforms in shared terrain materials
+- tint variation support currently resolves metadata only; renderer code still
+  needs to apply the resolved colors through shared material inputs

@@ -7,6 +7,7 @@ import {
   normalizeTerrainSplatSample,
   packTerrainSplatSample,
   PACKED_TERRAIN_SPLAT_WEIGHT_MAX,
+  resolveTerrainMaterialLayerTintTransform,
   resolveTerrainMaterialLayerUvTransform,
   resolveTerrainKindSplatSample,
   unpackTerrainSplatSample,
@@ -62,6 +63,7 @@ describe('terrain splat support', () => {
         defaultTint: 'green',
         defaultRoughness: 1.4,
         defaultMetalness: -0.1,
+        tintVariation: 1.5,
         uvRotationQuarterTurns: [0, 0.5 as 0 | 1 | 2 | 3, 0],
         allowMirrorU: 'yes' as unknown as boolean,
         allowMirrorV: 'no' as unknown as boolean,
@@ -76,12 +78,79 @@ describe('terrain splat support', () => {
         'Terrain material layer "" must define a #RRGGBB defaultTint.',
         'Terrain material layer "" must define defaultRoughness within 0..1.',
         'Terrain material layer "" must omit defaultMetalness or define it within 0..1.',
+        'Terrain material layer "" must omit tintVariation or define it within 0..1.',
         'Terrain material layer "" uvRotationQuarterTurns entries must stay within 0..3.',
         'Terrain material layer "" must not repeat uvRotationQuarterTurns entries.',
         'Terrain material layer "" must omit allowMirrorU or define a boolean.',
         'Terrain material layer "" must omit allowMirrorV or define a boolean.',
       ])
     );
+  });
+
+  it('resolves deterministic tint variation from layer configuration without changing layer identity', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 3,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      tintVariation: 0.12,
+    };
+
+    const first = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 18,
+      y: 27,
+      kind: 'plains',
+    });
+    const second = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 18,
+      y: 27,
+      kind: 'plains',
+    });
+    const shifted = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 19,
+      y: 27,
+      kind: 'plains',
+    });
+
+    expect(second).toEqual(first);
+    expect(first.defaultTint).toBe('#88aa55');
+    expect(first.variationStrength).toBeCloseTo(0.12, 6);
+    expect(first.resolvedTint).toMatch(/^#[0-9a-f]{6}$/);
+    expect(shifted.defaultTint).toBe('#88aa55');
+    expect(shifted.variationStrength).toBeCloseTo(0.12, 6);
+    expect(shifted.resolvedTint).not.toBe(first.defaultTint);
+  });
+
+  it('keeps tint resolution at the default color when tint variation is omitted', () => {
+    expect(
+      resolveTerrainMaterialLayerTintTransform(
+        {
+          id: 'soil',
+          baseColorTextureId: 'soil/base',
+          normalTextureId: 'soil/normal',
+          roughnessTextureId: 'soil/roughness',
+          textureScale: 2,
+          defaultTint: '#7B5A3D',
+          defaultRoughness: 0.8,
+        },
+        {
+          seed: 'pbr-splat-seed',
+          x: 2,
+          y: 4,
+          kind: 'dirt',
+        }
+      )
+    ).toEqual({
+      defaultTint: '#7b5a3d',
+      resolvedTint: '#7b5a3d',
+      variationStrength: 0,
+    });
   });
 
   it('resolves deterministic terrain UV transforms from layer configuration', () => {

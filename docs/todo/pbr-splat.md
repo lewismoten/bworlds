@@ -105,7 +105,7 @@
 - [x] Support 90 degree texture rotation.
 - [x] Support texture mirroring.
 - [x] Use UV transforms instead of duplicate textures.
-- [ ] Add small tint variation without new materials.
+- [x] Add small tint variation without new materials.
 - [ ] Add large-scale tint noise across terrain chunks.
 
 ## UV Mapping
@@ -281,6 +281,10 @@
   rotation and axis mirroring without duplicating textures. The support
   package now validates those options and resolves one stable transform from
   seed, world position, and layer ID for later shared-material integration.
+- Added deterministic tint-variation support in
+  `@bworlds/terrain-splat-support` so terrain layers can resolve small color
+  drift from seed, world position, layer ID, and terrain kind without adding
+  new textures or per-chunk materials.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -316,12 +320,14 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/variant-pools.md`, plus
 `packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, plus
 `packages/terrain-splat-support/docs/texture-array-plans.md`, plus
-`packages/terrain-splat-support/docs/uv-transforms.md`, and focused tests cover
-normalization, packing, validation, deterministic mapping, chunk border
+`packages/terrain-splat-support/docs/uv-transforms.md`, plus
+`packages/terrain-splat-support/docs/tint-variation.md`, and focused tests
+cover normalization, packing, validation, deterministic mapping, chunk border
 stability, chunk layer-usage analysis, bounded family variant selection,
 neighborhood shared-layer planning, stable terrain family resolution for the
 same seed, texture-array plan validation for aligned dimensions, formats, and
-memory estimates, plus deterministic UV rotation and mirroring resolution.
+memory estimates, plus deterministic UV rotation, mirroring, and tint
+variation resolution.
 
 # Roads and Paths as Terrain Splats
 
