@@ -961,9 +961,15 @@ export function createRuntimePerformanceIssueReporter(
     ((issue: RuntimePerformanceIssueReport) =>
       postRuntimePerformanceIssueReport(issue));
   const lastReportedAtByHash = new Map<string, number>();
+  let activeIssueHash: string | null = null;
 
   return async (issue: RuntimePerformanceIssueReport | null) => {
     if (!issue) {
+      activeIssueHash = null;
+      return false;
+    }
+
+    if (issue.issueHash === activeIssueHash) {
       return false;
     }
 
@@ -979,6 +985,7 @@ export function createRuntimePerformanceIssueReporter(
     const posted = await postIssue(issue);
     if (posted) {
       lastReportedAtByHash.set(issue.issueHash, currentNowMs);
+      activeIssueHash = issue.issueHash;
     }
     return posted;
   };

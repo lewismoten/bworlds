@@ -29,8 +29,10 @@ the client now keeps them local unless a separate direct plugin/tile/runtime
 failure is active at the same time.
 
 Issue reports are throttled by a stable issue hash derived from the saved issue
-summary for five seconds so repeated reports of the same user-visible problem
-do not thrash the local endpoint.
+summary for five seconds, and the client now reports a given hash only when it
+first appears or reappears after clearing. A persistent unchanged issue no
+longer posts every few seconds while the player remains inside the same active
+problem state.
 
 Saved issue files are also keyed by `source + issueHash` instead of timestamp.
 When the same summary is reported again, the existing file is overwritten with

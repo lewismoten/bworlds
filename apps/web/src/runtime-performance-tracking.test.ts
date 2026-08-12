@@ -823,15 +823,11 @@ describe('runtime performance tracking', () => {
     );
   });
 
-  it('throttles duplicate runtime issue reports for a few seconds', async () => {
+  it('reports an active runtime issue only once until it clears', async () => {
     const postIssue = vi.fn(async () => true);
     const reporter = createRuntimePerformanceIssueReporter({
       minimumIntervalMs: 5_000,
-      nowMs: vi
-        .fn()
-        .mockReturnValueOnce(0)
-        .mockReturnValueOnce(2_000)
-        .mockReturnValueOnce(6_000),
+      nowMs: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(6_000),
       postIssue,
     });
     const issue = buildRuntimePerformanceIssueReport({
@@ -842,6 +838,8 @@ describe('runtime performance tracking', () => {
 
     await expect(reporter(issue)).resolves.toBe(true);
     await expect(reporter(issue)).resolves.toBe(false);
+    await expect(reporter(issue)).resolves.toBe(false);
+    await expect(reporter(null)).resolves.toBe(false);
     await expect(reporter(issue)).resolves.toBe(true);
     expect(postIssue).toHaveBeenCalledTimes(2);
   });
