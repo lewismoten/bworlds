@@ -2,12 +2,12 @@
 
 Always run tests to make sure all tests pass
 
-- [x] When the page resizes, the rendered game view just becomes a solid color that flashes other colors when moving
-- [x] Complete client-error-snapshot.md
-- [ ] Complete [Performance Snapshot Follow-Up](performance-snapshot-follow-up.md)
-- [ ] Complete audio-priority2.md
+- [ ] complete [World Gen Master Roadmap](./world-gen/00-master-roadmap.md)
 
 # Next Highest
+
+- [ ] Complete [Performance Snapshot Follow-Up](performance-snapshot-follow-up.md)
+- [ ] Complete audio-priority2.md
 
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.
   - [ ] Convert long plugin loops to generators that yield work to the scheduler.
