@@ -648,6 +648,24 @@ describe('world generator', () => {
     ).toThrow('Terrain height range bounds minX 2 must be <= maxX 1.');
   });
 
+  it('samples terrain sea depth explicitly from the shared surface metadata', () => {
+    const generator = createGenerator();
+    const surface = generator.sampleTerrainSurface(10, 20);
+    const seaDepth = generator.sampleTerrainSeaDepth(10, 20);
+
+    expect(seaDepth).toEqual({
+      worldX: 10,
+      worldY: 20,
+      height: surface.height,
+      seaLevel: surface.seaLevel,
+      depthBelowSeaLevel: surface.depthBelowSeaLevel,
+      isBelowSeaLevel: surface.depthBelowSeaLevel > 0,
+    });
+    expect(generator.terrainHeightSampler.sampleSeaDepth(10, 20)).toEqual(
+      seaDepth
+    );
+  });
+
   it('exposes one reusable world-space terrain height sampler contract', () => {
     const generator = createGenerator();
     const surface = generator.sampleTerrainSurface(10, 20);
@@ -681,6 +699,7 @@ describe('world generator', () => {
       minY: 20,
       maxY: 21,
     });
+    const baselineTerrainSeaDepth = generator.sampleTerrainSeaDepth(10, 20);
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
@@ -699,6 +718,7 @@ describe('world generator', () => {
         minY: y,
         maxY: y + 1,
       });
+      generator.sampleTerrainSeaDepth(x, y);
       generator.samplePreviewOverworld(x, y);
     }
 
@@ -726,6 +746,9 @@ describe('world generator', () => {
         maxY: 21,
       })
     ).toEqual(baselineTerrainRange);
+    expect(generator.sampleTerrainSeaDepth(10, 20)).toEqual(
+      baselineTerrainSeaDepth
+    );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
     expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');

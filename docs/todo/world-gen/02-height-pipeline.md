@@ -39,7 +39,7 @@
 - [x] Add local curvature sampling.
 - [ ] Add drainage-gradient sampling.
 - [x] Add regional height range sampling.
-- [ ] Add sea-depth sampling below sea level.
+- [x] Add sea-depth sampling below sea level.
 
 ## Validation
 
@@ -81,6 +81,9 @@ Current support:
   `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep? })`, which
   derives one sampled min/max height summary for an explicit world-space
   region.
+- It now also exposes `sampleTerrainSeaDepth(worldX, worldY)`, which turns the
+  shared surface sample into one explicit sea-depth result with
+  `depthBelowSeaLevel` and `isBelowSeaLevel`.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height

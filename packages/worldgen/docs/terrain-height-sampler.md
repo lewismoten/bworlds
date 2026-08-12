@@ -16,8 +16,11 @@ Current surface:
   second-difference curvature sample from the same height path
 - `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep? })`
   derives one sampled min/max height summary for an explicit world-space region
+- `sampleTerrainSeaDepth(worldX, worldY)` exposes one explicit below-sea
+  summary from the shared surface sample
 - `terrainHeightSampler` exposes the same height, surface, slope, aspect,
-  curvature, and range calls for consumers that want one shared sampler object
+  curvature, range, and sea-depth calls for consumers that want one shared
+  sampler object
 
 Current limits:
 

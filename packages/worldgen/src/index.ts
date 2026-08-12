@@ -106,6 +106,15 @@ export type WorldTerrainHeightRangeSample = {
   heightRange: number;
 };
 
+export type WorldTerrainSeaDepthSample = {
+  worldX: number;
+  worldY: number;
+  height: number;
+  seaLevel: number;
+  depthBelowSeaLevel: number;
+  isBelowSeaLevel: boolean;
+};
+
 export type WorldTerrainHeightSampler = {
   sampleHeight(worldX: number, worldY: number): number;
   sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
@@ -131,6 +140,7 @@ export type WorldTerrainHeightSampler = {
     maxY: number;
     sampleStep?: number;
   }): WorldTerrainHeightRangeSample;
+  sampleSeaDepth(worldX: number, worldY: number): WorldTerrainSeaDepthSample;
 };
 
 export function convertFeetToWorldHeightUnits(feet: number): number {
@@ -198,6 +208,7 @@ export function createWorldGenerator({
     maxY: number;
     sampleStep?: number;
   }): WorldTerrainHeightRangeSample;
+  sampleTerrainSeaDepth(x: number, y: number): WorldTerrainSeaDepthSample;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
@@ -409,6 +420,20 @@ export function createWorldGenerator({
       heightRange: maxHeight - minHeight,
     };
   };
+  const sampleTerrainSeaDepth = (
+    x: number,
+    y: number
+  ): WorldTerrainSeaDepthSample => {
+    const surface = sampleTerrainSurface(x, y);
+    return {
+      worldX: x,
+      worldY: y,
+      height: surface.height,
+      seaLevel: surface.seaLevel,
+      depthBelowSeaLevel: surface.depthBelowSeaLevel,
+      isBelowSeaLevel: surface.depthBelowSeaLevel > 0,
+    };
+  };
   const terrainHeightSampler: WorldTerrainHeightSampler = {
     sampleHeight: sampleTerrainHeight,
     sampleSurface: sampleTerrainSurface,
@@ -416,6 +441,7 @@ export function createWorldGenerator({
     sampleAspect: sampleTerrainAspect,
     sampleCurvature: sampleTerrainCurvature,
     sampleHeightRange: sampleTerrainHeightRange,
+    sampleSeaDepth: sampleTerrainSeaDepth,
   };
 
   return {
@@ -431,6 +457,7 @@ export function createWorldGenerator({
     sampleTerrainAspect,
     sampleTerrainCurvature,
     sampleTerrainHeightRange,
+    sampleTerrainSeaDepth,
     samplePreviewSurfaceHeight: sampleTerrainHeight,
     samplePreviewOverworld(x: number, y: number) {
       const key = getPreviewKey(x, y);
