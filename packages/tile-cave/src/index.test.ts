@@ -652,6 +652,7 @@ describe('tile cave', () => {
         detailLevel: 'low',
       }) as
         | {
+            userData?: Record<string, unknown>;
             children?: Array<{
               children?: unknown[];
               userData?: Record<string, unknown>;
@@ -663,9 +664,14 @@ describe('tile cave', () => {
       expect(low?.children?.length ?? 0).toBeLessThan(
         full?.children?.length ?? Infinity
       );
-      expect(low?.children).toHaveLength(3);
+      expect(low?.userData?.caveLowDetailPart).toBe('mound');
+      expect(low?.children).toHaveLength(2);
       expect(
-        low?.children?.map((child) => child.userData?.caveLowDetailPart).sort()
+        [
+          low?.userData?.caveLowDetailPart,
+          ...(low?.children?.map((child) => child.userData?.caveLowDetailPart) ??
+            []),
+        ].sort()
       ).toEqual(['mound', 'mouth-void', 'tunnel-back']);
       expect(
         low?.children?.every(

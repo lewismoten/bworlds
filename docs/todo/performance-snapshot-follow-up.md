@@ -371,7 +371,11 @@ low` visible recovery, and full-detail `tile-sign` tiles now use their post
       now use their floor-spire `InstancedMesh` as the root and attach the
       hanging stalactite beneath it, which removes one static `Object3D` from
       each of those cave-floor decoration tiles without changing their per-
-      instance layout.
+      instance layout, and low-detail cave mouths now use their mound mesh as
+      the tile root and attach the mouth-void and tunnel-back meshes beneath it
+      instead of wrapping all three pieces in a dedicated `Group`, which
+      removes one static `Object3D` from each reduced-quality cave entrance
+      without changing the silhouette.
 
 ## LOD Stability
 

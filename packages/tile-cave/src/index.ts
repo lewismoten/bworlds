@@ -186,7 +186,7 @@ function* createCaveModelProgressive({
   const height = 0.96 + hash2D(CAVE_HEIGHT_SEED, tileX, tileY) * 0.26;
 
   if (detailLevel === 'low') {
-    addLowDetailCaveModel(group, three, {
+    return addLowDetailCaveModel(three, {
       tileX,
       tileY,
       width,
@@ -197,7 +197,6 @@ function* createCaveModelProgressive({
       mouthVoidMaterial,
       tunnelBackMaterial,
     });
-    return group;
   }
 
   const totalSteps = 4;
@@ -896,7 +895,6 @@ function getCaveSharedMaterials(three: Create3DModelContext['three']) {
 }
 
 function addLowDetailCaveModel(
-  group: ThreeObject3DLike,
   three: Create3DModelContext['three'],
   {
     tileX,
@@ -930,7 +928,6 @@ function addLowDetailCaveModel(
     ...(mound.userData ?? {}),
     caveLowDetailPart: 'mound',
   };
-  group.add(mound);
 
   const portalOriginX = tileX + entrance.dx * 0.46;
   const portalOriginZ = tileY + entrance.dy * 0.46;
@@ -941,16 +938,16 @@ function addLowDetailCaveModel(
   );
   const mouthVoidOffset = rotateCaveLocalOffset(0, 0.2, entrance.rotationY);
   mouthVoid.position.set(
-    portalOriginX + mouthVoidOffset.x,
-    0.22,
-    portalOriginZ + mouthVoidOffset.z
+    portalOriginX + mouthVoidOffset.x - tileX,
+    0.22 - height * 0.46,
+    portalOriginZ + mouthVoidOffset.z - tileY
   );
   mouthVoid.rotation.y = entrance.rotationY;
   mouthVoid.userData = {
     ...(mouthVoid.userData ?? {}),
     caveLowDetailPart: 'mouth-void',
   };
-  group.add(mouthVoid);
+  mound.add(mouthVoid);
 
   const tunnelBack = new three.Mesh(
     new three.CircleGeometry(0.13, 14),
@@ -958,16 +955,18 @@ function addLowDetailCaveModel(
   );
   const tunnelBackOffset = rotateCaveLocalOffset(0, -0.12, entrance.rotationY);
   tunnelBack.position.set(
-    portalOriginX + tunnelBackOffset.x,
-    0.2,
-    portalOriginZ + tunnelBackOffset.z
+    portalOriginX + tunnelBackOffset.x - tileX,
+    0.2 - height * 0.46,
+    portalOriginZ + tunnelBackOffset.z - tileY
   );
   tunnelBack.rotation.y = entrance.rotationY;
   tunnelBack.userData = {
     ...(tunnelBack.userData ?? {}),
     caveLowDetailPart: 'tunnel-back',
   };
-  group.add(tunnelBack);
+  mound.add(tunnelBack);
+
+  return mound;
 }
 
 function createCaveDripstoneGroup(

@@ -34,6 +34,9 @@ Current layout:
 - The mirrored cave-mouth cheek rocks and inner pillars now each share one
   `SphereGeometry`, one material, and one `InstancedMesh`, with local portal
   positions and scale stored in matrices.
+- The low-detail cave mouth now uses the mound mesh as the tile root and
+  attaches the mouth-void and tunnel-back meshes beneath it instead of wrapping
+  all three parts in a dedicated `Group`.
 - The hanging stalactite, cap, portal, lantern, and interior tunnel pieces
   remain ordinary meshes because they have distinct shapes, materials, or
   lighting behavior.
