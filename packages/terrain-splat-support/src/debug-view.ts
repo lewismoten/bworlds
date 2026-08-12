@@ -10,6 +10,7 @@ export type TerrainSplatDebugViewMode =
   | 'dominant-layer'
   | 'active-layer-count'
   | 'layer-weight'
+  | 'route-layer-weight'
   | 'blend-color'
   | 'layer-index'
   | 'base-color-map'
@@ -33,10 +34,12 @@ export type TerrainSplatDebugView = {
   mode: TerrainSplatDebugViewMode;
   cells: readonly TerrainSplatDebugCell[];
   activeLayerIds: readonly TerrainMaterialLayerId[];
+  activeRouteLayerIds: readonly TerrainMaterialLayerId[];
   totalActiveLayerCount: number;
   packedMemoryUsageBytes: number;
   targetLayerId: TerrainMaterialLayerId | null;
   blendEnabled: boolean;
+  routeLayersOnly: boolean;
 };
 
 export function createTerrainSplatDebugView(
@@ -45,6 +48,8 @@ export function createTerrainSplatDebugView(
     mode: TerrainSplatDebugViewMode;
     targetLayerId?: TerrainMaterialLayerId;
     blendEnabled?: boolean;
+    routeLayerIds?: readonly TerrainMaterialLayerId[];
+    routeLayersOnly?: boolean;
     catalog?:
       | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
       | {
@@ -61,6 +66,8 @@ export function createTerrainSplatDebugView(
       : options.catalog
     : null;
   const activeLayerIds = new Set<TerrainMaterialLayerId>();
+  const activeRouteLayerIds = new Set<TerrainMaterialLayerId>();
+  const routeLayerIdSet = new Set(options.routeLayerIds ?? []);
   const cells: TerrainSplatDebugCell[] = [];
 
   for (let row = 0; row < grid.height; row += 1) {
@@ -75,18 +82,29 @@ export function createTerrainSplatDebugView(
         options.blendEnabled === false
           ? sortedEntries.slice(0, sortedEntries.length > 0 ? 1 : 0)
           : sortedEntries;
-      const activeIds = effectiveEntries.map((entry) => entry.layerId);
+      const routeEntries = effectiveEntries.filter((entry) =>
+        routeLayerIdSet.has(entry.layerId)
+      );
+      const visibleEntries =
+        options.routeLayersOnly === true ? routeEntries : effectiveEntries;
+      const activeIds = visibleEntries.map((entry) => entry.layerId);
       for (const layerId of activeIds) {
         activeLayerIds.add(layerId);
       }
-      const dominantEntry = effectiveEntries[0];
-      const layerIndices = effectiveEntries
+      for (const routeEntry of routeEntries) {
+        activeRouteLayerIds.add(routeEntry.layerId);
+      }
+      const dominantEntry = visibleEntries[0];
+      const layerIndices = visibleEntries
         .map((entry) => layerMap?.get(entry.layerId)?.index)
         .filter((index): index is number => typeof index === 'number');
       const resolved = resolveTerrainSplatDebugCell({
         mode: options.mode,
         sample: {
-          entries: effectiveEntries,
+          entries: visibleEntries,
+        },
+        routeSample: {
+          entries: routeEntries,
         },
         layerMap,
         activeLayerIds: activeIds,
@@ -115,16 +133,19 @@ export function createTerrainSplatDebugView(
     mode: options.mode,
     cells,
     activeLayerIds: [...activeLayerIds].sort(),
+    activeRouteLayerIds: [...activeRouteLayerIds].sort(),
     totalActiveLayerCount: activeLayerIds.size,
     packedMemoryUsageBytes: grid.samples.length * 8,
     targetLayerId: options.targetLayerId ?? null,
     blendEnabled: options.blendEnabled !== false,
+    routeLayersOnly: options.routeLayersOnly === true,
   };
 }
 
 function resolveTerrainSplatDebugCell(params: {
   mode: TerrainSplatDebugViewMode;
   sample: TerrainSplatSample;
+  routeSample: TerrainSplatSample;
   layerMap: ReadonlyMap<
     TerrainMaterialLayerId,
     TerrainMaterialLayerCatalogEntry
@@ -158,6 +179,17 @@ function resolveTerrainSplatDebugCell(params: {
       const weight = findLayerWeight(params.sample, params.targetLayerId);
       return {
         colorHex: grayscaleColor(weight),
+        textureId: null,
+        value: weight,
+      };
+    }
+    case 'route-layer-weight': {
+      const weight = params.routeSample.entries.reduce(
+        (sum, entry) => sum + entry.weight,
+        0
+      );
+      return {
+        colorHex: mixColor('#234a2d', '#d2a34a', '#bc5c2e', weight),
         textureId: null,
         value: weight,
       };

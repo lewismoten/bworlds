@@ -14,14 +14,17 @@ export type TerrainSplatViewerDebugModeOption = {
   label: string;
   requiresCatalog: boolean;
   requiresTargetLayer: boolean;
+  requiresRouteLayers: boolean;
 };
 
 export type TerrainSplatViewerDebugModel = {
   selectedMode: TerrainSplatDebugViewMode;
   modeOptions: readonly TerrainSplatViewerDebugModeOption[];
   availableTargetLayerIds: readonly TerrainMaterialLayerId[];
+  availableRouteLayerIds: readonly TerrainMaterialLayerId[];
   selectedTargetLayerId: TerrainMaterialLayerId | null;
   blendEnabled: boolean;
+  routeLayersOnly: boolean;
   view: TerrainSplatDebugView;
 };
 
@@ -31,48 +34,63 @@ const VIEWER_MODE_OPTIONS: readonly TerrainSplatViewerDebugModeOption[] = [
     label: 'Dominant Layer',
     requiresCatalog: false,
     requiresTargetLayer: false,
+    requiresRouteLayers: false,
   },
   {
     id: 'active-layer-count',
     label: 'Active Layer Count',
     requiresCatalog: false,
     requiresTargetLayer: false,
+    requiresRouteLayers: false,
   },
   {
     id: 'layer-weight',
     label: 'Layer Weight',
     requiresCatalog: false,
     requiresTargetLayer: true,
+    requiresRouteLayers: false,
+  },
+  {
+    id: 'route-layer-weight',
+    label: 'Route Layer Weight',
+    requiresCatalog: false,
+    requiresTargetLayer: false,
+    requiresRouteLayers: true,
   },
   {
     id: 'blend-color',
     label: 'Blend Color',
     requiresCatalog: false,
     requiresTargetLayer: false,
+    requiresRouteLayers: false,
   },
   {
     id: 'layer-index',
     label: 'Layer Index',
     requiresCatalog: true,
     requiresTargetLayer: false,
+    requiresRouteLayers: false,
   },
   {
     id: 'base-color-map',
     label: 'Base Color Map',
     requiresCatalog: true,
     requiresTargetLayer: false,
+    requiresRouteLayers: false,
   },
   {
     id: 'normal-map',
     label: 'Normal Map',
     requiresCatalog: true,
     requiresTargetLayer: false,
+    requiresRouteLayers: false,
   },
   {
     id: 'roughness-map',
     label: 'Roughness Map',
     requiresCatalog: true,
     requiresTargetLayer: false,
+    requiresRouteLayers: false,
   },
 ];
 
@@ -82,6 +100,8 @@ export function createTerrainSplatViewerDebugModel(
     mode?: TerrainSplatDebugViewMode;
     targetLayerId?: TerrainMaterialLayerId;
     blendEnabled?: boolean;
+    routeLayerIds?: readonly TerrainMaterialLayerId[];
+    routeLayersOnly?: boolean;
     catalog?:
       | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
       | {
@@ -97,12 +117,24 @@ export function createTerrainSplatViewerDebugModel(
       ? options.catalog.byId
       : options.catalog
     : null;
+  const routeLayerIdSet = new Set(options.routeLayerIds ?? []);
+  const routeLayersOnly = options.routeLayersOnly === true;
+  const availableRouteLayerIds = resolveAvailableRouteLayerIds(
+    grid,
+    catalogById,
+    routeLayerIdSet
+  );
   const availableTargetLayerIds = resolveAvailableTargetLayerIds(
     grid,
-    catalogById
+    catalogById,
+    routeLayersOnly ? new Set(availableRouteLayerIds) : null
   );
   const requestedMode = options.mode ?? 'dominant-layer';
-  const selectedMode = resolveSelectedMode(requestedMode, catalogById);
+  const selectedMode = resolveSelectedMode(
+    requestedMode,
+    catalogById,
+    availableRouteLayerIds
+  );
   const selectedTargetLayerId =
     selectedMode === 'layer-weight'
       ? resolveTargetLayerId(options.targetLayerId, availableTargetLayerIds)
@@ -112,15 +144,21 @@ export function createTerrainSplatViewerDebugModel(
   return {
     selectedMode,
     modeOptions: VIEWER_MODE_OPTIONS.filter(
-      (option) => !option.requiresCatalog || catalogById !== null
+      (option) =>
+        (!option.requiresCatalog || catalogById !== null) &&
+        (!option.requiresRouteLayers || availableRouteLayerIds.length > 0)
     ),
     availableTargetLayerIds,
+    availableRouteLayerIds,
     selectedTargetLayerId,
     blendEnabled,
+    routeLayersOnly,
     view: createTerrainSplatDebugView(grid, {
       mode: selectedMode,
       targetLayerId: selectedTargetLayerId ?? undefined,
       blendEnabled,
+      routeLayerIds: availableRouteLayerIds,
+      routeLayersOnly,
       catalog: catalogById,
     }),
   };
@@ -131,13 +169,17 @@ function resolveSelectedMode(
   catalogById: ReadonlyMap<
     TerrainMaterialLayerId,
     TerrainMaterialLayerCatalogEntry
-  > | null
+  > | null,
+  availableRouteLayerIds: readonly TerrainMaterialLayerId[]
 ): TerrainSplatDebugViewMode {
   const option = VIEWER_MODE_OPTIONS.find((entry) => entry.id === mode);
   if (!option) {
     return 'dominant-layer';
   }
   if (option.requiresCatalog && catalogById === null) {
+    return 'dominant-layer';
+  }
+  if (option.requiresRouteLayers && availableRouteLayerIds.length === 0) {
     return 'dominant-layer';
   }
   return option.id;
@@ -148,11 +190,15 @@ function resolveAvailableTargetLayerIds(
   catalogById: ReadonlyMap<
     TerrainMaterialLayerId,
     TerrainMaterialLayerCatalogEntry
-  > | null
+  > | null,
+  filterLayerIds: ReadonlySet<TerrainMaterialLayerId> | null
 ): readonly TerrainMaterialLayerId[] {
   const activeLayerIds = new Set<TerrainMaterialLayerId>();
   for (const sample of grid.samples) {
     for (const entry of sample.entries) {
+      if (filterLayerIds !== null && !filterLayerIds.has(entry.layerId)) {
+        continue;
+      }
       activeLayerIds.add(entry.layerId);
     }
   }
@@ -168,6 +214,20 @@ function resolveAvailableTargetLayerIds(
       ? left.localeCompare(right)
       : leftIndex - rightIndex;
   });
+}
+
+function resolveAvailableRouteLayerIds(
+  grid: TerrainSplatSampleGrid,
+  catalogById: ReadonlyMap<
+    TerrainMaterialLayerId,
+    TerrainMaterialLayerCatalogEntry
+  > | null,
+  routeLayerIds: ReadonlySet<TerrainMaterialLayerId>
+): readonly TerrainMaterialLayerId[] {
+  if (routeLayerIds.size === 0) {
+    return [];
+  }
+  return resolveAvailableTargetLayerIds(grid, catalogById, routeLayerIds);
 }
 
 function resolveTargetLayerId(

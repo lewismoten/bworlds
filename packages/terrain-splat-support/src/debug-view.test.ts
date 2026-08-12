@@ -91,6 +91,62 @@ describe('terrain splat debug view', () => {
     ).toBe(true);
   });
 
+  it('shows route-layer weights and can filter down to route layers only', () => {
+    const { layerCatalog, kindCatalog } = createDebugCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'debug-route-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: y >= 2 ? 'path' : x >= 1 ? 'forest' : y >= 1 ? 'road' : 'plains',
+        signals: {
+          moisture: y >= 2 ? 0.48 : 0.6,
+          roadSignal: y >= 2 ? 0.12 : y >= 1 ? 0.82 : 0,
+          season: 'summer',
+          temperature: 0.68,
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    const routeLayerIds = [
+      'dirt-road',
+      'gravel-road',
+      'dirt-trail',
+      'gravel-trail',
+      'grass-trail',
+    ] as const;
+    const routeLayerIdSet = new Set<string>(routeLayerIds);
+    const routeWeightView = createTerrainSplatDebugView(grid, {
+      mode: 'route-layer-weight',
+      routeLayerIds,
+      catalog: layerCatalog,
+    });
+    const routeOnlyView = createTerrainSplatDebugView(grid, {
+      mode: 'dominant-layer',
+      routeLayerIds,
+      routeLayersOnly: true,
+      catalog: layerCatalog,
+    });
+
+    expect(routeWeightView.activeRouteLayerIds).toEqual(
+      expect.arrayContaining(['dirt-road', 'gravel-road', 'grass-trail'])
+    );
+    expect(routeWeightView.cells.some((cell) => cell.value > 0)).toBe(true);
+    expect(routeOnlyView.routeLayersOnly).toBe(true);
+    expect(
+      routeOnlyView.cells.every((cell) =>
+        cell.activeLayerIds.every((layerId) => routeLayerIdSet.has(layerId))
+      )
+    ).toBe(true);
+  });
+
   it('shows texture-array indices and active-layer-count debug values', () => {
     const { layerCatalog, kindCatalog } = createDebugCatalogs();
     const grid = createTerrainSplatSampleGrid({
@@ -334,6 +390,33 @@ function createDebugCatalogs() {
       defaultTint: '#8d897f',
       defaultRoughness: 0.72,
     },
+    {
+      id: 'dirt-trail',
+      baseColorTextureId: 'dirt-trail/base',
+      normalTextureId: 'dirt-trail/normal',
+      roughnessTextureId: 'dirt-trail/roughness',
+      textureScale: 3.2,
+      defaultTint: '#7d674d',
+      defaultRoughness: 0.79,
+    },
+    {
+      id: 'gravel-trail',
+      baseColorTextureId: 'gravel-trail/base',
+      normalTextureId: 'gravel-trail/normal',
+      roughnessTextureId: 'gravel-trail/roughness',
+      textureScale: 2.8,
+      defaultTint: '#90867b',
+      defaultRoughness: 0.76,
+    },
+    {
+      id: 'grass-trail',
+      baseColorTextureId: 'grass-trail/base',
+      normalTextureId: 'grass-trail/normal',
+      roughnessTextureId: 'grass-trail/roughness',
+      textureScale: 3.5,
+      defaultTint: '#739050',
+      defaultRoughness: 0.74,
+    },
   ]);
   const kindCatalog = createTerrainKindSplatCatalog(
     createOverworldTerrainSplatDefinitions({
@@ -348,6 +431,9 @@ function createDebugCatalogs() {
       snowLayerId: 'snow',
       dirtRoadLayerId: 'dirt-road',
       gravelRoadLayerId: 'gravel-road',
+      dirtTrailLayerId: 'dirt-trail',
+      gravelTrailLayerId: 'gravel-trail',
+      grassTrailLayerId: 'grass-trail',
     }),
     layerCatalog
   );

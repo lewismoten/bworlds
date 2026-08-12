@@ -563,8 +563,8 @@ worker-backed generation. The worker runtime notes live in
 - [ ] Keep retaining walls separate from terrain splats.
 - [ ] Detect when a route requires real geometry.
 - [ ] Fall back to road geometry for unsupported cases.
-- [ ] Show route splat weights in terrain debug mode.
-- [ ] Add a toggle for road and path splat layers.
+- [x] Show route splat weights in terrain debug mode.
+- [x] Add a toggle for road and path splat layers.
 - [ ] Compare splat roads against mesh road draw calls.
 - [ ] Test roads follow terrain height without gaps.
 - [ ] Test roads remain continuous across chunk borders.

@@ -7,6 +7,7 @@ data for chunk splat grids.
 
 - expose per-sample debug data before terrain viewer integration exists
 - support one-layer views, dominant-layer views, and weight/color summaries
+- support route-focused weight summaries and route-only inspection toggles
 - support texture-map toggles for base color, normal, and roughness metadata
 - report simple chunk-level memory and active-layer diagnostics from the same
   shared splat grid input
@@ -20,6 +21,7 @@ data for chunk splat grids.
 - `dominant-layer`
 - `active-layer-count`
 - `layer-weight`
+- `route-layer-weight`
 - `blend-color`
 - `layer-index`
 - `base-color-map`
@@ -31,10 +33,13 @@ data for chunk splat grids.
 - one row-major cell list with `activeLayerIds`, `activeLayerCount`,
   `dominantLayerId`, `dominantWeight`, `colorHex`, and resolved `layerIndices`
 - one chunk-level summary with `packedMemoryUsageBytes`, sorted
-  `activeLayerIds`, and the active-layer count for the whole grid
+  `activeLayerIds`, `activeRouteLayerIds`, and the active-layer count for the
+  whole grid
 - optional `targetLayerId` for one-layer debug views
 - optional `blendEnabled: false` to collapse each cell to one dominant layer
   and inspect the same grid without blend visualization
+- optional `routeLayerIds` and `routeLayersOnly: true` to inspect only road and
+  path splat contributions from the same shared samples
 
 ## Current limits
 

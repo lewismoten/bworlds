@@ -64,6 +64,36 @@ describe('terrain splat debug viewer', () => {
     ).toBe(true);
     expect(model.view.mode).toBe('dominant-layer');
   });
+
+  it('supports route-layer mode metadata and route-only layer toggles', () => {
+    const { layerCatalog, kindCatalog } = createDebugCatalogs();
+    const grid = createDebugGrid(kindCatalog);
+    const routeLayerIds = [
+      'dirt-road',
+      'gravel-road',
+      'dirt-trail',
+      'gravel-trail',
+      'grass-trail',
+    ] as const;
+
+    const model = createTerrainSplatViewerDebugModel(grid, {
+      mode: 'route-layer-weight',
+      routeLayerIds,
+      routeLayersOnly: true,
+      catalog: layerCatalog,
+    });
+
+    expect(model.selectedMode).toBe('route-layer-weight');
+    expect(model.availableRouteLayerIds).toEqual(
+      expect.arrayContaining(['dirt-road', 'gravel-road', 'grass-trail'])
+    );
+    expect(model.availableTargetLayerIds).toEqual(
+      expect.arrayContaining(['dirt-road', 'gravel-road', 'grass-trail'])
+    );
+    expect(model.routeLayersOnly).toBe(true);
+    expect(model.view.mode).toBe('route-layer-weight');
+    expect(model.view.routeLayersOnly).toBe(true);
+  });
 });
 
 function createDebugGrid(
@@ -79,10 +109,10 @@ function createDebugGrid(
     },
     kindCatalog,
     resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
-      kind: x >= 1 ? 'forest' : y >= 1 ? 'road' : 'plains',
+      kind: y >= 2 ? 'path' : x >= 1 ? 'forest' : y >= 1 ? 'road' : 'plains',
       signals: {
         moisture: 0.6,
-        roadSignal: y >= 1 ? 0.82 : 0,
+        roadSignal: y >= 2 ? 0.12 : y >= 1 ? 0.82 : 0,
         season: 'summer',
         temperature: 0.68,
       },
@@ -202,6 +232,33 @@ function createDebugCatalogs() {
       defaultTint: '#8a837a',
       defaultRoughness: 0.74,
     },
+    {
+      id: 'dirt-trail',
+      baseColorTextureId: 'dirt-trail/base',
+      normalTextureId: 'dirt-trail/normal',
+      roughnessTextureId: 'dirt-trail/roughness',
+      textureScale: 3.2,
+      defaultTint: '#7d674d',
+      defaultRoughness: 0.79,
+    },
+    {
+      id: 'gravel-trail',
+      baseColorTextureId: 'gravel-trail/base',
+      normalTextureId: 'gravel-trail/normal',
+      roughnessTextureId: 'gravel-trail/roughness',
+      textureScale: 2.8,
+      defaultTint: '#90867b',
+      defaultRoughness: 0.76,
+    },
+    {
+      id: 'grass-trail',
+      baseColorTextureId: 'grass-trail/base',
+      normalTextureId: 'grass-trail/normal',
+      roughnessTextureId: 'grass-trail/roughness',
+      textureScale: 3.5,
+      defaultTint: '#739050',
+      defaultRoughness: 0.74,
+    },
   ]);
   const layerSet = {
     grassLayerIds: ['grass-a', 'grass-b'],
@@ -215,6 +272,9 @@ function createDebugCatalogs() {
     snowLayerId: 'snow',
     dirtRoadLayerId: 'dirt-road',
     gravelRoadLayerId: 'gravel-road',
+    dirtTrailLayerId: 'dirt-trail',
+    gravelTrailLayerId: 'gravel-trail',
+    grassTrailLayerId: 'grass-trail',
   } as const;
 
   return {
