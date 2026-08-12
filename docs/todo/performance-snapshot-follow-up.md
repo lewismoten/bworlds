@@ -223,7 +223,12 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 - [ ] Review the pending build tile hard limit of four.
 - [ ] Clarify why soft pending tiles is eight but hard is four.
 - [ ] Rename limits where lower values represent more pressure.
-- [ ] Record peak pending tile count during the sample window.
+- [x] Record peak pending tile count during the sample window.
+      Progress: `render3d` already records recent pending-queue sizes and
+      surfaces the sample-window peak through the live web debug snapshot and
+      exported snapshot payloads as `peakPendingTileCount` /
+      `peakPendingTileBuildCount`, so captures keep the high-water mark instead
+      of only the queue depth at export time.
 - [x] Record peak pending build time during the sample window.
       Progress: `render3d` now tracks recent pending-build flush durations and
       surfaces the peak flush time through the web debug snapshot/export path,
