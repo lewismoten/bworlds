@@ -534,7 +534,8 @@ describe('runtime performance snapshot validation', () => {
   ] as const;
 
   for (const limitCase of limitCases) {
-    const isMinimumBound = limitCase.bound === 'minimum';
+    const isMinimumBound =
+      'bound' in limitCase && limitCase.bound === 'minimum';
 
     it(`accepts ${limitCase.name} exactly at the configured limit`, () => {
       const snapshot = createValidRuntimePerformanceSnapshot();

@@ -71,6 +71,17 @@ export type ProgressiveTileModelBuildState = {
   lastProgress: Create3DModelProgress | null;
 };
 
+function isProgressiveTileModelGenerator(
+  value: unknown
+): value is Generator<Create3DModelProgress, unknown, void> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'next' in value &&
+    typeof (value as { next?: unknown }).next === 'function'
+  );
+}
+
 export function validateTileModelCostEstimateAgainstLimits(
   estimate: Model3DResourceCostEstimate,
   limits: TileModelCostEstimateLimits
@@ -125,10 +136,16 @@ export function createTilePluginModelFromCostEstimate(
   let progressiveBuild: ProgressiveTileModelBuildState | null = null;
   if (!(estimateValidation && !estimateValidation.accepted)) {
     if (tilePlugin?.create3DModelProgressive) {
-      progressiveBuild = {
-        generator: tilePlugin.create3DModelProgressive(renderContext),
-        lastProgress: null,
-      };
+      const progressiveGenerator =
+        tilePlugin.create3DModelProgressive(renderContext);
+      if (isProgressiveTileModelGenerator(progressiveGenerator)) {
+        progressiveBuild = {
+          generator: progressiveGenerator,
+          lastProgress: null,
+        };
+      } else {
+        pluginModel = tilePlugin?.create3DModel?.(renderContext) ?? null;
+      }
     } else {
       pluginModel = tilePlugin?.create3DModel?.(renderContext);
     }

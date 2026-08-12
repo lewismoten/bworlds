@@ -229,11 +229,7 @@ export function summarizeTerrainSplatSampleGridUsage(
     maxUniqueLayerCombinations?: number;
   } = {}
 ): TerrainSplatGridUsageSummary {
-  const catalogEntries = Array.isArray(catalog)
-    ? catalog
-    : catalog instanceof Map
-      ? [...catalog.values()]
-      : (catalog.entries ?? (catalog.byId ? [...catalog.byId.values()] : []));
+  const catalogEntries = toTerrainMaterialLayerEntries(catalog);
   const activeLayerCounts = new Map<TerrainMaterialLayerId, number>();
   const layerCombinationKeys = new Set<string>();
   const perSampleActiveLayerCount: number[] = [];
@@ -297,6 +293,58 @@ export function summarizeTerrainSplatSampleGridUsage(
     unusedLayerIds,
     warnings,
   };
+}
+
+function toTerrainMaterialLayerEntries(
+  catalog:
+    | readonly TerrainMaterialLayerCatalogEntry[]
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        entries?: readonly TerrainMaterialLayerCatalogEntry[];
+        byId?: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      }
+): readonly TerrainMaterialLayerCatalogEntry[] {
+  if (Array.isArray(catalog)) {
+    return catalog;
+  }
+  if (catalog instanceof Map) {
+    return [...catalog.values()];
+  }
+  if (hasTerrainMaterialLayerCatalogEntries(catalog)) {
+    return catalog.entries;
+  }
+  if (hasTerrainMaterialLayerCatalogMap(catalog)) {
+    return [...catalog.byId.values()];
+  }
+  return [];
+}
+
+function hasTerrainMaterialLayerCatalogEntries(value: unknown): value is {
+  entries: readonly TerrainMaterialLayerCatalogEntry[];
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'entries' in value &&
+    Array.isArray(
+      (value as { entries?: readonly TerrainMaterialLayerCatalogEntry[] })
+        .entries
+    )
+  );
+}
+
+function hasTerrainMaterialLayerCatalogMap(value: unknown): value is {
+  byId: ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'byId' in value &&
+    (value as { byId?: unknown }).byId instanceof Map
+  );
 }
 
 function normalizeTerrainSplatGridBounds(bounds: TerrainSplatGridBounds): {

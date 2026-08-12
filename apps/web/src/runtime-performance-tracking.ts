@@ -1,6 +1,22 @@
 import type { DebugSnapshot } from './debug-panel.ts';
 
-export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
+export type RuntimePerformanceLimits = {
+  initialWorldGenerationMs: number;
+  visibleTileGenerationAverageMs: number;
+  visibleTileGenerationMaxMs: number;
+  visibleTileGenerationBuildsPerSecondMin: number;
+  pendingTileCount: number;
+  maximumFrameMs: number;
+  memoryAfterRegionChangeMb: number;
+  activeThreeObjectCount: number;
+  drawCalls: number;
+  audioNodeCount: number;
+  songGenerationMs: number;
+  midiExportMs: number;
+  wavExportMs: number;
+};
+
+export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS: RuntimePerformanceLimits = {
   initialWorldGenerationMs: 4_000,
   visibleTileGenerationAverageMs: 8,
   visibleTileGenerationMaxMs: 16,
@@ -51,7 +67,7 @@ export const RUNTIME_PERFORMANCE_SNAPSHOT_SOURCES = [
 export type RuntimePerformanceSnapshotSource = 'game' | 'music-debug';
 
 export type RuntimePerformanceSnapshot = {
-  schemaVersion: 1;
+  schemaVersion: 0 | 1;
   createdAt: string;
   source: RuntimePerformanceSnapshotSource;
   trigger: RuntimePerformanceSnapshotTrigger;
@@ -62,7 +78,7 @@ export type RuntimePerformanceSnapshot = {
     label?: string;
     depth?: number;
   } | null;
-  limits: typeof DEFAULT_RUNTIME_PERFORMANCE_LIMITS;
+  limits: RuntimePerformanceLimits;
   metrics: {
     initialWorldGenerationMs: number | null;
     visibleTileGeneration: {
@@ -94,7 +110,7 @@ type RuntimePerformanceSnapshotBuildOptions = {
   worldSeed?: string | null;
   context?: RuntimePerformanceSnapshot['context'];
   metrics?: Partial<RuntimePerformanceSnapshot['metrics']>;
-  limits?: Partial<typeof DEFAULT_RUNTIME_PERFORMANCE_LIMITS>;
+  limits?: Partial<RuntimePerformanceLimits>;
 };
 
 export function normalizeRuntimePerformanceTrackingPreferences(
@@ -177,7 +193,7 @@ export function buildRuntimePerformanceSnapshotMetricsFromDebugSnapshot(
 
 export function collectRuntimePerformanceViolations(
   metrics: RuntimePerformanceSnapshot['metrics'],
-  limits: typeof DEFAULT_RUNTIME_PERFORMANCE_LIMITS
+  limits: RuntimePerformanceLimits
 ): string[] {
   const violations: string[] = [];
 

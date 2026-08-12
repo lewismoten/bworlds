@@ -17,16 +17,14 @@ describe('music debug runtime performance helpers', () => {
       tileKind: 'forest',
       clusterX: 4,
       clusterY: -1,
-      encounterMode: 'travel',
-      songDuration: 'full',
+      encounterMode: 'ambient',
     });
     const repeatedSnapshot = createMusicDebugSnapshot({
       contextType: 'overworld',
       tileKind: 'forest',
       clusterX: 4,
       clusterY: -1,
-      encounterMode: 'travel',
-      songDuration: 'full',
+      encounterMode: 'ambient',
     });
 
     expect(buildMusicDebugRuntimePerformanceWorldSeed(snapshot)).toBe(

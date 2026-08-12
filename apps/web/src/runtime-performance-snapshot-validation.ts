@@ -3,6 +3,7 @@ import {
   DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
   RUNTIME_PERFORMANCE_SNAPSHOT_SOURCES,
   RUNTIME_PERFORMANCE_SNAPSHOT_TRIGGERS,
+  type RuntimePerformanceLimits,
   type RuntimePerformanceSnapshot,
 } from './runtime-performance-tracking.ts';
 
@@ -345,12 +346,15 @@ export function validateRuntimePerformanceSnapshot(
 
 function normalizeRuntimePerformanceSnapshotLimits(
   limits: RuntimePerformanceSnapshot['limits']
-): typeof DEFAULT_RUNTIME_PERFORMANCE_LIMITS {
+): RuntimePerformanceLimits {
   const legacyLimits = limits as Record<string, number> | undefined;
-  const {
-    visibleTileGenerationMs: _legacyVisibleTileGenerationMs,
-    ...remainingLimits
-  } = legacyLimits ?? {};
+  const remainingLimits = legacyLimits
+    ? Object.fromEntries(
+        Object.entries(legacyLimits).filter(
+          ([key]) => key !== 'visibleTileGenerationMs'
+        )
+      )
+    : {};
   return {
     ...DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
     ...(typeof legacyLimits?.visibleTileGenerationMs === 'number'

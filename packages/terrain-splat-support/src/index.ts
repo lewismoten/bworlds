@@ -737,9 +737,7 @@ export function unpackTerrainSplatSample(
     throw new Error(errors.join(' '));
   }
 
-  const layerMap = Array.isArray(catalog)
-    ? new Map(catalog.map((entry) => [entry.index, entry] as const))
-    : catalog;
+  const layerMap = toTerrainMaterialLayerIndexMap(catalog);
 
   return normalizeTerrainSplatSample({
     entries: [...packed.weights]
@@ -784,9 +782,7 @@ export function validatePackedTerrainSplatSample(
     return errors;
   }
 
-  const layerMap = Array.isArray(catalog)
-    ? new Map(catalog.map((entry) => [entry.index, entry] as const))
-    : catalog;
+  const layerMap = toTerrainMaterialLayerIndexMap(catalog);
   const totalWeight = [...packed.weights].reduce(
     (sum, weight) => sum + weight,
     0
@@ -905,6 +901,17 @@ function getFirstCatalogLayerId(
   catalog: ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
 ): TerrainMaterialLayerId | undefined {
   return catalog.values().next().value?.id;
+}
+
+function toTerrainMaterialLayerIndexMap(
+  catalog:
+    | readonly TerrainMaterialLayerCatalogEntry[]
+    | ReadonlyMap<number, TerrainMaterialLayerCatalogEntry>
+): ReadonlyMap<number, TerrainMaterialLayerCatalogEntry> {
+  if (Array.isArray(catalog)) {
+    return new Map(catalog.map((entry) => [entry.index, entry] as const));
+  }
+  return catalog as ReadonlyMap<number, TerrainMaterialLayerCatalogEntry>;
 }
 
 function validateTerrainKindSplatCondition(

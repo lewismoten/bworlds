@@ -2,7 +2,7 @@ import type { RuntimePerformanceSnapshot } from './runtime-performance-tracking.
 import type { MusicDebugSnapshot } from './music-debug.ts';
 
 export function buildMusicDebugRuntimePerformanceWorldSeed(
-  snapshot: Pick<MusicDebugSnapshot, 'theme' | 'options'>
+  snapshot: Pick<MusicDebugSnapshot, 'theme' | 'options' | 'durationMs'>
 ): string {
   return [
     'music-debug',
@@ -12,7 +12,7 @@ export function buildMusicDebugRuntimePerformanceWorldSeed(
     snapshot.options.clusterX,
     snapshot.options.clusterY,
     snapshot.options.encounterMode,
-    snapshot.options.songDuration,
+    snapshot.durationMs,
   ].join(':');
 }
 

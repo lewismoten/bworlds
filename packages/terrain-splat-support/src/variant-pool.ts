@@ -142,7 +142,7 @@ export function resolveTerrainMaterialFamilyVariant(
     salt?: number;
   }
 ): TerrainMaterialLayerId | undefined {
-  const layerIds = Array.isArray(family) ? family : family.layerIds;
+  const layerIds = getTerrainMaterialFamilyLayerIds(family);
 
   if (layerIds.length === 0) {
     return undefined;
@@ -165,4 +165,16 @@ export function resolveTerrainMaterialFamilyVariant(
 
 function formatFamilyLabel(value: string): string {
   return `"${value}"`;
+}
+
+function getTerrainMaterialFamilyLayerIds(
+  family:
+    | TerrainMaterialFamilyCatalogEntry
+    | TerrainMaterialFamilyDefinition
+    | readonly TerrainMaterialLayerId[]
+): readonly TerrainMaterialLayerId[] {
+  if (Array.isArray(family)) {
+    return family;
+  }
+  return (family as TerrainMaterialFamilyDefinition).layerIds;
 }

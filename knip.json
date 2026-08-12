@@ -3,7 +3,7 @@
   "include": ["files", "dependencies", "unlisted", "exports"],
   "workspaces": {
     "apps/landing": {
-      "entry": ["index.js"],
+      "entry": ["alias.js", "reviews.js"],
       "project": ["*.js"]
     }
   }

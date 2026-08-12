@@ -1,7 +1,5 @@
 const reviewsContainer = document.querySelector('#reviews-list');
 
-const randomItem = (items) => items[Math.floor(Math.random() * items.length)];
-
 const shuffle2 = (items) => {
   const copy = [...items];
 

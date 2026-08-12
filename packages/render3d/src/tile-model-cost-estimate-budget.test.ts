@@ -130,4 +130,29 @@ describe('tile model cost estimate budget', () => {
       stepsProcessed: 1,
     });
   });
+
+  it('falls back to the synchronous builder when a plugin returns a non-generator progressive result', () => {
+    const build = createTilePluginModelFromCostEstimate(
+      {
+        create3DModelProgressive() {
+          return null as never;
+        },
+        create3DModel() {
+          return { type: 'Mesh', name: 'fallback' };
+        },
+      },
+      {
+        three: {} as never,
+        tile: { kind: 'sign' },
+        state: {} as never,
+        tileX: 1,
+        tileY: 2,
+        detailLevel: 'full',
+      } as never,
+      LOW_LIMITS
+    );
+
+    expect(build.progressiveBuild).toBeNull();
+    expect(build.pluginModel).toEqual({ type: 'Mesh', name: 'fallback' });
+  });
 });

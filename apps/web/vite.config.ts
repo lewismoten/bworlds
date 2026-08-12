@@ -17,7 +17,10 @@ import { resolveDebugRouteRedirect } from './src/debug-route-aliases.ts';
 import { resolveRootEntryHtmlPath } from './src/root-entry-route.ts';
 import { validateRuntimePerformanceSnapshot } from './src/runtime-performance-snapshot-validation.ts';
 import { migrateRuntimePerformanceSnapshot } from './src/runtime-performance-snapshot-validation.ts';
-import { RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH } from './src/runtime-performance-tracking.ts';
+import {
+  RUNTIME_PERFORMANCE_SNAPSHOT_API_PATH,
+  type RuntimePerformanceSnapshot,
+} from './src/runtime-performance-tracking.ts';
 import { RUNTIME_PERFORMANCE_ISSUE_API_PATH } from './src/runtime-performance-issue.ts';
 import { buildWorkspaceAliases } from './vite.workspace.ts';
 
@@ -276,7 +279,9 @@ function createRuntimePerformanceSnapshotApiPlugin(): Plugin {
         return;
       }
 
-      const migratedSnapshot = migrateRuntimePerformanceSnapshot(snapshot);
+      const migratedSnapshot = migrateRuntimePerformanceSnapshot(
+        snapshot as RuntimePerformanceSnapshot
+      );
       const validation = validateRuntimePerformanceSnapshot(migratedSnapshot);
       if (validation.errors.length > 0) {
         sendJson(res, 400, {
