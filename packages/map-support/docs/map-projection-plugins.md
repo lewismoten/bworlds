@@ -15,6 +15,7 @@ or globe plugins land.
 
 Current built-in support:
 
+- `createAzimuthalEquidistantMapProjectionPlugin()`
 - `createAzimuthalMapProjectionPlugin()`
 - `createAlbersEqualAreaConicMapProjectionPlugin()`
 - `createGenericConicMapProjectionPlugin()`
@@ -164,6 +165,27 @@ maps to `mapX/mapY` within `-1..1`.
 This gives later map UIs one general-purpose azimuthal option while leaving
 equidistant, stereographic, and orthographic azimuthal variants available as
 separate focused implementations.
+
+## Azimuthal Equidistant
+
+`createAzimuthalEquidistantMapProjectionPlugin()` provides a centered
+spherical azimuthal equidistant projection with configurable center longitude
+and latitude.
+
+It currently:
+
+- uses `id: 'azimuthal-equidistant'` by default
+- declares `distortion: 'equidistant'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- defaults to a `0,0` center
+
+The projected range is normalized to a circular disk with radius `pi`, which
+maps to `mapX/mapY` within `-1..1`.
+
+This gives later map UIs one distance-preserving azimuthal option while
+keeping the general azimuthal equal-area path and the later orthographic and
+stereographic variants separate.
 
 ## Miller Cylindrical
 

@@ -86,6 +86,9 @@ export const ALBERS_MAX_WORLD_LATITUDE = 90;
 export const AZIMUTHAL_CENTER_LONGITUDE = 0;
 export const AZIMUTHAL_CENTER_LATITUDE = 0;
 export const AZIMUTHAL_MAX_PROJECTED_RADIUS = 2;
+export const AZIMUTHAL_EQUIDISTANT_CENTER_LONGITUDE = 0;
+export const AZIMUTHAL_EQUIDISTANT_CENTER_LATITUDE = 0;
+export const AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS = Math.PI;
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -587,6 +590,106 @@ export function createAzimuthalMapProjectionPlugin(
         };
       }
       const centralAngle = 2 * Math.asin(clamp(radius / 2, -1, 1));
+      const sinCentralAngle = Math.sin(centralAngle);
+      const cosCentralAngle = Math.cos(centralAngle);
+      const latitudeRadians = Math.asin(
+        clamp(
+          cosCentralAngle * sinCenterLatitude +
+            (projectedY * sinCentralAngle * cosCenterLatitude) / radius,
+          -1,
+          1
+        )
+      );
+      const longitudeRadians =
+        centerLongitudeRadians +
+        Math.atan2(
+          projectedX * sinCentralAngle,
+          radius * cosCenterLatitude * cosCentralAngle -
+            projectedY * sinCenterLatitude * sinCentralAngle
+        );
+      return {
+        worldX: normalizeLongitudeDegrees(radiansToDegrees(longitudeRadians)),
+        worldY: radiansToDegrees(latitudeRadians),
+      };
+    },
+  });
+}
+
+export function createAzimuthalEquidistantMapProjectionPlugin(
+  options: AzimuthalMapProjectionOptions = {}
+): MapProjectionPlugin {
+  const centerLongitudeDegrees = normalizeFiniteNumber(
+    options.centerLongitudeDegrees ?? AZIMUTHAL_EQUIDISTANT_CENTER_LONGITUDE,
+    'Azimuthal equidistant centerLongitudeDegrees'
+  );
+  const centerLatitudeDegrees = normalizeFiniteNumber(
+    options.centerLatitudeDegrees ?? AZIMUTHAL_EQUIDISTANT_CENTER_LATITUDE,
+    'Azimuthal equidistant centerLatitudeDegrees'
+  );
+  const centerLongitudeRadians = degreesToRadians(centerLongitudeDegrees);
+  const centerLatitudeRadians = degreesToRadians(centerLatitudeDegrees);
+  const sinCenterLatitude = Math.sin(centerLatitudeRadians);
+  const cosCenterLatitude = Math.cos(centerLatitudeRadians);
+
+  return createMapProjectionPlugin({
+    id: options.id ?? 'azimuthal-equidistant',
+    label: options.label ?? 'Azimuthal Equidistant',
+    distortion: 'equidistant',
+    bounds: {
+      minWorldX: -180,
+      maxWorldX: 180,
+      minWorldY: -90,
+      maxWorldY: 90,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const longitudeRadians =
+        degreesToRadians(normalizeLongitudeDegrees(worldX)) -
+        centerLongitudeRadians;
+      const latitudeRadians = degreesToRadians(clamp(worldY, -90, 90));
+      const sinLatitude = Math.sin(latitudeRadians);
+      const cosLatitude = Math.cos(latitudeRadians);
+      const cosineCentralAngle =
+        sinCenterLatitude * sinLatitude +
+        cosCenterLatitude * cosLatitude * Math.cos(longitudeRadians);
+      const centralAngle = Math.acos(clamp(cosineCentralAngle, -1, 1));
+      const scale =
+        Math.abs(centralAngle) <= 1e-12
+          ? 1
+          : centralAngle / Math.sin(centralAngle);
+      const projectedX =
+        scale * cosLatitude * Math.sin(longitudeRadians);
+      const projectedY =
+        scale *
+        (cosCenterLatitude * sinLatitude -
+          sinCenterLatitude * cosLatitude * Math.cos(longitudeRadians));
+      return {
+        mapX: snapNearZero(
+          projectedX / AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS
+        ),
+        mapY: snapNearZero(
+          projectedY / AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS
+        ),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS;
+      const projectedY = mapY * AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS;
+      const radius = Math.hypot(projectedX, projectedY);
+      if (radius <= 1e-12) {
+        return {
+          worldX: centerLongitudeDegrees,
+          worldY: centerLatitudeDegrees,
+        };
+      }
+      const centralAngle = clamp(radius, 0, Math.PI);
       const sinCentralAngle = Math.sin(centralAngle);
       const cosCentralAngle = Math.cos(centralAngle);
       const latitudeRadians = Math.asin(

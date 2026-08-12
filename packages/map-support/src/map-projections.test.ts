@@ -3,6 +3,9 @@ import {
   AZIMUTHAL_CENTER_LATITUDE,
   AZIMUTHAL_CENTER_LONGITUDE,
   AZIMUTHAL_MAX_PROJECTED_RADIUS,
+  AZIMUTHAL_EQUIDISTANT_CENTER_LATITUDE,
+  AZIMUTHAL_EQUIDISTANT_CENTER_LONGITUDE,
+  AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS,
   ALBERS_CENTRAL_MERIDIAN,
   ALBERS_LATITUDE_OF_ORIGIN,
   ALBERS_MAX_WORLD_LATITUDE,
@@ -10,6 +13,7 @@ import {
   ALBERS_STANDARD_PARALLEL_1,
   ALBERS_STANDARD_PARALLEL_2,
   createAzimuthalMapProjectionPlugin,
+  createAzimuthalEquidistantMapProjectionPlugin,
   createAlbersEqualAreaConicMapProjectionPlugin,
   createGenericConicMapProjectionPlugin,
   createMapProjectionPlugin,
@@ -426,5 +430,52 @@ describe('map projections', () => {
     const inverted = projection.invert?.(forward);
     expect(inverted?.worldX).toBeCloseTo(-80, 10);
     expect(inverted?.worldY).toBeCloseTo(30, 10);
+  });
+
+  it('projects and inverts azimuthal equidistant coordinates with the default center', () => {
+    const projection = createAzimuthalEquidistantMapProjectionPlugin();
+
+    expect(projection.id).toBe('azimuthal-equidistant');
+    expect(projection.label).toBe('Azimuthal Equidistant');
+    expect(projection.distortion).toBe('equidistant');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 25,
+      worldY: 15,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(25, 10);
+    expect(inverted?.worldY).toBeCloseTo(15, 10);
+    expect(AZIMUTHAL_EQUIDISTANT_CENTER_LONGITUDE).toBe(0);
+    expect(AZIMUTHAL_EQUIDISTANT_CENTER_LATITUDE).toBe(0);
+    expect(AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS).toBeCloseTo(Math.PI, 10);
+  });
+
+  it('supports custom azimuthal equidistant centers with matching inverse projection', () => {
+    const projection = createAzimuthalEquidistantMapProjectionPlugin({
+      id: 'regional-azimuthal-equidistant',
+      label: 'Regional Azimuthal Equidistant',
+      centerLongitudeDegrees: 15,
+      centerLatitudeDegrees: 35,
+    });
+
+    expect(projection.id).toBe('regional-azimuthal-equidistant');
+    expect(projection.label).toBe('Regional Azimuthal Equidistant');
+
+    const forward = projection.project({
+      worldX: 40,
+      worldY: 25,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(40, 10);
+    expect(inverted?.worldY).toBeCloseTo(25, 10);
   });
 });
