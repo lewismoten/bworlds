@@ -3,11 +3,11 @@
 ## 0) Musical Expression and Track Dynamics
 
 - [ ] Give every track a section-level volume curve.
-- [ ] Give every phrase a small dynamic rise and fall.
+- [x] Give every phrase a small dynamic rise and fall.
 - [ ] Increase velocity range for harmony notes.
 - [ ] Increase velocity range for bass notes.
 - [ ] Keep velocity changes related to phrase position.
-- [ ] Make strong beats slightly louder than weak beats.
+- [x] Make strong beats slightly louder than weak beats.
 - [ ] Accent motif notes above nearby filler notes.
 - [ ] Reduce accompaniment volume while lead phrases play.
 - [ ] Add crescendos approaching important section peaks.
@@ -104,6 +104,12 @@
       the exported track carries no CC11 expression movement, so long-held
       lead, harmony, or bass parts can fail the musical-expression checklist
       before expression automation lanes are fully visualized in the debug UI.
+      Progress: section-note shaping now derives 4/4 beat position from each
+      note's section timing, applies a small role-aware strong-beat accent
+      over beats one and three, and adds an explicit phrase-level velocity arc
+      that rises toward the middle of each eight-note phrase and relaxes again
+      by the cadence; unit and arrangement-dynamics tests verify both the beat
+      accent and the phrase rise/fall behavior.
 
 ## 1) Enforce musical correctness first
 

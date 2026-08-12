@@ -120,6 +120,17 @@ export function transformSongSectionNote(
       phrasePosition: sectionContext.phrasePosition,
       preserveRepairPitch: sectionContext.isGeneratedRepairNote,
     });
+  const beatAccentVelocityMultiplier = resolveBeatAccentVelocityMultiplier({
+    role: note.role,
+    meterPosition: sectionContext.meterPosition,
+    preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+  });
+  const phraseArcVelocityMultiplier = resolvePhraseArcVelocityMultiplier({
+    role: note.role,
+    sectionId: section.id,
+    phrasePosition: sectionContext.phrasePosition,
+    preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+  });
   const phraseBoundaryArticulation = resolvePhraseBoundaryArticulation({
     role: note.role,
     phrasePosition: sectionContext.phrasePosition,
@@ -145,7 +156,9 @@ export function transformSongSectionNote(
         velocityMultiplier:
           layerTreatment.velocityMultiplier *
           roleVelocityMultiplier *
-          structuralAccentVelocityMultiplier,
+          structuralAccentVelocityMultiplier *
+          beatAccentVelocityMultiplier *
+          phraseArcVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -180,7 +193,9 @@ export function transformSongSectionNote(
         velocityMultiplier:
           layerTreatment.velocityMultiplier *
           roleVelocityMultiplier *
-          structuralAccentVelocityMultiplier,
+          structuralAccentVelocityMultiplier *
+          beatAccentVelocityMultiplier *
+          phraseArcVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -214,7 +229,9 @@ export function transformSongSectionNote(
         velocityMultiplier:
           layerTreatment.velocityMultiplier *
           roleVelocityMultiplier *
-          structuralAccentVelocityMultiplier,
+          structuralAccentVelocityMultiplier *
+          beatAccentVelocityMultiplier *
+          phraseArcVelocityMultiplier,
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
@@ -236,7 +253,9 @@ export function transformSongSectionNote(
         velocityMultiplier:
           layerTreatment.velocityMultiplier *
           roleVelocityMultiplier *
-          structuralAccentVelocityMultiplier,
+          structuralAccentVelocityMultiplier *
+          beatAccentVelocityMultiplier *
+          phraseArcVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -260,7 +279,9 @@ export function transformSongSectionNote(
         velocityMultiplier:
           layerTreatment.velocityMultiplier *
           roleVelocityMultiplier *
-          structuralAccentVelocityMultiplier,
+          structuralAccentVelocityMultiplier *
+          beatAccentVelocityMultiplier *
+          phraseArcVelocityMultiplier,
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
@@ -311,6 +332,17 @@ function transformAprimeSectionNote(
     velocityMultiplier:
       layerTreatment.velocityMultiplier *
       resolveRoleVelocityMultiplier({
+        role: note.role,
+        sectionId: 'a-prime',
+        phrasePosition,
+        preserveRepairPitch,
+      }) *
+      resolveBeatAccentVelocityMultiplier({
+        role: note.role,
+        meterPosition: createPhraseMeterPosition(phrasePosition),
+        preserveRepairPitch,
+      }) *
+      resolvePhraseArcVelocityMultiplier({
         role: note.role,
         sectionId: 'a-prime',
         phrasePosition,
@@ -400,6 +432,17 @@ function transformVariationSectionNote(
     velocityMultiplier:
       layerTreatment.velocityMultiplier *
       resolveRoleVelocityMultiplier({
+        role: note.role,
+        sectionId: 'variation',
+        phrasePosition,
+        preserveRepairPitch,
+      }) *
+      resolveBeatAccentVelocityMultiplier({
+        role: note.role,
+        meterPosition: createPhraseMeterPosition(phrasePosition),
+        preserveRepairPitch,
+      }) *
+      resolvePhraseArcVelocityMultiplier({
         role: note.role,
         sectionId: 'variation',
         phrasePosition,
@@ -635,6 +678,89 @@ function resolveStructuralAccentVelocityMultiplier(options: {
   }
 
   return cadenceMeasure ? 1.04 : phraseAccent ? 1.02 : 1;
+}
+
+function resolveBeatAccentVelocityMultiplier(options: {
+  role: ProceduralMusicNote['role'];
+  meterPosition: {
+    beatIndex: 0 | 1 | 2 | 3;
+    beatNumber: 1 | 2 | 3 | 4;
+    isStrongBeat: boolean;
+  };
+  preserveRepairPitch: boolean;
+}): number {
+  if (options.preserveRepairPitch && options.role === 'lead') {
+    return 1;
+  }
+
+  if (options.role === 'percussion') {
+    return options.meterPosition.isStrongBeat ? 1.04 : 0.98;
+  }
+
+  if (options.meterPosition.beatIndex === 0) {
+    return options.role === 'lead'
+      ? 1.06
+      : options.role === 'bass'
+        ? 1.05
+        : 1.03;
+  }
+  if (options.meterPosition.beatIndex === 2) {
+    return options.role === 'lead'
+      ? 1.03
+      : options.role === 'bass'
+        ? 1.02
+        : 1.01;
+  }
+
+  return options.role === 'lead'
+    ? 0.97
+    : options.role === 'harmony'
+      ? 0.98
+      : 0.99;
+}
+
+function resolvePhraseArcVelocityMultiplier(options: {
+  role: ProceduralMusicNote['role'];
+  sectionId: ProceduralMusicSongSection['id'];
+  phrasePosition: number;
+  preserveRepairPitch: boolean;
+}): number {
+  if (options.preserveRepairPitch && options.role === 'lead') {
+    return 1;
+  }
+
+  const patternIndex = options.phrasePosition % 8;
+  switch (options.role) {
+    case 'lead':
+      return (
+        {
+          intro: [0.97, 1, 1.03, 1.06, 1.08, 1.05, 1.01, 0.98],
+          a: [0.98, 1.01, 1.04, 1.07, 1.08, 1.05, 1.01, 0.97],
+          'a-prime': [0.99, 1.02, 1.05, 1.08, 1.1, 1.07, 1.03, 0.99],
+          b: [0.98, 1.01, 1.03, 1.06, 1.08, 1.04, 1.01, 0.98],
+          variation: [0.99, 1.02, 1.06, 1.09, 1.12, 1.08, 1.04, 1],
+          return: [0.98, 1.01, 1.04, 1.07, 1.08, 1.05, 1.02, 0.98],
+          outro: [0.97, 1, 1.03, 1.05, 1.06, 1.03, 1, 0.96],
+        }[options.sectionId]?.[patternIndex] ?? 1
+      );
+    case 'bass':
+      return [0.99, 1, 1.02, 1.03, 1.03, 1.02, 1, 0.99][patternIndex] ?? 1;
+    case 'harmony':
+      return [0.99, 1, 1.01, 1.02, 1.03, 1.02, 1, 0.99][patternIndex] ?? 1;
+    case 'percussion':
+      return [1, 0.99, 1.01, 1.02, 1.03, 1.02, 1, 0.99][patternIndex] ?? 1;
+    default:
+      return 1;
+  }
+}
+
+function createPhraseMeterPosition(phrasePosition: number) {
+  const beatIndex = (phrasePosition % 4) as 0 | 1 | 2 | 3;
+  return {
+    beatIndex,
+    beatNumber: (beatIndex + 1) as 1 | 2 | 3 | 4,
+    isStrongBeat: beatIndex === 0 || beatIndex === 2,
+  };
 }
 
 function resolvePhraseBrightnessMultiplier(options: {

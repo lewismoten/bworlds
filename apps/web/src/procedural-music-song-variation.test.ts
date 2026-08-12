@@ -752,6 +752,83 @@ describe('procedural music song variation', () => {
     );
   });
 
+  it('gives strong beats slightly louder lead notes than weak beats', () => {
+    const section = createSection('a');
+    const strongBeatLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+        startMs: 0,
+      },
+      section,
+      0,
+      0
+    );
+    const weakBeatLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+        startMs: 375,
+      },
+      section,
+      1,
+      0
+    );
+
+    expect(strongBeatLead).not.toBeNull();
+    expect(weakBeatLead).not.toBeNull();
+    expect(strongBeatLead?.velocity ?? 0).toBeGreaterThan(
+      weakBeatLead?.velocity ?? 0
+    );
+  });
+
+  it('gives lead phrases a small rise and fall instead of one flat velocity arc', () => {
+    const section = createSection('a');
+    const openingLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+        startMs: 0,
+      },
+      section,
+      0,
+      0
+    );
+    const crestLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+        startMs: 3_000,
+      },
+      section,
+      4,
+      0
+    );
+    const cadenceLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        role: 'lead',
+        instrumentId: 'deep-forest:lead:0:0',
+        startMs: 5_250,
+      },
+      section,
+      7,
+      0
+    );
+
+    expect(openingLead).not.toBeNull();
+    expect(crestLead).not.toBeNull();
+    expect(cadenceLead).not.toBeNull();
+    expect(crestLead?.velocity ?? 0).toBeGreaterThan(
+      openingLead?.velocity ?? 0
+    );
+    expect(cadenceLead?.velocity ?? 0).toBeLessThan(crestLead?.velocity ?? 0);
+  });
+
   it('brightens lead filters as a phrase moves toward its later peak positions', () => {
     const section = createSection('variation');
     const earlyLead = transformSongSectionNote(

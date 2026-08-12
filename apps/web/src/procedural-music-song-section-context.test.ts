@@ -22,6 +22,11 @@ describe('procedural music song section context', () => {
     expect(context.measureCount).toBe(16);
     expect(context.sectionProgress).toBeCloseTo(0.5, 3);
     expect(context.phrasePosition).toBe(2);
+    expect(context.meterPosition).toEqual({
+      beatIndex: 0,
+      beatNumber: 1,
+      isStrongBeat: true,
+    });
     expect(context.isGeneratedRepairNote).toBe(false);
   });
 
@@ -40,6 +45,11 @@ describe('procedural music song section context', () => {
     expect(context.isGeneratedRepairNote).toBe(true);
     expect(context.phrasePosition).toBe(0);
     expect(context.measureIndex).toBe(0);
+    expect(context.meterPosition).toEqual({
+      beatIndex: 0,
+      beatNumber: 1,
+      isStrongBeat: true,
+    });
   });
 });
 
