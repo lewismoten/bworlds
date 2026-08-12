@@ -162,6 +162,7 @@ import {
   getWaterFloorBodyProfile,
   buildPendingWorldBuildQueue,
   countColorVariantShareableMaterials,
+  collectSharedVisibleFloorBatches,
   createFrameTimeBudget,
   getDecoratedTileSurfaceHeight,
   getEffectivePendingWorldBuildBudget,
@@ -6178,6 +6179,89 @@ describe('render3d visibility helpers', () => {
     expect(getWorldCurvatureOffset(11)).toBeLessThan(0);
     expect(getWorldCurvatureOffset(18)).toBeCloseTo(-1.2, 6);
     expect(getWorldCurvatureOffset(24)).toBeCloseTo(-1.2, 6);
+  });
+
+  it('batches shared plains floors by variant and applies curvature to each instance height', () => {
+    expect(
+      collectSharedVisibleFloorBatches(
+        [
+          {
+            sharedFloorInstance: {
+              kind: 'plains',
+              variant: 0,
+              tileX: 0,
+              tileY: 0,
+              surfaceHeight: 0.2,
+              thickness: 0.03,
+              tilePluginOwnerLabel: 'tile-plains',
+            },
+          },
+          {
+            sharedFloorInstance: {
+              kind: 'plains',
+              variant: 0,
+              tileX: 12,
+              tileY: 0,
+              surfaceHeight: 0.2,
+              thickness: 0.03,
+              tilePluginOwnerLabel: 'tile-plains',
+            },
+          },
+          {
+            sharedFloorInstance: {
+              kind: 'plains',
+              variant: 1,
+              tileX: 1,
+              tileY: 0,
+              surfaceHeight: 0.4,
+              thickness: 0.03,
+              tilePluginOwnerLabel: 'tile-plains',
+            },
+          },
+          {
+            sharedFloorInstance: null,
+          },
+        ],
+        {
+          player: { x: 0, y: 0, facing: 0 },
+        }
+      )
+    ).toEqual([
+      {
+        kind: 'plains',
+        variant: 0,
+        thickness: 0.03,
+        tilePluginOwnerLabel: 'tile-plains',
+        instances: [
+          {
+            tileX: 0,
+            tileY: 0,
+            positionY: 0.185,
+          },
+          {
+            tileX: 12,
+            tileY: 0,
+            positionY: expect.closeTo(
+              0.185 + getWorldCurvatureOffset(12),
+              6
+            ),
+          },
+        ],
+      },
+      {
+        kind: 'plains',
+        variant: 1,
+        thickness: 0.03,
+        tilePluginOwnerLabel: 'tile-plains',
+        instances: [
+          {
+            tileX: 1,
+            tileY: 0,
+            positionY: 0.385,
+          },
+        ],
+      },
+    ]);
   });
 
   it('uses coarse sky signatures so tiny celestial drift does not rebuild sky layers', () => {

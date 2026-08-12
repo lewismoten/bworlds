@@ -969,6 +969,7 @@ type DynamicTileNode = {
   tilePluginOwnerLabel?: string;
   tileX: number;
   tileY: number;
+  sharedFloorInstance?: SharedVisibleFloorInstance | null;
   object3dCount: number;
   drawCallCount: number;
   visibleObjectCount: number;
@@ -1009,6 +1010,7 @@ type TileNodeBuildShell = {
   tileY: number;
   surfaceHeight: number;
   tileNode: THREE.Group;
+  sharedFloorInstance: SharedVisibleFloorInstance | null;
   tilePlugin?: TilePlugin;
   tilePluginOwnerLabel: string;
   detailLevel: RenderBudgetDetailLevel;
@@ -1053,6 +1055,16 @@ type TileSurfaceProfile = {
     maxChamferDrop?: number;
     minBankHeight?: number;
   } | null;
+};
+
+type SharedVisibleFloorInstance = {
+  kind: Kind;
+  variant: number;
+  tileX: number;
+  tileY: number;
+  surfaceHeight: number;
+  thickness: number;
+  tilePluginOwnerLabel: string;
 };
 
 type TileBuildCache = {
@@ -1703,6 +1715,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   const worldRoot = new THREE.Group();
   scene.add(worldRoot);
+  const sharedVisibleFloorRoot = new THREE.Group();
+  worldRoot.add(sharedVisibleFloorRoot);
 
   const atlasTexture = new THREE.CanvasTexture(getTileAtlasCanvas());
   atlasTexture.colorSpace = THREE.SRGBColorSpace;
@@ -1782,6 +1796,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
   function clearWorld() {
     disposeAndClearObject3D(worldRoot);
+    worldRoot.add(sharedVisibleFloorRoot);
     visibleTileNodes.clear();
     lastSuccessfulVisibleTileDetailLevels.clear();
     lastLodSyncPlayerPosition = null;
@@ -1825,13 +1840,22 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       y,
       tile
     ).surfaceHeight;
-
-    const floorMesh = createFloorMesh(state, tile, x, y, variant, buildCache);
-    freezeStaticObjectTransforms(floorMesh);
-    tileNode.add(floorMesh);
-
     const tilePlugin = registry.getTilePlugin(tile.kind);
     const tilePluginOwnerLabel = getTilePluginOwnerLabel(registry, tile.kind);
+
+    const floorContent = createTileFloorContent(
+      state,
+      tile,
+      x,
+      y,
+      variant,
+      buildCache,
+      tilePluginOwnerLabel
+    );
+    if (floorContent.floorNode) {
+      freezeStaticObjectTransforms(floorContent.floorNode);
+      tileNode.add(floorContent.floorNode);
+    }
 
     return {
       key: `${x}:${y}`,
@@ -1842,6 +1866,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: y,
       surfaceHeight,
       tileNode,
+      sharedFloorInstance: floorContent.sharedFloorInstance,
       tilePlugin,
       tilePluginOwnerLabel,
       detailLevel,
@@ -1874,6 +1899,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileY: y,
       surfaceHeight,
       tileNode,
+      sharedFloorInstance,
       tilePlugin,
       tilePluginOwnerLabel,
       detailLevel,
@@ -2292,6 +2318,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tilePluginOwnerLabel,
       tileX: x,
       tileY: y,
+      sharedFloorInstance,
       object3dCount: finalSceneResourceStats.object3dCount,
       drawCallCount: finalSceneResourceStats.drawCallCount,
       visibleObjectCount: finalSceneResourceStats.visibleObjectCount,
@@ -2868,6 +2895,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       )
     ) {
       syncWorldCurvature(visibleTileNodes.values(), state);
+      syncSharedVisibleFloorMeshes(
+        sharedVisibleFloorRoot,
+        visibleTileNodes.values(),
+        state,
+        {
+          getTileMaterial,
+          getTileAtlasGeometry,
+          getSharedBoxGeometry,
+        }
+      );
       lastWorldCurvaturePlayerPosition = {
         x: state.player.x,
         y: state.player.y,
@@ -3532,22 +3569,30 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     });
   }
 
-  function createFloorMesh(
+  function createTileFloorContent(
     state,
     tile,
     tileX,
     tileY,
     variant,
-    buildCache: TileBuildCache
-  ) {
+    buildCache: TileBuildCache,
+    tilePluginOwnerLabel: string
+  ): {
+    floorNode: THREE.Object3D | null;
+    sharedFloorInstance: SharedVisibleFloorInstance | null;
+  } {
+    void variant;
     const surfaceProfile = buildCache.getSurfaceProfile(tileX, tileY, tile);
     if (surfaceProfile.underlayKind) {
-      return createUnderlayFloor(
-        tileX,
-        tileY,
-        surfaceProfile.underlayKind,
-        surfaceProfile.surfaceHeight
-      );
+      return {
+        floorNode: createUnderlayFloor(
+          tileX,
+          tileY,
+          surfaceProfile.underlayKind,
+          surfaceProfile.surfaceHeight
+        ),
+        sharedFloorInstance: null,
+      };
     }
 
     const floorKind =
@@ -3573,13 +3618,30 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     if (!riverNeighbors || riverNeighbors.count === 0) {
       if (isWaterKind(floorKind)) {
-        return createWaterFloorMesh(
-          tileX,
-          tileY,
-          floorKind,
-          surfaceHeight,
-          buildCache
-        );
+        return {
+          floorNode: createWaterFloorMesh(
+            tileX,
+            tileY,
+            floorKind,
+            surfaceHeight,
+            buildCache
+          ),
+          sharedFloorInstance: null,
+        };
+      }
+      if (floorKind === 'plains') {
+        return {
+          floorNode: null,
+          sharedFloorInstance: {
+            kind: floorKind,
+            variant: floorVariant,
+            tileX,
+            tileY,
+            surfaceHeight,
+            thickness: FLOOR_THICKNESS,
+            tilePluginOwnerLabel,
+          },
+        };
       }
       const floorThickness = isWaterKind(floorKind)
         ? WATER_FLOOR_THICKNESS
@@ -3598,7 +3660,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         tileY * TILE_SIZE
       );
       floorMesh.receiveShadow = true;
-      return floorMesh;
+      return {
+        floorNode: floorMesh,
+        sharedFloorInstance: null,
+      };
     }
 
     const cornerHeights = {
@@ -3728,7 +3793,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       );
     }
 
-    return group;
+    return {
+      floorNode: group,
+      sharedFloorInstance: null,
+    };
   }
 
   function createUnderlayFloor(tileX, tileY, kind, surfaceHeight) {
@@ -3821,7 +3889,6 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     return group;
   }
-
   function addRiverEdgeWall(
     group,
     material,
@@ -4637,6 +4704,127 @@ export function getWorldCurvatureOffset(
     (distance - flatDistance) / (usableDistance - flatDistance)
   );
   return -maxDrop * progress * progress;
+}
+
+export function collectSharedVisibleFloorBatches(
+  entries: Iterable<Pick<DynamicTileNode, 'sharedFloorInstance'>>,
+  state: Pick<Render3DState, 'player'>
+): Array<{
+  kind: Kind;
+  variant: number;
+  thickness: number;
+  tilePluginOwnerLabel: string;
+  instances: Array<{
+    tileX: number;
+    tileY: number;
+    positionY: number;
+  }>;
+}> {
+  const batches = new Map<
+    string,
+    {
+      kind: Kind;
+      variant: number;
+      thickness: number;
+      tilePluginOwnerLabel: string;
+      instances: Array<{
+        tileX: number;
+        tileY: number;
+        positionY: number;
+      }>;
+    }
+  >();
+
+  for (const entry of entries) {
+    const sharedFloorInstance = entry.sharedFloorInstance;
+    if (!sharedFloorInstance) {
+      continue;
+    }
+    const key = `${sharedFloorInstance.kind}:${sharedFloorInstance.variant}:${sharedFloorInstance.thickness}`;
+    let batch = batches.get(key);
+    if (!batch) {
+      batch = {
+        kind: sharedFloorInstance.kind,
+        variant: sharedFloorInstance.variant,
+        thickness: sharedFloorInstance.thickness,
+        tilePluginOwnerLabel: sharedFloorInstance.tilePluginOwnerLabel,
+        instances: [],
+      };
+      batches.set(key, batch);
+    }
+    const distance = Math.hypot(
+      sharedFloorInstance.tileX - state.player.x,
+      sharedFloorInstance.tileY - state.player.y
+    );
+    batch.instances.push({
+      tileX: sharedFloorInstance.tileX,
+      tileY: sharedFloorInstance.tileY,
+      positionY:
+        sharedFloorInstance.surfaceHeight -
+        sharedFloorInstance.thickness * 0.5 +
+        getWorldCurvatureOffset(distance),
+    });
+  }
+
+  return [...batches.values()];
+}
+
+function syncSharedVisibleFloorMeshes(
+  root: THREE.Group,
+  entries: Iterable<Pick<DynamicTileNode, 'sharedFloorInstance'>>,
+  state: Pick<Render3DState, 'player'>,
+  deps: {
+    getTileMaterial(kind: Kind, variant: number): THREE.Material;
+    getTileAtlasGeometry(
+      baseGeometry: THREE.BufferGeometry,
+      kind: Kind,
+      variant: number
+    ): THREE.BufferGeometry;
+    getSharedBoxGeometry(
+      width: number,
+      height: number,
+      depth: number
+    ): THREE.BoxGeometry;
+  }
+): void {
+  while (root.children.length > 0) {
+    root.remove(root.children[0]!);
+  }
+
+  const batches = collectSharedVisibleFloorBatches(entries, state);
+  for (const batch of batches) {
+    const mesh = new THREE.InstancedMesh(
+      deps.getTileAtlasGeometry(
+        deps.getSharedBoxGeometry(TILE_SIZE, batch.thickness, TILE_SIZE),
+        batch.kind,
+        batch.variant
+      ),
+      deps.getTileMaterial(batch.kind, batch.variant),
+      batch.instances.length
+    );
+    mesh.userData = {
+      ...(mesh.userData ?? {}),
+      sharedVisibleFloor: true,
+      tilePluginOwnerLabel: batch.tilePluginOwnerLabel,
+      tileKind: batch.kind,
+      tileVariant: batch.variant,
+    };
+    mesh.receiveShadow = true;
+    const matrix = new THREE.Matrix4();
+    batch.instances.forEach((instance, index) => {
+      mesh.setMatrixAt(
+        index,
+        matrix.makeTranslation(
+          instance.tileX * TILE_SIZE,
+          instance.positionY,
+          instance.tileY * TILE_SIZE
+        )
+      );
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    freezeStaticObjectTransforms(mesh);
+    root.add(mesh);
+  }
 }
 
 function syncWorldCurvature(

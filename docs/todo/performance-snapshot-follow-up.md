@@ -99,7 +99,11 @@
       instead of stacking a second plugin-owned plains plane on top of every
       visible plains tile, while a hidden empty group keeps visible-LOD
       recovery from treating shared-floor plains tiles as plugin build
-      failures.
+      failures, and `render3d` now batches simple visible plains floors by
+      atlas variant into one shared instanced layer instead of one box mesh per
+      visible plains tile, which dropped the live `tile-plains` draw-call
+      ownership from `1053` to `15` in the August 12, 2026 runtime issue
+      snapshots and moved the top draw-call hotspot back to `tile-forest`.
 
 ## LOD Stability
 
