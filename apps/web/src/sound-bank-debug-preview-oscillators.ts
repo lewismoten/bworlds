@@ -15,6 +15,8 @@ export type SoundBankDebugPreviewOscillatorSoloTarget =
 export type SoundBankDebugPreviewOscillatorOverride = Readonly<{
   carrierEnabled: boolean;
   harmonicEnabled: boolean;
+  carrierGainMultiplier: number;
+  harmonicGainMultiplier: number;
   carrierWaveform: MusicWaveform;
   harmonicWaveform: MusicWaveform;
   soloTarget: SoundBankDebugPreviewOscillatorSoloTarget;
@@ -36,6 +38,8 @@ export function resolveSoundBankDebugPreviewOscillatorDefaults(
     instrumentId: instrument.id,
     carrierEnabled: (instrument.timbre.fundamentalGainMultiplier ?? 1) > 0,
     harmonicEnabled: instrument.harmonicGain > 0,
+    carrierGainMultiplier: 1,
+    harmonicGainMultiplier: 1,
     carrierWaveform: instrument.waveform,
     harmonicWaveform: instrument.timbre.harmonicWaveform,
     soloTarget: 'all',
@@ -51,6 +55,12 @@ export function normalizeSoundBankDebugPreviewOscillatorState(
     instrumentId: value?.instrumentId?.trim() || fallback.instrumentId,
     carrierEnabled: value?.carrierEnabled ?? fallback.carrierEnabled ?? true,
     harmonicEnabled: value?.harmonicEnabled ?? fallback.harmonicEnabled ?? true,
+    carrierGainMultiplier: normalizeGainMultiplier(
+      value?.carrierGainMultiplier ?? fallback.carrierGainMultiplier
+    ),
+    harmonicGainMultiplier: normalizeGainMultiplier(
+      value?.harmonicGainMultiplier ?? fallback.harmonicGainMultiplier
+    ),
     carrierWaveform: resolveWaveform(
       value?.carrierWaveform ?? fallback.carrierWaveform
     ),
@@ -105,12 +115,18 @@ export function applySoundBankDebugPreviewOscillatorStateToNote(
   return {
     ...note,
     waveform: state.carrierWaveform,
-    harmonicGain: harmonicEnabled ? note.harmonicGain : 0,
+    harmonicGain: harmonicEnabled
+      ? Math.max(0, note.harmonicGain * state.harmonicGainMultiplier)
+      : 0,
     timbre: {
       ...note.timbre,
       harmonicWaveform: state.harmonicWaveform,
       fundamentalGainMultiplier: carrierEnabled
-        ? Math.max(0, note.timbre.fundamentalGainMultiplier ?? 1)
+        ? Math.max(
+            0,
+            (note.timbre.fundamentalGainMultiplier ?? 1) *
+              state.carrierGainMultiplier
+          )
         : 0,
     },
   };
@@ -135,12 +151,18 @@ export function applySoundBankDebugPreviewOscillatorStateToInstrument<
   return {
     ...instrument,
     waveform: state.carrierWaveform,
-    harmonicGain: harmonicEnabled ? instrument.harmonicGain : 0,
+    harmonicGain: harmonicEnabled
+      ? Math.max(0, instrument.harmonicGain * state.harmonicGainMultiplier)
+      : 0,
     timbre: {
       ...instrument.timbre,
       harmonicWaveform: state.harmonicWaveform,
       fundamentalGainMultiplier: carrierEnabled
-        ? Math.max(0, instrument.timbre.fundamentalGainMultiplier ?? 1)
+        ? Math.max(
+            0,
+            (instrument.timbre.fundamentalGainMultiplier ?? 1) *
+              state.carrierGainMultiplier
+          )
         : 0,
     },
   };
@@ -164,4 +186,11 @@ function resolveWaveform(
     value === 'sine'
     ? value
     : 'sine';
+}
+
+function normalizeGainMultiplier(value: number | null | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 1;
+  }
+  return Math.min(2, Math.max(0, value));
 }

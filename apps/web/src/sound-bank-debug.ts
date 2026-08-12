@@ -2446,6 +2446,25 @@ function buildSoundBankDebugPreviewOscillatorControlsMarkup(
               )}
             </select>
           </label>
+          <label>
+            <span>Gain</span>
+            <div class="sound-bank-debug-master-gain-row">
+              <input
+                id="sound-bank-debug-oscillator-carrier-gain"
+                type="range"
+                min="0"
+                max="200"
+                step="5"
+                value="${Math.round(previewOscillators.carrierGainMultiplier * 100)}"
+              />
+              <output
+                id="sound-bank-debug-oscillator-carrier-gain-value"
+                for="sound-bank-debug-oscillator-carrier-gain"
+              >
+                ${Math.round(previewOscillators.carrierGainMultiplier * 100)}%
+              </output>
+            </div>
+          </label>
         </div>
         <div class="sound-bank-debug-oscillator-row">
           <span>Harmonic Oscillator</span>
@@ -2475,6 +2494,25 @@ function buildSoundBankDebugPreviewOscillatorControlsMarkup(
                 previewOscillators.harmonicWaveform
               )}
             </select>
+          </label>
+          <label>
+            <span>Gain</span>
+            <div class="sound-bank-debug-master-gain-row">
+              <input
+                id="sound-bank-debug-oscillator-harmonic-gain"
+                type="range"
+                min="0"
+                max="200"
+                step="5"
+                value="${Math.round(previewOscillators.harmonicGainMultiplier * 100)}"
+              />
+              <output
+                id="sound-bank-debug-oscillator-harmonic-gain-value"
+                for="sound-bank-debug-oscillator-harmonic-gain"
+              >
+                ${Math.round(previewOscillators.harmonicGainMultiplier * 100)}%
+              </output>
+            </div>
           </label>
         </div>
       </div>

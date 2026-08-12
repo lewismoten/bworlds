@@ -144,6 +144,8 @@ describe('sound bank debug preview mode', () => {
         oscillators: {
           carrierEnabled: true,
           harmonicEnabled: true,
+          carrierGainMultiplier: 1,
+          harmonicGainMultiplier: 1,
           carrierWaveform: 'square',
           harmonicWaveform: 'triangle',
           soloTarget: 'carrier',

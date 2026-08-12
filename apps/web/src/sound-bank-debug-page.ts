@@ -447,6 +447,18 @@ function readPreviewOscillatorState(): SoundBankDebugPreviewOscillatorState | nu
       ...(previewOscillatorState ?? {
         instrumentId,
       }),
+      carrierGainMultiplier:
+        Number(
+          document.querySelector<HTMLInputElement>(
+            '#sound-bank-debug-oscillator-carrier-gain'
+          )?.value
+        ) / 100,
+      harmonicGainMultiplier:
+        Number(
+          document.querySelector<HTMLInputElement>(
+            '#sound-bank-debug-oscillator-harmonic-gain'
+          )?.value
+        ) / 100,
       carrierWaveform: (document.querySelector<HTMLSelectElement>(
         '#sound-bank-debug-oscillator-carrier-waveform'
       )?.value ?? previewOscillatorState?.carrierWaveform) as
@@ -460,6 +472,31 @@ function readPreviewOscillatorState(): SoundBankDebugPreviewOscillatorState | nu
       instrumentId,
     }
   );
+}
+
+function syncPreviewOscillatorUi(): void {
+  document
+    .querySelector<HTMLOutputElement>(
+      '#sound-bank-debug-oscillator-carrier-gain-value'
+    )
+    ?.replaceChildren(
+      document.createTextNode(
+        `${Math.round(
+          (readPreviewOscillatorState()?.carrierGainMultiplier ?? 1) * 100
+        )}%`
+      )
+    );
+  document
+    .querySelector<HTMLOutputElement>(
+      '#sound-bank-debug-oscillator-harmonic-gain-value'
+    )
+    ?.replaceChildren(
+      document.createTextNode(
+        `${Math.round(
+          (readPreviewOscillatorState()?.harmonicGainMultiplier ?? 1) * 100
+        )}%`
+      )
+    );
 }
 
 function syncPreviewEnvelopeUi(): void {
@@ -1249,10 +1286,28 @@ function bindPage(snapshot: SoundBankDebugSnapshot): void {
         'input',
         () => {
           previewOscillatorState = readPreviewOscillatorState();
+          syncPreviewOscillatorUi();
         },
         pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
       );
     });
+
+  document
+    .querySelectorAll<HTMLInputElement>(
+      '#sound-bank-debug-oscillator-carrier-gain, #sound-bank-debug-oscillator-harmonic-gain'
+    )
+    .forEach((input) => {
+      input.addEventListener(
+        'input',
+        () => {
+          previewOscillatorState = readPreviewOscillatorState();
+          syncPreviewOscillatorUi();
+        },
+        pageLifecycleSignal ? { signal: pageLifecycleSignal } : undefined
+      );
+    });
+
+  syncPreviewOscillatorUi();
 
   document
     .querySelectorAll<HTMLInputElement>(
