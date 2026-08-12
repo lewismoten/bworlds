@@ -12,9 +12,9 @@
 
 ## Layer Composition
 
-- [ ] Define an ordered height influence plugin interface.
-- [ ] Let plugins add or subtract height influence.
-- [ ] Let plugins declare sampling resolution and bounds.
+- [x] Define an ordered height influence plugin interface.
+- [x] Let plugins add or subtract height influence.
+- [x] Let plugins declare sampling resolution and bounds.
 - [ ] Compose continent uplift before mountain detail.
 - [ ] Compose mountain detail before river carving.
 - [ ] Compose river carving before route grading.
@@ -115,3 +115,16 @@ Current support:
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height
   entry point before the full authoritative layered height pipeline lands.
+- `@bworlds/worldgen` now also exposes one dedicated terrain-height influence
+  plugin contract through `createWorldTerrainHeightInfluencePlugin(...)`,
+  `sortWorldTerrainHeightInfluencePlugins(...)`, and
+  `sampleWorldTerrainHeightInfluences(...)`; see
+  `packages/worldgen/docs/terrain-height-influence-plugins.md`.
+- That contract lets each height-layer plugin contribute one signed height
+  delta, declare deterministic execution order, and limit itself to explicit
+  world-space bounds and coarse or fine query resolutions without tying the
+  authoritative height path to renderer-only noise.
+- `createWorldGenerator(...)` now routes its current preview terrain-height
+  query through one sorted `overworld-relief` influence stack, so the existing
+  relief-based height sampler already uses the ordered plugin composition path
+  instead of a package-local one-off formula.

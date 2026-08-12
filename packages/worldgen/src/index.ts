@@ -34,6 +34,22 @@ import {
 } from '@bworlds/overworld-support';
 import { resolveOverworldReliefHeight } from '@bworlds/runtime-overworld-relief';
 export {
+  createWorldTerrainHeightInfluencePlugin,
+  sampleWorldTerrainHeightInfluences,
+  sortWorldTerrainHeightInfluencePlugins,
+  type WorldTerrainHeightInfluenceContribution,
+  type WorldTerrainHeightInfluenceContext,
+  type WorldTerrainHeightInfluencePlugin,
+  type WorldTerrainHeightInfluenceResolution,
+  type WorldTerrainHeightInfluenceSample,
+  type WorldTerrainHeightInfluenceSamplingDeclaration,
+} from './terrain-height-influences.ts';
+import {
+  createWorldTerrainHeightInfluencePlugin,
+  sampleWorldTerrainHeightInfluences,
+  sortWorldTerrainHeightInfluencePlugins,
+} from './terrain-height-influences.ts';
+export {
   getTerrainChunkCellBounds,
   getTerrainChunkHeightSampleCoordinate,
   getTerrainChunkHeightSampleBorder,
@@ -375,6 +391,24 @@ export function createWorldGenerator({
       return previewTile.kind;
     });
   };
+  const previewTerrainHeightInfluencePlugins =
+    sortWorldTerrainHeightInfluencePlugins([
+      createWorldTerrainHeightInfluencePlugin({
+        id: 'overworld-relief',
+        sampling: {
+          resolutions: ['coarse', 'fine'],
+        },
+        sample({ worldX, worldY }) {
+          const kind = samplePreviewSurfaceKind(worldX, worldY);
+          return resolveOverworldReliefHeight(
+            terrainSignals(worldX, worldY).elevation,
+            {
+              kind,
+            }
+          );
+        },
+      }),
+    ]);
   const getMap = (context: Context) => {
     const key = makeKey(context.id, context.depth);
     return mapCache.getOrCreate(key, () => {
@@ -404,20 +438,15 @@ export function createWorldGenerator({
       normalizedQuery.worldY
     );
     return previewSurfaceHeightCache.getOrCreate(key, () => {
-      const kind = samplePreviewSurfaceKind(
-        normalizedQuery.worldX,
-        normalizedQuery.worldY
-      );
+      const sampled = sampleWorldTerrainHeightInfluences({
+        plugins: previewTerrainHeightInfluencePlugins,
+        seed: seedHash,
+        worldX: normalizedQuery.worldX,
+        worldY: normalizedQuery.worldY,
+        resolution: normalizedQuery.resolution,
+      });
       return validateTerrainHeightValue(
-        clampTerrainHeightValue(
-          resolveOverworldReliefHeight(
-            terrainSignals(normalizedQuery.worldX, normalizedQuery.worldY)
-              .elevation,
-            {
-              kind,
-            }
-          )
-        ),
+        clampTerrainHeightValue(sampled.height),
         `Terrain height at ${normalizedQuery.worldX}:${normalizedQuery.worldY}`
       );
     });
