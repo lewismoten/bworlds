@@ -219,6 +219,22 @@ describe('tile station', () => {
       createModelSignature(syncModel)
     );
   });
+
+  it('uses the station base mesh as the root instead of a wrapper group', () => {
+    const plugin = createStationTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'station');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'station' } as never,
+      tileX: 4,
+      tileY: 5,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 4, y: 0.09, z: 5 });
+    expect(model?.children).toHaveLength(5);
+  });
 });
 
 function countSharedMaterialReferences(

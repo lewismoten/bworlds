@@ -11,3 +11,8 @@ Current progressive phases:
 
 The synchronous `create3DModel()` path exhausts the same generator so the
 progressive and eager builds stay structurally aligned.
+
+The station silhouette now also uses the base floor mesh as its root and
+attaches the hall, roof, canopy, lamp mesh, and point light beneath it, so
+station tiles avoid one otherwise empty wrapper `Group` without changing the
+silhouette or night-light placement.
