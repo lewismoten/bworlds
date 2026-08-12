@@ -617,6 +617,72 @@ describe('world generator', () => {
     expect(sample.curvatureMagnitude).toBe(Math.hypot(curvatureX, curvatureY));
   });
 
+  it('samples deterministic terrain drainage gradients from the shared height API', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainDrainageGradient(10, 20);
+    const centerHeight = generator.sampleTerrainHeight(10, 20);
+    const leftHeight = generator.sampleTerrainHeight(9, 20);
+    const rightHeight = generator.sampleTerrainHeight(11, 20);
+    const downHeight = generator.sampleTerrainHeight(10, 19);
+    const upHeight = generator.sampleTerrainHeight(10, 21);
+    const diagonalHeights = [
+      generator.sampleTerrainHeight(9, 19),
+      generator.sampleTerrainHeight(11, 19),
+      generator.sampleTerrainHeight(9, 21),
+      generator.sampleTerrainHeight(11, 21),
+    ];
+    const allNeighborHeights = [
+      leftHeight,
+      rightHeight,
+      downHeight,
+      upHeight,
+      ...diagonalHeights,
+    ];
+    const downhillX = (leftHeight - rightHeight) / 2;
+    const downhillY = (downHeight - upHeight) / 2;
+    const downhillGrade = Math.hypot(downhillX, downhillY);
+    const lowerNeighborCount = allNeighborHeights.filter(
+      (height) => height < centerHeight
+    ).length;
+    const higherNeighborCount = allNeighborHeights.filter(
+      (height) => height > centerHeight
+    ).length;
+
+    expect(sample).toEqual({
+      worldX: 10,
+      worldY: 20,
+      sampleStep: 1,
+      height: centerHeight,
+      downhillX,
+      downhillY,
+      downhillGrade,
+      aspectRadians:
+        downhillGrade <= WORLD_TERRAIN_FLAT_GRADE_EPSILON
+          ? null
+          : Math.atan2(downhillY, downhillX),
+      lowerNeighborCount,
+      higherNeighborCount,
+      convergence:
+        (higherNeighborCount - lowerNeighborCount) / allNeighborHeights.length,
+    });
+    expect(
+      generator.terrainHeightSampler.sampleDrainageGradient(10, 20)
+    ).toEqual(sample);
+  });
+
+  it('supports wider terrain drainage-gradient steps', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainDrainageGradient(10, 20, 2);
+
+    expect(sample.sampleStep).toBe(2);
+    expect(sample.downhillGrade).toBe(
+      Math.hypot(sample.downhillX, sample.downhillY)
+    );
+    expect(
+      sample.lowerNeighborCount + sample.higherNeighborCount
+    ).toBeLessThanOrEqual(8);
+  });
+
   it('samples deterministic terrain height ranges from explicit world bounds', () => {
     const generator = createGenerator();
     const sample = generator.sampleTerrainHeightRange({
@@ -899,6 +965,10 @@ describe('world generator', () => {
     const baselineTerrainSlope = generator.sampleTerrainSlope(10, 20);
     const baselineTerrainAspect = generator.sampleTerrainAspect(10, 20);
     const baselineTerrainCurvature = generator.sampleTerrainCurvature(10, 20);
+    const baselineTerrainDrainage = generator.sampleTerrainDrainageGradient(
+      10,
+      20
+    );
     const baselineTerrainRange = generator.sampleTerrainHeightRange({
       minX: 10,
       maxX: 12,
@@ -943,6 +1013,9 @@ describe('world generator', () => {
     );
     expect(generator.sampleTerrainCurvature(10, 20)).toEqual(
       baselineTerrainCurvature
+    );
+    expect(generator.sampleTerrainDrainageGradient(10, 20)).toEqual(
+      baselineTerrainDrainage
     );
     expect(
       generator.sampleTerrainHeightRange({

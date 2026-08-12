@@ -37,7 +37,7 @@
 - [x] Add slope sampling.
 - [x] Add aspect sampling.
 - [x] Add local curvature sampling.
-- [ ] Add drainage-gradient sampling.
+- [x] Add drainage-gradient sampling.
 - [x] Add regional height range sampling.
 - [x] Add sea-depth sampling below sea level.
 
@@ -81,6 +81,10 @@ Current support:
 - It now also exposes `sampleTerrainCurvature(worldX, worldY, sampleStep?)`,
   which derives one local second-difference curvature sample from the same
   shared terrain-height path.
+- It now also exposes
+  `sampleTerrainDrainageGradient(worldX, worldY, sampleStep?)`, which derives
+  one local downhill vector plus a simple neighboring convergence summary from
+  that same shared height field.
 - It now also exposes
   `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep? })`, which
   derives one sampled min/max height summary for an explicit world-space

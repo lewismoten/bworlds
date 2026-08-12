@@ -17,6 +17,9 @@ Current surface:
   angle from that same slope sample, or `null` for flat or near-flat terrain
 - `sampleTerrainCurvature(worldX, worldY, sampleStepOrOptions?)` derives one
   local second-difference curvature sample from the same height path
+- `sampleTerrainDrainageGradient(worldX, worldY, sampleStepOrOptions?)`
+  derives one local downhill vector and simple convergence summary from that
+  same shared height field
 - `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep?,
 resolution? })` derives one sampled min/max height summary for an explicit
   world-space region and reuses cached summaries for repeated identical bounds
@@ -37,4 +40,5 @@ Current limits:
 - coarse queries snap to whole-cell world coordinates and fine queries snap to
   quarter-cell coordinates so the sampler stays deterministic and cacheable
 - slope, aspect, and curvature are currently local finite-difference
-  derivatives only; drainage-derived signals still need separate Phase 2 work
+  derivatives only; drainage currently exposes local downhill and convergence
+  hints, not a full basin or river-network solution
