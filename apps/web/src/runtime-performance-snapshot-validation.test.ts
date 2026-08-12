@@ -179,6 +179,16 @@ describe('runtime performance snapshot validation', () => {
     );
   });
 
+  it('rejects impossible draw calls when no active Three.js objects exist', () => {
+    const snapshot = createValidRuntimePerformanceSnapshot();
+    snapshot.metrics.activeThreeObjectCount = 0;
+    snapshot.metrics.drawCalls = 12;
+
+    expect(validateRuntimePerformanceSnapshot(snapshot).errors).toContain(
+      'Runtime performance snapshot drawCalls 12 cannot be positive when activeThreeObjectCount is 0.'
+    );
+  });
+
   it('accepts legacy snapshots that are missing newer limit fields by backfilling current defaults', () => {
     const snapshot = createValidRuntimePerformanceSnapshot() as {
       limits: Record<string, number>;

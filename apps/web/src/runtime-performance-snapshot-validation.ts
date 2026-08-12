@@ -156,6 +156,15 @@ export function validateRuntimePerformanceSnapshot(
     snapshot.metrics.activeThreeObjectCount
   );
   validateMetricValue(errors, 'drawCalls', snapshot.metrics.drawCalls);
+  if (
+    snapshot.metrics.activeThreeObjectCount === 0 &&
+    typeof snapshot.metrics.drawCalls === 'number' &&
+    snapshot.metrics.drawCalls > 0
+  ) {
+    errors.push(
+      `Runtime performance snapshot drawCalls ${snapshot.metrics.drawCalls} cannot be positive when activeThreeObjectCount is 0.`
+    );
+  }
   validateMetricValue(
     errors,
     'audioNodeCount',

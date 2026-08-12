@@ -37,7 +37,7 @@
 - [x] Test song generation duration enforcement.
 - [x] Test MIDI export duration enforcement.
 - [x] Test WAV export duration enforcement.
-- [ ] Reject impossible object or draw-call counts.
+- [x] Reject impossible object or draw-call counts.
 - [x] Warn when expected startup metrics are missing.
 - [x] Warn when suspicious metrics are near zero.
 - [x] Keep warnings separate from hard violations.
@@ -71,4 +71,5 @@ the corresponding violation and schema alignment path, and snapshot validation
 now returns non-fatal `warnings` separately from hard `errors`, with coverage
 for missing startup metrics, suspicious near-zero runtime measurements, and the
 latest-snapshot regression path accepting warnings without treating them as
-schema failures.
+schema failures, and the validator now rejects snapshots that claim positive
+draw calls while reporting `0` active Three.js objects.
