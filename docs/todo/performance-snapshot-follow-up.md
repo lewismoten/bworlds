@@ -118,7 +118,10 @@
 - [ ] Fail tests when material counts regress sharply.
       Progress: route dock labels, town sign labels, and dungeon gate bars now
       have repeated-build regression tests that fail if those paths start
-      allocating extra unique materials on the same Three host.
+      allocating extra unique materials on the same Three host, and
+      `tile-forest` now keeps a sampled full-detail forest sweep on the same
+      host within the bounded shared palette across repeated builds instead of
+      allowing the material set to grow between passes.
 
 ## Instancing
 
