@@ -285,35 +285,14 @@ describe('runtime performance tracking', () => {
     expect(issue?.reasons).toContain(
       'Visibility radius is currently reduced to 6 from full 18. Weather currently caps draw distance at 6. Weather is pushing draw distance below the minimum-quality radius 10.'
     );
-    expect(issue?.reasons).toContain(
+    expect(issue?.reasons).not.toContain(
       'Reduced graphics quality has persisted for 2.5 seconds.'
     );
-    expect(issue?.reasons).toContain(
-      'Top draw-call plugins: tile-forest dominates draw calls.'
-    );
-    expect(issue?.reasons).toContain(
-      'Top instanced-mesh plugins: tile-forest owns 9 visible instanced meshes.'
-    );
-    expect(issue?.reasons).toContain(
-      'Top rendered-instance plugins: tile-forest renders 66 instances.'
-    );
-    expect(issue?.reasons).toContain(
-      'Top instancing-warning plugins: tile-town suggests instancing repeated parts 4 times per second.'
-    );
-    expect(issue?.reasons).toContain(
-      'Top per-tile material plugins: tile-water dominates materials.'
-    );
-    expect(issue?.reasons).toContain(
-      'Top scene-unique-material plugins: tile-route owns 9 scene-unique materials.'
+    expect(issue?.reasons.some((reason) => reason.startsWith('Top '))).toBe(
+      false
     );
     expect(issue?.reasons).toContain(
       'tile-forest starved 2.0 times per second.'
-    );
-    expect(issue?.reasons).toContain(
-      'Top scheduler-starvation plugins: tile-forest starved 2.0 times per second.'
-    );
-    expect(issue?.reasons).toContain(
-      'Top static-matrix-update plugins: tile-sign keeps static matrices hot.'
     );
     expect(issue?.performanceSnapshot.violations).toEqual(
       expect.arrayContaining([
@@ -513,6 +492,69 @@ describe('runtime performance tracking', () => {
     });
 
     expect(issue).toBeNull();
+  });
+
+  it('filters unactionable runtime issue reasons before reporting to the api', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        fps: 60,
+        averageFps: 60,
+        frameMs: 16.7,
+        worstRecentFrameMs: 16.7,
+        targetFps: 60,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters: '',
+        reducedQualityDurationSec: 8.4,
+        latestQualityChangeLimiter: undefined,
+        latestQualityChangeSummary: undefined,
+        visibilityRadius: 18,
+        weatherVisibilityRadiusCap: undefined,
+        drawCalls: 120,
+        object3dCount: 900,
+        visibleObjectCount: 300,
+        maxChunkDrawCalls: 16,
+        maxChunkObjectCount: 36,
+        maxChunkMeshes: 16,
+        maxChunkTriangleCount: 5000,
+        materialCount: 12,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 40,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 8,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 1,
+        schedulerStarvationTopPluginLabel: 'tile-plains',
+        schedulerStarvationSummary: 'tile-plains:1',
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxSummary: undefined,
+        fallbackBoxTopPluginLabel: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [
+          'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).',
+          'Objects per visible tile is high (435.0 > 18).',
+        ],
+      }),
+    });
+
+    expect(issue?.summary).toBe(
+      'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).'
+    );
+    expect(issue?.reasons).toEqual([
+      'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).',
+      'Objects per visible tile is high (435.0 > 18).',
+    ]);
   });
 
   it('posts runtime issue reports to the dedicated vite endpoint', async () => {

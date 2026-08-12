@@ -91,20 +91,15 @@ export function buildRuntimePerformanceIssueReport(
       options.debugSnapshot
     ),
   });
-  const reasons = collectRuntimePerformanceIssueReasons(
+  const rawReasons = collectRuntimePerformanceIssueReasons(
     options.debugSnapshot,
     performanceSnapshot
   );
   const renderQualityLimiterDetails = describeRuntimePerformanceLimiterDetails(
     options.debugSnapshot
   );
-  if (
-    reasons.length === 0 ||
-    !hasActionableRuntimePerformanceIssueReasons(
-      reasons,
-      renderQualityLimiterDetails
-    )
-  ) {
+  const reasons = filterReportableRuntimePerformanceIssueReasons(rawReasons);
+  if (reasons.length === 0 && !hasActionableLimiterDetails(renderQualityLimiterDetails)) {
     return null;
   }
 
@@ -713,30 +708,36 @@ function selectRuntimePerformanceIssueSummary(
   if (firstLimiterDetail) {
     return `${firstLimiterDetail}.`;
   }
-  return reasons[0]!;
+  const firstActionableReason = reasons.find(
+    isReportableRuntimePerformanceReason
+  );
+  if (firstActionableReason) {
+    return ensureTrailingPeriod(firstActionableReason);
+  }
+  return ensureTrailingPeriod(reasons[0]!);
 }
 
 function hasActionableLimiterDetails(details: string[]): boolean {
   return details.some(isActionableLimiterDetail);
 }
 
-function hasActionableRuntimePerformanceIssueReasons(
-  reasons: readonly string[],
-  renderQualityLimiterDetails: readonly string[]
-): boolean {
-  if (hasActionableLimiterDetails([...renderQualityLimiterDetails])) {
-    return true;
-  }
-
-  return reasons.some((reason) => isActionableRuntimePerformanceReason(reason));
+function filterReportableRuntimePerformanceIssueReasons(
+  reasons: readonly string[]
+): string[] {
+  return reasons.filter((reason) => isReportableRuntimePerformanceReason(reason));
 }
 
-function isActionableRuntimePerformanceReason(reason: string): boolean {
+function isReportableRuntimePerformanceReason(reason: string): boolean {
   return (
     !reason.startsWith('Performance tier is ') &&
     !reason.startsWith('Reduced graphics quality has persisted for ') &&
-    !reason.startsWith('Top ')
+    !reason.startsWith('Top ') &&
+    !/^[a-z0-9-]+:\d+(?:,\s*[a-z0-9-]+:\d+)*$/iu.test(reason.trim())
   );
+}
+
+function ensureTrailingPeriod(value: string): string {
+  return /[.!?]$/u.test(value) ? value : `${value}.`;
 }
 
 function isActionableLimiterDetail(detail: string): boolean {
