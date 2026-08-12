@@ -416,6 +416,14 @@ function buildRoleTracks(
           instrument,
         })
       );
+      events.push(
+        ...buildTrackModulationEvents({
+          snapshot,
+          role,
+          channel,
+          instrument,
+        })
+      );
       if (role === 'lead') {
         for (let index = 0; index < snapshot.lyrics.length; index += 1) {
           const lyric = snapshot.lyrics[index]!;
@@ -571,6 +579,66 @@ function buildTrackExpressionEvents(options: {
   return events;
 }
 
+function buildTrackModulationEvents(options: {
+  snapshot: MusicDebugSnapshot;
+  role: keyof typeof ROLE_CHANNELS;
+  channel: number;
+  instrument: ProceduralInstrument;
+}): MidiTrackEvent[] {
+  if (!supportsTrackModulationAutomation(options.instrument.family)) {
+    return [];
+  }
+
+  const notes = options.snapshot.notes.filter(
+    (note) => note.role === options.role
+  );
+  const events: MidiTrackEvent[] = [];
+  let order = 8.75;
+
+  for (const note of notes) {
+    if (note.durationMs < resolveMinimumModulationDurationMs(options.role)) {
+      continue;
+    }
+
+    const startTick = msToTicks(
+      note.startMs - options.snapshot.song.startMs,
+      options.snapshot
+    );
+    const swellTick = msToTicks(
+      note.startMs + note.durationMs * 0.45 - options.snapshot.song.startMs,
+      options.snapshot
+    );
+    const releaseTick = msToTicks(
+      note.startMs + note.durationMs * 0.78 - options.snapshot.song.startMs,
+      options.snapshot
+    );
+    const modulationProfile = resolveTrackModulationProfile(options.role);
+
+    events.push({
+      tick: startTick,
+      order,
+      data: createControllerEvent(options.channel, 1, modulationProfile.start),
+    });
+    events.push({
+      tick: Math.max(startTick, swellTick),
+      order: order + 0.25,
+      data: createControllerEvent(options.channel, 1, modulationProfile.peak),
+    });
+    events.push({
+      tick: Math.max(startTick, releaseTick),
+      order: order + 0.5,
+      data: createControllerEvent(
+        options.channel,
+        1,
+        modulationProfile.release
+      ),
+    });
+    order += 1;
+  }
+
+  return events;
+}
+
 function supportsTrackExpressionAutomation(
   family: ProceduralInstrument['family']
 ): boolean {
@@ -585,10 +653,30 @@ function supportsTrackExpressionAutomation(
   );
 }
 
+function supportsTrackModulationAutomation(
+  family: ProceduralInstrument['family']
+): boolean {
+  return (
+    family === 'strings' ||
+    family === 'synth-pad' ||
+    family === 'violin' ||
+    family === 'flute' ||
+    family === 'trumpet' ||
+    family === 'vocals' ||
+    family === 'synth-lead'
+  );
+}
+
 function resolveMinimumExpressionDurationMs(
   role: keyof typeof ROLE_CHANNELS
 ): number {
   return role === 'harmony' ? 420 : role === 'bass' ? 650 : 900;
+}
+
+function resolveMinimumModulationDurationMs(
+  role: keyof typeof ROLE_CHANNELS
+): number {
+  return role === 'harmony' ? 320 : role === 'bass' ? 520 : 700;
 }
 
 function resolveExpressionPeakRatio(role: keyof typeof ROLE_CHANNELS): number {
@@ -615,6 +703,20 @@ function resolveTrackExpressionProfile(
     start: base,
     peak: clamp(base + roleBoost, 72, 120),
     settle: clamp(base + Math.max(2, Math.floor(roleBoost * 0.4)), 70, 116),
+  };
+}
+
+function resolveTrackModulationProfile(role: keyof typeof ROLE_CHANNELS): {
+  start: number;
+  peak: number;
+  release: number;
+} {
+  const base = role === 'lead' ? 14 : role === 'harmony' ? 18 : 12;
+  const peak = role === 'lead' ? 42 : role === 'harmony' ? 46 : 32;
+  return {
+    start: base,
+    peak,
+    release: Math.max(base + 4, Math.round((base + peak) * 0.5)),
   };
 }
 

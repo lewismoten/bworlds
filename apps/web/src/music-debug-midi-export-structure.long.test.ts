@@ -108,4 +108,43 @@ describe('music debug midi export structure', () => {
     expect(expressionValues.length).toBeGreaterThan(2);
     expect(new Set(expressionValues).size).toBeGreaterThan(1);
   });
+
+  it('adds CC1 modulation changes for suitable sustained track exports', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const exportableSnapshot = toExportableSnapshot(snapshot);
+    const file = createMusicDebugMidiFile(exportableSnapshot, {
+      createdAt: new Date('2026-08-09T00:00:00.000Z'),
+    });
+    const chunks = parseMidiChunks(file.bytes);
+    const supportedRoles = ['bass', 'harmony', 'lead'].filter((role) => {
+      const family = snapshot.instrumentBank.instruments[role].family;
+      return (
+        family === 'strings' ||
+        family === 'synth-pad' ||
+        family === 'violin' ||
+        family === 'flute' ||
+        family === 'trumpet' ||
+        family === 'vocals' ||
+        family === 'synth-lead'
+      );
+    }) as Array<'bass' | 'harmony' | 'lead'>;
+    expect(supportedRoles.length).toBeGreaterThan(0);
+
+    const trackIndexByRole = {
+      bass: 1,
+      harmony: 2,
+      lead: 3,
+    } as const;
+    const targetRole = supportedRoles[0]!;
+    const targetTrack = chunks.tracks[trackIndexByRole[targetRole]]!;
+    const modulationValues = readControllerValues(targetTrack, 1);
+
+    expect(modulationValues.length).toBeGreaterThan(2);
+    expect(new Set(modulationValues).size).toBeGreaterThan(1);
+  });
 });

@@ -17,7 +17,11 @@
       sustained harmony, bass, and expressive lead families, and the MIDI
       audit plus export-structure tests now verify those controller changes
       appear when sustained phrases are present.
-- [ ] Add modulation control for suitable sustained instruments.
+- [x] Add modulation control for suitable sustained instruments.
+      Progress: MIDI exports now add first-pass CC1 modulation swells for
+      compatible sustained families such as strings, pads, winds, brass, and
+      vocals, and the MIDI export structure tests now verify those controller
+      changes appear on sustained harmony tracks.
 - [ ] Add subtle vibrato to sustained strings and winds.
 - [ ] Add controlled pitch bends for suitable articulations.
 - [ ] Add note attack differences by articulation type.
