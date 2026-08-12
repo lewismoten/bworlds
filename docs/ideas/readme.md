@@ -70,3 +70,24 @@ Add different geographic layers where areas of the world have a 0.0 to 1.0 influ
 Moss on trees facing away from equator
 
 - Currency regions: Overlapping regions that accept/trade/buy with a particular currency
+
+Oddities of Fun: Flea Circus, Barrel Organ/Organ Grinder, Puppet Show, Magician, Fortune Teller, Strong Man, Carnival Barker, Ticket Seller
+
+- Speedometer
+- Altimeter
+- Flight Instruments 6-pack (steam gauges) or PFD (Glass Cockpit) + flight wall of aircraft in the area
+- Look at how to control various transports to real life
+  - Animal (Horse, Buggy, Stage Coach, Caravan)
+  - Vehicle (Car, Bus, 18 Wheeler, Fire Engine, Law Enforcement, Race Car, Towtruck, RV, 5th Wheel Camper, Ambulance, Ice Cream Truck, Antique Car, Tractor, Parking lot tram)
+  - Boats (Tall Ship, Sailing, Motor, Ship, Tug, Liner, Cruise, Paddle/Steam, Row, Kyak, Inner Tube, Foot paddle boat)
+    - Docks, Harbors, Light Houses, Ship Yard, Freight Yard
+    - Automated Routes - Ferry, Scenic, Tourism, Transport, Freight
+  - Aircraft (747, 172, Experimental, Glider, Balloon)
+    - Airport, Tower, Radar, Landing Strip, Landing Lights, Lights on tall towers, Flight Wall of Aircraft in area, Radio chatter, Runway numbers based on orientation and R/L
+    - Automated Routes
+    - Balloon Festivals, Air shows
+  - Train (Trolly, Monorail, Steam, Electric, Deisel, Metro/Subway, Freight, Caboose)
+    - Train yard, Signals, Caboose, Track switch, Signs
+    - Automated Routes, Freight Delivery
+  - Theme Park / Carnival Rides (operator / rider): Swings, Ferris Wheel, Meri-go-round, kids rides, Roller Coaster, Log Flume, Casino
+    - Animal rides: Pony, Elephant, Horse, Donkey, Galapagos Turtle

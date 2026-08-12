@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-12T23:21:00.000Z",
+  "generatedAt": "2026-08-12T23:58:00.000Z",
   "initialJavaScript": {
-    "baselineBytes": 1636613,
+    "baselineBytes": 1686925,
     "maxIncreaseBytes": 49152
   },
   "initialCss": {
@@ -18,17 +18,19 @@
       "main": 1173711,
       "music-debug": 188541,
       "procedural-music-audio-sink": 106263,
+      "shared:main+terrain-chunk-debug-page": 218451,
+      "shared:main+terrain-chunk-debug-page+tree-debug-page": 84057,
       "sound-bank-debug-page": 68068,
-      "sound-effects": 139964,
-      "src": 149156
+      "sound-effects": 139964
     },
     "maxIncreaseBytesByName": {
       "main": 40960,
       "music-debug": 12288,
       "procedural-music-audio-sink": 12288,
+      "shared:main+terrain-chunk-debug-page": 12288,
+      "shared:main+terrain-chunk-debug-page+tree-debug-page": 8192,
       "sound-bank-debug-page": 8192,
-      "sound-effects": 12288,
-      "src": 8192
+      "sound-effects": 12288
     }
   }
 }
