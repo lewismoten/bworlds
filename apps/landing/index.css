@@ -666,11 +666,7 @@ footer strong {
   border: 1px solid var(--line);
   border-radius: 1rem;
   background:
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.035),
-      transparent
-    ),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent),
     var(--panel);
 }
 

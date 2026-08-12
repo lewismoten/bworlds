@@ -1,9 +1,8 @@
-const reviewsContainer = document.querySelector("#reviews-list");
+const reviewsContainer = document.querySelector('#reviews-list');
 
-const randomItem = items =>
-  items[Math.floor(Math.random() * items.length)];
+const randomItem = (items) => items[Math.floor(Math.random() * items.length)];
 
-const shuffle2 = items => {
+const shuffle2 = (items) => {
   const copy = [...items];
 
   for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -22,13 +21,13 @@ const renderReviews = (reviews, reviewers) => {
   reviewsContainer.replaceChildren();
 
   selectedReviews.forEach((review, index) => {
-    const article = document.createElement("article");
-    article.className = "review-card";
+    const article = document.createElement('article');
+    article.className = 'review-card';
 
-    const quote = document.createElement("blockquote");
+    const quote = document.createElement('blockquote');
     quote.textContent = `“${review}”`;
 
-    const author = document.createElement("cite");
+    const author = document.createElement('cite');
     author.textContent = `— ${selectedReviewers[index]}`;
 
     article.append(quote, author);
@@ -39,19 +38,17 @@ const renderReviews = (reviews, reviewers) => {
 const loadReviews = async () => {
   try {
     const [reviewsResponse, reviewersResponse] = await Promise.all([
-      fetch("reviews.json?1"),
-      fetch("reviewers.json"),
+      fetch('reviews.json?1'),
+      fetch('reviewers.json'),
     ]);
 
     if (!reviewsResponse.ok) {
-      throw new Error(
-        `Unable to load reviews.json: ${reviewsResponse.status}`,
-      );
+      throw new Error(`Unable to load reviews.json: ${reviewsResponse.status}`);
     }
 
     if (!reviewersResponse.ok) {
       throw new Error(
-        `Unable to load reviewers.json: ${reviewersResponse.status}`,
+        `Unable to load reviewers.json: ${reviewersResponse.status}`
       );
     }
 
@@ -61,11 +58,11 @@ const loadReviews = async () => {
     ]);
 
     if (!Array.isArray(reviews) || reviews.length === 0) {
-      throw new Error("reviews.json must contain a non-empty array.");
+      throw new Error('reviews.json must contain a non-empty array.');
     }
 
     if (!Array.isArray(reviewers) || reviewers.length === 0) {
-      throw new Error("reviewers.json must contain a non-empty array.");
+      throw new Error('reviewers.json must contain a non-empty array.');
     }
 
     renderReviews(reviews, reviewers);
@@ -73,7 +70,7 @@ const loadReviews = async () => {
     console.error(error);
 
     reviewsContainer.textContent =
-      "Imaginary complaints are temporarily unavailable.";
+      'Imaginary complaints are temporarily unavailable.';
   }
 };
 

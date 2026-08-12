@@ -7,15 +7,15 @@ let meaningIndex = 0;
 
 let rerolled = false;
 let rerollText = [
-  "I’m Feeling Unlucky",
-"Make It Worse",
-"Generate Regret",
-"Try Another Mistake",
-"Give Me Another One",
-"Roll the Acronym",
-"Questionable Choice",
-"Proceed Anyway",
-"What Could Go Wrong?"
+  'I’m Feeling Unlucky',
+  'Make It Worse',
+  'Generate Regret',
+  'Try Another Mistake',
+  'Give Me Another One',
+  'Roll the Acronym',
+  'Questionable Choice',
+  'Proceed Anyway',
+  'What Could Go Wrong?',
 ];
 
 const initialsOf = (value) =>
@@ -115,7 +115,7 @@ const buildAllMeanings = () => {
   const generated = grammar.patterns.flatMap(buildPatternMeanings);
 
   meanings = shuffle([...new Set(generated)]);
-  rerollText = shuffle([...new Set(rerollText)])
+  rerollText = shuffle([...new Set(rerollText)]);
   meaningIndex = 0;
 
   console.info(`Generated ${meanings.length} unique KOGNABO meanings.`);
@@ -153,7 +153,7 @@ const showNextMeaning = () => {
   meaning.textContent = output;
   meaning.classList.add('changing');
 
-  if(rerolled) {
+  if (rerolled) {
     reroll.textContent = rerollText[meaningIndex % rerollText.length];
   }
   rerolled = true;
