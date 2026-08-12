@@ -125,7 +125,7 @@
 - [x] Add a primary oscillator gain control.
 - [x] Add a harmonic oscillator gain control.
 - [x] Add a harmonic frequency ratio control.
-- [ ] Add a harmonic detune control.
+- [x] Add a harmonic detune control.
 - [ ] Add a primary detune control.
 - [ ] Add an oscillator phase control if supported.
 - [ ] Add a noise source amount control.

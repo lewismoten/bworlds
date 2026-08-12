@@ -1,7 +1,0 @@
-- [x] Show a tab where statistics can be displayed such as FPS, objects, memory, CPU, GPU, etc.
-- [x] Show/Edit world seed
-- [x] Show GPS coordinates
-- [x] Show tile x/y position
-- [x] Display the world seed and allow it to be changed.
-- [x] Save/load the world seed
-- [x] Let me select a tile type and teleport to a random one in the world, while landing on a land tile within range
