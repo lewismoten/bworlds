@@ -32,6 +32,7 @@ export {
 } from './map-features.ts';
 export {
   createMapFeatureGeneratorPlugin,
+  createPmtilesTileCache,
   DEFAULT_PMTILES_FULL_DETAIL_ZOOM,
   DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE,
   createPmtilesExportPlugin,
@@ -39,6 +40,7 @@ export {
   createPmtilesTileCoordinate,
   generatePmtilesTileFeatures,
   generatePmtilesTileFeaturesAtZoomDetail,
+  getOrCreatePmtilesTileFeatures,
   selectPmtilesTileFeaturesForZoom,
   simplifyPmtilesFeatureGeometry,
 } from './map-pmtiles.ts';

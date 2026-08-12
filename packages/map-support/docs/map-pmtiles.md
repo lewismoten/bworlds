@@ -2,6 +2,7 @@
 for future vector-tile generation:
 
 - `createMapFeatureGeneratorPlugin(...)`
+- `createPmtilesTileCache(...)`
 - `selectPmtilesTileFeaturesForZoom(...)`
 - `simplifyPmtilesFeatureGeometry(...)`
 - `createPmtilesExportPlugin(...)`
@@ -9,6 +10,7 @@ for future vector-tile generation:
 - `createPmtilesTileCoordinate(...)`
 - `generatePmtilesTileFeatures(...)`
 - `generatePmtilesTileFeaturesAtZoomDetail(...)`
+- `getOrCreatePmtilesTileFeatures(...)`
 
 ## Purpose
 
@@ -85,6 +87,27 @@ That gives later PMTiles export code one shared path for:
 - coarse features at low zoom
 - finer features at higher zoom
 - zoom-dependent line and polygon simplification
+
+## World Revision Cache
+
+`createPmtilesTileCache(...)` builds a small in-memory cache keyed by:
+
+- `worldRevision`
+- `tile.zoom`
+- `tile.x`
+- `tile.y`
+- requested `layerIds`
+
+`getOrCreatePmtilesTileFeatures(...)` composes:
+
+- request normalization
+- cache lookup
+- on-demand generation with zoom detail
+- cache population on misses
+
+That gives later PMTiles export code one deterministic cache path so repeated
+tile requests for the same world revision can reuse generated feature sets,
+while revision changes can invalidate old entries cleanly.
 
 ## Validation
 

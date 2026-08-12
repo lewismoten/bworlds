@@ -33,7 +33,7 @@ Current support:
 - [x] Simplify lines and polygons by zoom level.
 - [x] Keep major rivers visible at low zoom.
 - [x] Reveal local roads and small rivers at higher zoom.
-- [ ] Cache generated tiles by world revision.
+- [x] Cache generated tiles by world revision.
 
 - `@bworlds/map-support` now exposes a shared `PmtilesExportPlugin`
   contract plus `createPmtilesExportPlugin(...)`, so later map export work
@@ -60,6 +60,11 @@ Current support:
   shared visibility-policy layer so major rivers stay visible earlier than
   smaller waterways, and local roads unlock later than trunk transport
   corridors instead of hard-coding those thresholds in each future layer.
+- `createPmtilesTileCache(...)` and
+  `getOrCreatePmtilesTileFeatures(...)` now give that PMTiles path one
+  shared world-revision cache keyed by `worldRevision`, `zoom/x/y`, and
+  requested `layerIds`, so repeated tile requests can reuse generated
+  feature sets while revision changes can invalidate stale entries cleanly.
 
 ## Physical Layers
 

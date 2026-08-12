@@ -31,6 +31,16 @@ export interface MapFeatureGeneratorPlugin {
   getFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
 }
 
+export interface PmtilesTileCache {
+  get(request: PmtilesExportRequest): readonly MapFeatureRecord[] | null;
+  set(
+    request: PmtilesExportRequest,
+    features: readonly MapFeatureRecord[]
+  ): readonly MapFeatureRecord[];
+  clearWorldRevision(worldRevision: string): void;
+  clear(): void;
+}
+
 export const DEFAULT_PMTILES_FULL_DETAIL_ZOOM = 12;
 export const DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE = 16;
 
@@ -66,6 +76,42 @@ export function createPmtilesExportRequest(
   request: PmtilesExportRequest
 ): PmtilesExportRequest {
   return normalizePmtilesExportRequest(request);
+}
+
+export function createPmtilesTileCache(): PmtilesTileCache {
+  const entries = new Map<string, readonly MapFeatureRecord[]>();
+  return {
+    get(request) {
+      const cacheKey = createPmtilesTileCacheKey(request);
+      return entries.get(cacheKey) ?? null;
+    },
+    set(request, features) {
+      const normalizedRequest = normalizePmtilesExportRequest(request);
+      const normalizedFeatures = features.map((feature) =>
+        normalizeMapFeatureRecord(feature)
+      );
+      entries.set(
+        createPmtilesTileCacheKey(normalizedRequest),
+        normalizedFeatures
+      );
+      return normalizedFeatures;
+    },
+    clearWorldRevision(worldRevision) {
+      const normalizedWorldRevision = normalizeNonEmptyString(
+        worldRevision,
+        'PMTiles cache worldRevision'
+      );
+      const revisionPrefix = `${normalizedWorldRevision}|`;
+      for (const cacheKey of entries.keys()) {
+        if (cacheKey.startsWith(revisionPrefix)) {
+          entries.delete(cacheKey);
+        }
+      }
+    },
+    clear() {
+      entries.clear();
+    },
+  };
 }
 
 export function createMapFeatureGeneratorPlugin(params: {
@@ -135,6 +181,29 @@ export function generatePmtilesTileFeaturesAtZoomDetail(options: {
       fullDetailZoom: options.fullDetailZoom,
       maximumGeometryStride: options.maximumGeometryStride,
     }
+  );
+}
+
+export function getOrCreatePmtilesTileFeatures(options: {
+  cache: PmtilesTileCache;
+  request: PmtilesExportRequest;
+  generators: readonly MapFeatureGeneratorPlugin[];
+  fullDetailZoom?: number;
+  maximumGeometryStride?: number;
+}): readonly MapFeatureRecord[] {
+  const normalizedRequest = normalizePmtilesExportRequest(options.request);
+  const cachedFeatures = options.cache.get(normalizedRequest);
+  if (cachedFeatures != null) {
+    return cachedFeatures;
+  }
+  return options.cache.set(
+    normalizedRequest,
+    generatePmtilesTileFeaturesAtZoomDetail({
+      request: normalizedRequest,
+      generators: options.generators,
+      fullDetailZoom: options.fullDetailZoom,
+      maximumGeometryStride: options.maximumGeometryStride,
+    })
   );
 }
 
@@ -220,6 +289,15 @@ function normalizePmtilesExportRequest(
           ),
         }),
   };
+}
+
+function createPmtilesTileCacheKey(request: PmtilesExportRequest): string {
+  const normalizedRequest = normalizePmtilesExportRequest(request);
+  const layerKey =
+    normalizedRequest.layerIds == null
+      ? '*'
+      : normalizedRequest.layerIds.join(',');
+  return `${normalizedRequest.worldRevision}|${normalizedRequest.tile.zoom}/${normalizedRequest.tile.x}/${normalizedRequest.tile.y}|${layerKey}`;
 }
 
 function normalizePmtilesTileCoordinate(

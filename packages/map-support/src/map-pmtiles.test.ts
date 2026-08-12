@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createMapFeaturePointRecord } from './map-features.ts';
 import {
   createMapFeatureGeneratorPlugin,
+  createPmtilesTileCache,
   createPmtilesExportPlugin,
   createPmtilesExportRequest,
   createPmtilesTileCoordinate,
@@ -9,6 +10,7 @@ import {
   DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE,
   generatePmtilesTileFeatures,
   generatePmtilesTileFeaturesAtZoomDetail,
+  getOrCreatePmtilesTileFeatures,
   selectPmtilesTileFeaturesForZoom,
   simplifyPmtilesFeatureGeometry,
 } from './map-pmtiles.ts';
@@ -310,6 +312,150 @@ describe('map pmtiles', () => {
       { worldX: 0, worldY: 0 },
       { worldX: 4, worldY: 0 },
     ]);
+  });
+
+  it('caches generated tile features by world revision and tile request', () => {
+    const cache = createPmtilesTileCache();
+    let generationCount = 0;
+    const generator = createMapFeatureGeneratorPlugin({
+      id: 'settlements',
+      layerId: 'human',
+      getFeatures(request) {
+        generationCount += 1;
+        return [
+          createMapFeaturePointRecord({
+            sourceWorldObjectId: `settlement:${request.worldRevision}:${generationCount}`,
+            layerId: 'human',
+            coordinate: {
+              worldX: request.tile.x,
+              worldY: request.tile.y,
+            },
+          }),
+        ];
+      },
+    });
+
+    const first = getOrCreatePmtilesTileFeatures({
+      cache,
+      request: {
+        worldRevision: 'rev-a',
+        tile: {
+          zoom: 3,
+          x: 2,
+          y: 1,
+        },
+      },
+      generators: [generator],
+    });
+    const second = getOrCreatePmtilesTileFeatures({
+      cache,
+      request: {
+        worldRevision: 'rev-a',
+        tile: {
+          zoom: 3,
+          x: 2,
+          y: 1,
+        },
+      },
+      generators: [generator],
+    });
+
+    expect(generationCount).toBe(1);
+    expect(second).toEqual(first);
+  });
+
+  it('separates PMTiles cache entries by revision and requested layers and supports revision invalidation', () => {
+    const cache = createPmtilesTileCache();
+    cache.set(
+      {
+        worldRevision: 'rev-a',
+        tile: {
+          zoom: 1,
+          x: 1,
+          y: 0,
+        },
+        layerIds: ['hydrology'],
+      },
+      [
+        createMapFeaturePointRecord({
+          sourceWorldObjectId: 'river:a',
+          layerId: 'hydrology',
+          coordinate: {
+            worldX: 0,
+            worldY: 0,
+          },
+        }),
+      ]
+    );
+    cache.set(
+      {
+        worldRevision: 'rev-b',
+        tile: {
+          zoom: 1,
+          x: 1,
+          y: 0,
+        },
+        layerIds: ['transport'],
+      },
+      [
+        createMapFeaturePointRecord({
+          sourceWorldObjectId: 'road:b',
+          layerId: 'transport',
+          coordinate: {
+            worldX: 1,
+            worldY: 1,
+          },
+        }),
+      ]
+    );
+
+    expect(
+      cache.get({
+        worldRevision: 'rev-a',
+        tile: {
+          zoom: 1,
+          x: 1,
+          y: 0,
+        },
+        layerIds: ['hydrology'],
+      })
+    ).not.toBeNull();
+    expect(
+      cache.get({
+        worldRevision: 'rev-a',
+        tile: {
+          zoom: 1,
+          x: 1,
+          y: 0,
+        },
+        layerIds: ['transport'],
+      })
+    ).toBeNull();
+
+    cache.clearWorldRevision('rev-a');
+
+    expect(
+      cache.get({
+        worldRevision: 'rev-a',
+        tile: {
+          zoom: 1,
+          x: 1,
+          y: 0,
+        },
+        layerIds: ['hydrology'],
+      })
+    ).toBeNull();
+    expect(
+      cache.get({
+        worldRevision: 'rev-b',
+        tile: {
+          zoom: 1,
+          x: 1,
+          y: 0,
+        },
+        layerIds: ['transport'],
+      })
+    ).not.toBeNull();
   });
 
   it('rejects invalid PMTiles export declarations and tile requests', () => {
