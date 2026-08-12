@@ -23,11 +23,15 @@ export {
   createClimateMapFeatureGeneratorPlugin,
   createElevationMapFeatureGeneratorPlugin,
   createGeologyMapFeatureGeneratorPlugin,
+  createHumidityMapFeatureGeneratorPlugin,
   createPhysicalMapFeatureGeneratorPlugin,
+  createPressureMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
   createSlopeMapFeatureGeneratorPlugin,
   createTemperatureZoneMapFeatureGeneratorPlugin,
   createTopographicMapFeatureGeneratorPlugin,
+  createWeatherMapFeatureGeneratorPlugin,
+  createWindMapFeatureGeneratorPlugin,
 } from './map-layer-generators.ts';
 export {
   createHydrologyFeatureZoomRange,

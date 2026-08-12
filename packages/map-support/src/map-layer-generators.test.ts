@@ -8,11 +8,15 @@ import {
   createClimateMapFeatureGeneratorPlugin,
   createElevationMapFeatureGeneratorPlugin,
   createGeologyMapFeatureGeneratorPlugin,
+  createHumidityMapFeatureGeneratorPlugin,
   createPhysicalMapFeatureGeneratorPlugin,
+  createPressureMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
   createSlopeMapFeatureGeneratorPlugin,
   createTemperatureZoneMapFeatureGeneratorPlugin,
   createTopographicMapFeatureGeneratorPlugin,
+  createWeatherMapFeatureGeneratorPlugin,
+  createWindMapFeatureGeneratorPlugin,
 } from './map-layer-generators.ts';
 
 describe('map layer generators', () => {
@@ -323,6 +327,153 @@ describe('map layer generators', () => {
       {
         kind: 'line',
         layerId: 'temperature-zone',
+      },
+    ]);
+  });
+
+  it('creates humidity layer generators with conventional humidity layer ids', () => {
+    const plugin = createHumidityMapFeatureGeneratorPlugin({
+      getHumidityFeatures(request) {
+        return [
+          createMapFeaturePolygonRecord({
+            sourceWorldObjectId: `humidity:${request.tile.x}:${request.tile.y}`,
+            layerId: 'humidity',
+            rings: [
+              [
+                { worldX: 0, worldY: 0 },
+                { worldX: 2, worldY: 0 },
+                { worldX: 2, worldY: 2 },
+                { worldX: 0, worldY: 0 },
+              ],
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('humidity-map-layer');
+    expect(plugin.layerId).toBe('humidity');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-9',
+        tile: {
+          zoom: 4,
+          x: 9,
+          y: 2,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'polygon',
+        layerId: 'humidity',
+      },
+    ]);
+  });
+
+  it('creates pressure layer generators with conventional pressure layer ids', () => {
+    const plugin = createPressureMapFeatureGeneratorPlugin({
+      id: 'barometric-pressure',
+      label: 'Barometric Pressure',
+      getPressureFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `isobar:${request.tile.zoom}`,
+            layerId: 'pressure',
+            coordinates: [
+              { worldX: 0, worldY: request.tile.zoom },
+              { worldX: 4, worldY: request.tile.zoom + 1 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('barometric-pressure');
+    expect(plugin.label).toBe('Barometric Pressure');
+    expect(plugin.layerId).toBe('pressure');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-10',
+        tile: {
+          zoom: 3,
+          x: 2,
+          y: 1,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'pressure',
+      },
+    ]);
+  });
+
+  it('creates weather layer generators with conventional weather layer ids', () => {
+    const plugin = createWeatherMapFeatureGeneratorPlugin({
+      getWeatherFeatures(request) {
+        return [
+          createMapFeaturePointRecord({
+            sourceWorldObjectId: `weather:${request.tile.x}/${request.tile.y}`,
+            layerId: 'weather',
+            coordinate: {
+              worldX: request.tile.x,
+              worldY: request.tile.y,
+            },
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('weather-map-layer');
+    expect(plugin.layerId).toBe('weather');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-11',
+        tile: {
+          zoom: 5,
+          x: 10,
+          y: 11,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'point',
+        layerId: 'weather',
+      },
+    ]);
+  });
+
+  it('creates wind layer generators with conventional wind layer ids', () => {
+    const plugin = createWindMapFeatureGeneratorPlugin({
+      getWindFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `wind:${request.tile.x}:${request.tile.y}`,
+            layerId: 'wind',
+            coordinates: [
+              { worldX: request.tile.x, worldY: request.tile.y },
+              { worldX: request.tile.x + 3, worldY: request.tile.y + 1 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('wind-map-layer');
+    expect(plugin.layerId).toBe('wind');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-12',
+        tile: {
+          zoom: 4,
+          x: 12,
+          y: 7,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'wind',
       },
     ]);
   });

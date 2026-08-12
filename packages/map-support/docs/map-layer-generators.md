@@ -9,6 +9,10 @@ for physical map products built on canonical map features:
 - `createGeologyMapFeatureGeneratorPlugin(...)`
 - `createClimateMapFeatureGeneratorPlugin(...)`
 - `createTemperatureZoneMapFeatureGeneratorPlugin(...)`
+- `createHumidityMapFeatureGeneratorPlugin(...)`
+- `createPressureMapFeatureGeneratorPlugin(...)`
+- `createWeatherMapFeatureGeneratorPlugin(...)`
+- `createWindMapFeatureGeneratorPlugin(...)`
 
 ## Purpose
 
@@ -34,6 +38,10 @@ The helpers currently reserve these layer ids:
 - `geology`
 - `climate`
 - `temperature-zone`
+- `humidity`
+- `pressure`
+- `weather`
+- `wind`
 
 That gives later PMTiles export, map styling, and viewer code one stable layer
 vocabulary instead of forcing each feature generator to invent its own names.
@@ -125,3 +133,34 @@ and:
 These wrappers intentionally accept canonical `MapFeatureRecord` values so
 later biome-band, Koppen-style, or temperature-region products can share one
 layer contract before the concrete climate analysis logic exists.
+
+## Humidity, Pressure, Weather, And Wind Layers
+
+`createHumidityMapFeatureGeneratorPlugin(...)`,
+`createPressureMapFeatureGeneratorPlugin(...)`,
+`createWeatherMapFeatureGeneratorPlugin(...)`, and
+`createWindMapFeatureGeneratorPlugin(...)` follow the same PMTiles generator
+contract with conventional layer ids:
+
+- `layerId: 'humidity'`
+- `layerId: 'pressure'`
+- `layerId: 'weather'`
+- `layerId: 'wind'`
+
+They default to:
+
+- `id: 'humidity-map-layer'`
+- `id: 'pressure-map-layer'`
+- `id: 'weather-map-layer'`
+- `id: 'wind-map-layer'`
+
+and:
+
+- `label: 'Humidity Layer'`
+- `label: 'Pressure Layer'`
+- `label: 'Weather Layer'`
+- `label: 'Wind Layer'`
+
+These wrappers intentionally accept canonical `MapFeatureRecord` values so
+later moisture fields, isobars, forecast overlays, and flow-vector products
+can share one layer contract before the climate simulation details land.

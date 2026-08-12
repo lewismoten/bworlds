@@ -140,3 +140,69 @@ export function createTemperatureZoneMapFeatureGeneratorPlugin(options: {
     },
   });
 }
+
+export function createHumidityMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getHumidityFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'humidity-map-layer',
+    label: options.label ?? 'Humidity Layer',
+    layerId: 'humidity',
+    getFeatures(request) {
+      return options.getHumidityFeatures(request);
+    },
+  });
+}
+
+export function createPressureMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getPressureFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'pressure-map-layer',
+    label: options.label ?? 'Pressure Layer',
+    layerId: 'pressure',
+    getFeatures(request) {
+      return options.getPressureFeatures(request);
+    },
+  });
+}
+
+export function createWeatherMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getWeatherFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'weather-map-layer',
+    label: options.label ?? 'Weather Layer',
+    layerId: 'weather',
+    getFeatures(request) {
+      return options.getWeatherFeatures(request);
+    },
+  });
+}
+
+export function createWindMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getWindFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'wind-map-layer',
+    label: options.label ?? 'Wind Layer',
+    layerId: 'wind',
+    getFeatures(request) {
+      return options.getWindFeatures(request);
+    },
+  });
+}
