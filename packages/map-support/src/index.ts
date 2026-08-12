@@ -13,6 +13,7 @@ import type {
   WorldMapLike,
 } from '@bworlds/plugin-api';
 export type * from './map-projections.ts';
+export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,
@@ -106,6 +107,26 @@ export {
   WINKEL_TRIPEL_STANDARD_PARALLEL_DEGREES,
   WINKEL_TRIPEL_STANDARD_PARALLEL_RADIANS,
 } from './map-projections.ts';
+export {
+  createMapViewport3DState,
+  DEFAULT_MAP_VIEWPORT_3D_DISTANCE,
+  DEFAULT_MAP_VIEWPORT_3D_MAX_DISTANCE,
+  DEFAULT_MAP_VIEWPORT_3D_MAX_PITCH_RADIANS,
+  DEFAULT_MAP_VIEWPORT_3D_MIN_DISTANCE,
+  DEFAULT_MAP_VIEWPORT_3D_MIN_PITCH_RADIANS,
+  DEFAULT_MAP_VIEWPORT_3D_PAN_WORLD_UNITS_PER_SCREEN,
+  DEFAULT_MAP_VIEWPORT_3D_PITCH_RADIANS,
+  DEFAULT_MAP_VIEWPORT_3D_ROTATE_RADIANS_PER_SCREEN,
+  DEFAULT_MAP_VIEWPORT_3D_TARGET_X,
+  DEFAULT_MAP_VIEWPORT_3D_TARGET_Y,
+  DEFAULT_MAP_VIEWPORT_3D_TARGET_Z,
+  DEFAULT_MAP_VIEWPORT_3D_WHEEL_ZOOM_STEP,
+  DEFAULT_MAP_VIEWPORT_3D_YAW_RADIANS,
+  panMapViewport3D,
+  resolveMapViewport3DCameraPosition,
+  rotateMapViewport3D,
+  zoomMapViewport3D,
+} from './map-viewport-3d.ts';
 export {
   createMapViewportState,
   DEFAULT_MAP_VIEWPORT_CENTER_X,

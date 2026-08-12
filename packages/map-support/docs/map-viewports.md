@@ -10,6 +10,14 @@ for projected map interactions:
 - `zoomMapViewportAtScreenPoint(...)`
 - `reprojectMapViewportSelection(...)`
 
+It also exposes one small shared 3D orbit-style helper layer:
+
+- `createMapViewport3DState(...)`
+- `rotateMapViewport3D(...)`
+- `panMapViewport3D(...)`
+- `zoomMapViewport3D(...)`
+- `resolveMapViewport3DCameraPosition(...)`
+
 ## Purpose
 
 The projection plugins define how world coordinates become projected map
@@ -21,6 +29,7 @@ This separation keeps:
 - projection math independent from UI state
 - pointer interaction math reusable across future map viewers
 - selection reproject logic shareable across projection changes
+- 3D orbit camera math reusable across future globe or terrain viewers
 
 ## Viewport State
 
@@ -96,3 +105,31 @@ That lets future projected map viewers:
 - keep the selected feature visible
 - avoid selection jumps during projection switches
 - reuse one deterministic projection-change path across UIs
+
+## 3D Rotate, Pan, And Zoom
+
+`MapViewport3DState` tracks:
+
+- `targetX`
+- `targetY`
+- `targetZ`
+- `yawRadians`
+- `pitchRadians`
+- `distance`
+- `minDistance`
+- `maxDistance`
+- `minPitchRadians`
+- `maxPitchRadians`
+
+`rotateMapViewport3D(...)` applies mouse drag deltas to yaw and pitch.
+
+`panMapViewport3D(...)` translates the camera target along the current camera
+right and up axes, scaled by viewport size and orbit distance.
+
+`zoomMapViewport3D(...)` changes orbit distance with min/max clamping.
+
+`resolveMapViewport3DCameraPosition(...)` converts the orbit state into a
+concrete camera position in world space.
+
+This keeps 3D map interaction math independent from any specific rendering
+engine while still giving future map viewers one shared orbit-control model.

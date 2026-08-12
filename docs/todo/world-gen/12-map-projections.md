@@ -31,7 +31,7 @@
 
 - [x] Add mouse pan and wheel zoom to 2D maps.
 - [x] Add touch pan and pinch zoom to 2D maps.
-- [ ] Add mouse rotate, pan, and zoom to 3D maps.
+- [x] Add mouse rotate, pan, and zoom to 3D maps.
 - [x] Preserve selected position across projection changes.
 
 Current support:
@@ -123,6 +123,11 @@ Current support:
   map viewers can keep a selected world-space feature at the same screen
   coordinate while swapping projection callbacks instead of letting
   projection changes make the selection jump.
+- `@bworlds/map-support` now also exposes shared 3D orbit viewport helpers
+  for `createMapViewport3DState(...)`, mouse-driven rotate/pan/zoom state
+  updates, and `resolveMapViewport3DCameraPosition(...)` so future 3D map
+  viewers can share one renderer-agnostic interaction math layer instead of
+  reimplementing orbit camera controls.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.
