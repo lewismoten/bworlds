@@ -10,12 +10,14 @@ Current surface:
 - `sampleTerrainSurface(worldX, worldY)` adds sea-level and below-sea metadata
 - `sampleTerrainSlope(worldX, worldY, sampleStep?)` derives central-difference
   slope from the same shared height sampler
-- `terrainHeightSampler` exposes the same height, surface, and slope calls for
-  consumers that want one shared sampler object
+- `sampleTerrainAspect(worldX, worldY, sampleStep?)` derives one local aspect
+  angle from that same slope sample, or `null` for flat or near-flat terrain
+- `terrainHeightSampler` exposes the same height, surface, slope, and aspect
+  calls for consumers that want one shared sampler object
 
 Current limits:
 
 - this still samples the interim overworld relief curve, not the future fully
   layered authoritative terrain pipeline
-- slope is currently local central-difference grade only; aspect, curvature,
-  and drainage-derived signals still need separate Phase 2 work
+- slope and aspect are currently local central-difference derivatives only;
+  curvature and drainage-derived signals still need separate Phase 2 work

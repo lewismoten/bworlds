@@ -25,6 +25,7 @@ import {
   TERRAIN_CHUNK_CELL_SIZE,
   TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE,
   WORLD_FEET_PER_TILE,
+  WORLD_TERRAIN_FLAT_GRADE_EPSILON,
   WORLD_METERS_PER_TILE,
   WORLD_TERRAIN_SEA_LEVEL,
 } from './index.ts';
@@ -500,6 +501,32 @@ describe('world generator', () => {
     );
   });
 
+  it('samples deterministic terrain aspect from the shared slope API', () => {
+    const generator = createGenerator();
+    const slope = generator.sampleTerrainSlope(10, 20);
+    const aspect = generator.sampleTerrainAspect(10, 20);
+
+    expect(aspect).toEqual({
+      worldX: 10,
+      worldY: 20,
+      sampleStep: slope.sampleStep,
+      slopeX: slope.slopeX,
+      slopeY: slope.slopeY,
+      grade: slope.grade,
+      aspectRadians:
+        slope.grade <= 0 ? null : Math.atan2(slope.slopeY, slope.slopeX),
+    });
+    expect(generator.terrainHeightSampler.sampleAspect(10, 20)).toEqual(aspect);
+  });
+
+  it('returns null aspect for flat terrain samples', () => {
+    const generator = createGenerator();
+    const aspect = generator.sampleTerrainAspect(0, 0, 10_000);
+
+    expect(aspect.grade).toBeLessThanOrEqual(WORLD_TERRAIN_FLAT_GRADE_EPSILON);
+    expect(aspect.aspectRadians).toBeNull();
+  });
+
   it('exposes one reusable world-space terrain height sampler contract', () => {
     const generator = createGenerator();
     const surface = generator.sampleTerrainSurface(10, 20);
@@ -525,6 +552,7 @@ describe('world generator', () => {
     const baselinePreviewHeight = generator.samplePreviewSurfaceHeight(10, 20);
     const baselineTerrainSurface = generator.sampleTerrainSurface(10, 20);
     const baselineTerrainSlope = generator.sampleTerrainSlope(10, 20);
+    const baselineTerrainAspect = generator.sampleTerrainAspect(10, 20);
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
@@ -535,6 +563,7 @@ describe('world generator', () => {
       generator.samplePreviewSurfaceHeight(x, y);
       generator.sampleTerrainSurface(x, y);
       generator.sampleTerrainSlope(x, y);
+      generator.sampleTerrainAspect(x, y);
       generator.samplePreviewOverworld(x, y);
     }
 
@@ -548,6 +577,9 @@ describe('world generator', () => {
       baselineTerrainSurface
     );
     expect(generator.sampleTerrainSlope(10, 20)).toEqual(baselineTerrainSlope);
+    expect(generator.sampleTerrainAspect(10, 20)).toEqual(
+      baselineTerrainAspect
+    );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
     expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');

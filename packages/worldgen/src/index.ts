@@ -54,6 +54,7 @@ export const WORLD_METERS_PER_TILE = 250;
 export const WORLD_FEET_PER_METER = 3.28084;
 export const WORLD_FEET_PER_TILE = WORLD_METERS_PER_TILE * WORLD_FEET_PER_METER;
 export const WORLD_TERRAIN_SEA_LEVEL = 0;
+export const WORLD_TERRAIN_FLAT_GRADE_EPSILON = 0.0001;
 
 export type WorldTerrainHeightSample = {
   worldX: number;
@@ -73,6 +74,16 @@ export type WorldTerrainSlopeSample = {
   grade: number;
 };
 
+export type WorldTerrainAspectSample = {
+  worldX: number;
+  worldY: number;
+  sampleStep: number;
+  slopeX: number;
+  slopeY: number;
+  grade: number;
+  aspectRadians: number | null;
+};
+
 export type WorldTerrainHeightSampler = {
   sampleHeight(worldX: number, worldY: number): number;
   sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
@@ -81,6 +92,11 @@ export type WorldTerrainHeightSampler = {
     worldY: number,
     sampleStep?: number
   ): WorldTerrainSlopeSample;
+  sampleAspect(
+    worldX: number,
+    worldY: number,
+    sampleStep?: number
+  ): WorldTerrainAspectSample;
 };
 
 export function convertFeetToWorldHeightUnits(feet: number): number {
@@ -131,6 +147,11 @@ export function createWorldGenerator({
     y: number,
     sampleStep?: number
   ): WorldTerrainSlopeSample;
+  sampleTerrainAspect(
+    x: number,
+    y: number,
+    sampleStep?: number
+  ): WorldTerrainAspectSample;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
@@ -260,10 +281,31 @@ export function createWorldGenerator({
       grade: Math.hypot(slopeX, slopeY),
     };
   };
+  const sampleTerrainAspect = (
+    x: number,
+    y: number,
+    sampleStep = 1
+  ): WorldTerrainAspectSample => {
+    const slope = sampleTerrainSlope(x, y, sampleStep);
+    const aspectRadians =
+      slope.grade <= WORLD_TERRAIN_FLAT_GRADE_EPSILON
+        ? null
+        : Math.atan2(slope.slopeY, slope.slopeX);
+    return {
+      worldX: x,
+      worldY: y,
+      sampleStep: slope.sampleStep,
+      slopeX: slope.slopeX,
+      slopeY: slope.slopeY,
+      grade: slope.grade,
+      aspectRadians,
+    };
+  };
   const terrainHeightSampler: WorldTerrainHeightSampler = {
     sampleHeight: sampleTerrainHeight,
     sampleSurface: sampleTerrainSurface,
     sampleSlope: sampleTerrainSlope,
+    sampleAspect: sampleTerrainAspect,
   };
 
   return {
@@ -276,6 +318,7 @@ export function createWorldGenerator({
     sampleTerrainHeight,
     sampleTerrainSurface,
     sampleTerrainSlope,
+    sampleTerrainAspect,
     samplePreviewSurfaceHeight: sampleTerrainHeight,
     samplePreviewOverworld(x: number, y: number) {
       const key = getPreviewKey(x, y);

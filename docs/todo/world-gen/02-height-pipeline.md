@@ -35,7 +35,7 @@
 ## Derived Data
 
 - [x] Add slope sampling.
-- [ ] Add aspect sampling.
+- [x] Add aspect sampling.
 - [ ] Add local curvature sampling.
 - [ ] Add drainage-gradient sampling.
 - [ ] Add regional height range sampling.
@@ -71,6 +71,9 @@ Current support:
   central-difference grade from the same shared terrain-height sampler and
   keeps that slope query on `terrainHeightSampler.sampleSlope(...)` too; see
   `packages/worldgen/docs/terrain-height-sampler.md`.
+- That same sampler now also exposes
+  `sampleTerrainAspect(worldX, worldY, sampleStep?)`, which derives one local
+  aspect angle from the shared slope sample and returns `null` for flat terrain.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height
