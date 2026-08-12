@@ -128,7 +128,7 @@
 - [x] Blend ambient occlusion when enabled.
 - [x] Apply terrain tint after texture blending.
 - [x] Normalize blended normals correctly.
-- [ ] Keep shader branches minimal.
+- [x] Keep shader branches minimal.
 - [x] Keep shader variants bounded.
 
 ## Material Reuse
@@ -291,7 +291,8 @@
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
   ambient-occlusion paths only when present, apply tint after blending, and
-  normalize the resolved normal.
+  normalize the resolved normal while avoiding per-layer branches inside the
+  fixed four-sample blend loop.
 - Extended `@bworlds/terrain-splat-support/performance-estimate` to summarize
   cross-chunk splat material reuse, emit per-chunk material keys and binding
   modes, and surface warnings when texture-array fallback or unique terrain

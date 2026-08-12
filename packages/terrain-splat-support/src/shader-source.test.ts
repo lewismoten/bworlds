@@ -37,6 +37,7 @@ describe('terrain splat shader source', () => {
       'terrainSplatLayerIndices',
       'terrainSplatLayerWeights',
     ]);
+    expect(plan.dynamicBranchCount).toBe(1);
     expect(plan.fragmentShader).toContain(
       'uniform highp sampler2DArray terrainSplatBaseColorMap;'
     );
@@ -46,6 +47,13 @@ describe('terrain splat shader source', () => {
     expect(plan.fragmentShader).toContain(
       'blendedBaseColor += sampleTerrainSplatBaseColor(layerIndex, vTerrainSplatUv).rgb * weight;'
     );
+    expect(plan.fragmentShader).toContain(
+      'float blendEnabledFactor = terrainSplatBlendEnabled ? 1.0 : 0.0;'
+    );
+    expect(plan.fragmentShader).toContain(
+      'vec4 effectiveWeights = mix('
+    );
+    expect(plan.fragmentShader).not.toContain('if (weight <= 0.0) {');
     expect(plan.fragmentShader).toContain('blendedNormal = normalize(blendedNormal);');
     expect(plan.fragmentShader).toContain('blendedBaseColor *= terrainSplatTint;');
   });
@@ -121,6 +129,7 @@ describe('terrain splat shader source', () => {
 
     expect(plan.variantKey).toBe('mode:per-layer-textures|features:baseColor,normal,roughness');
     expect(plan.defines).toContain('TERRAIN_SPLAT_PER_LAYER_TEXTURES');
+    expect(plan.dynamicBranchCount).toBe(1);
     expect(plan.fragmentShader).toContain(
       'uniform sampler2D terrainSplatBaseColorMap[4];'
     );

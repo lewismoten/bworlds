@@ -18,6 +18,8 @@ shader-source variant from the shared material and texture-binding plans.
 
 - vertex inputs use `terrainSplatLayerIndices` and `terrainSplatLayerWeights`
 - fragment blending uses one fixed `for (int i = 0; i < 4; ++i)` loop
+- the hot loop avoids per-layer `if` branches and instead multiplies every
+  sample path by the resolved weight
 - tinting is applied after texture blending
 - blended normals are normalized before the resolved output is exposed
 - optional metalness and ambient occlusion paths only appear when their maps are

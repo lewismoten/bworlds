@@ -15,6 +15,7 @@ export type TerrainSplatShaderSourcePlan = {
   defines: readonly string[];
   uniformNames: readonly string[];
   attributeNames: readonly string[];
+  dynamicBranchCount: number;
   vertexShader: string;
   fragmentShader: string;
 };
@@ -42,6 +43,7 @@ export function createTerrainSplatShaderSourcePlan(params: {
     attributeNames: params.materialPlan.requiredAttributes.map(
       (attribute) => attribute.name
     ),
+    dynamicBranchCount: 1,
     vertexShader: createTerrainSplatVertexShaderSource(),
     fragmentShader: createTerrainSplatFragmentShaderSource({
       bindingMode: params.textureBindingPlan.mode,
@@ -115,14 +117,14 @@ function createTerrainSplatFragmentShaderSource(params: {
       ? '  float blendedRoughness = 0.0;'
       : '  float blendedRoughness = 1.0;',
     ...optionalInitializers,
-    '  vec4 effectiveWeights = terrainSplatBlendEnabled',
-    '    ? (vTerrainSplatLayerWeights / 255.0)',
-    '    : vec4(1.0, 0.0, 0.0, 0.0);',
+    '  float blendEnabledFactor = terrainSplatBlendEnabled ? 1.0 : 0.0;',
+    '  vec4 effectiveWeights = mix(',
+    '    vec4(1.0, 0.0, 0.0, 0.0),',
+    '    vTerrainSplatLayerWeights / 255.0,',
+    '    blendEnabledFactor',
+    '  );',
     '  for (int i = 0; i < 4; ++i) {',
     '    float weight = effectiveWeights[i];',
-    '    if (weight <= 0.0) {',
-    '      continue;',
-    '    }',
     '    int layerIndex = int(vTerrainSplatLayerIndices[i]);',
     featureSet.has('baseColor')
       ? '    blendedBaseColor += sampleTerrainSplatBaseColor(layerIndex, vTerrainSplatUv).rgb * weight;'
