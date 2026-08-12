@@ -4,7 +4,10 @@ import {
   createTerrainKindSplatCatalog,
   createTerrainMaterialLayerCatalog,
 } from './index.ts';
-import { buildTerrainSplatChunkData } from './chunk-build.ts';
+import {
+  buildTerrainSplatChunkData,
+  buildTerrainSplatChunkRenderData,
+} from './chunk-build.ts';
 import { createTerrainSplatChunkBuildCache } from './chunk-cache.ts';
 import { createTerrainSplatGridTileResolver } from './sample-grid.ts';
 import type { TerrainSplatWorkerBuildResult } from './worker-contract.ts';
@@ -216,6 +219,195 @@ describe('terrain splat chunk build', () => {
     expect(repeated.result).toBe(first.result);
     expect(resolveTileCalls).toBeGreaterThan(0);
     expect(cache.size()).toBe(1);
+  });
+
+  it('builds render-ready chunk data from shared splat and height inputs', () => {
+    const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
+
+    const built = buildTerrainSplatChunkRenderData({
+      seed: 'chunk-render-data-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      layerCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x >= 1 ? 'forest' : y >= 1 ? 'road' : 'plains',
+        signals: {
+          moisture: 0.58,
+          roadSignal: y >= 1 ? 0.8 : 0,
+          season: 'summer',
+          temperature: 0.68,
+        },
+      })),
+      resolveHeight: ({ x, y }) => x * 0.1 + y * 0.2,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+      normalSampleRing: 1,
+    });
+
+    expect(built.fromCache).toBe(false);
+    expect(built.result.packedGrid.width).toBe(3);
+    expect(built.heightField.width).toBe(3);
+    expect(built.heightField.normalSampleWidth).toBe(5);
+    expect(built.geometryPlan.vertexCount).toBe(9);
+    expect(built.geometryPlan.triangleCount).toBe(8);
+    expect(built.attributePlanSet.width).toBe(3);
+    expect(built.attributePlanSet.height).toBe(3);
+    expect(
+      built.attributePlanSet.attributes.map((attribute) => attribute.name)
+    ).toEqual(['terrainSplatLayerIndices', 'terrainSplatLayerWeights']);
+  });
+
+  it('reuses cached render-ready chunk data until the terrain state changes', () => {
+    const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
+    const cache = createTerrainSplatChunkBuildCache<{
+      result: TerrainSplatWorkerBuildResult;
+      heightField: ReturnType<
+        typeof buildTerrainSplatChunkRenderData
+      >['heightField'];
+      geometryPlan: ReturnType<
+        typeof buildTerrainSplatChunkRenderData
+      >['geometryPlan'];
+      attributePlanSet: ReturnType<
+        typeof buildTerrainSplatChunkRenderData
+      >['attributePlanSet'];
+    }>(8);
+    let resolveTileCalls = 0;
+    let resolveHeightCalls = 0;
+
+    const first = buildTerrainSplatChunkRenderData({
+      seed: 'chunk-render-cache-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      layerCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x }) => {
+        resolveTileCalls += 1;
+        return {
+          kind: x >= 1 ? 'forest' : 'plains',
+          signals: {
+            moisture: 0.6,
+          },
+        };
+      }),
+      resolveHeight: ({ x, y }) => {
+        resolveHeightCalls += 1;
+        return x * 0.05 + y * 0.1;
+      },
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+      terrainStateRevision: 'rev-a',
+      cache,
+    });
+    const repeated = buildTerrainSplatChunkRenderData({
+      seed: 'chunk-render-cache-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      layerCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x }) => {
+        resolveTileCalls += 1;
+        return {
+          kind: x >= 1 ? 'forest' : 'plains',
+          signals: {
+            moisture: 0.6,
+          },
+        };
+      }),
+      resolveHeight: ({ x, y }) => {
+        resolveHeightCalls += 1;
+        return x * 0.05 + y * 0.1;
+      },
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+      terrainStateRevision: 'rev-a',
+      cache,
+    });
+    const revised = buildTerrainSplatChunkRenderData({
+      seed: 'chunk-render-cache-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      layerCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x }) => {
+        resolveTileCalls += 1;
+        return {
+          kind: x >= 1 ? 'forest' : 'plains',
+          signals: {
+            moisture: 0.6,
+          },
+        };
+      }),
+      resolveHeight: ({ x, y }) => {
+        resolveHeightCalls += 1;
+        return x * 0.05 + y * 0.1;
+      },
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+      terrainStateRevision: 'rev-b',
+      cache,
+    });
+
+    expect(first.fromCache).toBe(false);
+    expect(repeated.fromCache).toBe(true);
+    expect(repeated.result).toBe(first.result);
+    expect(repeated.heightField).toBe(first.heightField);
+    expect(repeated.geometryPlan).toBe(first.geometryPlan);
+    expect(repeated.attributePlanSet).toBe(first.attributePlanSet);
+    expect(revised.fromCache).toBe(false);
+    expect(revised.result).not.toBe(first.result);
+    expect(cache.size()).toBe(2);
+    expect(resolveTileCalls).toBeGreaterThan(0);
+    expect(resolveHeightCalls).toBeGreaterThan(0);
+  });
+
+  it('keeps render geometry aligned with the packed grid step after coarse lod chunk builds', () => {
+    const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
+
+    const built = buildTerrainSplatChunkRenderData({
+      seed: 'chunk-render-lod-seed',
+      bounds: {
+        minX: 0,
+        maxX: 4,
+        minY: 0,
+        maxY: 4,
+      },
+      kindCatalog,
+      layerCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x + y >= 3 ? 'forest' : 'plains',
+        signals: {
+          moisture: 0.62,
+          elevation: (x + y) / 8,
+        },
+      })),
+      resolveHeight: ({ x, y }) => x * 0.2 + y * 0.15,
+      fallbackLayerId: 'grass-a',
+      lodStepMultiplier: 2,
+    });
+
+    expect(built.result.packedGrid.step).toBe(2);
+    expect(built.heightField.step).toBe(2);
+    expect(built.geometryPlan.step).toBe(2);
+    expect(built.heightField.width).toBe(3);
+    expect(built.geometryPlan.width).toBe(3);
+    expect(built.attributePlanSet.width).toBe(3);
   });
 });
 

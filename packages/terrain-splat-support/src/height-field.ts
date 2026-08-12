@@ -1,4 +1,7 @@
-import type { TerrainSplatSampleGrid } from './sample-grid.ts';
+import type {
+  PackedTerrainSplatSampleGrid,
+  TerrainSplatSampleGrid,
+} from './sample-grid.ts';
 
 export type TerrainHeightField = {
   minX: number;
@@ -31,6 +34,11 @@ export type TerrainSplatHeightGeometryPlan = {
   uvs: Float32Array;
   indices: Uint32Array;
 };
+
+type TerrainSplatGridLike = Pick<
+  TerrainSplatSampleGrid | PackedTerrainSplatSampleGrid,
+  'width' | 'height' | 'step'
+>;
 
 export function createTerrainHeightField(params: {
   bounds: {
@@ -111,7 +119,7 @@ export function getTerrainHeightFieldSample(
 }
 
 export function createTerrainSplatHeightGeometryPlan(params: {
-  grid: TerrainSplatSampleGrid;
+  grid: TerrainSplatGridLike;
   heightField: TerrainHeightField;
   lodStepMultiplier?: number;
 }): TerrainSplatHeightGeometryPlan {
@@ -273,19 +281,9 @@ function getTerrainHeightFieldNormalSample(
 }
 
 function assertCompatibleHeightField(
-  grid: TerrainSplatSampleGrid,
+  grid: TerrainSplatGridLike,
   heightField: TerrainHeightField
 ): void {
-  if (grid.minX !== heightField.minX || grid.minY !== heightField.minY) {
-    throw new Error(
-      'Terrain splat height field must share the same minimum bounds as the splat grid.'
-    );
-  }
-  if (grid.maxX !== heightField.maxX || grid.maxY !== heightField.maxY) {
-    throw new Error(
-      'Terrain splat height field must share the same maximum bounds as the splat grid.'
-    );
-  }
   if (grid.step !== heightField.step) {
     throw new Error(
       `Terrain splat height field step ${heightField.step} must match splat grid step ${grid.step}.`

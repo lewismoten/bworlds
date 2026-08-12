@@ -86,6 +86,12 @@ Current support:
   plus packed splat attribute plan into a real `BufferGeometry`, so the live
   renderer can consume the shared chunk pipeline without rebuilding positions,
   normals, uvs, or packed splat attributes by hand inside `render3d`.
+- `@bworlds/terrain-splat-support/chunk-build` now also exposes one render-data
+  builder that combines cached packed splat output, one shared height sampler,
+  seam-safe height-field geometry, and packed splat attributes into one
+  renderer-ready chunk payload. This gives the future live terrain renderer one
+  cacheable integration target instead of rebuilding chunk geometry and splat
+  attributes from separate ad hoc steps.
 
 ## Sextant Panel
 
