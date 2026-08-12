@@ -94,6 +94,18 @@ export type WorldTerrainCurvatureSample = {
   curvatureMagnitude: number;
 };
 
+export type WorldTerrainHeightRangeSample = {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  sampleStep: number;
+  sampleCount: number;
+  minHeight: number;
+  maxHeight: number;
+  heightRange: number;
+};
+
 export type WorldTerrainHeightSampler = {
   sampleHeight(worldX: number, worldY: number): number;
   sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
@@ -112,6 +124,13 @@ export type WorldTerrainHeightSampler = {
     worldY: number,
     sampleStep?: number
   ): WorldTerrainCurvatureSample;
+  sampleHeightRange(bounds: {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    sampleStep?: number;
+  }): WorldTerrainHeightRangeSample;
 };
 
 export function convertFeetToWorldHeightUnits(feet: number): number {
@@ -172,6 +191,13 @@ export function createWorldGenerator({
     y: number,
     sampleStep?: number
   ): WorldTerrainCurvatureSample;
+  sampleTerrainHeightRange(bounds: {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    sampleStep?: number;
+  }): WorldTerrainHeightRangeSample;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
@@ -346,12 +372,50 @@ export function createWorldGenerator({
       curvatureMagnitude: Math.hypot(curvatureX, curvatureY),
     };
   };
+  const sampleTerrainHeightRange = (bounds: {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    sampleStep?: number;
+  }): WorldTerrainHeightRangeSample => {
+    const normalizedBounds = normalizeTerrainHeightRangeBounds(bounds);
+    let minHeight = Number.POSITIVE_INFINITY;
+    let maxHeight = Number.NEGATIVE_INFINITY;
+    let sampleCount = 0;
+
+    for (
+      let sampleY = normalizedBounds.minY;
+      sampleY <= normalizedBounds.maxY;
+      sampleY += normalizedBounds.sampleStep
+    ) {
+      for (
+        let sampleX = normalizedBounds.minX;
+        sampleX <= normalizedBounds.maxX;
+        sampleX += normalizedBounds.sampleStep
+      ) {
+        const height = sampleTerrainHeight(sampleX, sampleY);
+        minHeight = Math.min(minHeight, height);
+        maxHeight = Math.max(maxHeight, height);
+        sampleCount += 1;
+      }
+    }
+
+    return {
+      ...normalizedBounds,
+      sampleCount,
+      minHeight,
+      maxHeight,
+      heightRange: maxHeight - minHeight,
+    };
+  };
   const terrainHeightSampler: WorldTerrainHeightSampler = {
     sampleHeight: sampleTerrainHeight,
     sampleSurface: sampleTerrainSurface,
     sampleSlope: sampleTerrainSlope,
     sampleAspect: sampleTerrainAspect,
     sampleCurvature: sampleTerrainCurvature,
+    sampleHeightRange: sampleTerrainHeightRange,
   };
 
   return {
@@ -366,6 +430,7 @@ export function createWorldGenerator({
     sampleTerrainSlope,
     sampleTerrainAspect,
     sampleTerrainCurvature,
+    sampleTerrainHeightRange,
     samplePreviewSurfaceHeight: sampleTerrainHeight,
     samplePreviewOverworld(x: number, y: number) {
       const key = getPreviewKey(x, y);
@@ -387,6 +452,48 @@ function normalizeTerrainSampleStep(sampleStep: number): number {
     );
   }
   return sampleStep;
+}
+
+function normalizeTerrainHeightRangeBounds(bounds: {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  sampleStep?: number;
+}): {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  sampleStep: number;
+} {
+  if (!Number.isFinite(bounds.minX) || !Number.isFinite(bounds.maxX)) {
+    throw new Error(
+      'Terrain height range bounds minX/maxX must be finite numbers.'
+    );
+  }
+  if (!Number.isFinite(bounds.minY) || !Number.isFinite(bounds.maxY)) {
+    throw new Error(
+      'Terrain height range bounds minY/maxY must be finite numbers.'
+    );
+  }
+  if (bounds.minX > bounds.maxX) {
+    throw new Error(
+      `Terrain height range bounds minX ${bounds.minX} must be <= maxX ${bounds.maxX}.`
+    );
+  }
+  if (bounds.minY > bounds.maxY) {
+    throw new Error(
+      `Terrain height range bounds minY ${bounds.minY} must be <= maxY ${bounds.maxY}.`
+    );
+  }
+  return {
+    minX: bounds.minX,
+    maxX: bounds.maxX,
+    minY: bounds.minY,
+    maxY: bounds.maxY,
+    sampleStep: normalizeTerrainSampleStep(bounds.sampleStep ?? 1),
+  };
 }
 
 export function createDefaultRuntimePlugins(): RuntimePlugin[] {

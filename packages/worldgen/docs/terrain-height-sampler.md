@@ -14,8 +14,10 @@ Current surface:
   angle from that same slope sample, or `null` for flat or near-flat terrain
 - `sampleTerrainCurvature(worldX, worldY, sampleStep?)` derives one local
   second-difference curvature sample from the same height path
-- `terrainHeightSampler` exposes the same height, surface, slope, aspect, and
-  curvature calls for consumers that want one shared sampler object
+- `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep? })`
+  derives one sampled min/max height summary for an explicit world-space region
+- `terrainHeightSampler` exposes the same height, surface, slope, aspect,
+  curvature, and range calls for consumers that want one shared sampler object
 
 Current limits:
 

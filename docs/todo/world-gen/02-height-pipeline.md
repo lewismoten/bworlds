@@ -38,7 +38,7 @@
 - [x] Add aspect sampling.
 - [x] Add local curvature sampling.
 - [ ] Add drainage-gradient sampling.
-- [ ] Add regional height range sampling.
+- [x] Add regional height range sampling.
 - [ ] Add sea-depth sampling below sea level.
 
 ## Validation
@@ -77,6 +77,10 @@ Current support:
 - It now also exposes `sampleTerrainCurvature(worldX, worldY, sampleStep?)`,
   which derives one local second-difference curvature sample from the same
   shared terrain-height path.
+- It now also exposes
+  `sampleTerrainHeightRange({ minX, maxX, minY, maxY, sampleStep? })`, which
+  derives one sampled min/max height summary for an explicit world-space
+  region.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height

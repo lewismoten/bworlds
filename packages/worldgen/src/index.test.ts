@@ -575,6 +575,79 @@ describe('world generator', () => {
     expect(sample.curvatureMagnitude).toBe(Math.hypot(curvatureX, curvatureY));
   });
 
+  it('samples deterministic terrain height ranges from explicit world bounds', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainHeightRange({
+      minX: 10,
+      maxX: 12,
+      minY: 20,
+      maxY: 21,
+    });
+    const heights = [
+      generator.sampleTerrainHeight(10, 20),
+      generator.sampleTerrainHeight(11, 20),
+      generator.sampleTerrainHeight(12, 20),
+      generator.sampleTerrainHeight(10, 21),
+      generator.sampleTerrainHeight(11, 21),
+      generator.sampleTerrainHeight(12, 21),
+    ];
+
+    expect(sample).toEqual({
+      minX: 10,
+      maxX: 12,
+      minY: 20,
+      maxY: 21,
+      sampleStep: 1,
+      sampleCount: 6,
+      minHeight: Math.min(...heights),
+      maxHeight: Math.max(...heights),
+      heightRange: Math.max(...heights) - Math.min(...heights),
+    });
+    expect(
+      generator.terrainHeightSampler.sampleHeightRange({
+        minX: 10,
+        maxX: 12,
+        minY: 20,
+        maxY: 21,
+      })
+    ).toEqual(sample);
+  });
+
+  it('supports wider terrain height-range steps and rejects invalid bounds', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainHeightRange({
+      minX: 10,
+      maxX: 14,
+      minY: 20,
+      maxY: 24,
+      sampleStep: 2,
+    });
+    const heights = [
+      generator.sampleTerrainHeight(10, 20),
+      generator.sampleTerrainHeight(12, 20),
+      generator.sampleTerrainHeight(14, 20),
+      generator.sampleTerrainHeight(10, 22),
+      generator.sampleTerrainHeight(12, 22),
+      generator.sampleTerrainHeight(14, 22),
+      generator.sampleTerrainHeight(10, 24),
+      generator.sampleTerrainHeight(12, 24),
+      generator.sampleTerrainHeight(14, 24),
+    ];
+
+    expect(sample.sampleStep).toBe(2);
+    expect(sample.sampleCount).toBe(9);
+    expect(sample.minHeight).toBe(Math.min(...heights));
+    expect(sample.maxHeight).toBe(Math.max(...heights));
+    expect(() =>
+      generator.sampleTerrainHeightRange({
+        minX: 2,
+        maxX: 1,
+        minY: 0,
+        maxY: 1,
+      })
+    ).toThrow('Terrain height range bounds minX 2 must be <= maxX 1.');
+  });
+
   it('exposes one reusable world-space terrain height sampler contract', () => {
     const generator = createGenerator();
     const surface = generator.sampleTerrainSurface(10, 20);
@@ -602,6 +675,12 @@ describe('world generator', () => {
     const baselineTerrainSlope = generator.sampleTerrainSlope(10, 20);
     const baselineTerrainAspect = generator.sampleTerrainAspect(10, 20);
     const baselineTerrainCurvature = generator.sampleTerrainCurvature(10, 20);
+    const baselineTerrainRange = generator.sampleTerrainHeightRange({
+      minX: 10,
+      maxX: 12,
+      minY: 20,
+      maxY: 21,
+    });
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
@@ -614,6 +693,12 @@ describe('world generator', () => {
       generator.sampleTerrainSlope(x, y);
       generator.sampleTerrainAspect(x, y);
       generator.sampleTerrainCurvature(x, y);
+      generator.sampleTerrainHeightRange({
+        minX: x,
+        maxX: x + 2,
+        minY: y,
+        maxY: y + 1,
+      });
       generator.samplePreviewOverworld(x, y);
     }
 
@@ -633,6 +718,14 @@ describe('world generator', () => {
     expect(generator.sampleTerrainCurvature(10, 20)).toEqual(
       baselineTerrainCurvature
     );
+    expect(
+      generator.sampleTerrainHeightRange({
+        minX: 10,
+        maxX: 12,
+        minY: 20,
+        maxY: 21,
+      })
+    ).toEqual(baselineTerrainRange);
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
     expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
