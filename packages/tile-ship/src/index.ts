@@ -95,7 +95,6 @@ function* createShipModelProgressive({
   tileX,
   tileY,
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
-  const group = new three.Group();
   const facing = getShipFacing(state, tileX, tileY);
   const variant = getShipVariant(tileX, tileY);
   const {
@@ -107,48 +106,45 @@ function* createShipModelProgressive({
   } = getShipSharedMaterials(three, variant);
   const totalSteps = 3;
 
-  group.position.set(tileX, 0, tileY);
-  group.rotation.y = facing.rotationY;
-  group.userData = {
-    ...(group.userData ?? {}),
-    [SHIP_VARIANT_KEY]: variant,
-  };
-
   const hull = new three.Mesh(
     new three.BoxGeometry(0.62, 0.22, 1.18),
     hullMaterial
   );
-  hull.position.set(0, 0.11, 0.05);
-  group.add(hull);
+  hull.position.set(tileX, 0.11, tileY + 0.05);
+  hull.rotation.y = facing.rotationY;
+  hull.userData = {
+    ...(hull.userData ?? {}),
+    [SHIP_VARIANT_KEY]: variant,
+  };
 
   const deck = new three.Mesh(
     new three.BoxGeometry(0.5, 0.04, 0.92),
     trimMaterial
   );
-  deck.position.set(0, 0.24, 0.04);
-  group.add(deck);
+  deck.position.set(0, 0.13, -0.01);
+  hull.add(deck);
 
   const prow = new three.Mesh(
     new three.BoxGeometry(0.42, 0.18, 0.2),
     hullMaterial
   );
-  prow.position.set(0, 0.14, -0.58);
+  prow.position.set(0, 0.03, -0.63);
   prow.rotation.x = -0.24;
-  group.add(prow);
+  hull.add(prow);
 
   const stern = new three.Mesh(
     new three.BoxGeometry(0.44, 0.24, 0.22),
     hullMaterial
   );
-  stern.position.set(0, 0.18, 0.58);
-  group.add(stern);
+  stern.position.set(0, 0.07, 0.53);
+  hull.add(stern);
 
   const cabin = new three.Mesh(
     new three.BoxGeometry(0.34, 0.2, 0.26),
     trimMaterial
   );
-  cabin.position.set(0, 0.34, 0.42);
-  group.add(cabin);
+  cabin.position.set(0, 0.23, 0.37);
+  hull.add(cabin);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -163,8 +159,8 @@ function* createShipModelProgressive({
       nightIntensity: 1.1,
     }
   );
-  lantern.position.set(0.18, 0.42, 0.46);
-  group.add(lantern);
+  lantern.position.set(0.18, 0.31, 0.41);
+  hull.add(lantern);
 
   const lanternLight = markPoiLightEmitter(
     new three.PointLight('#f6c56b', 0, 3.8, 1.85),
@@ -174,9 +170,9 @@ function* createShipModelProgressive({
       visibleThreshold: 0.03,
     }
   );
-  lanternLight.position.set(0.18, 0.42, 0.42);
+  lanternLight.position.set(0.18, 0.31, 0.37);
   lanternLight.visible = false;
-  group.add(lanternLight);
+  hull.add(lanternLight);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -184,7 +180,7 @@ function* createShipModelProgressive({
   };
 
   if (variant === 'tall-ship') {
-    addTallShipRigging(three, group, mastMaterial, sailMaterial, trimMaterial);
+    addTallShipRigging(three, hull, mastMaterial, sailMaterial, trimMaterial);
     yield {
       completedSteps: 3,
       totalSteps,
@@ -193,7 +189,7 @@ function* createShipModelProgressive({
   } else {
     addBrokenShipDetails(
       three,
-      group,
+      hull,
       hullMaterial,
       mastMaterial,
       trimMaterial
@@ -205,7 +201,7 @@ function* createShipModelProgressive({
     };
   }
 
-  return group;
+  return hull;
 }
 
 function runShipModelBuildToCompletion(

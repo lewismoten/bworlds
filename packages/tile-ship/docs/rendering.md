@@ -29,3 +29,8 @@ Current layout:
 
 This keeps the tall-ship silhouette intact while trimming another repeated
 static `Object3D` cluster from the overworld ship landmark.
+
+The ship landmark now also uses the hull mesh as its root and attaches the
+deck, lantern, rigging, and wreckage details beneath it, so ship tiles avoid
+one otherwise empty wrapper `Group` while preserving the same facing, variant
+selection, and light placement.

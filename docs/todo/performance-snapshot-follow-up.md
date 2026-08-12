@@ -247,7 +247,12 @@
       hangs the tower, trim ring, dome pivot, and telescope pivot beneath it
       instead of wrapping the observatory in a dedicated `Group`, which removes
       one static `Object3D` from each observatory tile without changing the
-      dome-opening or telescope animation behavior.
+      dome-opening or telescope animation behavior, and `tile-ship` now uses
+      its hull mesh as the root and hangs the deck, lantern, rigging, and
+      wreckage details beneath it instead of wrapping the landmark in a
+      dedicated `Group`, which removes one static `Object3D` from each ship
+      tile while preserving the same facing, variant selection, and light
+      placement.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so

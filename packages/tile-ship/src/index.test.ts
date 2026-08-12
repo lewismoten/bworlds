@@ -442,6 +442,25 @@ describe('tile ship', () => {
       createShipModelSignature(baseline)
     );
   });
+
+  it('uses the hull mesh as the ship root instead of a wrapper group', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createShipState(),
+      tile: {
+        kind: 'ship',
+        poi: { type: 'ship', name: 'Spec Mast' },
+      } as never,
+      tileX: 5,
+      tileY: 5,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 5, y: 0.11, z: 5.05 });
+    expect(model?.userData?.shipPoiVariant).toMatch(/tall-ship|broken-ship/);
+  });
 });
 
 function countSharedMaterialReferences(
