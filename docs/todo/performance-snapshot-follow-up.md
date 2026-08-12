@@ -6,6 +6,9 @@
       `/api/runtime-performance-issues`; generic frame/draw-call/material/
       object pressure and reduced-quality limiter narration stay in the saved
       payload context without creating another issue file on their own, and
+      synchronous tile-build budget warnings now also stay local to the client
+      debug snapshot instead of escalating to the runtime-issues API on their
+      own, and
       wrapped `Latest LOD failure` / `Latest fallback reason` strings are now
       also suppressed when they only restate generic budget-threshold pressure
       such as `tile drawCallCount 21>17` or

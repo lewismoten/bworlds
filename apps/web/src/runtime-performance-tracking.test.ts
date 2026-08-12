@@ -1305,7 +1305,7 @@ describe('runtime performance tracking', () => {
     expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
   });
 
-  it('treats matching summary templates as the same issue hash when only measured values change', () => {
+  it('skips runtime issue reports when only synchronous tile build warnings remain', () => {
     const firstIssue = buildRuntimePerformanceIssueReport({
       source: 'game',
       route: '/',
@@ -1335,7 +1335,12 @@ describe('runtime performance tracking', () => {
         ],
       }),
     });
-    const secondIssue = buildRuntimePerformanceIssueReport({
+
+    expect(firstIssue).toBeNull();
+  });
+
+  it('treats matching summary templates as the same issue hash when only measured values change', () => {
+    const firstIssue = buildRuntimePerformanceIssueReport({
       source: 'game',
       route: '/',
       debugSnapshot: createDebugSnapshot({
@@ -1344,10 +1349,6 @@ describe('runtime performance tracking', () => {
         performanceTier: 'reduced',
         renderQualityLevel: 'reduced',
         renderQualityLimiters: '',
-        maxTileBuildMs: 14.8,
-        averageTileBuildMs: 4,
-        maxTilePluginBuildMs: 14.8,
-        slowestTilePluginLabel: 'tile-forest',
         tileModelBudgetViolationsPerSecond: 0,
         tileModelBudgetViolationTopPluginLabel: undefined,
         tileModelBudgetViolationSummary: undefined,
@@ -1358,18 +1359,41 @@ describe('runtime performance tracking', () => {
         fallbackBoxTopPluginLabel: undefined,
         fallbackBoxSummary: undefined,
         lastLodFailureReason: undefined,
-        lastFallbackReason: undefined,
-        resourceWarnings: [
-          'Synchronous tile build is too slow (tile-forest took 14.8 ms > 8.0 ms).',
-        ],
+        lastFallbackReason: 'Missing low-cost plains model (tile 12).',
+        resourceWarnings: [],
+      }),
+    });
+    const secondIssue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        worstRecentFrameMs: 16.7,
+        frameMs: 16.7,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters: '',
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxTopPluginLabel: undefined,
+        fallbackBoxSummary: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: 'Missing low-cost plains model (tile 48).',
+        resourceWarnings: [],
       }),
     });
 
+    expect(firstIssue).not.toBeNull();
+    expect(secondIssue).not.toBeNull();
     expect(firstIssue?.summary).toBe(
-      'Synchronous tile build is too slow (tile-forest took 12.4 ms > 8.0 ms).'
+      'Latest fallback reason: Missing low-cost plains model (tile 12).'
     );
     expect(secondIssue?.summary).toBe(
-      'Synchronous tile build is too slow (tile-forest took 14.8 ms > 8.0 ms).'
+      'Latest fallback reason: Missing low-cost plains model (tile 48).'
     );
     expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
   });

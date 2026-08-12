@@ -861,6 +861,7 @@ function isGenericRuntimePerformanceBudgetReason(reason: string): boolean {
     normalized.startsWith('Draw calls ') ||
     normalized.startsWith('Active Three.js object count ') ||
     normalized.startsWith('Audio node count ') ||
+    normalized.startsWith('Synchronous tile build is too slow ') ||
     normalized.startsWith('Frame time is over budget ') ||
     normalized.startsWith('Draw calls exceed the target ') ||
     normalized.startsWith('Triangle count is high ') ||
@@ -896,7 +897,6 @@ function isDirectRuntimePerformanceIssueReason(reason: string): boolean {
   return (
     reason.startsWith('Initial world generation ') ||
     reason.startsWith('Memory after region change ') ||
-    reason.startsWith('Synchronous tile build is too slow ') ||
     reason.startsWith('Latest LOD failure: ') ||
     reason.startsWith('Latest fallback reason: ')
   );
