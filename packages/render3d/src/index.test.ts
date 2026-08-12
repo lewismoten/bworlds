@@ -460,6 +460,48 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('reuses aurora materials across repeated syncs on the same root', () => {
+    const root = new THREE.Group();
+    const cycle = {
+      auroraBands: [
+        {
+          azimuthCenter: 0.8,
+          span: 0.9,
+          altitude: 0.32,
+          height: 0.26,
+          wavePhase: 0.1,
+          colorA: '#55d6be',
+          colorB: '#b8fff3',
+          intensity: 0.8,
+        },
+        {
+          azimuthCenter: 1.4,
+          span: 0.85,
+          altitude: 0.35,
+          height: 0.24,
+          wavePhase: 0.3,
+          colorA: '#55d6be',
+          colorB: '#b8fff3',
+          intensity: 0.8,
+        },
+      ],
+    } as never;
+
+    syncAuroraBands(root, cycle);
+    const firstPassMaterials = root.children.map(
+      (child) => (child as THREE.Line | THREE.Mesh).material
+    );
+
+    syncAuroraBands(root, cycle);
+    const secondPassMaterials = root.children.map(
+      (child) => (child as THREE.Line | THREE.Mesh).material
+    );
+
+    expect(secondPassMaterials).toHaveLength(firstPassMaterials.length);
+    expect(secondPassMaterials).toEqual(firstPassMaterials);
+    expect(new Set(secondPassMaterials).size).toBe(5);
+  });
+
   it('reuses celestial-event materials across repeated event colors and opacities', () => {
     const root = new THREE.Group();
 
@@ -505,6 +547,58 @@ describe('render3d visibility helpers', () => {
       sharedMaterialCount: 1,
       clonedMaterialCount: 0,
     });
+  });
+
+  it('reuses celestial-event materials across repeated syncs on the same root', () => {
+    const root = new THREE.Group();
+    const cycle = {
+      visibleEvents: [
+        {
+          type: 'planet',
+          color: '#cfe8ff',
+          intensity: 0.6,
+          visibility: 0.9,
+          altitude: 0.4,
+          azimuth: 0.6,
+          size: 0.8,
+          trailLength: 0,
+        },
+        {
+          type: 'planet',
+          color: '#cfe8ff',
+          intensity: 0.6,
+          visibility: 0.9,
+          altitude: 0.42,
+          azimuth: 0.72,
+          size: 0.84,
+          trailLength: 0,
+        },
+        {
+          type: 'comet',
+          color: '#ffdca8',
+          intensity: 0.7,
+          visibility: 0.85,
+          altitude: 0.5,
+          azimuth: 1.1,
+          size: 1,
+          trailLength: 0.9,
+        },
+      ],
+    } as never;
+
+    syncCelestialEvents(root, cycle);
+    const firstPassMaterials = root.children.map(
+      (child) => (child as THREE.Line | THREE.Sprite).material
+    );
+
+    syncCelestialEvents(root, cycle);
+    const secondPassMaterials = root.children.map(
+      (child) => (child as THREE.Line | THREE.Sprite).material
+    );
+
+    expect(secondPassMaterials).toHaveLength(firstPassMaterials.length);
+    expect(secondPassMaterials).toEqual(firstPassMaterials);
+    expect(new Set(secondPassMaterials).size).toBe(3);
   });
 
   it('keeps tile-scoped material summaries separate from scene-unique material counts', () => {

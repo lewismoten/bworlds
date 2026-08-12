@@ -522,6 +522,53 @@ function getOrCreateTrackedMapValue<Key, Value>(
   return value;
 }
 
+type CelestialEventMaterialCaches = {
+  line: Map<string, THREE.LineBasicMaterial>;
+  sprite: Map<string, THREE.SpriteMaterial>;
+};
+
+type AuroraBandMaterialCaches = {
+  mesh: Map<string, THREE.MeshBasicMaterial>;
+  line: Map<string, THREE.LineBasicMaterial>;
+};
+
+const celestialEventMaterialCachesByRoot = new Map<
+  THREE.Group,
+  CelestialEventMaterialCaches
+>();
+const auroraBandMaterialCachesByRoot = new Map<
+  THREE.Group,
+  AuroraBandMaterialCaches
+>();
+
+function getCelestialEventMaterialCaches(
+  root: THREE.Group
+): CelestialEventMaterialCaches {
+  return getOrCreateTrackedCacheValue(
+    celestialEventMaterialCachesByRoot,
+    root,
+    sharedMaterialCacheAccessStats,
+    () => ({
+      line: new Map<string, THREE.LineBasicMaterial>(),
+      sprite: new Map<string, THREE.SpriteMaterial>(),
+    })
+  );
+}
+
+function getAuroraBandMaterialCaches(
+  root: THREE.Group
+): AuroraBandMaterialCaches {
+  return getOrCreateTrackedCacheValue(
+    auroraBandMaterialCachesByRoot,
+    root,
+    sharedMaterialCacheAccessStats,
+    () => ({
+      mesh: new Map<string, THREE.MeshBasicMaterial>(),
+      line: new Map<string, THREE.LineBasicMaterial>(),
+    })
+  );
+}
+
 export type Render3DDebugEvent = {
   nowMs: number;
   type:
@@ -7236,8 +7283,8 @@ export function syncCelestialEvents(
   const position = new THREE.Vector3();
   const trailStart = new THREE.Vector3();
   const trailEnd = new THREE.Vector3();
-  const lineMaterialCache = new Map<string, THREE.LineBasicMaterial>();
-  const spriteMaterialCache = new Map<string, THREE.SpriteMaterial>();
+  const { line: lineMaterialCache, sprite: spriteMaterialCache } =
+    getCelestialEventMaterialCaches(root);
   events.forEach((event, index) => {
     writeSkyAltitudePosition(
       position,
@@ -7461,8 +7508,8 @@ export function syncAuroraBands(
   const lowerScratch = new THREE.Vector3();
   const upperScratch = new THREE.Vector3();
   const crestScratch = new THREE.Vector3();
-  const meshMaterialCache = new Map<string, THREE.MeshBasicMaterial>();
-  const lineMaterialCache = new Map<string, THREE.LineBasicMaterial>();
+  const { mesh: meshMaterialCache, line: lineMaterialCache } =
+    getAuroraBandMaterialCaches(root);
   bands.forEach((band) => {
     const samples = 30;
     const start = band.azimuthCenter - band.span * 0.5;

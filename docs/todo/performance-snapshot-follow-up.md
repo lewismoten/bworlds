@@ -117,7 +117,10 @@
       constellation, aurora, and celestial-event sky layers now also reuse
       shared line, sprite, and additive-ribbon materials by compatible
       color/opacity buckets instead of allocating a fresh material per visible
-      star, connection, ribbon, rib, or comet tail.
+      star, connection, ribbon, rib, or comet tail, and `render3d` now keeps
+      the aurora and celestial-event bucket caches attached to each persistent
+      sky root so repeated syncs reuse the same effective materials across
+      frames instead of rebuilding equivalent cache entries every update.
 - [x] Report material cache hit and miss counts.
       Progress: `render3d` now tracks cumulative material cache reuse across
       the persistent shared sky/event material buckets and exposes hit, miss,
