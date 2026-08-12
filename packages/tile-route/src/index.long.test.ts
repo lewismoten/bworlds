@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { getRenderBudgetPartMetadata } from '@bworlds/plugin-api';
 import { createRouteTilePlugin } from './index.ts';
 
 vi.mock('@bworlds/three-support', async () => {
@@ -833,6 +834,39 @@ describe('tile route', () => {
       { completedSteps: 3, totalSteps: 4, label: 'branch-2' },
       { completedSteps: 4, totalSteps: 4, label: 'branch-3' },
     ]);
+  });
+
+  it('marks road shoulder ribbons as optional budget parts', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+      '0:-1': 'road',
+    });
+    const model = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeGroup | undefined;
+
+    const optionalPartLabels =
+      model?.children
+        .map((child) => getRenderBudgetPartMetadata(child)?.label ?? null)
+        .filter((label): label is string => label !== null) ?? [];
+
+    expect(optionalPartLabels).toEqual([
+      'branch-1-shoulder',
+      'branch-2-shoulder',
+      'branch-3-shoulder',
+    ]);
+    expect(
+      model?.children.every((child) => {
+        const metadata = getRenderBudgetPartMetadata(child);
+        return !metadata || metadata.optional === true;
+      })
+    ).toBe(true);
   });
 
   it('renders isolated forest bridges as fallen logs with the matching traversal axis', () => {

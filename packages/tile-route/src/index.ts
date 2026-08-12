@@ -12,7 +12,10 @@ import {
 } from '@bworlds/core';
 import { findNearestBoatLaunchPoint } from '@bworlds/map-boat';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
-import { createTilePlugin } from '@bworlds/plugin-api';
+import {
+  createTilePlugin,
+  markOptionalDecorativeRenderBudgetPart,
+} from '@bworlds/plugin-api';
 import {
   createHostMaterialResolver,
   pickThresholdColor,
@@ -1022,20 +1025,25 @@ function* createRoadGroupProgressive({
 
   if (connections.length === 0) {
     group.add(
-      createRoadRibbonMesh(
-        three,
-        [
-          new three.Vector3(-0.18, ROAD_SURFACE_HEIGHT, 0),
-          new three.Vector3(0, ROAD_SURFACE_HEIGHT, 0),
-          new three.Vector3(0.18, ROAD_SURFACE_HEIGHT, 0),
-        ],
-        0.18,
-        style.shoulderMaterial,
-        appendHashSeedLabel(
-          appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
-          ROAD_RIBBON_SHOULDER_SEED
+      markOptionalDecorativeRenderBudgetPart(
+        createRoadRibbonMesh(
+          three,
+          [
+            new three.Vector3(-0.18, ROAD_SURFACE_HEIGHT, 0),
+            new three.Vector3(0, ROAD_SURFACE_HEIGHT, 0),
+            new three.Vector3(0.18, ROAD_SURFACE_HEIGHT, 0),
+          ],
+          0.18,
+          style.shoulderMaterial,
+          appendHashSeedLabel(
+            appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
+            ROAD_RIBBON_SHOULDER_SEED
+          ),
+          0.04
         ),
-        0.04
+        {
+          label: 'stub-shoulder',
+        }
       )
     );
     yield {
@@ -1090,13 +1098,18 @@ function* createRoadGroupProgressive({
       connections[1]
     );
     group.add(
-      createRoadRibbonMesh(
-        three,
-        curve,
-        style.shoulderWidth,
-        style.shoulderMaterial,
-        appendHashSeedLabel(tileSeed, ROAD_RIBBON_SHOULDER_SEED),
-        0.045
+      markOptionalDecorativeRenderBudgetPart(
+        createRoadRibbonMesh(
+          three,
+          curve,
+          style.shoulderWidth,
+          style.shoulderMaterial,
+          appendHashSeedLabel(tileSeed, ROAD_RIBBON_SHOULDER_SEED),
+          0.045
+        ),
+        {
+          label: 'shoulder-ribbon',
+        }
       )
     );
     completedSteps += 1;
@@ -1132,13 +1145,18 @@ function* createRoadGroupProgressive({
       ROAD_CONNECTION_DIRECTION_SEEDS[connection.id]
     );
     group.add(
-      createRoadRibbonMesh(
-        three,
-        branch,
-        style.shoulderWidth,
-        style.shoulderMaterial,
-        appendHashSeedLabel(branchSeed, ROAD_RIBBON_SHOULDER_SEED),
-        0.04
+      markOptionalDecorativeRenderBudgetPart(
+        createRoadRibbonMesh(
+          three,
+          branch,
+          style.shoulderWidth,
+          style.shoulderMaterial,
+          appendHashSeedLabel(branchSeed, ROAD_RIBBON_SHOULDER_SEED),
+          0.04
+        ),
+        {
+          label: `branch-${index + 1}-shoulder`,
+        }
       )
     );
     group.add(
