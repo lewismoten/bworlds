@@ -21,3 +21,6 @@ and trail widths from lightweight route metadata.
 - `road` widths come from one route class plus optional traffic intensity
 - when route class metadata is absent, road signal is used to infer a stable
   class from `local-road` through `highway`
+- because width plans depend only on shared route metadata, separately built
+  chunks that sample the same world-space road or trail coordinate resolve the
+  same surface and shoulder widths at that boundary

@@ -541,7 +541,7 @@ worker-backed generation. The worker runtime notes live in
 - [x] Support grass trail splat layers.
 - [x] Support muddy road splat layers.
 - [x] Keep road splats continuous across chunk boundaries.
-- [ ] Keep road width continuous across chunk boundaries.
+- [x] Keep road width continuous across chunk boundaries.
 - [ ] Keep route intersections continuous across chunks.
 - [ ] Blend junctions without overlapping road meshes.
 - [ ] Generate crossroads from combined splat weights.
