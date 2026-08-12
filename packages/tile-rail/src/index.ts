@@ -67,9 +67,7 @@ function* createRailModelProgressive({
     return null;
   }
 
-  const group = new three.Group();
   const { sleeperMaterial, railMaterial } = getRailSharedMaterials(three);
-  group.position.set(tileX, 0, tileY);
   const totalSteps = 2;
 
   const rotation = resolveRailRotation(state, tileX, tileY);
@@ -83,6 +81,7 @@ function* createRailModelProgressive({
     ...railInstances.userData,
     railInstancedPart: 'rail',
   };
+  railInstances.position.set(tileX, 0, tileY);
   railInstances.rotation.y = rotation;
   const railMatrixScratch = new three.Matrix4();
   for (const [index, offset] of [-0.22, 0.22].entries()) {
@@ -91,7 +90,6 @@ function* createRailModelProgressive({
       writeScalePositionMatrix(railMatrixScratch, 0, 0.08, offset, 1, 1, 1)
     );
   }
-  group.add(railInstances);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -107,7 +105,6 @@ function* createRailModelProgressive({
     ...sleeperInstances.userData,
     railInstancedPart: 'sleeper',
   };
-  sleeperInstances.rotation.y = rotation;
   const sleeperMatrixScratch = new three.Matrix4();
   const sleeperOffsets = [-0.32, -0.12, 0.08, 0.28];
   for (let index = 0; index < sleeperOffsets.length; index += 1) {
@@ -124,14 +121,14 @@ function* createRailModelProgressive({
       )
     );
   }
-  group.add(sleeperInstances);
+  railInstances.add(sleeperInstances);
   yield {
     completedSteps: 2,
     totalSteps,
     label: 'sleepers',
   };
 
-  return group;
+  return railInstances;
 }
 
 function resolveRailRotation(

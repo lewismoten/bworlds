@@ -33,7 +33,8 @@ describe('tile rail', () => {
       tileY: 0,
     }) as { children?: unknown[] } | null | undefined;
 
-    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(model).toBeTruthy();
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(1);
   });
 
   it('instances repeated rails instead of emitting two standalone meshes', () => {
@@ -53,17 +54,9 @@ describe('tile rail', () => {
       } as never,
       tileX: 0,
       tileY: 0,
-    }) as
-      | {
-          children?: Array<{
-            userData?: Record<string, unknown>;
-            count?: number;
-          }>;
-        }
-      | null
-      | undefined;
+    }) as FakeNode | null | undefined;
 
-    const railInstances = model?.children?.filter(
+    const railInstances = collectRailNodes(model).filter(
       (child) => child.userData?.railInstancedPart === 'rail'
     );
 
@@ -88,17 +81,9 @@ describe('tile rail', () => {
       } as never,
       tileX: 0,
       tileY: 0,
-    }) as
-      | {
-          children?: Array<{
-            userData?: Record<string, unknown>;
-            count?: number;
-          }>;
-        }
-      | null
-      | undefined;
+    }) as FakeNode | null | undefined;
 
-    const sleeperInstances = model?.children?.filter(
+    const sleeperInstances = collectRailNodes(model).filter(
       (child) => child.userData?.railInstancedPart === 'sleeper'
     );
 
@@ -125,43 +110,25 @@ describe('tile rail', () => {
       state,
       tileX: 0,
       tileY: 0,
-    }) as
-      | {
-          children?: Array<{
-            material: unknown;
-            geometry: unknown;
-            userData?: Record<string, unknown>;
-          }>;
-        }
-      | null
-      | undefined;
+    }) as FakeNode | null | undefined;
     const second = tile?.create3DModel?.({
       tile: { kind: 'rail' },
       three,
       state,
       tileX: 1,
       tileY: 0,
-    }) as
-      | {
-          children?: Array<{
-            material: unknown;
-            geometry: unknown;
-            userData?: Record<string, unknown>;
-          }>;
-        }
-      | null
-      | undefined;
+    }) as FakeNode | null | undefined;
 
-    const firstRail = first?.children?.find(
+    const firstRail = collectRailNodes(first).find(
       (child) => child.userData?.railInstancedPart === 'rail'
     );
-    const secondRail = second?.children?.find(
+    const secondRail = collectRailNodes(second).find(
       (child) => child.userData?.railInstancedPart === 'rail'
     );
-    const firstSleepers = first?.children?.find(
+    const firstSleepers = collectRailNodes(first).find(
       (child) => child.userData?.railInstancedPart === 'sleeper'
     );
-    const secondSleepers = second?.children?.find(
+    const secondSleepers = collectRailNodes(second).find(
       (child) => child.userData?.railInstancedPart === 'sleeper'
     );
 
@@ -209,8 +176,7 @@ describe('tile rail', () => {
     const completed = build?.next();
     expect(completed?.done).toBe(true);
     expect(
-      ((completed?.value as { children?: unknown[] } | undefined)?.children
-        ?.length ?? 0) > 0
+      ((completed?.value as FakeNode | undefined)?.children?.length ?? 0) > 0
     ).toBe(true);
   });
 
@@ -254,7 +220,38 @@ describe('tile rail', () => {
       createModelSignature(syncModel)
     );
   });
+
+  it('uses the rail instanced mesh as the tile root instead of a wrapper group', () => {
+    const plugin = createRailTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'rail');
+    const three = createFakeThree() as never;
+    const model = tile?.create3DModel?.({
+      tile: { kind: 'rail' },
+      three,
+      state: {
+        getCurrentContext() {
+          return { type: 'overworld' };
+        },
+        getCurrentTile() {
+          return { kind: 'rail' };
+        },
+      } as never,
+      tileX: 4,
+      tileY: 7,
+    }) as FakeNode | undefined;
+
+    expect(model?.userData?.railInstancedPart).toBe('rail');
+    expect(model?.position).toMatchObject({ x: 4, y: 0, z: 7 });
+  });
 });
+
+function collectRailNodes(root: FakeNode | null | undefined): FakeNode[] {
+  const nodes: FakeNode[] = [];
+  root?.traverse((node) => {
+    nodes.push(node);
+  });
+  return nodes;
+}
 
 function createModelSignature(root: FakeNode | undefined) {
   const signature: string[] = [];
@@ -269,21 +266,20 @@ function createModelSignature(root: FakeNode | undefined) {
 }
 
 function createFakeThree() {
-  class Matrix4 {
-    makeScale() {
-      return this;
-    }
-    setPosition() {
-      return this;
-    }
-  }
-  class Group {
+  class BaseNode {
     children: unknown[] = [];
     position = {
-      set() {
+      x: 0,
+      y: 0,
+      z: 0,
+      set: (x = 0, y = 0, z = 0) => {
+        this.position.x = x;
+        this.position.y = y;
+        this.position.z = z;
         return undefined;
       },
     };
+    rotation = { y: 0 };
     add(child: unknown) {
       this.children.push(child);
     }
@@ -294,35 +290,38 @@ function createFakeThree() {
       }
     }
   }
-  class Mesh {
-    position = {
-      set() {
-        return undefined;
-      },
-    };
-    rotation = { y: 0 };
-    userData: Record<string, unknown> = { railPart: 'rail' };
-    constructor(
-      public geometry: unknown,
-      public material: unknown
-    ) {}
-    traverse(visit: (child: FakeNode) => void) {
-      visit(this as never);
+  class Matrix4 {
+    makeScale() {
+      return this;
+    }
+    setPosition() {
+      return this;
     }
   }
-  class InstancedMesh {
-    rotation = { y: 0 };
+  class Group extends BaseNode {}
+  class Mesh extends BaseNode {
+    userData: Record<string, unknown> = { railPart: 'rail' };
+    geometry: unknown;
+    material: unknown;
+    constructor(geometry: unknown, material: unknown) {
+      super();
+      this.geometry = geometry;
+      this.material = material;
+    }
+  }
+  class InstancedMesh extends BaseNode {
     userData: Record<string, unknown> = {};
-    constructor(
-      public geometry: unknown,
-      public material: unknown,
-      public count: number
-    ) {}
+    geometry: unknown;
+    material: unknown;
+    count: number;
+    constructor(geometry: unknown, material: unknown, count: number) {
+      super();
+      this.geometry = geometry;
+      this.material = material;
+      this.count = count;
+    }
     setMatrixAt() {
       return undefined;
-    }
-    traverse(visit: (child: FakeNode) => void) {
-      visit(this as never);
     }
   }
   class MeshBasicMaterial {
@@ -350,6 +349,10 @@ type FakeNode = {
   children?: FakeNode[];
   userData?: Record<string, unknown>;
   rotation: { y: number };
+  position?: { x: number; y: number; z: number };
+  material?: unknown;
+  geometry?: unknown;
   traverse(visit: (child: FakeNode) => void): void;
+  add?(child: FakeNode): void;
   count?: number;
 };

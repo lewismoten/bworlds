@@ -13,7 +13,10 @@ Current layout:
   object.
 
 This trims repeated static `Object3D` nodes from each visible rail tile without
-changing the current scene layout.
+changing the current scene layout. The rail `InstancedMesh` now also serves as
+the tile root, with the sleeper `InstancedMesh` attached under it, so each
+visible rail tile avoids one wrapper `Group` in addition to the earlier
+instancing reduction.
 
 The tile now also exposes `create3DModelProgressive(...)` so the renderer can
 yield between laying the two rails and the four sleepers instead of forcing the

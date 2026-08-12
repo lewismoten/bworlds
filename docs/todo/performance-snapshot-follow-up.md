@@ -221,6 +221,10 @@
       pivots remain dynamic.
 - [x] Report static matrix updates by plugin.
 - [ ] Reduce total Object3D count without changing visuals.
+      Progress: `tile-rail` now uses its rail `InstancedMesh` as the tile root
+      and attaches the sleeper `InstancedMesh` under it instead of wrapping the
+      two sets in a dedicated `Group`, which removes one static `Object3D` from
+      every visible rail tile without changing transforms or appearance.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so
