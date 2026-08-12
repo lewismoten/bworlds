@@ -3,7 +3,7 @@ import {
   type PluginEvent,
   type PluginEventChannel,
   type PluginEventDetails,
-} from '@bworlds/plugin-event-channel';
+} from '../../../packages/plugin-event-channel/src/index.ts';
 import type { DebugSnapshotRecentEvent } from './debug-snapshot.ts';
 
 export type RuntimePerformanceSnapshotPluginEvent = {

@@ -1,4 +1,5 @@
 import type { DebugSnapshot } from './debug-panel.ts';
+import type { RuntimePerformanceSnapshotPluginEventSummary } from './runtime-performance-plugin-events.ts';
 
 export type RuntimePerformanceLimits = {
   initialWorldGenerationMs: number;
@@ -96,6 +97,7 @@ export type RuntimePerformanceSnapshot = {
     midiExportMs: number | null;
     wavExportMs: number | null;
   };
+  pluginEvents?: RuntimePerformanceSnapshotPluginEventSummary;
   violations: string[];
 };
 
@@ -110,6 +112,7 @@ type RuntimePerformanceSnapshotBuildOptions = {
   worldSeed?: string | null;
   context?: RuntimePerformanceSnapshot['context'];
   metrics?: Partial<RuntimePerformanceSnapshot['metrics']>;
+  pluginEvents?: RuntimePerformanceSnapshotPluginEventSummary | null;
   limits?: Partial<RuntimePerformanceLimits>;
 };
 
@@ -161,6 +164,7 @@ export function buildRuntimePerformanceSnapshot(
     context: options.context ?? null,
     limits,
     metrics,
+    ...(options.pluginEvents ? { pluginEvents: options.pluginEvents } : {}),
     violations: collectRuntimePerformanceViolations(metrics, limits),
   };
 }

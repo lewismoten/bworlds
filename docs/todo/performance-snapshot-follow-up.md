@@ -58,13 +58,16 @@
       one neutral foliage texture per Three host, letting broadleaf-versus-
       conifer distinction come from material tint rather than painting
       separate bark and leaf texture variants for each family.
-- [ ] Extend with plugin-event-channel-system.md
+- [x] Extend with plugin-event-channel-system.md
       Progress: `@bworlds/plugin-event-channel` now provides the first shared
       foundation package for plugin events with a validated event shape,
       synchronous publish/subscribe helpers, bounded newest-first history,
       duplicate-listener prevention, and safe detail serialization for `Error`
-      objects and other event payloads. Runtime snapshot and reporting
-      integration is still pending.
+      objects and other event payloads. The web app now listens for plugin
+      error events during runtime performance tracking, converts them into the
+      existing local debug recent-event stream as `plugin-error` events, and
+      includes bounded newest-first event history plus counts-by-type/source in
+      saved runtime performance snapshots.
 
 ## Fix Measurement Problems First
 

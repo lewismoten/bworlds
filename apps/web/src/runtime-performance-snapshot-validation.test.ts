@@ -20,6 +20,68 @@ describe('runtime performance snapshot validation', () => {
     expect(validateRuntimePerformanceSnapshot(snapshot).warnings).toEqual([]);
   });
 
+  it('accepts valid plugin event summaries on runtime performance snapshots', () => {
+    const snapshot = createValidRuntimePerformanceSnapshot();
+    snapshot.pluginEvents = {
+      recent: [
+        {
+          type: 'error',
+          source: 'tile-forest.materials',
+          message: 'Forest bark cache failed.',
+          timestamp: '2026-08-12T14:45:00.000Z',
+          severity: 'error',
+          details: {
+            code: 'forest-bark-cache',
+          },
+        },
+      ],
+      countsByType: {
+        error: 1,
+      },
+      countsBySource: {
+        'tile-forest.materials': 1,
+      },
+    };
+
+    expect(validateRuntimePerformanceSnapshot(snapshot).errors).toEqual([]);
+  });
+
+  it('rejects malformed plugin event summaries on runtime performance snapshots', () => {
+    const snapshot = createValidRuntimePerformanceSnapshot() as Record<
+      string,
+      unknown
+    >;
+    snapshot.pluginEvents = {
+      recent: [
+        {
+          type: '',
+          source: '',
+          message: '',
+          timestamp: 'not-a-date',
+          severity: '',
+        },
+      ],
+      countsByType: {
+        error: -1,
+      },
+      countsBySource: [],
+    };
+
+    expect(
+      validateRuntimePerformanceSnapshot(snapshot as never).errors
+    ).toEqual(
+      expect.arrayContaining([
+        'Runtime performance snapshot pluginEvents.recent[0].type must be a non-empty string.',
+        'Runtime performance snapshot pluginEvents.recent[0].source must be a non-empty string.',
+        'Runtime performance snapshot pluginEvents.recent[0].message must be a non-empty string.',
+        'Runtime performance snapshot pluginEvents.recent[0].timestamp must be null or a valid ISO-8601 timestamp.',
+        'Runtime performance snapshot pluginEvents.recent[0].severity must be null or a non-empty string.',
+        'Runtime performance snapshot pluginEvents.countsByType must be a record of finite non-negative numbers.',
+        'Runtime performance snapshot pluginEvents.countsBySource must be a record of finite non-negative numbers.',
+      ])
+    );
+  });
+
   it('treats nullable non-required metrics as unmeasured rather than invalid zeros', () => {
     const snapshot = createValidRuntimePerformanceSnapshot();
     snapshot.trigger = 'runtime-issue';

@@ -1,4 +1,5 @@
 import { drawAtlas } from '@bworlds/atlas';
+import { createPluginEventChannel } from '@bworlds/plugin-event-channel';
 import appPackage from '../package.json';
 import {
   advanceWorldTimeOffsetByHours,
@@ -148,6 +149,10 @@ import {
   formatRecentDebugEventReason,
   getMostRecentDebugEventByType,
 } from './recent-debug-events.ts';
+import {
+  createRuntimePerformancePluginEventTracker,
+  installRuntimePerformancePluginErrorTracking,
+} from './runtime-performance-plugin-events.ts';
 import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
 import {
   findRandomTileDestination,
@@ -1546,6 +1551,9 @@ const DEBUG_RECENT_EVENT_WINDOW_MS = 30_000;
 const debugRecentEventsState = {
   events: [] as DebugSnapshotRecentEvent[],
 };
+const runtimePluginEventChannel = createPluginEventChannel();
+const runtimePerformancePluginEventTracker =
+  createRuntimePerformancePluginEventTracker();
 const debugResourceTrendState = {
   materialSamples: [] as Array<{
     nowMs: number;
@@ -1615,6 +1623,23 @@ const resolveCachedNearbyOverworldQueryState =
   createNearbyOverworldQueryStateCache(getNearbyOverworldQueryState);
 const buildReusableRenderBudget = createRenderBudgetBuilder();
 let latestEnvironment: WorldEnvironmentLike = getCurrentEnvironment();
+
+const removeRuntimePerformancePluginErrorTracking =
+  installRuntimePerformancePluginErrorTracking(
+    runtimePluginEventChannel,
+    runtimePerformancePluginEventTracker,
+    {
+      nowMs: () => performance.now(),
+      onDebugEvent: recordDebugRecentEvent,
+    }
+  );
+pageLifecycleSignal?.addEventListener(
+  'abort',
+  () => {
+    removeRuntimePerformancePluginErrorTracking();
+  },
+  { once: true }
+);
 
 (state as typeof state & { celestialEventMode?: string }).celestialEventMode =
   celestialEventModeState.mode;
@@ -2063,6 +2088,7 @@ function reportRuntimePerformanceSnapshot(
           ),
           ...metrics,
         },
+        pluginEvents: runtimePerformancePluginEventTracker.getSnapshot(),
       }
     );
 

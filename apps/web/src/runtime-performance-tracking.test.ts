@@ -215,6 +215,55 @@ describe('runtime performance tracking', () => {
     );
   });
 
+  it('includes plugin event summaries when they are provided', () => {
+    const snapshot = buildRuntimePerformanceSnapshot({
+      source: 'game',
+      trigger: 'runtime-issue',
+      route: '/',
+      pluginEvents: {
+        recent: [
+          {
+            type: 'error',
+            source: 'tile-forest.materials',
+            message: 'Forest bark cache failed.',
+            timestamp: '2026-08-12T14:45:00.000Z',
+            severity: 'error',
+            details: {
+              code: 'forest-bark-cache',
+            },
+          },
+        ],
+        countsByType: {
+          error: 1,
+        },
+        countsBySource: {
+          'tile-forest.materials': 1,
+        },
+      },
+    });
+
+    expect(snapshot.pluginEvents).toEqual({
+      recent: [
+        {
+          type: 'error',
+          source: 'tile-forest.materials',
+          message: 'Forest bark cache failed.',
+          timestamp: '2026-08-12T14:45:00.000Z',
+          severity: 'error',
+          details: {
+            code: 'forest-bark-cache',
+          },
+        },
+      ],
+      countsByType: {
+        error: 1,
+      },
+      countsBySource: {
+        'tile-forest.materials': 1,
+      },
+    });
+  });
+
   it('posts runtime performance snapshots to the vite endpoint when fetch is available', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
 

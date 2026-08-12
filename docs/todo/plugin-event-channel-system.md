@@ -63,16 +63,16 @@
 
 ## Performance Snapshot Integration
 
-- [ ] Listen for error events during performance tracking.
-- [ ] Record recent error events in debug snapshots.
-- [ ] Include event type in snapshot entries.
-- [ ] Include event source in snapshot entries.
-- [ ] Include event message in snapshot entries.
-- [ ] Include event details when they are serializable.
-- [ ] Include the event timestamp in snapshots.
-- [ ] Limit stored events to a bounded history.
-- [ ] Keep newest snapshot events first.
-- [ ] Track event counts by source and type.
+- [x] Listen for error events during performance tracking.
+- [x] Record recent error events in debug snapshots.
+- [x] Include event type in snapshot entries.
+- [x] Include event source in snapshot entries.
+- [x] Include event message in snapshot entries.
+- [x] Include event details when they are serializable.
+- [x] Include the event timestamp in snapshots.
+- [x] Limit stored events to a bounded history.
+- [x] Keep newest snapshot events first.
+- [x] Track event counts by source and type.
 
 ## Runtime Error Reporting
 
@@ -178,3 +178,8 @@
 - Added focused tests for publish ordering, scoped subscriptions,
   unsubscribe behavior, listener isolation, message-length validation,
   detail serialization, and bounded history behavior.
+- Added `apps/web/src/runtime-performance-plugin-events.ts` so the web app can
+  listen for shared plugin error events, mirror them into the local debug
+  recent-event stream as `plugin-error`, and attach bounded recent event
+  history plus per-type and per-source counts to runtime performance snapshot
+  payloads.

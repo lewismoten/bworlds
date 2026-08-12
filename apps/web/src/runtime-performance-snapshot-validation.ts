@@ -6,6 +6,7 @@ import {
   type RuntimePerformanceLimits,
   type RuntimePerformanceSnapshot,
 } from './runtime-performance-tracking.ts';
+import { createEmptyRuntimePerformanceSnapshotPluginEventSummary } from './runtime-performance-plugin-events.ts';
 
 export type RuntimePerformanceSnapshotValidationResult = {
   errors: string[];
@@ -253,6 +254,14 @@ export function validateRuntimePerformanceSnapshot(
         'Runtime performance snapshot violations must contain only non-empty strings.'
       );
     }
+  }
+
+  if (normalizedSnapshot.pluginEvents !== undefined) {
+    errors.push(
+      ...validateRuntimePerformanceSnapshotPluginEvents(
+        normalizedSnapshot.pluginEvents
+      )
+    );
   }
 
   const requiredMetricPaths =
@@ -527,6 +536,101 @@ export function createValidRuntimePerformanceSnapshot(): RuntimePerformanceSnaps
       midiExportMs: 400,
       wavExportMs: 800,
     },
+    pluginEvents: createEmptyRuntimePerformanceSnapshotPluginEventSummary(),
     violations: [],
   };
+}
+
+function validateRuntimePerformanceSnapshotPluginEvents(
+  value: RuntimePerformanceSnapshot['pluginEvents']
+): string[] {
+  const errors: string[] = [];
+
+  if (!value || typeof value !== 'object') {
+    return [
+      'Runtime performance snapshot pluginEvents must be an object when present.',
+    ];
+  }
+  if (!Array.isArray(value.recent)) {
+    errors.push(
+      'Runtime performance snapshot pluginEvents.recent must be an array.'
+    );
+  } else {
+    value.recent.forEach((event, index) => {
+      if (!event || typeof event !== 'object') {
+        errors.push(
+          `Runtime performance snapshot pluginEvents.recent[${index}] must be an object.`
+        );
+        return;
+      }
+      if (typeof event.type !== 'string' || event.type.trim().length === 0) {
+        errors.push(
+          `Runtime performance snapshot pluginEvents.recent[${index}].type must be a non-empty string.`
+        );
+      }
+      if (
+        typeof event.source !== 'string' ||
+        event.source.trim().length === 0
+      ) {
+        errors.push(
+          `Runtime performance snapshot pluginEvents.recent[${index}].source must be a non-empty string.`
+        );
+      }
+      if (
+        typeof event.message !== 'string' ||
+        event.message.trim().length === 0
+      ) {
+        errors.push(
+          `Runtime performance snapshot pluginEvents.recent[${index}].message must be a non-empty string.`
+        );
+      }
+      if (
+        event.timestamp !== null &&
+        (typeof event.timestamp !== 'string' ||
+          !isIsoTimestamp(event.timestamp))
+      ) {
+        errors.push(
+          `Runtime performance snapshot pluginEvents.recent[${index}].timestamp must be null or a valid ISO-8601 timestamp.`
+        );
+      }
+      if (
+        event.severity !== null &&
+        (typeof event.severity !== 'string' ||
+          event.severity.trim().length === 0)
+      ) {
+        errors.push(
+          `Runtime performance snapshot pluginEvents.recent[${index}].severity must be null or a non-empty string.`
+        );
+      }
+    });
+  }
+
+  if (!isCountRecord(value.countsByType)) {
+    errors.push(
+      'Runtime performance snapshot pluginEvents.countsByType must be a record of finite non-negative numbers.'
+    );
+  }
+  if (!isCountRecord(value.countsBySource)) {
+    errors.push(
+      'Runtime performance snapshot pluginEvents.countsBySource must be a record of finite non-negative numbers.'
+    );
+  }
+
+  return errors;
+}
+
+function isCountRecord(
+  value: unknown
+): value is Readonly<Record<string, number>> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  return Object.entries(value).every(
+    ([key, count]) =>
+      typeof key === 'string' &&
+      key.trim().length > 0 &&
+      typeof count === 'number' &&
+      Number.isFinite(count) &&
+      count >= 0
+  );
 }
