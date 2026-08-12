@@ -4,6 +4,9 @@ import {
   DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
 } from './runtime-performance-tracking.ts';
 import {
+  NULLABLE_RUNTIME_PERFORMANCE_METRICS,
+  REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER,
+  RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS,
   createValidRuntimePerformanceSnapshot,
   validateRuntimePerformanceSnapshot,
 } from './runtime-performance-snapshot-validation.ts';
@@ -15,10 +18,10 @@ describe('runtime performance snapshot validation', () => {
     expect(validateRuntimePerformanceSnapshot(snapshot).errors).toEqual([]);
   });
 
-  it('treats null metrics as unmeasured rather than invalid zeros', () => {
+  it('treats nullable non-required metrics as unmeasured rather than invalid zeros', () => {
     const snapshot = createValidRuntimePerformanceSnapshot();
+    snapshot.trigger = 'runtime-issue';
     snapshot.metrics.initialWorldGenerationMs = null;
-    snapshot.metrics.visibleTileGeneration = null;
     snapshot.metrics.memoryAfterRegionChangeMb = null;
     snapshot.metrics.songGenerationMs = null;
     snapshot.metrics.midiExportMs = null;
@@ -26,6 +29,40 @@ describe('runtime performance snapshot validation', () => {
     snapshot.violations = [];
 
     expect(validateRuntimePerformanceSnapshot(snapshot).errors).toEqual([]);
+  });
+
+  it('keeps the supported limit fields aligned with the supported metric fields', () => {
+    expect(
+      Object.keys(RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS).sort()
+    ).toEqual(Object.keys(DEFAULT_RUNTIME_PERFORMANCE_LIMITS).sort());
+    expect(
+      Object.values(RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS).sort()
+    ).toEqual([
+      'activeThreeObjectCount',
+      'audioNodeCount',
+      'drawCalls',
+      'initialWorldGenerationMs',
+      'maximumFrameMs',
+      'memoryAfterRegionChangeMb',
+      'midiExportMs',
+      'songGenerationMs',
+      'visibleTileGeneration.maxMs',
+      'wavExportMs',
+    ]);
+    expect(NULLABLE_RUNTIME_PERFORMANCE_METRICS).toEqual(
+      expect.arrayContaining([
+        'initialWorldGenerationMs',
+        'visibleTileGeneration',
+        'maximumFrameMs',
+        'memoryAfterRegionChangeMb',
+        'activeThreeObjectCount',
+        'drawCalls',
+        'audioNodeCount',
+        'songGenerationMs',
+        'midiExportMs',
+        'wavExportMs',
+      ])
+    );
   });
 
   it('rejects unsupported schema metadata and invalid context fields', () => {
@@ -84,6 +121,43 @@ describe('runtime performance snapshot validation', () => {
         'Runtime performance snapshot metric visibleTileGeneration.buildsPerSecond must be null or a finite non-negative number.',
       ])
     );
+  });
+
+  it('fails when a trigger-specific required metric is missing', () => {
+    const startupSnapshot = createValidRuntimePerformanceSnapshot();
+    startupSnapshot.trigger = 'startup';
+    startupSnapshot.metrics.initialWorldGenerationMs = null;
+
+    const bundleSnapshot = createValidRuntimePerformanceSnapshot();
+    bundleSnapshot.trigger = 'bundle-export';
+    bundleSnapshot.metrics.midiExportMs = null;
+    bundleSnapshot.metrics.wavExportMs = null;
+
+    expect(
+      validateRuntimePerformanceSnapshot(startupSnapshot).errors
+    ).toContain(
+      'Runtime performance snapshot trigger startup requires metric initialWorldGenerationMs.'
+    );
+    expect(validateRuntimePerformanceSnapshot(bundleSnapshot).errors).toEqual(
+      expect.arrayContaining([
+        'Runtime performance snapshot trigger bundle-export requires metric midiExportMs.',
+        'Runtime performance snapshot trigger bundle-export requires metric wavExportMs.',
+      ])
+    );
+  });
+
+  it('defines required metrics for every supported runtime snapshot trigger', () => {
+    expect(
+      Object.keys(REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER).sort()
+    ).toEqual([
+      'bundle-export',
+      'midi-export',
+      'region-change',
+      'runtime-issue',
+      'song-generated',
+      'startup',
+      'wav-export',
+    ]);
   });
 
   it('requires the stored violations to match the measured hard-limit failures', () => {

@@ -23,6 +23,52 @@ export const NULLABLE_RUNTIME_PERFORMANCE_METRICS = [
   'wavExportMs',
 ] as const;
 
+export const RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS = {
+  initialWorldGenerationMs: 'initialWorldGenerationMs',
+  visibleTileGenerationMs: 'visibleTileGeneration.maxMs',
+  maximumFrameMs: 'maximumFrameMs',
+  memoryAfterRegionChangeMb: 'memoryAfterRegionChangeMb',
+  activeThreeObjectCount: 'activeThreeObjectCount',
+  drawCalls: 'drawCalls',
+  audioNodeCount: 'audioNodeCount',
+  songGenerationMs: 'songGenerationMs',
+  midiExportMs: 'midiExportMs',
+  wavExportMs: 'wavExportMs',
+} as const;
+
+export const REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER = {
+  startup: [
+    'initialWorldGenerationMs',
+    'visibleTileGeneration',
+    'maximumFrameMs',
+    'activeThreeObjectCount',
+    'drawCalls',
+    'audioNodeCount',
+  ],
+  'region-change': [
+    'memoryAfterRegionChangeMb',
+    'visibleTileGeneration',
+    'maximumFrameMs',
+    'activeThreeObjectCount',
+    'drawCalls',
+    'audioNodeCount',
+  ],
+  'runtime-issue': [
+    'visibleTileGeneration',
+    'maximumFrameMs',
+    'activeThreeObjectCount',
+    'drawCalls',
+    'audioNodeCount',
+  ],
+  'song-generated': ['songGenerationMs'],
+  'midi-export': ['midiExportMs'],
+  'wav-export': ['wavExportMs'],
+  'bundle-export': ['midiExportMs', 'wavExportMs'],
+} as const satisfies Record<
+  RuntimePerformanceSnapshot['trigger'],
+  readonly string[]
+>;
+
 export function validateRuntimePerformanceSnapshot(
   snapshot: RuntimePerformanceSnapshot
 ): RuntimePerformanceSnapshotValidationResult {
@@ -159,6 +205,43 @@ export function validateRuntimePerformanceSnapshot(
     }
   }
 
+  const requiredMetricPaths =
+    REQUIRED_RUNTIME_PERFORMANCE_METRICS_BY_TRIGGER[snapshot.trigger] ?? [];
+  for (const metricPath of requiredMetricPaths) {
+    const value = getRuntimePerformanceMetricPathValue(snapshot, metricPath);
+    if (value === null || value === undefined) {
+      errors.push(
+        `Runtime performance snapshot trigger ${snapshot.trigger} requires metric ${metricPath}.`
+      );
+    }
+  }
+
+  const limitNames = Object.keys(snapshot.limits).sort();
+  const alignedLimitNames = Object.keys(
+    RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS
+  ).sort();
+  if (
+    limitNames.length !== alignedLimitNames.length ||
+    limitNames.some(
+      (limitName, index) => limitName !== alignedLimitNames[index]
+    )
+  ) {
+    errors.push(
+      'Runtime performance snapshot limits must stay aligned with the supported metric fields.'
+    );
+  }
+
+  for (const [limitName, metricPath] of Object.entries(
+    RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS
+  )) {
+    const value = getRuntimePerformanceMetricPathValue(snapshot, metricPath);
+    if (value === undefined) {
+      errors.push(
+        `Runtime performance snapshot limit ${limitName} is not aligned with metric ${metricPath}.`
+      );
+    }
+  }
+
   if (errors.length === 0) {
     const expectedViolations = collectRuntimePerformanceViolations(
       snapshot.metrics,
@@ -186,6 +269,21 @@ export function validateRuntimePerformanceSnapshot(
   return {
     errors,
   };
+}
+
+function getRuntimePerformanceMetricPathValue(
+  snapshot: RuntimePerformanceSnapshot,
+  metricPath: string
+): unknown {
+  return metricPath.split('.').reduce<unknown>((currentValue, segment) => {
+    if (currentValue === null) {
+      return null;
+    }
+    if (currentValue === undefined || typeof currentValue !== 'object') {
+      return undefined;
+    }
+    return (currentValue as Record<string, unknown>)[segment];
+  }, snapshot.metrics);
 }
 
 function validateMetricValue(
