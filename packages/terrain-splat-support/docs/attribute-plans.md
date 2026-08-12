@@ -30,3 +30,9 @@ data into one stable geometry-attribute layout for renderer upload.
 - it assumes one packed splat sample maps to one renderer sample/vertex entry
 - callers still decide how the packed sample grid maps onto final terrain
   geometry density
+
+Initial-delivery follow-up:
+
+- `@bworlds/terrain-splat-support/two-layer-vertex-blend` can resolve the
+  strongest two layers from these packed vertex weights for simpler first-pass
+  terrain materials

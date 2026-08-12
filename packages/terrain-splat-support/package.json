@@ -27,6 +27,7 @@
     "./terrain-state": "./src/terrain-state.ts",
     "./texture-array-capability": "./src/texture-array-capability.ts",
     "./texture-binding-runtime-plan": "./src/texture-binding-runtime-plan.ts",
+    "./two-layer-vertex-blend": "./src/two-layer-vertex-blend.ts",
     "./worker-contract": "./src/worker-contract.ts",
     "./variant-pool": "./src/variant-pool.ts",
     "./layer-pool-plan": "./src/layer-pool-plan.ts",

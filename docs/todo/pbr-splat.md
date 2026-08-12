@@ -235,7 +235,7 @@
 
 - [x] Build one chunk with grass and dirt splat layers.
 - [x] Add one shared PBR splat material.
-- [ ] Blend two terrain layers from vertex weights.
+- [x] Blend two terrain layers from vertex weights.
 - [ ] Add base color texture array support.
 - [ ] Add normal map texture array support.
 
@@ -329,6 +329,10 @@
   enumerate stable splat debug modes, resolve valid layer-weight targets, and
   render a selected shared debug payload without duplicating mode-selection
   rules in UI code.
+- Added `@bworlds/terrain-splat-support/two-layer-vertex-blend` so the initial
+  delivery path can resolve the strongest two terrain layers from packed vertex
+  weights, renormalize them into one bounded blend factor, and keep that
+  simpler renderer path derived from the shared splat data.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and

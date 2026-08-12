@@ -24,6 +24,8 @@ Current responsibilities:
   planning before live mesh upload
 - expose stable terrain-viewer debug mode metadata around the renderer-free
   splat debug payloads
+- resolve one initial two-layer per-vertex blend from packed splat weights
+  before the full four-layer shader path is required
 - flatten packed splat grids into transferable typed arrays
 - summarize chunk layer usage before renderer integration decides budgets
 - share deterministic terrain family variant pools across chunk generation paths
