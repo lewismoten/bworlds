@@ -1078,6 +1078,50 @@ describe('tile town', () => {
     expect(windowPair?.[0].windowMaterial).toBe(windowPair?.[1].windowMaterial);
   });
 
+  it('reuses town banner materials across regions when the resolved banner color matches', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+    const coordinates = [
+      { tileX: 3, tileY: 7 },
+      { tileX: 21, tileY: 25 },
+      { tileX: 39, tileY: 43 },
+      { tileX: 57, tileY: 61 },
+      { tileX: 75, tileY: 79 },
+      { tileX: 93, tileY: 97 },
+      { tileX: 111, tileY: 115 },
+      { tileX: 129, tileY: 133 },
+    ];
+    const sampled = coordinates.map((position) => {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: {
+          kind: 'town',
+          poi: { type: 'town', name: `Town ${position.tileX}:${position.tileY}` },
+        } as never,
+        detailLevel: 'full',
+        ...position,
+      }) as FakeGroup;
+      const bannerMaterial = findTownBannerMaterial(model);
+      return {
+        bannerMaterial,
+        bannerColor: bannerMaterial?.options?.color,
+      };
+    });
+
+    const bannerPair = findMatchingMaterialPair(
+      sampled,
+      'bannerColor',
+      'bannerMaterial'
+    );
+
+    expect(bannerPair).not.toBeNull();
+    expect(bannerPair?.[0].bannerMaterial).toBe(
+      bannerPair?.[1].bannerMaterial
+    );
+  });
+
   it('reuses neutral wall and roof texture maps across different regional palettes', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');

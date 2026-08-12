@@ -165,6 +165,17 @@ const townWindowMaterialResolver = createHostVariantMaterialResolver(
       metalness: 0.02,
     })
 );
+const townBannerMaterialResolver = createHostVariantMaterialResolver(
+  (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: 0.04,
+      roughness: 0.84,
+      metalness: 0.02,
+      side: host.DoubleSide,
+    })
+);
 const townStyleCache = createBoundedCache<string, TownStyleBlueprint>(
   TOWN_STYLE_CACHE_LIMIT
 );
@@ -231,17 +242,6 @@ function resolveTownStyle(tileX: number, tileY: number): TownStyleBlueprint {
   return townStyleCache.getOrCreate(variant.key, () =>
     createHostVariantValueResolver(
       (three: ThreeHostLike, quality: RenderBudgetQualityLevel) => {
-        const bannerMaterials = createHostVariantMaterialResolver(
-          (host: ThreeHostLike, color: string): ThreeMaterialLike =>
-            new host.MeshStandardMaterial({
-              color,
-              emissive: color,
-              emissiveIntensity: 0.04,
-              roughness: 0.84,
-              metalness: 0.02,
-              side: host.DoubleSide,
-            })
-        );
         const style = {
           key: variant.key,
           trimColor: variant.palette.trimColor,
@@ -278,7 +278,7 @@ function resolveTownStyle(tileX: number, tileY: number): TownStyleBlueprint {
             variant.palette.windowColor
           ),
           getBannerMaterial(color: string) {
-            return bannerMaterials.getMaterial(three, color);
+            return townBannerMaterialResolver.getMaterial(three, color);
           },
         };
         return style;

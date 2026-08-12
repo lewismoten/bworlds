@@ -124,7 +124,10 @@
       `tile-town` now resolves trim and window materials through host-level
       caches keyed by their effective colors so different town regions that
       land on the same trim/window palette stop paying duplicate
-      `MeshStandardMaterial` instances with identical values.
+      `MeshStandardMaterial` instances with identical values, and town banner
+      cloth materials now also resolve through one host-level cache keyed by
+      effective banner color so different towns that land on the same banner
+      palette stop paying duplicate double-sided cloth materials.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`
