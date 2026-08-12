@@ -41,6 +41,10 @@ renderer-free splat grid against one naive per-cell terrain path.
 - absolute reductions and normalized reduction ratios
 - cross-chunk material reuse counts, per-chunk material keys, and warnings when
   a chunk falls off the shared splat material path
+- the test suite also pins one deterministic regression budget for the shared
+  splat fixture so draw calls, material/program counts, texture bindings,
+  frame-time estimates, and route overlay draw-call reductions fail loudly when
+  they drift past the expected envelope
 
 ## Current limits
 

@@ -451,7 +451,7 @@
 - [x] Add mud accumulation blending.
 - [x] Add seasonal terrain tinting.
 - [x] Add worker-based splat generation.
-- [ ] Add performance limits and regression tests.
+- [x] Add performance limits and regression tests.
 
 Progress: `@bworlds/terrain-splat-support` now provides the first shared PBR
 splat foundation package with validated `TerrainMaterialLayerDefinition`

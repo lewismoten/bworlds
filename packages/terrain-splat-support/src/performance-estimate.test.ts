@@ -14,6 +14,18 @@ import {
   createTerrainSplatSampleGrid,
 } from './sample-grid.ts';
 
+const TERRAIN_SPLAT_PERFORMANCE_LIMITS = {
+  maxSplatDrawCalls: 1,
+  maxSplatMaterialCount: 1,
+  maxSplatProgramCount: 1,
+  maxSplatTextureBindingCount: 3,
+  maxSplatEstimatedFrameTimeMs: 0.7,
+  minDrawCallReductionRatio: 0.9,
+  minMaterialReductionRatio: 0.75,
+  minProgramReductionRatio: 0.75,
+  maxRouteSplatExtraDrawCalls: 0,
+} as const;
+
 describe('terrain splat performance estimate', () => {
   it('shows that one shared splat path reduces terrain material count', () => {
     const { grid, layerCatalog } = createComparisonFixture();
@@ -202,6 +214,46 @@ describe('terrain splat performance estimate', () => {
         (warning) => warning.code === 'unique-splat-material'
       )
     ).toBe(true);
+  });
+
+  it('enforces deterministic terrain splat performance limits to catch regressions', () => {
+    const { grid, layerCatalog } = createComparisonFixture();
+
+    const terrainComparison = compareTerrainSplatChunkPerformance(grid, {
+      catalog: layerCatalog,
+    });
+    const routeComparison = compareTerrainRouteSplatPathPerformance({
+      grid,
+      routeLayerIds: ['dirt-road', 'gravel-road'],
+    });
+
+    expect(terrainComparison.splat.drawCallCount).toBeLessThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.maxSplatDrawCalls
+    );
+    expect(terrainComparison.splat.materialCount).toBeLessThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.maxSplatMaterialCount
+    );
+    expect(terrainComparison.splat.programCount).toBeLessThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.maxSplatProgramCount
+    );
+    expect(terrainComparison.splat.textureBindingCount).toBeLessThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.maxSplatTextureBindingCount
+    );
+    expect(terrainComparison.splat.estimatedFrameTimeMs).toBeLessThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.maxSplatEstimatedFrameTimeMs
+    );
+    expect(terrainComparison.reductionRatios.drawCallCount).toBeGreaterThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.minDrawCallReductionRatio
+    );
+    expect(terrainComparison.reductionRatios.materialCount).toBeGreaterThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.minMaterialReductionRatio
+    );
+    expect(terrainComparison.reductionRatios.programCount).toBeGreaterThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.minProgramReductionRatio
+    );
+    expect(routeComparison.splat.drawCallCount).toBeLessThanOrEqual(
+      TERRAIN_SPLAT_PERFORMANCE_LIMITS.maxRouteSplatExtraDrawCalls
+    );
   });
 });
 
