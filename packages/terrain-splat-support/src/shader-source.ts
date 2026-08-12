@@ -2,11 +2,7 @@ import type { TerrainSplatMaterialPlan } from './material-plan.ts';
 import type { TerrainTextureBindingRuntimePlan } from './texture-binding-runtime-plan.ts';
 
 export type TerrainSplatShaderVariantFeature =
-  | 'baseColor'
-  | 'normal'
-  | 'roughness'
-  | 'metalness'
-  | 'ambientOcclusion';
+  'baseColor' | 'normal' | 'roughness' | 'metalness' | 'ambientOcclusion';
 
 export type TerrainSplatShaderSourcePlan = {
   variantKey: string;
@@ -229,7 +225,9 @@ function createOptionalOutputs(
   return lines;
 }
 
-function isShaderFeature(value: string): value is TerrainSplatShaderVariantFeature {
+function isShaderFeature(
+  value: string
+): value is TerrainSplatShaderVariantFeature {
   return (
     value === 'baseColor' ||
     value === 'normal' ||
@@ -239,7 +237,9 @@ function isShaderFeature(value: string): value is TerrainSplatShaderVariantFeatu
   );
 }
 
-function getFeatureUniformName(feature: TerrainSplatShaderVariantFeature): string {
+function getFeatureUniformName(
+  feature: TerrainSplatShaderVariantFeature
+): string {
   switch (feature) {
     case 'baseColor':
       return 'terrainSplatBaseColorMap';

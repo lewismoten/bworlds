@@ -78,13 +78,13 @@
 
 ## Height Integration
 
-- [ ] Use the shared terrain height field for splat geometry.
-- [ ] Keep splat weights independent from terrain height.
+- [x] Use the shared terrain height field for splat geometry.
+- [x] Keep splat weights independent from terrain height.
 - [x] Allow slope to influence material selection.
 - [x] Add more rock weight on steep slopes.
 - [x] Add more soil weight on gentle slopes.
 - [x] Allow elevation to influence terrain layers.
-- [ ] Keep shared chunk edges identical in height.
+- [x] Keep shared chunk edges identical in height.
 
 ## World Influence
 
@@ -287,6 +287,10 @@
   texture binding plans into shared runtime cache keys and per-purpose upload
   descriptors so compatible chunks can reuse one terrain texture-array binding
   path.
+- Added `@bworlds/terrain-splat-support/height-field` to build shared
+  corner-sampled terrain height fields and splat geometry plans from the same
+  world-space bounds while keeping splat weights unchanged and neighboring
+  chunk border heights identical.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
@@ -407,6 +411,7 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/material-plans.md`, plus
 `packages/terrain-splat-support/docs/attribute-plans.md`, plus
 `packages/terrain-splat-support/docs/shader-sources.md`, plus
+`packages/terrain-splat-support/docs/height-fields.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
 `packages/terrain-splat-support/docs/tint-variation.md`, plus
 `packages/terrain-splat-support/docs/weather-effects.md`, plus

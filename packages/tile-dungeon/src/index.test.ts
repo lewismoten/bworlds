@@ -1108,7 +1108,10 @@ function findDungeonBarMaterial(root: FakeGroup) {
 function findDungeonTrimMaterial(root: FakeGroup) {
   let material: FakeMaterial | undefined;
   root.traverse((node) => {
-    if (material || !(node instanceof FakeMesh || node instanceof FakeInstancedMesh)) {
+    if (
+      material ||
+      !(node instanceof FakeMesh || node instanceof FakeInstancedMesh)
+    ) {
       return;
     }
 

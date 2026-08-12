@@ -48,9 +48,10 @@ export type TerrainSplatChunkMaterialReuseEstimate = {
   estimatedTextureBytes: number;
 };
 
-export type TerrainSplatMaterialReuseEstimate = TerrainSplatMaterialReuseSummary & {
-  chunks: readonly TerrainSplatChunkMaterialReuseEstimate[];
-};
+export type TerrainSplatMaterialReuseEstimate =
+  TerrainSplatMaterialReuseSummary & {
+    chunks: readonly TerrainSplatChunkMaterialReuseEstimate[];
+  };
 
 export function compareTerrainSplatChunkPerformance(
   grid: TerrainSplatSampleGrid,

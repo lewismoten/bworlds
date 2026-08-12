@@ -3,8 +3,7 @@ import type { PackedTerrainSplatSampleGrid } from './sample-grid.ts';
 import type { TerrainSplatWorkerBuildResult } from './worker-contract.ts';
 
 export type TerrainSplatGeometryAttributeName =
-  | 'terrainSplatLayerIndices'
-  | 'terrainSplatLayerWeights';
+  'terrainSplatLayerIndices' | 'terrainSplatLayerWeights';
 
 export type TerrainSplatGeometryAttributePlan = {
   name: TerrainSplatGeometryAttributeName;
@@ -29,7 +28,11 @@ export function createTerrainSplatGeometryAttributePlanSet(
   grid: PackedTerrainSplatSampleGrid
 ): TerrainSplatGeometryAttributePlanSet {
   const sampleCount = grid.width * grid.height;
-  assertPackedGridAttributeLength(grid.layerIndices, sampleCount, 'layerIndices');
+  assertPackedGridAttributeLength(
+    grid.layerIndices,
+    sampleCount,
+    'layerIndices'
+  );
   assertPackedGridAttributeLength(grid.weights, sampleCount, 'weights');
 
   return {
@@ -37,7 +40,8 @@ export function createTerrainSplatGeometryAttributePlanSet(
     height: grid.height,
     sampleCount,
     step: grid.step,
-    packedMemoryUsageBytes: grid.layerIndices.byteLength + grid.weights.byteLength,
+    packedMemoryUsageBytes:
+      grid.layerIndices.byteLength + grid.weights.byteLength,
     attributes: [
       {
         name: 'terrainSplatLayerIndices',
@@ -70,7 +74,9 @@ export function createTerrainSplatGeometryAttributePlanSetFromWorkerResult(
 export function createTerrainSplatGeometryAttributePlanSetFromChunkBuild(
   built: Pick<TerrainSplatChunkBuildResult, 'result'>
 ): TerrainSplatGeometryAttributePlanSet {
-  return createTerrainSplatGeometryAttributePlanSetFromWorkerResult(built.result);
+  return createTerrainSplatGeometryAttributePlanSetFromWorkerResult(
+    built.result
+  );
 }
 
 function assertPackedGridAttributeLength(

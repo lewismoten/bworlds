@@ -6,7 +6,10 @@ import {
   registerHashSeed,
   resolveHashSeed,
 } from '@bworlds/core/hash';
-import { createBoundedCache, getOrCreateWeakMapValue } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  getOrCreateWeakMapValue,
+} from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   DEFAULT_LAND_POI_BLOCKED_KINDS,
@@ -421,14 +424,17 @@ function getRuinsStyle(
 }
 
 function getSharedRuinsGlowMaterial(three: ThreeHostLike): ThreeMaterialLike {
-  return getOrCreateWeakMapValue(ruinsGlowMaterialCache, three as object, () =>
-    new three.MeshStandardMaterial({
-      color: '#93c5fd',
-      emissive: '#93c5fd',
-      emissiveIntensity: 0.01,
-      roughness: 0.28,
-      metalness: 0.04,
-    })
+  return getOrCreateWeakMapValue(
+    ruinsGlowMaterialCache,
+    three as object,
+    () =>
+      new three.MeshStandardMaterial({
+        color: '#93c5fd',
+        emissive: '#93c5fd',
+        emissiveIntensity: 0.01,
+        roughness: 0.28,
+        metalness: 0.04,
+      })
   );
 }
 

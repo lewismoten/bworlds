@@ -26,7 +26,9 @@ describe('terrain splat shader source', () => {
       ),
     });
 
-    expect(plan.variantKey).toBe('mode:texture-array|features:baseColor,normal,roughness');
+    expect(plan.variantKey).toBe(
+      'mode:texture-array|features:baseColor,normal,roughness'
+    );
     expect(plan.defines).toEqual([
       'TERRAIN_SPLAT_TEXTURE_ARRAYS',
       'TERRAIN_SPLAT_USE_BASE_COLOR',
@@ -41,21 +43,21 @@ describe('terrain splat shader source', () => {
     expect(plan.fragmentShader).toContain(
       'uniform highp sampler2DArray terrainSplatBaseColorMap;'
     );
-    expect(plan.fragmentShader).toContain(
-      'for (int i = 0; i < 4; ++i) {'
-    );
+    expect(plan.fragmentShader).toContain('for (int i = 0; i < 4; ++i) {');
     expect(plan.fragmentShader).toContain(
       'blendedBaseColor += sampleTerrainSplatBaseColor(layerIndex, vTerrainSplatUv).rgb * weight;'
     );
     expect(plan.fragmentShader).toContain(
       'float blendEnabledFactor = terrainSplatBlendEnabled ? 1.0 : 0.0;'
     );
-    expect(plan.fragmentShader).toContain(
-      'vec4 effectiveWeights = mix('
-    );
+    expect(plan.fragmentShader).toContain('vec4 effectiveWeights = mix(');
     expect(plan.fragmentShader).not.toContain('if (weight <= 0.0) {');
-    expect(plan.fragmentShader).toContain('blendedNormal = normalize(blendedNormal);');
-    expect(plan.fragmentShader).toContain('blendedBaseColor *= terrainSplatTint;');
+    expect(plan.fragmentShader).toContain(
+      'blendedNormal = normalize(blendedNormal);'
+    );
+    expect(plan.fragmentShader).toContain(
+      'blendedBaseColor *= terrainSplatTint;'
+    );
   });
 
   it('adds optional metalness and ambient-occlusion shader paths only when present', () => {
@@ -95,7 +97,8 @@ describe('terrain splat shader source', () => {
 
     const plan = createTerrainSplatShaderSourcePlan({
       materialPlan: createTerrainSplatMaterialPlan(bindingPlanSet),
-      textureBindingPlan: createTerrainTextureBindingRuntimePlan(bindingPlanSet),
+      textureBindingPlan:
+        createTerrainTextureBindingRuntimePlan(bindingPlanSet),
     });
 
     expect(plan.variantKey).toBe(
@@ -124,10 +127,13 @@ describe('terrain splat shader source', () => {
     });
     const plan = createTerrainSplatShaderSourcePlan({
       materialPlan: createTerrainSplatMaterialPlan(bindingPlanSet),
-      textureBindingPlan: createTerrainTextureBindingRuntimePlan(bindingPlanSet),
+      textureBindingPlan:
+        createTerrainTextureBindingRuntimePlan(bindingPlanSet),
     });
 
-    expect(plan.variantKey).toBe('mode:per-layer-textures|features:baseColor,normal,roughness');
+    expect(plan.variantKey).toBe(
+      'mode:per-layer-textures|features:baseColor,normal,roughness'
+    );
     expect(plan.defines).toContain('TERRAIN_SPLAT_PER_LAYER_TEXTURES');
     expect(plan.dynamicBranchCount).toBe(1);
     expect(plan.fragmentShader).toContain(
@@ -163,7 +169,9 @@ function createCatalog() {
 }
 
 function createTextureResolver(
-  overrides: Readonly<Record<string, ReturnType<typeof createTextureSource>>> = {}
+  overrides: Readonly<
+    Record<string, ReturnType<typeof createTextureSource>>
+  > = {}
 ) {
   const descriptors = {
     'grass/base': createTextureSource('grass/base'),
@@ -175,7 +183,8 @@ function createTextureResolver(
     ...overrides,
   } as const;
 
-  return (textureId: string) => descriptors[textureId as keyof typeof descriptors];
+  return (textureId: string) =>
+    descriptors[textureId as keyof typeof descriptors];
 }
 
 function createTextureSource(id: string) {

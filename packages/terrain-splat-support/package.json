@@ -13,6 +13,7 @@
     "./chunk-build": "./src/chunk-build.ts",
     "./chunk-cache": "./src/chunk-cache.ts",
     "./debug-view": "./src/debug-view.ts",
+    "./height-field": "./src/height-field.ts",
     "./material-plan": "./src/material-plan.ts",
     "./performance-estimate": "./src/performance-estimate.ts",
     "./sample-grid": "./src/sample-grid.ts",

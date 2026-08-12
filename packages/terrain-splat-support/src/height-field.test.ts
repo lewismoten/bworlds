@@ -5,23 +5,20 @@ import {
   createTerrainMaterialLayerCatalog,
 } from './index.ts';
 import {
-  createTerrainSplatGeometryAttributePlanSet,
-  createTerrainSplatGeometryAttributePlanSetFromChunkBuild,
-  createTerrainSplatGeometryAttributePlanSetFromWorkerResult,
-} from './attribute-plan.ts';
-import { buildTerrainSplatChunkData } from './chunk-build.ts';
+  createTerrainHeightField,
+  createTerrainSplatHeightGeometryPlan,
+  getTerrainHeightFieldSample,
+} from './height-field.ts';
 import {
   createTerrainSplatGridTileResolver,
   createTerrainSplatSampleGrid,
-  packTerrainSplatSampleGrid,
 } from './sample-grid.ts';
-import { buildTerrainSplatWorkerResult } from './worker-contract.ts';
 
-describe('terrain splat geometry attribute plan', () => {
-  it('creates stable geometry attributes from one packed splat grid', () => {
-    const { layerCatalog, kindCatalog } = createCatalogs();
+describe('terrain splat height field', () => {
+  it('builds one shared corner-sampled height field and geometry plan for a splat grid', () => {
+    const { kindCatalog } = createCatalogs();
     const grid = createTerrainSplatSampleGrid({
-      seed: 'attribute-plan-seed',
+      seed: 'height-field-seed',
       bounds: {
         minX: 0,
         maxX: 2,
@@ -41,41 +38,73 @@ describe('terrain splat geometry attribute plan', () => {
       fallbackLayerId: 'grass-a',
       blendWidth: 1,
     });
+    const heightField = createTerrainHeightField({
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      resolveHeight: ({ x, y }) => x * 0.1 + y * 0.2,
+    });
 
-    const plan = createTerrainSplatGeometryAttributePlanSet(
-      packTerrainSplatSampleGrid(grid, layerCatalog, {
-        fallbackLayerId: 'grass-a',
-      })
+    const geometryPlan = createTerrainSplatHeightGeometryPlan({
+      grid,
+      heightField,
+    });
+
+    expect(heightField.width).toBe(3);
+    expect(heightField.height).toBe(3);
+    expect(getTerrainHeightFieldSample(heightField, 2, 1)).toBeCloseTo(0.4);
+    expect(geometryPlan.vertexCount).toBe(9);
+    expect(geometryPlan.triangleCount).toBe(8);
+    expect(geometryPlan.positions).toHaveLength(27);
+    expect(geometryPlan.uvs).toHaveLength(18);
+    expect(geometryPlan.indices).toHaveLength(24);
+    expect(Array.from(geometryPlan.positions.slice(0, 9))).toEqual(
+      expect.arrayContaining([0, 0, 0, 1, 0, 2, 0])
     );
-
-    expect(plan.width).toBe(3);
-    expect(plan.height).toBe(3);
-    expect(plan.sampleCount).toBe(9);
-    expect(plan.packedMemoryUsageBytes).toBe(72);
-    expect(plan.attributes).toEqual([
-      expect.objectContaining({
-        name: 'terrainSplatLayerIndices',
-        itemSize: 4,
-        normalized: false,
-        componentType: 'uint8',
-        count: 9,
-        byteLength: 36,
-      }),
-      expect.objectContaining({
-        name: 'terrainSplatLayerWeights',
-        itemSize: 4,
-        normalized: true,
-        componentType: 'uint8',
-        count: 9,
-        byteLength: 36,
-      }),
-    ]);
+    expect(geometryPlan.positions[4]).toBeCloseTo(0.1);
+    expect(geometryPlan.positions[7]).toBeCloseTo(0.2);
   });
 
-  it('can derive the same attribute plan from worker and chunk-build outputs', () => {
-    const { layerCatalog, kindCatalog } = createCatalogs();
-    const built = buildTerrainSplatChunkData({
-      seed: 'attribute-plan-chunk-seed',
+  it('keeps neighboring chunk border heights identical when they sample the same world corners', () => {
+    const resolveHeight = ({ x, y }: { x: number; y: number }) =>
+      x * 0.15 + y * 0.05;
+    const left = createTerrainHeightField({
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      resolveHeight,
+    });
+    const right = createTerrainHeightField({
+      bounds: {
+        minX: 2,
+        maxX: 4,
+        minY: 0,
+        maxY: 2,
+      },
+      resolveHeight,
+    });
+
+    expect(getTerrainHeightFieldSample(left, 2, 0)).toBeCloseTo(
+      getTerrainHeightFieldSample(right, 0, 0)
+    );
+    expect(getTerrainHeightFieldSample(left, 2, 1)).toBeCloseTo(
+      getTerrainHeightFieldSample(right, 0, 1)
+    );
+    expect(getTerrainHeightFieldSample(left, 2, 2)).toBeCloseTo(
+      getTerrainHeightFieldSample(right, 0, 2)
+    );
+  });
+
+  it('keeps splat weights independent from the selected terrain height field', () => {
+    const { kindCatalog } = createCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'height-independence-seed',
       bounds: {
         minX: 0,
         maxX: 2,
@@ -83,11 +112,10 @@ describe('terrain splat geometry attribute plan', () => {
         maxY: 2,
       },
       kindCatalog,
-      layerCatalog,
       resolveTile: createTerrainSplatGridTileResolver(({ x }) => ({
         kind: x >= 1 ? 'forest' : 'plains',
         signals: {
-          moisture: 0.62,
+          moisture: 0.66,
           season: 'summer',
           temperature: 0.7,
         },
@@ -95,42 +123,34 @@ describe('terrain splat geometry attribute plan', () => {
       fallbackLayerId: 'grass-a',
       blendWidth: 1,
     });
-    const workerResult = buildTerrainSplatWorkerResult(
-      built.request,
-      kindCatalog,
-      layerCatalog
-    );
+    const sampleSnapshot = JSON.stringify(grid.samples);
 
-    const fromChunkBuild =
-      createTerrainSplatGeometryAttributePlanSetFromChunkBuild(built);
-    const fromWorkerResult =
-      createTerrainSplatGeometryAttributePlanSetFromWorkerResult(workerResult);
+    createTerrainSplatHeightGeometryPlan({
+      grid,
+      heightField: createTerrainHeightField({
+        bounds: {
+          minX: 0,
+          maxX: 2,
+          minY: 0,
+          maxY: 2,
+        },
+        resolveHeight: ({ x, y }) => x + y,
+      }),
+    });
+    createTerrainSplatHeightGeometryPlan({
+      grid,
+      heightField: createTerrainHeightField({
+        bounds: {
+          minX: 0,
+          maxX: 2,
+          minY: 0,
+          maxY: 2,
+        },
+        resolveHeight: ({ x, y }) => x * 0.01 - y * 0.02,
+      }),
+    });
 
-    expect(fromChunkBuild).toEqual(fromWorkerResult);
-    expect(fromChunkBuild.attributes[0]?.array).toBe(
-      built.result.packedGrid.layerIndices
-    );
-    expect(fromChunkBuild.attributes[1]?.array).toBe(
-      built.result.packedGrid.weights
-    );
-  });
-
-  it('rejects packed grids whose attribute buffers do not match the sample count', () => {
-    expect(() =>
-      createTerrainSplatGeometryAttributePlanSet({
-        minX: 0,
-        maxX: 1,
-        minY: 0,
-        maxY: 1,
-        step: 1,
-        width: 2,
-        height: 2,
-        layerIndices: new Uint8Array(8),
-        weights: new Uint8Array(16),
-      })
-    ).toThrow(
-      'Packed terrain splat grid layerIndices length 8 must equal 16 for 4 sample(s).'
-    );
+    expect(JSON.stringify(grid.samples)).toBe(sampleSnapshot);
   });
 });
 
@@ -263,7 +283,6 @@ function createCatalogs() {
   );
 
   return {
-    layerCatalog,
     kindCatalog,
   };
 }

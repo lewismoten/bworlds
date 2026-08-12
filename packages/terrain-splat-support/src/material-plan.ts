@@ -23,8 +23,7 @@ export type TerrainSplatMaterialPlanAttribute = {
 };
 
 export type TerrainSplatMaterialPlanWarningCode =
-  | TerrainTextureArrayPlanSetWarning['code']
-  | 'unique-splat-material';
+  TerrainTextureArrayPlanSetWarning['code'] | 'unique-splat-material';
 
 export type TerrainSplatMaterialPlanWarning = {
   code: TerrainSplatMaterialPlanWarningCode;

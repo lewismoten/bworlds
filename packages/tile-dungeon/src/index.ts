@@ -1,4 +1,7 @@
-import { createBoundedCache, getOrCreateWeakMapValue } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  getOrCreateWeakMapValue,
+} from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import {
   createAnchoredEnterablePoiTilePlugin,

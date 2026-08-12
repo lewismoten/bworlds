@@ -1043,7 +1043,10 @@ describe('tile town', () => {
         state,
         tile: {
           kind: 'town',
-          poi: { type: 'town', name: `Town ${position.tileX}:${position.tileY}` },
+          poi: {
+            type: 'town',
+            name: `Town ${position.tileX}:${position.tileY}`,
+          },
         } as never,
         detailLevel: 'full',
         ...position,
@@ -1065,7 +1068,11 @@ describe('tile town', () => {
       };
     });
 
-    const trimPair = findMatchingMaterialPair(sampled, 'trimColor', 'trimMaterial');
+    const trimPair = findMatchingMaterialPair(
+      sampled,
+      'trimColor',
+      'trimMaterial'
+    );
     const windowPair = findMatchingMaterialPair(
       sampled,
       'windowColor',
@@ -1098,7 +1105,10 @@ describe('tile town', () => {
         state,
         tile: {
           kind: 'town',
-          poi: { type: 'town', name: `Town ${position.tileX}:${position.tileY}` },
+          poi: {
+            type: 'town',
+            name: `Town ${position.tileX}:${position.tileY}`,
+          },
         } as never,
         detailLevel: 'full',
         ...position,
@@ -1117,9 +1127,7 @@ describe('tile town', () => {
     );
 
     expect(bannerPair).not.toBeNull();
-    expect(bannerPair?.[0].bannerMaterial).toBe(
-      bannerPair?.[1].bannerMaterial
-    );
+    expect(bannerPair?.[0].bannerMaterial).toBe(bannerPair?.[1].bannerMaterial);
   });
 
   it('reuses neutral wall and roof texture maps across different regional palettes', () => {
@@ -1239,7 +1247,8 @@ function findTownMaterialBySignature(
       node.material?.options.roughness === signature.roughness &&
       node.material?.options.metalness === signature.metalness &&
       (signature.emissiveIntensity === undefined ||
-        node.material?.options.emissiveIntensity === signature.emissiveIntensity)
+        node.material?.options.emissiveIntensity ===
+          signature.emissiveIntensity)
     ) {
       material = node.material;
     }
@@ -1251,17 +1260,17 @@ function findMatchingMaterialPair<
   T extends {
     [key: string]: unknown;
   },
->(
-  entries: T[],
-  colorKey: keyof T,
-  materialKey: keyof T
-): [T, T] | null {
+>(entries: T[], colorKey: keyof T, materialKey: keyof T): [T, T] | null {
   for (let index = 0; index < entries.length; index += 1) {
     const left = entries[index]!;
     if (!left[colorKey] || !left[materialKey]) {
       continue;
     }
-    for (let candidateIndex = index + 1; candidateIndex < entries.length; candidateIndex += 1) {
+    for (
+      let candidateIndex = index + 1;
+      candidateIndex < entries.length;
+      candidateIndex += 1
+    ) {
       const right = entries[candidateIndex]!;
       if (left[colorKey] === right[colorKey] && right[materialKey]) {
         return [left, right];

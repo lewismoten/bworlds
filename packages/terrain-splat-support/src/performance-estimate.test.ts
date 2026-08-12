@@ -61,7 +61,9 @@ describe('terrain splat performance estimate', () => {
     expect(summary.materialReuseCount).toBe(1);
     expect(summary.chunks).toHaveLength(2);
     expect(summary.chunks[0]?.materialKey).toBe(summary.chunks[1]?.materialKey);
-    expect(summary.chunks.every((chunk) => chunk.bindingMode === 'texture-array')).toBe(true);
+    expect(
+      summary.chunks.every((chunk) => chunk.bindingMode === 'texture-array')
+    ).toBe(true);
   });
 
   it('warns when one chunk falls back to a unique per-layer terrain material path', () => {
@@ -101,7 +103,11 @@ describe('terrain splat performance estimate', () => {
       message:
         'Terrain texture binding plan is using per-layer texture fallback because texture arrays are unavailable.',
     });
-    expect(summary.warnings.some((warning) => warning.code === 'unique-splat-material')).toBe(true);
+    expect(
+      summary.warnings.some(
+        (warning) => warning.code === 'unique-splat-material'
+      )
+    ).toBe(true);
   });
 });
 
@@ -330,7 +336,8 @@ function createTextureResolver() {
     'gravel-road/roughness': createTextureSource('gravel-road/roughness'),
   } as const;
 
-  return (textureId: string) => descriptors[textureId as keyof typeof descriptors];
+  return (textureId: string) =>
+    descriptors[textureId as keyof typeof descriptors];
 }
 
 function createTextureSource(id: string) {

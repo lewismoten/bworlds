@@ -153,7 +153,8 @@ function createTextureResolver() {
     'rock/roughness': createTextureSource('rock/roughness'),
   } as const;
 
-  return (textureId: string) => descriptors[textureId as keyof typeof descriptors];
+  return (textureId: string) =>
+    descriptors[textureId as keyof typeof descriptors];
 }
 
 function createTextureSource(id: string) {

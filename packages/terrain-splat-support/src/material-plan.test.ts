@@ -132,8 +132,7 @@ describe('terrain splat material plan', () => {
     });
     expect(summary.warnings).toContainEqual({
       code: 'unique-splat-material',
-      message:
-        `Terrain chunk ${JSON.stringify('9:9')} created one unique splat material "${unique.materialKey}".`,
+      message: `Terrain chunk ${JSON.stringify('9:9')} created one unique splat material "${unique.materialKey}".`,
     });
   });
 });
@@ -183,7 +182,8 @@ function createTextureResolver() {
     'rock/roughness': createTextureSource('rock/roughness'),
   } as const;
 
-  return (textureId: string) => descriptors[textureId as keyof typeof descriptors];
+  return (textureId: string) =>
+    descriptors[textureId as keyof typeof descriptors];
 }
 
 function createTextureSource(id: string) {
