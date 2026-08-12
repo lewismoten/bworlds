@@ -130,7 +130,10 @@
       `MeshStandardMaterial` instances with identical values, and town banner
       cloth materials now also resolve through one host-level cache keyed by
       effective banner color so different towns that land on the same banner
-      palette stop paying duplicate double-sided cloth materials.
+      palette stop paying duplicate double-sided cloth materials, and
+      `render3d` now caches constellation sky line/sprite materials and Milky
+      Way fill/center-line materials per sky root and per effective opacity
+      instead of allocating fresh equivalent materials on repeated sky syncs.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`

@@ -532,6 +532,16 @@ type AuroraBandMaterialCaches = {
   line: Map<string, THREE.LineBasicMaterial>;
 };
 
+type ConstellationSkyMaterialCaches = {
+  line: Map<string, THREE.LineBasicMaterial>;
+  sprite: Map<string, THREE.SpriteMaterial>;
+};
+
+type MilkyWayMaterialCaches = {
+  mesh: Map<string, THREE.MeshBasicMaterial>;
+  line: Map<string, THREE.LineBasicMaterial>;
+};
+
 const celestialEventMaterialCachesByRoot = new Map<
   THREE.Group,
   CelestialEventMaterialCaches
@@ -540,6 +550,11 @@ const auroraBandMaterialCachesByRoot = new Map<
   THREE.Group,
   AuroraBandMaterialCaches
 >();
+const constellationSkyMaterialCachesByRoot = new Map<
+  THREE.Group,
+  ConstellationSkyMaterialCaches
+>();
+const milkyWayMaterialCachesByRoot = new Map<THREE.Group, MilkyWayMaterialCaches>();
 
 function getCelestialEventMaterialCaches(
   root: THREE.Group
@@ -560,6 +575,32 @@ function getAuroraBandMaterialCaches(
 ): AuroraBandMaterialCaches {
   return getOrCreateTrackedCacheValue(
     auroraBandMaterialCachesByRoot,
+    root,
+    sharedMaterialCacheAccessStats,
+    () => ({
+      mesh: new Map<string, THREE.MeshBasicMaterial>(),
+      line: new Map<string, THREE.LineBasicMaterial>(),
+    })
+  );
+}
+
+function getConstellationSkyMaterialCaches(
+  root: THREE.Group
+): ConstellationSkyMaterialCaches {
+  return getOrCreateTrackedCacheValue(
+    constellationSkyMaterialCachesByRoot,
+    root,
+    sharedMaterialCacheAccessStats,
+    () => ({
+      line: new Map<string, THREE.LineBasicMaterial>(),
+      sprite: new Map<string, THREE.SpriteMaterial>(),
+    })
+  );
+}
+
+function getMilkyWayMaterialCaches(root: THREE.Group): MilkyWayMaterialCaches {
+  return getOrCreateTrackedCacheValue(
+    milkyWayMaterialCachesByRoot,
     root,
     sharedMaterialCacheAccessStats,
     () => ({
@@ -7151,19 +7192,33 @@ export function syncConstellationSky(
   const startPoint = new THREE.Vector3();
   const endPoint = new THREE.Vector3();
   const starPoint = new THREE.Vector3();
-  const sharedLineMaterial = new THREE.LineBasicMaterial({
-    color: '#b9d4ff',
-    transparent: true,
-    opacity: 0.18 + cycle.starsOpacity * 0.34,
-    depthTest: true,
-  });
-  const sharedSpriteMaterial = new THREE.SpriteMaterial({
-    color: '#f5fbff',
-    transparent: true,
-    opacity: 0.28 + cycle.starsOpacity * 0.56,
-    depthWrite: false,
-    depthTest: true,
-  });
+  const { line: lineMaterialCache, sprite: spriteMaterialCache } =
+    getConstellationSkyMaterialCaches(root);
+  const sharedLineMaterial = getOrCreateTrackedMapValue(
+    lineMaterialCache,
+    `#b9d4ff|${(0.18 + cycle.starsOpacity * 0.34).toFixed(3)}`,
+    sharedMaterialCacheAccessStats,
+    () =>
+      new THREE.LineBasicMaterial({
+        color: '#b9d4ff',
+        transparent: true,
+        opacity: 0.18 + cycle.starsOpacity * 0.34,
+        depthTest: true,
+      })
+  );
+  const sharedSpriteMaterial = getOrCreateTrackedMapValue(
+    spriteMaterialCache,
+    `#f5fbff|${(0.28 + cycle.starsOpacity * 0.56).toFixed(3)}`,
+    sharedMaterialCacheAccessStats,
+    () =>
+      new THREE.SpriteMaterial({
+        color: '#f5fbff',
+        transparent: true,
+        opacity: 0.28 + cycle.starsOpacity * 0.56,
+        depthWrite: false,
+        depthTest: true,
+      })
+  );
 
   focusIndices.forEach((constellationIndex, slotIndex) => {
     const constellation = constellations[constellationIndex];
@@ -7414,12 +7469,17 @@ export function syncCelestialEvents(
   });
 }
 
-function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleState): void {
+export function syncMilkyWayBelt(
+  root: THREE.Group,
+  cycle: DaylightCycleState
+): void {
   root.clear();
   const belt = cycle.milkyWay;
   if (!belt) {
     return;
   }
+  const { mesh: meshMaterialCache, line: lineMaterialCache } =
+    getMilkyWayMaterialCaches(root);
   const samples = getMilkyWayBandSamples(belt, cycle.yearProgress, 72);
   const positions: number[] = [];
   const indices: number[] = [];
@@ -7472,15 +7532,21 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleState): void {
   root.add(
     new THREE.Mesh(
       geometry,
-      new THREE.MeshBasicMaterial({
-        color: '#7f9fca',
-        transparent: true,
-        opacity: belt.opacity * 0.32,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-        depthTest: false,
-        blending: THREE.AdditiveBlending,
-      })
+      getOrCreateTrackedMapValue(
+        meshMaterialCache,
+        `#7f9fca|${(belt.opacity * 0.32).toFixed(3)}|fill`,
+        sharedMaterialCacheAccessStats,
+        () =>
+          new THREE.MeshBasicMaterial({
+            color: '#7f9fca',
+            transparent: true,
+            opacity: belt.opacity * 0.32,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            depthTest: false,
+            blending: THREE.AdditiveBlending,
+          })
+      )
     )
   );
   root.add(
@@ -7489,12 +7555,18 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleState): void {
         'position',
         new THREE.Float32BufferAttribute(centerLinePositions, 3)
       ),
-      new THREE.LineBasicMaterial({
-        color: '#9fbce0',
-        transparent: true,
-        opacity: belt.opacity * 0.4,
-        depthTest: false,
-      })
+      getOrCreateTrackedMapValue(
+        lineMaterialCache,
+        `#9fbce0|${(belt.opacity * 0.4).toFixed(3)}|center-line`,
+        sharedMaterialCacheAccessStats,
+        () =>
+          new THREE.LineBasicMaterial({
+            color: '#9fbce0',
+            transparent: true,
+            opacity: belt.opacity * 0.4,
+            depthTest: false,
+          })
+      )
     )
   );
 }

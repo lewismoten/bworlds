@@ -138,6 +138,7 @@ import {
   syncAuroraBands,
   syncCelestialEvents,
   syncConstellationSky,
+  syncMilkyWayBelt,
   createTilePluginModelFromCostEstimate,
   resumeProgressiveTileModelBuild,
   disposeAndClearObject3D,
@@ -251,6 +252,7 @@ import {
 } from './index.ts';
 
 type SkySignatureCycle = Parameters<typeof getSkyConstellationSignature>[0];
+type SkySyncCycle = Parameters<typeof syncConstellationSky>[1];
 
 describe('render3d visibility helpers', () => {
   it('collects unique scene material and geometry counts for debug diagnostics', () => {
@@ -6809,6 +6811,108 @@ describe('render3d visibility helpers', () => {
     expect(getSkyEventSignature(farCycle)).not.toBe(
       getSkyEventSignature(baseCycle)
     );
+  });
+
+  it('reuses constellation sky materials across repeated syncs on the same root', () => {
+    const root = new THREE.Group();
+    const cycle = {
+      activeConstellationIndex: 0,
+      daylight: 0.1,
+      moonAltitude: 0.2,
+      moonAzimuth: 0.4,
+      moonIllumination: 0.7,
+      night: 0.8,
+      observerLatitudeDegrees: 35,
+      solarEclipse: null,
+      starsOpacity: 0.6,
+      sunAltitude: -0.2,
+      sunAzimuth: 1.1,
+      twilight: 0.15,
+      yearProgress: 0.2,
+      milkyWay: null,
+      auroraBands: [],
+      visibleEvents: [],
+      constellations: [
+        {
+          name: 'Test',
+          stars: [
+            { id: 'alpha', x: -0.2, y: 0.1, brightness: 0.8 },
+            { id: 'beta', x: 0.25, y: 0.18, brightness: 0.6 },
+          ],
+          connections: [[0, 1]],
+        },
+      ],
+    } as unknown as SkySyncCycle;
+
+    syncConstellationSky(root, cycle);
+    const firstLine = root.children.find(
+      (child) => child instanceof THREE.Line
+    ) as THREE.Line;
+    const firstSprite = root.children.find(
+      (child) => child instanceof THREE.Sprite
+    ) as THREE.Sprite;
+    const firstLineMaterial = firstLine.material;
+    const firstSpriteMaterial = firstSprite.material;
+
+    syncConstellationSky(root, cycle);
+    const secondLine = root.children.find(
+      (child) => child instanceof THREE.Line
+    ) as THREE.Line;
+    const secondSprite = root.children.find(
+      (child) => child instanceof THREE.Sprite
+    ) as THREE.Sprite;
+
+    expect(secondLine.material).toBe(firstLineMaterial);
+    expect(secondSprite.material).toBe(firstSpriteMaterial);
+  });
+
+  it('reuses Milky Way materials across repeated syncs on the same root', () => {
+    const root = new THREE.Group();
+    const cycle = {
+      activeConstellationIndex: 0,
+      daylight: 0.2,
+      moonAltitude: 0.2,
+      moonAzimuth: 0.4,
+      moonIllumination: 0.65,
+      night: 0.7,
+      observerLatitudeDegrees: 35,
+      solarEclipse: null,
+      starsOpacity: 0.65,
+      sunAltitude: -0.18,
+      sunAzimuth: 1.05,
+      twilight: 0.2,
+      yearProgress: 0.22,
+      milkyWay: {
+        azimuthOffset: 0.7,
+        inclination: 1.05,
+        width: 0.24,
+        opacity: 0.18,
+      },
+      auroraBands: [],
+      visibleEvents: [],
+      constellations: [],
+    } as unknown as SkySyncCycle;
+
+    syncMilkyWayBelt(root, cycle);
+    const firstMesh = root.children.find(
+      (child) => child instanceof THREE.Mesh
+    ) as THREE.Mesh;
+    const firstLine = root.children.find(
+      (child) => child instanceof THREE.LineLoop
+    ) as THREE.LineLoop;
+    const firstMeshMaterial = firstMesh.material;
+    const firstLineMaterial = firstLine.material;
+
+    syncMilkyWayBelt(root, cycle);
+    const secondMesh = root.children.find(
+      (child) => child instanceof THREE.Mesh
+    ) as THREE.Mesh;
+    const secondLine = root.children.find(
+      (child) => child instanceof THREE.LineLoop
+    ) as THREE.LineLoop;
+
+    expect(secondMesh.material).toBe(firstMeshMaterial);
+    expect(secondLine.material).toBe(firstLineMaterial);
   });
 
   it('uses a coarse sky-position signature so tiny celestial drift does not recompute sky poses', () => {
