@@ -13,6 +13,10 @@ export type MusicDebugTrackStats = {
   noteCount: number;
   outOfModeNoteCount: number;
   rangeLabel: string;
+  minVelocity: number | null;
+  maxVelocity: number | null;
+  averageVelocity: number;
+  uniqueVelocityLevelCount: number;
   occupancyPercentage: number;
   averageLeapSemitones: number;
   maxLeapSemitones: number;
@@ -36,6 +40,13 @@ export function createMusicDebugTrackStats(options: {
   const silenceCountsByRole: Partial<Record<ProceduralMusicRole, number>> = {};
   const minMidiByRole: Partial<Record<ProceduralMusicRole, number>> = {};
   const maxMidiByRole: Partial<Record<ProceduralMusicRole, number>> = {};
+  const velocityTotalsByRole: Partial<Record<ProceduralMusicRole, number>> = {};
+  const velocityCountsByRole: Partial<Record<ProceduralMusicRole, number>> = {};
+  const minVelocityByRole: Partial<Record<ProceduralMusicRole, number>> = {};
+  const maxVelocityByRole: Partial<Record<ProceduralMusicRole, number>> = {};
+  const velocityLevelsByRole: Partial<
+    Record<ProceduralMusicRole, Set<number>>
+  > = {};
 
   for (
     let noteIndex = 0;
@@ -48,6 +59,27 @@ export function createMusicDebugTrackStats(options: {
     stat.noteCount += 1;
     durationTotalsByRole[note.role] =
       (durationTotalsByRole[note.role] ?? 0) + note.durationMs;
+    if (typeof note.velocity === 'number' && Number.isFinite(note.velocity)) {
+      const velocityLevel = Math.round(note.velocity);
+      velocityTotalsByRole[note.role] =
+        (velocityTotalsByRole[note.role] ?? 0) + velocityLevel;
+      velocityCountsByRole[note.role] =
+        (velocityCountsByRole[note.role] ?? 0) + 1;
+      const minVelocity = minVelocityByRole[note.role];
+      minVelocityByRole[note.role] =
+        minVelocity === undefined
+          ? velocityLevel
+          : Math.min(minVelocity, velocityLevel);
+      const maxVelocity = maxVelocityByRole[note.role];
+      maxVelocityByRole[note.role] =
+        maxVelocity === undefined
+          ? velocityLevel
+          : Math.max(maxVelocity, velocityLevel);
+      if (!velocityLevelsByRole[note.role]) {
+        velocityLevelsByRole[note.role] = new Set<number>();
+      }
+      velocityLevelsByRole[note.role]!.add(velocityLevel);
+    }
     if (!diagnostic.inMode && diagnostic.role !== 'percussion') {
       stat.outOfModeNoteCount += 1;
     }
@@ -106,6 +138,12 @@ export function createMusicDebugTrackStats(options: {
         : 0;
     stat.averageSilenceMs =
       silenceCount > 0 ? (silenceTotalsByRole[role] ?? 0) / silenceCount : 0;
+    const velocityCount = velocityCountsByRole[role] ?? 0;
+    stat.minVelocity = minVelocityByRole[role] ?? null;
+    stat.maxVelocity = maxVelocityByRole[role] ?? null;
+    stat.averageVelocity =
+      velocityCount > 0 ? (velocityTotalsByRole[role] ?? 0) / velocityCount : 0;
+    stat.uniqueVelocityLevelCount = velocityLevelsByRole[role]?.size ?? 0;
     stat.rangeLabel =
       role === 'percussion'
         ? 'percussion'
@@ -172,6 +210,10 @@ function createEmptyTrackStats(
     noteCount: 0,
     outOfModeNoteCount: 0,
     rangeLabel: role === 'percussion' ? 'percussion' : 'n/a',
+    minVelocity: null,
+    maxVelocity: null,
+    averageVelocity: 0,
+    uniqueVelocityLevelCount: 0,
     occupancyPercentage: 0,
     averageLeapSemitones: 0,
     maxLeapSemitones: 0,

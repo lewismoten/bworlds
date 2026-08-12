@@ -42,7 +42,12 @@
 - [ ] Show articulation names when hovering over notes.
 - [ ] Report velocity min, max, and average by section.
 - [ ] Report dynamic range by track and section.
-- [ ] Warn when a track uses too few velocity levels.
+- [x] Warn when a track uses too few velocity levels.
+      Progress: track stats now record min/max/average velocity plus distinct
+      velocity-level counts, and the MIDI audit emits a non-critical warning
+      when lead, harmony, or bass stays at fewer than three velocity levels
+      across a meaningful note count so flat dynamics show up in the debug
+      summary before export.
 - [ ] Warn when sustained tracks have no expression changes.
 
 ## 1) Enforce musical correctness first

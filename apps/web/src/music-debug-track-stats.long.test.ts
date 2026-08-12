@@ -75,6 +75,10 @@ describe('music debug track stats', () => {
     expect(stats.harmony.averageDurationMs).toBeGreaterThan(0);
     expect(stats.harmony.averageSilenceMs).toBeGreaterThanOrEqual(0);
     expect(stats.harmony.maxPolyphony).toBeGreaterThanOrEqual(1);
+    expect(stats.lead.uniqueVelocityLevelCount).toBeGreaterThan(0);
+    expect(stats.lead.minVelocity).not.toBeNull();
+    expect(stats.lead.maxVelocity).not.toBeNull();
+    expect(stats.lead.averageVelocity).toBeGreaterThan(0);
     expect(stats.bass.outOfModeNoteCount).toBe(
       snapshot.outOfModeNotesByRole.bass
     );
@@ -84,6 +88,59 @@ describe('music debug track stats', () => {
     expect(stats.lead.outOfModeNoteCount).toBe(
       snapshot.outOfModeNotesByRole.lead
     );
+  });
+
+  it('tracks velocity ranges, averages, and distinct levels per role', () => {
+    const stats = createMusicDebugTrackStats({
+      notes: [
+        createVelocityTestNote({
+          role: 'lead',
+          startMs: 0,
+          durationMs: 500,
+          frequency: 440,
+          velocity: 80,
+        }),
+        createVelocityTestNote({
+          role: 'lead',
+          startMs: 700,
+          durationMs: 500,
+          frequency: 493.88,
+          velocity: 92,
+        }),
+        createVelocityTestNote({
+          role: 'lead',
+          startMs: 1_400,
+          durationMs: 400,
+          frequency: 523.25,
+          velocity: 80,
+        }),
+        createVelocityTestNote({
+          role: 'bass',
+          startMs: 0,
+          durationMs: 900,
+          frequency: 110,
+          velocity: 64,
+        }),
+      ],
+      diagnostics: [
+        createVelocityTestDiagnostic(69, 'lead'),
+        createVelocityTestDiagnostic(71, 'lead'),
+        createVelocityTestDiagnostic(72, 'lead'),
+        createVelocityTestDiagnostic(45, 'bass'),
+      ],
+      songDurationMs: 2_000,
+    });
+
+    expect(stats.lead.minVelocity).toBe(80);
+    expect(stats.lead.maxVelocity).toBe(92);
+    expect(stats.lead.averageVelocity).toBeCloseTo(84);
+    expect(stats.lead.uniqueVelocityLevelCount).toBe(2);
+    expect(stats.bass.minVelocity).toBe(64);
+    expect(stats.bass.maxVelocity).toBe(64);
+    expect(stats.bass.averageVelocity).toBe(64);
+    expect(stats.bass.uniqueVelocityLevelCount).toBe(1);
+    expect(stats.harmony.minVelocity).toBeNull();
+    expect(stats.harmony.uniqueVelocityLevelCount).toBe(0);
   });
 
   it('formats one summary line per track for the debug report', () => {
@@ -229,4 +286,68 @@ function resolvePitchClass(noteName: string, sharp: boolean): number {
     default:
       return 0;
   }
+}
+
+function createVelocityTestNote(
+  overrides: Partial<
+    Parameters<typeof createMusicDebugTrackStats>[0]['notes'][number]
+  > &
+    Pick<
+      Parameters<typeof createMusicDebugTrackStats>[0]['notes'][number],
+      'role' | 'startMs' | 'durationMs' | 'frequency'
+    >
+): Parameters<typeof createMusicDebugTrackStats>[0]['notes'][number] {
+  return {
+    themeId: 'plains-day',
+    instrumentId: `${overrides.role}-instrument`,
+    role: overrides.role,
+    startMs: overrides.startMs,
+    durationMs: overrides.durationMs,
+    frequency: overrides.frequency,
+    volume: 0.8,
+    velocity: overrides.velocity,
+    waveform: 'sine',
+    timbre: {
+      attackShape: 'linear',
+      harmonicSeries: [1],
+      noiseLevel: 0,
+      pulseWidth: 0.5,
+      unisonDetuneCents: 0,
+      lowPassHz: 2_000,
+      resonance: 0,
+      vibratoDepthCents: 0,
+      vibratoRateHz: 0,
+      glideMs: 0,
+      bitCrushBits: 0,
+      waveFolderAmount: 0,
+      tremoloDepth: 0,
+      tremoloRateHz: 0,
+      stereoWidth: 0,
+    },
+    attackMs: 20,
+    releaseMs: 80,
+    detuneCents: 0,
+    harmonicGain: 0,
+    pulseRate: 0,
+  };
+}
+
+function createVelocityTestDiagnostic(
+  midiNote: number,
+  role: 'lead' | 'harmony' | 'bass' | 'percussion'
+) {
+  return {
+    noteIndex: 0,
+    role,
+    frequency: 440,
+    midiNote,
+    relativeSemitones: midiNote - 60,
+    scaleDegree: 1,
+    scaleDegreeLabel: '1',
+    isBlackKey: false,
+    inMode: true,
+    accidentalReason: role === 'percussion' ? 'percussion' : 'in-mode',
+    accidentalRuleLabel: null,
+    accidentalExplanation: null,
+  };
 }

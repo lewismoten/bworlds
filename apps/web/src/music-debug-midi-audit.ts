@@ -1,4 +1,5 @@
 import type { MusicDebugSnapshot } from './music-debug.ts';
+import type { MusicDebugTrackStats } from './music-debug-track-stats.ts';
 import {
   createMusicDebugMidiFileUnchecked,
   type MusicDebugMidiMetadataOptions,
@@ -185,6 +186,9 @@ export function inspectMusicDebugMidiBytes(
       'Harmony track does not expose recognizable chord stacks in any section.'
     );
   }
+  warningMessages.push(
+    ...collectFlatVelocityWarnings(snapshot.trackStats, includedRoles)
+  );
   if (
     snapshot.harmonyChordDetections.some(
       (section) =>
@@ -338,6 +342,37 @@ export function inspectMusicDebugMidiBytes(
     isConsistent:
       mismatchMessages.length === 0 && criticalWarningMessages.length === 0,
   };
+}
+
+function collectFlatVelocityWarnings(
+  stats: Pick<
+    Record<MusicDebugSnapshot['notes'][number]['role'], MusicDebugTrackStats>,
+    'lead' | 'harmony' | 'bass' | 'percussion'
+  >,
+  includedRoles: ReadonlySet<MusicDebugSnapshot['notes'][number]['role']>
+): string[] {
+  const warnings: string[] = [];
+
+  for (const role of MIDI_AUDIT_ROLE_ORDER) {
+    if (role === 'percussion' || !includedRoles.has(role)) {
+      continue;
+    }
+    const stat = stats[role];
+    if (stat.noteCount < 6 || stat.uniqueVelocityLevelCount >= 3) {
+      continue;
+    }
+    warnings.push(
+      `${capitalizeRoleLabel(role)} uses only ${stat.uniqueVelocityLevelCount} velocity level${stat.uniqueVelocityLevelCount === 1 ? '' : 's'} across ${stat.noteCount} notes; dynamics may sound flat.`
+    );
+  }
+
+  return warnings;
+}
+
+function capitalizeRoleLabel(
+  role: MusicDebugSnapshot['notes'][number]['role']
+): string {
+  return role.slice(0, 1).toUpperCase() + role.slice(1);
 }
 
 function resolveAuditRoles(

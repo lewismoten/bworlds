@@ -269,4 +269,42 @@ describe('music debug midi audit warnings', () => {
       'Intro should not contain percussion notes.'
     );
   });
+
+  it('warns when a non-percussion track uses too few velocity levels', () => {
+    const snapshot = createMusicDebugSnapshot({
+      tileKind: 'town',
+      contextType: 'town',
+      clusterX: 3,
+      clusterY: -2,
+    });
+    const file = createMusicDebugMidiFileUnchecked(snapshot, {
+      createdAt: new Date('2026-08-10T00:00:00.000Z'),
+    });
+
+    const audit = inspectMusicDebugMidiBytes(file.bytes, {
+      ...withValidProgressionDetections(withValidLeadContourAnalysis(snapshot)),
+      cadenceValidation: {
+        ...snapshot.cadenceValidation,
+        isValidForMidiExport: true,
+        messages: [],
+      },
+      trackStats: {
+        ...snapshot.trackStats,
+        lead: {
+          ...snapshot.trackStats.lead,
+          noteCount: 8,
+          uniqueVelocityLevelCount: 2,
+          minVelocity: 80,
+          maxVelocity: 84,
+          averageVelocity: 82,
+        },
+      },
+    });
+
+    expect(audit.isConsistent).toBe(true);
+    expect(audit.criticalWarningMessages).toEqual([]);
+    expect(audit.warningMessages).toContain(
+      'Lead uses only 2 velocity levels across 8 notes; dynamics may sound flat.'
+    );
+  });
 });
