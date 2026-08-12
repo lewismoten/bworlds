@@ -167,6 +167,42 @@ describe('plugin event channel', () => {
     );
   });
 
+  it('prevents identical recursive publish loops while still allowing distinct nested events', () => {
+    const channel = createPluginEventChannel();
+    const seenMessages: string[] = [];
+
+    channel.subscribe((event) => {
+      seenMessages.push(event.message);
+      if (event.message === 'Forest bark cache failed.') {
+        channel.publish({
+          type: 'error',
+          source: 'tile-forest.materials',
+          message: 'Forest bark cache failed.',
+        });
+        channel.publish({
+          type: 'warning',
+          source: 'tile-forest.materials',
+          message: 'Forest bark cache retry scheduled.',
+        });
+      }
+    });
+
+    channel.publish({
+      type: 'error',
+      source: 'tile-forest.materials',
+      message: 'Forest bark cache failed.',
+    });
+
+    expect(seenMessages).toEqual([
+      'Forest bark cache failed.',
+      'Forest bark cache retry scheduled.',
+    ]);
+    expect(channel.getRecentEvents().map((event) => event.message)).toEqual([
+      'Forest bark cache retry scheduled.',
+      'Forest bark cache failed.',
+    ]);
+  });
+
   it('rejects event messages over 80 characters', () => {
     const channel = createPluginEventChannel();
 

@@ -142,7 +142,7 @@
 
 ## Safety and Performance
 
-- [ ] Prevent recursive event publishing loops.
+- [x] Prevent recursive event publishing loops.
 - [ ] Detect excessive event rates from one source.
 - [ ] Rate-limit noisy diagnostic events when needed.
 - [ ] Never rate-limit critical error events silently.
@@ -164,7 +164,7 @@
 - [x] Test history never exceeds its configured limit.
 - [x] Test error events appear in debug snapshots.
 - [x] Test disabled tracking does not persist errors.
-- [ ] Test recursive event loops are prevented.
+- [x] Test recursive event loops are prevented.
 
 ## Progress Notes
 
@@ -178,6 +178,9 @@
 - Added focused tests for publish ordering, scoped subscriptions,
   unsubscribe behavior, listener isolation, message-length validation,
   detail serialization, and bounded history behavior.
+- Added an active-publish signature guard in `@bworlds/plugin-event-channel`
+  so a listener cannot recursively republish the same event forever while
+  still allowing distinct nested follow-up events to flow synchronously.
 - Added `apps/web/src/runtime-performance-plugin-events.ts` so the web app can
   listen for shared plugin error events, mirror them into the local debug
   recent-event stream as `plugin-error`, and attach bounded recent event

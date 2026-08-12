@@ -101,6 +101,7 @@ export function createPluginEventChannel(
 ): PluginEventChannel {
   const registrations: PluginEventRegistration[] = [];
   const history: PluginEvent[] = [];
+  const activePublishKeys = new Set<string>();
   const maxHistory = normalizePositiveInteger(
     options.maxHistory,
     DEFAULT_MAX_HISTORY
@@ -109,23 +110,33 @@ export function createPluginEventChannel(
   return {
     publish(eventInput) {
       const event = normalizePluginEvent(eventInput, options);
+      const publishKey = createPluginEventPublishKey(event);
+      if (activePublishKeys.has(publishKey)) {
+        return event;
+      }
+
       history.unshift(event);
       if (history.length > maxHistory) {
         history.length = maxHistory;
       }
 
-      for (const registration of registrations) {
-        if (
-          (registration.type && registration.type !== event.type) ||
-          (registration.source && registration.source !== event.source)
-        ) {
-          continue;
+      activePublishKeys.add(publishKey);
+      try {
+        for (const registration of registrations) {
+          if (
+            (registration.type && registration.type !== event.type) ||
+            (registration.source && registration.source !== event.source)
+          ) {
+            continue;
+          }
+          try {
+            registration.listener(event);
+          } catch (error) {
+            options.onListenerError?.(error, event, registration.listener);
+          }
         }
-        try {
-          registration.listener(event);
-        } catch (error) {
-          options.onListenerError?.(error, event, registration.listener);
-        }
+      } finally {
+        activePublishKeys.delete(publishKey);
       }
 
       return event;
@@ -321,6 +332,10 @@ function freezePluginEvent(event: PluginEvent): PluginEvent {
     freezePluginEventDetails(event.details);
   }
   return Object.freeze(event);
+}
+
+function createPluginEventPublishKey(event: PluginEvent): string {
+  return `${event.type}\u0000${event.source}\u0000${event.message}`;
 }
 
 function freezePluginEventDetails(value: PluginEventDetails): void {

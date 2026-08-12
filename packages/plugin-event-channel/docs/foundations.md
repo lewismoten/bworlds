@@ -16,6 +16,8 @@ plugins. It currently provides:
 - subscriptions for all events, one event type, or one source
 - duplicate-listener prevention and unsubscribe cleanup
 - bounded newest-first in-memory event history with filtering and clearing
+- an active-publish guard that suppresses identical recursive republishes while
+  still allowing distinct nested follow-up events
 - a serializing details helper that strips functions, converts `Error` objects,
   avoids circular references, and marks truncation
 - a `publishError(...)` helper that emits the shared `error` event type
