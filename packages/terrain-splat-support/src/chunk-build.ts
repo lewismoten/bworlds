@@ -22,7 +22,9 @@ import {
 import type {
   ResolveTerrainSplatGridTile,
   TerrainSplatGridBounds,
+  TerrainSplatSampleGrid,
 } from './sample-grid.ts';
+import { unpackTerrainSplatSampleGrid } from './sample-grid.ts';
 import {
   buildTerrainSplatWorkerResult,
   createTerrainSplatWorkerBuildRequest,
@@ -49,12 +51,31 @@ export type TerrainSplatChunkBuildResult = {
 export type TerrainSplatChunkRenderDataResult = {
   request: TerrainSplatWorkerBuildRequest;
   result: TerrainSplatWorkerBuildResult;
+  grid: TerrainSplatSampleGrid;
   heightField: TerrainHeightField;
   geometryPlan: TerrainSplatHeightGeometryPlan;
   attributePlanSet: TerrainSplatGeometryAttributePlanSet;
   cacheKey: string;
   fromCache: boolean;
 };
+
+function toLayerCatalogEntries(
+  catalog:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        byId: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+        entries?: readonly TerrainMaterialLayerCatalogEntry[];
+      }
+): readonly TerrainMaterialLayerCatalogEntry[] {
+  if ('entries' in catalog && Array.isArray(catalog.entries)) {
+    return catalog.entries;
+  }
+  const byId = 'byId' in catalog ? catalog.byId : catalog;
+  return [...byId.values()].sort((left, right) => left.index - right.index);
+}
 
 export function buildTerrainSplatChunkData(params: {
   seed: Seed;
@@ -351,6 +372,7 @@ function buildTerrainSplatChunkDataFromRequest(params: {
 
 type TerrainSplatChunkRenderCacheValue = {
   result: TerrainSplatWorkerBuildResult;
+  grid: TerrainSplatSampleGrid;
   heightField: TerrainHeightField;
   geometryPlan: TerrainSplatHeightGeometryPlan;
   attributePlanSet: TerrainSplatGeometryAttributePlanSet;
@@ -387,6 +409,7 @@ function buildTerrainSplatChunkRenderDataFromRequest(params: {
     return {
       request: params.request,
       result: cached.result,
+      grid: cached.grid,
       heightField: cached.heightField,
       geometryPlan: cached.geometryPlan,
       attributePlanSet: cached.attributePlanSet,
@@ -419,8 +442,13 @@ function buildTerrainSplatChunkRenderDataFromRequest(params: {
   });
   const attributePlanSet =
     createTerrainSplatGeometryAttributePlanSetFromWorkerResult(built.result);
+  const grid = unpackTerrainSplatSampleGrid(
+    built.result.packedGrid,
+    toLayerCatalogEntries(params.layerCatalog)
+  );
   const renderData = {
     result: built.result,
+    grid,
     heightField,
     geometryPlan,
     attributePlanSet,
@@ -430,6 +458,7 @@ function buildTerrainSplatChunkRenderDataFromRequest(params: {
   return {
     request: built.request,
     result: built.result,
+    grid,
     heightField,
     geometryPlan,
     attributePlanSet,

@@ -64,6 +64,10 @@ Current support:
   grid, east/south seam diagnostics, sampled seam-height deltas, and wireframe
   SVG without waiting for the full live terrain chunk renderer to replace the
   main world floor path; see `docs/terrain-chunk-debug-page.md`.
+- That debug page now builds each inspected preview chunk through
+  `buildTerrainSplatChunkRenderData(...)`, so its splat grid, seam-safe height
+  field, and geometry plan now all come from the same shared chunk render-data
+  contract the later live terrain renderer will consume.
 - That debug page now also compares each logical `16x16` tile cell against the
   shared terrain-preview dominant layer category and reports parity matches
   versus mismatches, which gives Phase 1 one explicit inspection path toward

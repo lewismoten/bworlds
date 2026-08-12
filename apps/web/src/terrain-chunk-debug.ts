@@ -1,10 +1,10 @@
 import {
   analyzeTerrainSplatChunkSeam,
+  buildTerrainSplatChunkRenderData,
   createTerrainChunkWireframeDebugView,
-  createTerrainHeightField,
   createTerrainSplatHeightGeometryPlan,
-  createTerrainSplatSampleGrid,
   createTerrainSplatViewerDebugModel,
+  type TerrainHeightField,
   type TerrainSplatHeightGeometryPlan,
   type TerrainChunkWireframeDebugView,
   type TerrainSplatSampleGrid,
@@ -159,27 +159,30 @@ export function createTerrainChunkDebugSnapshot(
     options.chunkX,
     options.chunkY + 1
   );
-  const currentGrid = createPreviewChunkGrid(
+  const currentRenderData = createPreviewChunkRenderData(
     generator,
     terrainSignals,
     options.seed,
     currentBounds
   );
-  const eastGrid = createPreviewChunkGrid(
+  const eastRenderData = createPreviewChunkRenderData(
     generator,
     terrainSignals,
     options.seed,
     eastBounds
   );
-  const southGrid = createPreviewChunkGrid(
+  const southRenderData = createPreviewChunkRenderData(
     generator,
     terrainSignals,
     options.seed,
     southBounds
   );
-  const currentHeightField = createPreviewHeightField(generator, currentBounds);
-  const eastHeightField = createPreviewHeightField(generator, eastBounds);
-  const southHeightField = createPreviewHeightField(generator, southBounds);
+  const currentGrid = currentRenderData.grid;
+  const eastGrid = eastRenderData.grid;
+  const southGrid = southRenderData.grid;
+  const currentHeightField = currentRenderData.heightField;
+  const eastHeightField = eastRenderData.heightField;
+  const southHeightField = southRenderData.heightField;
   const geometryPlan = createTerrainSplatHeightGeometryPlan({
     grid: currentGrid,
     heightField: currentHeightField,
@@ -505,16 +508,17 @@ export function buildTerrainChunkDebugMarkup(
   `;
 }
 
-function createPreviewChunkGrid(
+function createPreviewChunkRenderData(
   generator: ReturnType<typeof createWorldGenerator>,
   terrainSignals: ReturnType<typeof getTerrainPreviewSignalSampler>,
   seed: string,
   bounds: TerrainChunkHeightSampleBounds
-): TerrainSplatSampleGrid {
-  return createTerrainSplatSampleGrid({
+) {
+  return buildTerrainSplatChunkRenderData({
     seed,
     bounds,
     kindCatalog: TERRAIN_PREVIEW_KIND_CATALOG,
+    layerCatalog: TERRAIN_PREVIEW_LAYER_CATALOG,
     fallbackKind: 'plains',
     fallbackLayerId: 'grass-a',
     blendWidth: 1,
@@ -530,15 +534,6 @@ function createPreviewChunkGrid(
         },
       };
     },
-  });
-}
-
-function createPreviewHeightField(
-  generator: ReturnType<typeof createWorldGenerator>,
-  bounds: TerrainChunkHeightSampleBounds
-) {
-  return createTerrainHeightField({
-    bounds,
     normalSampleRing: 1,
     resolveHeight: ({ x, y }) => generator.sampleTerrainHeight(x, y),
   });
@@ -548,8 +543,8 @@ function createSeamSummary(params: {
   edge: 'east' | 'south';
   grid: TerrainSplatSampleGrid;
   adjacentGrid: TerrainSplatSampleGrid;
-  heightField: ReturnType<typeof createPreviewHeightField>;
-  adjacentHeightField: ReturnType<typeof createPreviewHeightField>;
+  heightField: TerrainHeightField;
+  adjacentHeightField: TerrainHeightField;
   geometryPlan: TerrainSplatHeightGeometryPlan;
   adjacentGeometryPlan: TerrainSplatHeightGeometryPlan;
 }): TerrainChunkDebugSeamSummary {
@@ -585,8 +580,8 @@ function createSeamSummary(params: {
 
 function resolveSeamHeightMaxDelta(
   edge: 'east' | 'south',
-  primary: ReturnType<typeof createPreviewHeightField>,
-  adjacent: ReturnType<typeof createPreviewHeightField>
+  primary: TerrainHeightField,
+  adjacent: TerrainHeightField
 ): number {
   const deltas: number[] = [];
   if (edge === 'east') {

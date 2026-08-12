@@ -251,6 +251,8 @@ describe('terrain splat chunk build', () => {
 
     expect(built.fromCache).toBe(false);
     expect(built.result.packedGrid.width).toBe(3);
+    expect(built.grid.width).toBe(3);
+    expect(built.grid.samples).toHaveLength(9);
     expect(built.heightField.width).toBe(3);
     expect(built.heightField.normalSampleWidth).toBe(5);
     expect(built.geometryPlan.vertexCount).toBe(9);
@@ -266,6 +268,7 @@ describe('terrain splat chunk build', () => {
     const { layerCatalog, kindCatalog } = createChunkBuildCatalogs();
     const cache = createTerrainSplatChunkBuildCache<{
       result: TerrainSplatWorkerBuildResult;
+      grid: ReturnType<typeof buildTerrainSplatChunkRenderData>['grid'];
       heightField: ReturnType<
         typeof buildTerrainSplatChunkRenderData
       >['heightField'];
@@ -367,6 +370,7 @@ describe('terrain splat chunk build', () => {
     expect(first.fromCache).toBe(false);
     expect(repeated.fromCache).toBe(true);
     expect(repeated.result).toBe(first.result);
+    expect(repeated.grid).toBe(first.grid);
     expect(repeated.heightField).toBe(first.heightField);
     expect(repeated.geometryPlan).toBe(first.geometryPlan);
     expect(repeated.attributePlanSet).toBe(first.attributePlanSet);
@@ -403,6 +407,7 @@ describe('terrain splat chunk build', () => {
     });
 
     expect(built.result.packedGrid.step).toBe(2);
+    expect(built.grid.step).toBe(2);
     expect(built.heightField.step).toBe(2);
     expect(built.geometryPlan.step).toBe(2);
     expect(built.heightField.width).toBe(3);
