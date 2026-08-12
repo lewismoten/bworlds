@@ -230,6 +230,52 @@ describe('tile ship', () => {
     expect(sharedMaterials.size).toBeLessThanOrEqual(5);
   });
 
+  it('shares invariant ship materials across tall-ship and broken-ship variants on one host', () => {
+    const plugin = createShipTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');
+    const variants = new Map<
+      string,
+      { model: FakeNode; tileX: number; tileY: number }
+    >();
+
+    for (let tileY = 0; tileY < 24 && variants.size < 2; tileY += 1) {
+      for (let tileX = 0; tileX < 24 && variants.size < 2; tileX += 1) {
+        const model = tile?.create3DModel?.({
+          three: fakeThree as never,
+          state: createShipState(),
+          tile: { kind: 'ship' } as never,
+          tileX,
+          tileY,
+        }) as FakeNode | undefined;
+        const variant = model?.userData?.shipPoiVariant;
+        if (typeof variant === 'string' && !variants.has(variant) && model) {
+          variants.set(variant, { model, tileX, tileY });
+        }
+      }
+    }
+
+    const tallShip = variants.get('tall-ship');
+    const brokenShip = variants.get('broken-ship');
+
+    expect(tallShip).toBeDefined();
+    expect(brokenShip).toBeDefined();
+
+    const tallHull = tallShip?.model as FakeMesh | undefined;
+    const brokenHull = brokenShip?.model as FakeMesh | undefined;
+    const tallDeck = tallHull?.children[0] as FakeMesh | undefined;
+    const brokenDeck = brokenHull?.children[0] as FakeMesh | undefined;
+    const tallLantern = tallHull?.children.find(
+      (child) => child instanceof FakeMesh && child.userData?.poiNightLightEmitter
+    ) as FakeMesh | undefined;
+    const brokenLantern = brokenHull?.children.find(
+      (child) => child instanceof FakeMesh && child.userData?.poiNightLightEmitter
+    ) as FakeMesh | undefined;
+
+    expect(tallHull?.material).not.toBe(brokenHull?.material);
+    expect(tallDeck?.material).toBe(brokenDeck?.material);
+    expect(tallLantern?.material).toBe(brokenLantern?.material);
+  });
+
   it('creates an enterable ship model with a deterministic variant and night light', () => {
     const plugin = createShipTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'ship');

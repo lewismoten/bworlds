@@ -152,7 +152,11 @@
       frame, balcony, and wall-glow materials through one host-level shared
       bundle instead of duplicating those same materials for every distinct
       `beamColor:paneColor` appearance key, so only pane, glass, lens, and
-      beam materials remain appearance-specific across lighthouse regions.
+      beam materials remain appearance-specific across lighthouse regions, and
+      `tile-ship` now resolves its trim, mast, sail, and lantern materials
+      once per Three host instead of duplicating those same invariant materials
+      inside both the tall-ship and broken-ship variant caches, so only the
+      hull surface remains variant-specific across ship builds on one host.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`

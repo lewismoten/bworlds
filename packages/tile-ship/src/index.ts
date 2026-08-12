@@ -31,14 +31,12 @@ const shipMaterialCache = new WeakMap<
   object,
   Map<
     ShipVariant,
-    {
-      hullMaterial: ShipMaterialLike;
-      trimMaterial: ShipMaterialLike;
-      mastMaterial: ShipMaterialLike;
-      sailMaterial: ShipMaterialLike;
-      lanternMaterial: ShipMaterialLike;
-    }
+    Pick<ShipStyleMaterials, 'hullMaterial'>
   >
+>();
+const shipSharedMaterialCache = new WeakMap<
+  object,
+  Omit<ShipStyleMaterials, 'hullMaterial'>
 >();
 
 type CardinalFacing = (typeof CARDINAL_DIRECTIONS)[number];
@@ -46,6 +44,13 @@ type ShipVariant = 'tall-ship' | 'broken-ship';
 type ShipMaterialLike = ThreeMaterialLike & {
   emissiveIntensity?: number;
   opacity?: number;
+};
+type ShipStyleMaterials = {
+  hullMaterial: ShipMaterialLike;
+  trimMaterial: ShipMaterialLike;
+  mastMaterial: ShipMaterialLike;
+  sailMaterial: ShipMaterialLike;
+  lanternMaterial: ShipMaterialLike;
 };
 type ShipNodeLike = ThreeObject3DLike & {
   material?: ShipMaterialLike | ShipMaterialLike[];
@@ -218,32 +223,43 @@ function getShipVariant(tileX: number, tileY: number): ShipVariant {
 function getShipSharedMaterials(
   three: Create3DModelContext['three'],
   variant: ShipVariant
-) {
+): ShipStyleMaterials {
+  const sharedMaterials = getOrCreateWeakMapValue(
+    shipSharedMaterialCache,
+    three as object,
+    () => createSharedShipMaterials(three)
+  );
   const byVariant = getOrCreateWeakMapValue(
     shipMaterialCache,
     three as object,
-    () =>
-      new Map<
-        ShipVariant,
-        ReturnType<typeof createShipSharedMaterialsForVariant>
-      >()
+    () => new Map<ShipVariant, Pick<ShipStyleMaterials, 'hullMaterial'>>()
   );
 
-  return getOrCreateMapValue(byVariant, variant, () =>
-    createShipSharedMaterialsForVariant(three, variant)
-  );
+  return {
+    ...sharedMaterials,
+    ...getOrCreateMapValue(byVariant, variant, () =>
+      createShipVariantMaterials(three, variant)
+    ),
+  };
 }
 
-function createShipSharedMaterialsForVariant(
+function createShipVariantMaterials(
   three: Create3DModelContext['three'],
   variant: ShipVariant
-) {
+): Pick<ShipStyleMaterials, 'hullMaterial'> {
   return {
     hullMaterial: new three.MeshStandardMaterial({
       color: variant === 'tall-ship' ? '#7a4a2f' : '#6b4634',
       roughness: 0.9,
       metalness: 0.02,
     }),
+  };
+}
+
+function createSharedShipMaterials(
+  three: Create3DModelContext['three']
+): Omit<ShipStyleMaterials, 'hullMaterial'> {
+  return {
     trimMaterial: new three.MeshStandardMaterial({
       color: '#d9bf8f',
       roughness: 0.82,
