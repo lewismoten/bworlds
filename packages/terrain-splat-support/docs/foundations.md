@@ -22,10 +22,15 @@ Current responsibilities:
 - summarize chunk layer usage before renderer integration decides budgets
 - share deterministic terrain family variant pools across chunk generation paths
 - plan one bounded active layer pool for neighboring chunk groups
+- plan aligned texture-array slots and validate descriptor consistency before
+  renderer upload code exists
 
 Why this comes first:
 
 - shader work needs stable layer IDs before texture arrays can stay aligned
+- texture-array upload work needs validated dimensions, formats, memory
+  estimates, and per-layer slot alignment before WebGL integration can stay
+  deterministic
 - chunk generation needs one normalized sample shape before it can cache or
   transfer compact splat buffers
 - validation and tests are cheaper to harden now than after the renderer and

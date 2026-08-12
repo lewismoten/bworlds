@@ -31,6 +31,13 @@ export type TerrainMaterialLayerCatalogEntry =
     index: number;
   };
 
+export type TerrainMaterialLayerTextureProperty =
+  | 'baseColorTextureId'
+  | 'normalTextureId'
+  | 'roughnessTextureId'
+  | 'metalnessTextureId'
+  | 'ambientOcclusionTextureId';
+
 export type TerrainSplatWeight = {
   layerId: TerrainMaterialLayerId;
   weight: number;

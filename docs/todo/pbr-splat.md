@@ -25,14 +25,14 @@
 ## Texture Arrays
 
 - [ ] Use WebGL2 texture arrays for terrain layers.
-- [ ] Put matching base color textures into one array.
-- [ ] Put matching normal textures into one array.
-- [ ] Put matching roughness textures into one array.
-- [ ] Keep array texture dimensions consistent.
-- [ ] Keep array texture formats consistent.
-- [ ] Keep layer indices aligned across all arrays.
+- [x] Put matching base color textures into one array.
+- [x] Put matching normal textures into one array.
+- [x] Put matching roughness textures into one array.
+- [x] Keep array texture dimensions consistent.
+- [x] Keep array texture formats consistent.
+- [x] Keep layer indices aligned across all arrays.
 - [ ] Add a fallback when texture arrays are unavailable.
-- [ ] Report texture array memory usage.
+- [x] Report texture array memory usage.
 
 ## Terrain Layer Limits
 
@@ -211,7 +211,7 @@
 - [x] Reject splat weights outside zero to one.
 - [ ] Reject samples whose weights do not sum near one.
 - [x] Reject invalid terrain layer indices.
-- [ ] Reject texture arrays with mismatched dimensions.
+- [x] Reject texture arrays with mismatched dimensions.
 - [ ] Warn about unused terrain texture layers.
 - [ ] Warn about chunks using too many terrain layers.
 - [ ] Warn about hard terrain boundaries with no blend zone.
@@ -266,7 +266,12 @@
 - Integrated terrain-kind splat mapping with shared material families so kinds
   can resolve deterministic bounded variants through `baseFamilyId` instead of
   embedding raw variant arrays.
-- [ ] Add roughness texture array support.
+- Added `@bworlds/terrain-splat-support/texture-array-plan` to build renderer-
+  free base-color, normal, roughness, and optional-map texture-array plans
+  from the shared layer catalog, keep layer indices aligned across array
+  purposes, reject mismatched dimensions or formats before WebGL upload, and
+  estimate array memory usage for future terrain budget tooling.
+- [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
 
@@ -299,11 +304,13 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/deterministic-mapping.md`, plus
 `packages/terrain-splat-support/docs/chunk-sample-grids.md` and
 `packages/terrain-splat-support/docs/variant-pools.md`, plus
-`packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, and focused
-tests cover normalization, packing, validation, deterministic mapping, chunk
-border stability, chunk layer-usage analysis, bounded family variant selection,
-neighborhood shared-layer planning, and stable terrain family resolution for
-the same seed.
+`packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, plus
+`packages/terrain-splat-support/docs/texture-array-plans.md`, and focused tests
+cover normalization, packing, validation, deterministic mapping, chunk border
+stability, chunk layer-usage analysis, bounded family variant selection,
+neighborhood shared-layer planning, stable terrain family resolution for the
+same seed, and texture-array plan validation for aligned dimensions, formats,
+and memory estimates.
 
 # Roads and Paths as Terrain Splats
 
