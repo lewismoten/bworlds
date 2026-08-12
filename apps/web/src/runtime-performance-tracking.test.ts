@@ -249,9 +249,7 @@ describe('runtime performance tracking', () => {
     });
 
     expect(issue).not.toBeNull();
-    expect(issue?.summary).toBe(
-      'Visible tile generation 22.0 ms exceeded 16.0 ms.'
-    );
+    expect(issue?.summary).toBe('tile-plains rejected 2.0 models per second.');
     expect(issue?.pluginHotspots.rejectedModels).toBe('tile-plains');
     expect(issue?.pluginHotspots.materials).toBe('tile-route');
     expect(issue?.pluginHotspots.instancedMeshes).toBe('tile-forest');
@@ -329,9 +327,7 @@ describe('runtime performance tracking', () => {
       }),
     });
 
-    expect(issue?.summary).toBe(
-      'Visible tile generation 22.0 ms exceeded 16.0 ms.'
-    );
+    expect(issue?.summary).toBe('tile-plains rejected 2.0 models per second.');
     expect(issue?.renderState.renderQualityLimiterDetails).toEqual([
       'Visibility radius reduced to 10 (full 18, reduced 14, minimum 10)',
       'Weather visibility capped draw distance at 10 (full 18, weather cap 10)',
@@ -752,6 +748,60 @@ describe('runtime performance tracking', () => {
     expect(issue?.summary).toBe(
       'Latest fallback reason: Missing low-cost plains model.'
     );
+  });
+
+  it('skips runtime issue reports when visible tile generation is the only remaining signal', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        fps: 60,
+        averageFps: 60,
+        frameMs: 16.7,
+        worstRecentFrameMs: 16.7,
+        targetFps: 60,
+        performanceTier: 'healthy',
+        renderQualityLevel: 'full',
+        renderQualityLimiters: '',
+        reducedQualityDurationSec: 0,
+        latestQualityChangeLimiter: undefined,
+        latestQualityChangeSummary: undefined,
+        drawCalls: 120,
+        object3dCount: 900,
+        visibleObjectCount: 300,
+        maxChunkDrawCalls: 16,
+        maxChunkObjectCount: 36,
+        maxChunkMeshes: 16,
+        maxChunkTriangleCount: 5000,
+        materialCount: 12,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 40,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 22,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        maxTilePluginBuildMs: 8,
+        slowestTilePluginLabel: 'tile-forest',
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxTopPluginLabel: undefined,
+        fallbackBoxSummary: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [],
+      }),
+    });
+
+    expect(issue).toBeNull();
   });
 
   it('posts runtime issue reports to the dedicated vite endpoint', async () => {

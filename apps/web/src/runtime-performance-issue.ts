@@ -845,7 +845,6 @@ function isGenericRuntimePerformanceBudgetReason(reason: string): boolean {
 function isDirectRuntimePerformanceIssueReason(reason: string): boolean {
   return (
     reason.startsWith('Initial world generation ') ||
-    reason.startsWith('Visible tile generation ') ||
     reason.startsWith('Memory after region change ') ||
     reason.startsWith('Synchronous tile build is too slow ') ||
     reason.startsWith(
