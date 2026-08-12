@@ -13,6 +13,8 @@ Current responsibilities:
 - assign stable layer indices from catalog order
 - normalize/clamp splat samples down to a bounded active layer set
 - validate that samples reference known layers and sum near `1.0`
+- pack normalized samples into fixed `Uint8Array(4)` layer indices and weights
+- validate packed samples before worker transfer or attribute upload
 
 Why this comes first:
 
@@ -28,3 +30,5 @@ Current limits:
 - weights below `0.01` are dropped during normalization by default
 - normalization is deterministic for tied weights because ties fall back to
   `layerId` sorting
+- packed weights sum to `255` so one sample fits cleanly into compact vertex or
+  worker-transfer buffers

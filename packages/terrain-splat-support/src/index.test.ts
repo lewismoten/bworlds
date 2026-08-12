@@ -3,7 +3,11 @@ import {
   createTerrainMaterialLayerCatalog,
   MAX_TERRAIN_SPLAT_SAMPLE_LAYERS,
   normalizeTerrainSplatSample,
+  packTerrainSplatSample,
+  PACKED_TERRAIN_SPLAT_WEIGHT_MAX,
+  unpackTerrainSplatSample,
   validateTerrainMaterialLayerDefinition,
+  validatePackedTerrainSplatSample,
   validateTerrainSplatSample,
 } from './index.ts';
 
@@ -179,5 +183,175 @@ describe('terrain splat support', () => {
         'Terrain splat sample weight for "grass" must stay within 0..1.',
       ])
     );
+  });
+
+  it('packs terrain splat samples into compact layer indices and weights', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'rock',
+        baseColorTextureId: 'rock/base',
+        normalTextureId: 'rock/normal',
+        roughnessTextureId: 'rock/roughness',
+        textureScale: 4,
+        defaultTint: '#7f7f7f',
+        defaultRoughness: 0.7,
+      },
+      {
+        id: 'snow',
+        baseColorTextureId: 'snow/base',
+        normalTextureId: 'snow/normal',
+        roughnessTextureId: 'snow/roughness',
+        textureScale: 5,
+        defaultTint: '#f7f7f7',
+        defaultRoughness: 0.6,
+      },
+    ]);
+
+    const packed = packTerrainSplatSample(
+      {
+        entries: [
+          { layerId: 'grass', weight: 0.5 },
+          { layerId: 'soil', weight: 0.3 },
+          { layerId: 'rock', weight: 0.2 },
+        ],
+      },
+      catalog
+    );
+
+    expect(packed.layerIndices).toEqual(new Uint8Array([0, 1, 2, 0]));
+    expect([...packed.weights]).toHaveLength(MAX_TERRAIN_SPLAT_SAMPLE_LAYERS);
+    expect(packed.weights.reduce((sum, weight) => sum + weight, 0)).toBe(
+      PACKED_TERRAIN_SPLAT_WEIGHT_MAX
+    );
+  });
+
+  it('unpacks compact terrain splat samples back into normalized weights', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'rock',
+        baseColorTextureId: 'rock/base',
+        normalTextureId: 'rock/normal',
+        roughnessTextureId: 'rock/roughness',
+        textureScale: 4,
+        defaultTint: '#7f7f7f',
+        defaultRoughness: 0.7,
+      },
+    ]);
+
+    const unpacked = unpackTerrainSplatSample(
+      {
+        layerIndices: new Uint8Array([0, 1, 2, 0]),
+        weights: new Uint8Array([128, 76, 51, 0]),
+      },
+      catalog.entries
+    );
+
+    expect(unpacked.entries.map((entry) => entry.layerId)).toEqual([
+      'grass',
+      'soil',
+      'rock',
+    ]);
+    expect(
+      unpacked.entries.reduce((sum, entry) => sum + entry.weight, 0)
+    ).toBeCloseTo(1, 6);
+  });
+
+  it('validates packed terrain splat samples and rejects unknown indices', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    expect(
+      validatePackedTerrainSplatSample(
+        {
+          layerIndices: new Uint8Array([0, 9]),
+          weights: new Uint8Array([255, 0, 0, 0]),
+        },
+        catalog.entries
+      )
+    ).toEqual(['Packed terrain splat sample layerIndices must have length 4.']);
+
+    expect(
+      validatePackedTerrainSplatSample(
+        {
+          layerIndices: new Uint8Array([9, 0, 0, 0]),
+          weights: new Uint8Array([255, 0, 0, 0]),
+        },
+        catalog.entries
+      )
+    ).toEqual([
+      'Packed terrain splat sample references unknown layer index 9.',
+    ]);
+  });
+
+  it('packs an empty sample into one fallback layer', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    const packed = packTerrainSplatSample(
+      {
+        entries: [],
+      },
+      catalog,
+      {
+        fallbackLayerId: 'grass',
+      }
+    );
+
+    expect(packed.layerIndices).toEqual(new Uint8Array([0, 0, 0, 0]));
+    expect(packed.weights).toEqual(new Uint8Array([255, 0, 0, 0]));
   });
 });

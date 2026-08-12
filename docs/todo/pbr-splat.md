@@ -50,8 +50,8 @@
 - [x] Clamp invalid splat weights.
 - [x] Allow up to four active layers per splat sample.
 - [x] Drop very small layer weights when possible.
-- [ ] Pack splat weights into compact vertex attributes.
-- [ ] Pack layer indices into compact vertex attributes.
+- [x] Pack splat weights into compact vertex attributes.
+- [x] Pack layer indices into compact vertex attributes.
 - [ ] Keep weight data stable across terrain LOD changes.
 
 ## Terrain Type Mapping
@@ -210,7 +210,7 @@
 - [x] Reject splat weights containing NaN values.
 - [x] Reject splat weights outside zero to one.
 - [ ] Reject samples whose weights do not sum near one.
-- [ ] Reject invalid terrain layer indices.
+- [x] Reject invalid terrain layer indices.
 - [ ] Reject texture arrays with mismatched dimensions.
 - [ ] Warn about unused terrain texture layers.
 - [ ] Warn about chunks using too many terrain layers.
@@ -238,6 +238,13 @@
 - [ ] Blend two terrain layers from vertex weights.
 - [ ] Add base color texture array support.
 - [ ] Add normal map texture array support.
+
+## Progress Notes
+
+- Added compact packed splat sample support in
+  `@bworlds/terrain-splat-support` using `Uint8Array(4)` layer indices and
+  `Uint8Array(4)` weights that rebalance to a total of `255`, with round-trip
+  and validation tests for unknown indices and fallback packing.
 - [ ] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
