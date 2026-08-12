@@ -11,6 +11,7 @@ import {
   saveRuntimePerformanceIssue,
   saveRuntimePerformanceSnapshot,
 } from '../runtime-performance-snapshot-store.mjs';
+import { createValidRuntimePerformanceSnapshot } from './runtime-performance-snapshot-validation.ts';
 
 describe('runtime performance snapshot store', () => {
   const tempDirs: string[] = [];
@@ -86,6 +87,38 @@ describe('runtime performance snapshot store', () => {
         limit: 20,
       })
     ).toHaveLength(10);
+  });
+
+  it('round-trips runtime performance snapshots without losing data', () => {
+    const snapshotDir = mkdtempSync(
+      path.join(os.tmpdir(), 'bworlds-runtime-snapshots-roundtrip-')
+    );
+    tempDirs.push(snapshotDir);
+
+    const snapshot = createValidRuntimePerformanceSnapshot();
+    snapshot.createdAt = '2026-08-12T02:05:00.000Z';
+    snapshot.source = 'music-debug';
+    snapshot.trigger = 'midi-export';
+    snapshot.route = '/debug/music';
+    snapshot.context = {
+      id: 'music-debug',
+      label: 'Music Debug',
+      depth: 0,
+    };
+    snapshot.metrics.songGenerationMs = 325;
+    snapshot.metrics.midiExportMs = 640;
+
+    saveRuntimePerformanceSnapshot(snapshot, {
+      snapshotDir,
+      maxSnapshots: 10,
+    });
+
+    expect(
+      readRecentRuntimePerformanceSnapshots({
+        snapshotDir,
+        limit: 10,
+      })
+    ).toEqual([snapshot]);
   });
 
   it('formats stable issue file names from the timestamp, source, and hash', () => {

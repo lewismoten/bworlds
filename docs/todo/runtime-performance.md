@@ -41,9 +41,9 @@
 - [ ] Warn when expected startup metrics are missing.
 - [ ] Warn when suspicious metrics are near zero.
 - [ ] Keep warnings separate from hard violations.
-- [ ] Test snapshot JSON can round-trip without data loss.
+- [x] Test snapshot JSON can round-trip without data loss.
 - [ ] Test old schema versions can be migrated.
-- [ ] Test unknown schema versions are rejected.
+- [x] Test unknown schema versions are rejected.
 
 Progress: runtime snapshots now pass through
 `validateRuntimePerformanceSnapshot(...)` before the Vite snapshot API writes
@@ -52,4 +52,6 @@ snapshots with that same schema check, and focused validation tests now cover
 schema metadata, nullable-vs-measured metrics, finite/non-negative number
 requirements, expected violation accounting, and exact / below / above hard-
 limit behavior for the current startup, frame, tile-build max, object, draw-
-call, audio, memory, song-export, MIDI-export, and WAV-export limits.
+call, audio, memory, song-export, MIDI-export, and WAV-export limits, and
+the snapshot store regression tests now verify that a persisted runtime
+snapshot can be written to JSON and read back without changing any fields.
