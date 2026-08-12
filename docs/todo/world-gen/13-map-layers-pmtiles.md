@@ -146,8 +146,19 @@ Current support:
 
 ## 2D and 3D Parity
 
-- [ ] Derive 2D terrain from the same world data as 3D.
+- [x] Derive 2D terrain from the same world data as 3D.
 - [ ] Derive roads and rivers from the same graphs as 3D.
 - [ ] Derive settlements and borders from shared records.
 - [ ] Keep 2D tile symbols representative of 3D state.
 - [ ] Avoid separate hand-authored map-only world state.
+
+Current support:
+
+- `@bworlds/worldgen` already exposes one authoritative terrain sampler for
+  surface height, sea depth, slope, and related terrain signals, and
+  `@bworlds/map-support` now exposes
+  `createMapTerrainSurfaceFeatureRecord(...)` plus
+  `createTerrainSurfaceMapFeatureGeneratorPlugin(...)`, so later 2D terrain map
+  products can convert those shared terrain samples into canonical
+  `terrain-surface` polygons instead of building a separate map-only terrain
+  state path.

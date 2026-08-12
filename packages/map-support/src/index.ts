@@ -17,6 +17,7 @@ export type * from './map-layer-generators.ts';
 export type * from './map-feature-policies.ts';
 export type * from './map-features.ts';
 export type * from './map-pmtiles.ts';
+export type * from './map-terrain-surface.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
 export {
@@ -69,6 +70,12 @@ export {
   selectPmtilesTileFeaturesForZoom,
   simplifyPmtilesFeatureGeometry,
 } from './map-pmtiles.ts';
+export {
+  createMapTerrainSurfaceCellBounds,
+  createMapTerrainSurfaceFeatureRecord,
+  createTerrainSurfaceMapFeatureGeneratorPlugin,
+  DEFAULT_MAP_TERRAIN_SURFACE_LAYER_ID,
+} from './map-terrain-surface.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,
   AZIMUTHAL_CENTER_LONGITUDE,
