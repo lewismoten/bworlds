@@ -27,6 +27,11 @@ type PhraseBoundaryArticulation = {
   releaseMultiplier: number;
 };
 
+type PhraseBoundaryPitchBend = {
+  semitones: number;
+  durationMs: number;
+};
+
 const ROLE_RELEASE_TAIL_DURATION_RATIOS = {
   lead: 0.55,
   harmony: 0.4,
@@ -106,6 +111,11 @@ export function transformSongSectionNote(
     phrasePosition: sectionContext.phrasePosition,
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
+  const phraseBoundaryPitchBend = resolvePhraseBoundaryPitchBend({
+    note,
+    phrasePosition: sectionContext.phrasePosition,
+    preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+  });
 
   switch (section.id) {
     case 'intro':
@@ -122,6 +132,7 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
           phraseBoundaryArticulation.releaseMultiplier,
         attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+        pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -147,6 +158,7 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
           phraseBoundaryArticulation.releaseMultiplier,
         attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+        pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -173,6 +185,7 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
           phraseBoundaryArticulation.releaseMultiplier,
         attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+        pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -190,6 +203,7 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
           phraseBoundaryArticulation.releaseMultiplier,
         attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+        pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -205,6 +219,7 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
           phraseBoundaryArticulation.releaseMultiplier,
         attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+        pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
       });
@@ -262,6 +277,11 @@ function transformAprimeSectionNote(
       phrasePosition,
       preserveRepairPitch,
     }).attackMultiplier,
+    pitchBend: resolvePhraseBoundaryPitchBend({
+      note,
+      phrasePosition,
+      preserveRepairPitch,
+    }),
     startOffsetMs:
       rhythmShiftMs +
       (leadRhythmOptions?.startOffsetMs ?? 0) +
@@ -324,6 +344,11 @@ function transformVariationSectionNote(
     releaseMultiplier:
       layerTreatment.releaseMultiplier *
       (leadRhythmOptions?.releaseMultiplier ?? 1),
+    pitchBend: resolvePhraseBoundaryPitchBend({
+      note,
+      phrasePosition,
+      preserveRepairPitch,
+    }),
     startOffsetMs:
       rhythmShiftMs +
       (leadRhythmOptions?.startOffsetMs ?? 0) +
@@ -557,6 +582,47 @@ function resolvePhraseBoundaryArticulation(options: {
   };
 }
 
+function resolvePhraseBoundaryPitchBend(options: {
+  note: ProceduralMusicNote;
+  phrasePosition: number;
+  preserveRepairPitch: boolean;
+}): PhraseBoundaryPitchBend | null {
+  if (
+    options.note.role !== 'lead' ||
+    options.preserveRepairPitch ||
+    options.note.durationMs < 220
+  ) {
+    return null;
+  }
+
+  switch (options.note.family) {
+    case 'vocals':
+    case 'violin':
+    case 'flute':
+    case 'trumpet':
+    case 'synth-lead':
+      break;
+    default:
+      return null;
+  }
+
+  const normalizedPhrasePosition = options.phrasePosition % 8;
+  if (normalizedPhrasePosition === 0) {
+    return {
+      semitones: -0.32,
+      durationMs: 72,
+    };
+  }
+  if (normalizedPhrasePosition === 7) {
+    return {
+      semitones: 0.24,
+      durationMs: 64,
+    };
+  }
+
+  return null;
+}
+
 function scaleSongNote(
   note: ProceduralMusicNote,
   options: {
@@ -567,6 +633,7 @@ function scaleSongNote(
     releaseMultiplier?: number;
     startOffsetMs?: number;
     transposeSemitones?: number;
+    pitchBend?: PhraseBoundaryPitchBend | null;
   }
 ): ProceduralMusicNote {
   const durationMultiplier = options.durationMultiplier ?? 1;
@@ -607,14 +674,31 @@ function scaleSongNote(
     volume: note.volume * (options.volumeMultiplier ?? 1),
     velocity: nextVelocity,
     attackMs: Math.max(4, Math.round(note.attackMs * attackMultiplier)),
-    timbre:
+    timbre: applyPitchBendToTimbre(
       nextVelocity === undefined
         ? note.timbre
         : resolveVelocityShapedInstrumentTimbre({
             timbre: note.timbre,
             velocity: nextVelocity,
           }),
+      options.pitchBend
+    ),
     releaseMs,
+  };
+}
+
+function applyPitchBendToTimbre(
+  timbre: ProceduralMusicNote['timbre'],
+  pitchBend: PhraseBoundaryPitchBend | null | undefined
+): ProceduralMusicNote['timbre'] {
+  if (!pitchBend) {
+    return timbre;
+  }
+
+  return {
+    ...timbre,
+    pitchSweepSemitones: pitchBend.semitones,
+    pitchSweepDurationMs: pitchBend.durationMs,
   };
 }
 

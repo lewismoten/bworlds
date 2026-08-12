@@ -407,6 +407,72 @@ describe('procedural music song variation', () => {
     expect(closingLead?.releaseMs).toBeGreaterThan(middleLead?.releaseMs ?? 0);
   });
 
+  it('adds a small upward scoop for expressive lead phrase openings', () => {
+    const section = createSection('a');
+    const openingLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        family: 'flute',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      0,
+      0
+    );
+    const middleLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        family: 'flute',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      3,
+      0
+    );
+
+    expect(openingLead).not.toBeNull();
+    expect(middleLead).not.toBeNull();
+    expect(openingLead?.timbre.pitchSweepSemitones).toBeCloseTo(-0.32, 3);
+    expect(openingLead?.timbre.pitchSweepDurationMs).toBe(72);
+    expect(middleLead?.timbre.pitchSweepSemitones).toBeUndefined();
+  });
+
+  it('adds a restrained fall-off bend for expressive lead phrase endings', () => {
+    const section = createSection('a');
+    const closingLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        family: 'vocals',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      7,
+      0
+    );
+
+    expect(closingLead).not.toBeNull();
+    expect(closingLead?.timbre.pitchSweepSemitones).toBeCloseTo(0.24, 3);
+    expect(closingLead?.timbre.pitchSweepDurationMs).toBe(64);
+  });
+
+  it('skips phrase pitch bends for unsupported lead families', () => {
+    const section = createSection('a');
+    const openingLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        family: 'piano',
+        instrumentId: 'deep-forest:lead:0:0',
+      },
+      section,
+      0,
+      0
+    );
+
+    expect(openingLead).not.toBeNull();
+    expect(openingLead?.timbre.pitchSweepSemitones).toBeUndefined();
+    expect(openingLead?.timbre.pitchSweepDurationMs).toBeUndefined();
+  });
+
   it('leaves percussion articulation unchanged at phrase boundaries', () => {
     const section = createSection('a');
     const openingPercussion = transformSongSectionNote(

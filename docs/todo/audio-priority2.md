@@ -28,7 +28,11 @@
       trumpet once notes are long enough to settle, and the integration tests
       now verify that supported sustained notes create the extra modulation
       path while short notes do not.
-- [ ] Add controlled pitch bends for suitable articulations.
+- [x] Add controlled pitch bends for suitable articulations.
+      Progress: phrase-boundary lead articulations now add small, bounded pitch
+      scoops or fall-off bends for expressive families such as flute, violin,
+      trumpet, vocals, and synth leads, while unsupported families remain
+      unchanged, and the section-variation tests now verify the bend metadata.
 - [ ] Add note attack differences by articulation type.
 - [ ] Add release differences by articulation type.
 - [ ] Add legato behavior for connected melodic notes.
