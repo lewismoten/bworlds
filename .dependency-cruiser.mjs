@@ -13,6 +13,7 @@ const NO_ORPHAN_PATH_NOT = [
   '[.](?:spec|test)\\.(?:js|mjs|cjs|jsx|ts|mts|cts|tsx)$',
   '^packages/plugin-api/src/types\\.ts$',
   '^apps/web/src/test-setup\\.ts$',
+  '^apps/landing/index\\.js$',
 ];
 
 const noOrphans = {

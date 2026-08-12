@@ -1,5 +1,10 @@
 {
   "$schema": "./node_modules/knip/schema.json",
-  "entry": ["apps/landing/index.js"],
-  "include": ["files", "dependencies", "unlisted", "exports"]
+  "include": ["files", "dependencies", "unlisted", "exports"],
+  "workspaces": {
+    "apps/landing": {
+      "entry": ["index.js"],
+      "project": ["*.js"]
+    }
+  }
 }
