@@ -13,8 +13,17 @@ import type {
   WorldMapLike,
 } from '@bworlds/plugin-api';
 export type * from './map-projections.ts';
+export type * from './map-features.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
+export {
+  createMapFeatureLineRecord,
+  createMapFeaturePointRecord,
+  createMapFeaturePolygonRecord,
+  createStableMapFeatureId,
+  DEFAULT_MAP_FEATURE_MIN_ZOOM,
+  isMapFeatureVisibleAtZoom,
+} from './map-features.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,
   AZIMUTHAL_CENTER_LONGITUDE,

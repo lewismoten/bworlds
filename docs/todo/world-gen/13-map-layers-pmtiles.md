@@ -2,10 +2,27 @@
 
 ## Feature Model
 
-- [ ] Define canonical point, line, and polygon records.
-- [ ] Keep map features independent from projection.
-- [ ] Keep map feature IDs stable from world object IDs.
-- [ ] Add zoom visibility ranges to map features.
+- [x] Define canonical point, line, and polygon records.
+- [x] Keep map features independent from projection.
+- [x] Keep map feature IDs stable from world object IDs.
+- [x] Add zoom visibility ranges to map features.
+
+Current support:
+
+- `@bworlds/map-support` now exposes canonical
+  `MapFeaturePointRecord`, `MapFeatureLineRecord`, and
+  `MapFeaturePolygonRecord` creation helpers so future map products and
+  PMTiles export paths can normalize feature geometry once before any
+  projection-specific work begins.
+- Those canonical feature records keep geometry in shared `worldX/worldY`
+  coordinates, which keeps map features projection-agnostic instead of
+  storing view-specific projected coordinates on the records themselves.
+- `createStableMapFeatureId(...)` now gives map layers one deterministic id
+  path from `layerId`, `sourceWorldObjectId`, and optional `featureKey`, so
+  later export and UI code can track features without inventing ad hoc ids.
+- Each canonical feature record now carries a `zoomRange`, and
+  `isMapFeatureVisibleAtZoom(...)` gives later tiling or viewer code one
+  shared zoom predicate for coarse-versus-fine feature visibility.
 
 ## PMTiles
 
