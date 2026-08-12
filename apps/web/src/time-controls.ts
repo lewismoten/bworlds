@@ -13,7 +13,7 @@ export type ModelPreviewMode = 'world' | 'solar-system' | 'split';
 export type TimekeeperDisplayMode =
   'hidden' | 'time' | 'time-date' | 'graphical';
 export type CompassDisplayMode = 'hidden' | 'letters' | 'graphical';
-export type MinimapDisplayMode = 'hidden' | 'graphical';
+export type MinimapDisplayMode = 'hidden' | 'graphical' | 'heatmap';
 export type CelestialEventMode =
   'auto' | 'aurora' | 'meteor-shower' | 'comet' | 'eclipse';
 
@@ -117,7 +117,7 @@ export function getNextCompassDisplayMode(
 export function getNextMinimapDisplayMode(
   modeId: string | undefined
 ): MinimapDisplayMode {
-  if (modeId === 'graphical') {
+  if (modeId === 'graphical' || modeId === 'heatmap') {
     return modeId;
   }
   return 'hidden';

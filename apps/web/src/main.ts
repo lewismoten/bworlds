@@ -238,6 +238,14 @@ import {
   getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
+import {
+  buildMinimapProblemDialogMarkup,
+  getMinimapProblemCanvasPoint,
+  buildMinimapProblemTooltipMarkup,
+  getHoveredMinimapProblemCell,
+  renderMinimapProblemHeatmap,
+  type MinimapProblemCell,
+} from './minimap-problem-heatmap.ts';
 import { annotateTextViewportGridWithVisibleTileLods } from './text-viewport-lod.ts';
 import { createViewportHudView } from './status-view.ts';
 import { getViewportRenderSize } from './viewport-resize.ts';
@@ -355,6 +363,12 @@ root.innerHTML = `
             aria-hidden="true"
             hidden
           ></canvas>
+          <div
+            id="viewport-minimap-problem-tooltip"
+            class="viewport-minimap-problem-tooltip is-hidden"
+            aria-hidden="true"
+            hidden
+          ></div>
           <div
             id="viewport-minimap-controls"
             class="viewport-minimap-controls is-hidden"
@@ -891,6 +905,24 @@ root.innerHTML = `
         </div>
       </form>
     </dialog>
+    <dialog id="minimap-problem-dialog" class="control-dialog">
+      <form method="dialog" class="control-dialog-shell">
+        <div class="control-dialog-head">
+          <div>
+            <h2 id="minimap-problem-dialog-title">Tile Heat Map Details</h2>
+            <p>Inspect tile-level warnings, fallback reasons, and runtime pressure.</p>
+          </div>
+          <button
+            type="submit"
+            class="dialog-close-button"
+            aria-label="Close tile heat map details"
+          >
+            ✕
+          </button>
+        </div>
+        <div id="minimap-problem-dialog-body" class="minimap-problem-dialog-body"></div>
+      </form>
+    </dialog>
   </main>
   <div class="app-utility-storage" aria-hidden="true">
     <div
@@ -917,6 +949,9 @@ const viewportCompassMini = document.querySelector<HTMLCanvasElement>(
 );
 const viewportMinimapMini = document.querySelector<HTMLCanvasElement>(
   '#viewport-minimap-mini'
+);
+const viewportMinimapProblemTooltip = document.querySelector<HTMLElement>(
+  '#viewport-minimap-problem-tooltip'
 );
 const hmrNotice = document.querySelector<HTMLElement>('#hmr-notice');
 const pageLifecycleAbortController =
@@ -965,6 +1000,15 @@ const settingsButton =
   document.querySelector<HTMLButtonElement>('#settings-button');
 const settingsDialog =
   document.querySelector<HTMLDialogElement>('#settings-dialog');
+const minimapProblemDialog = document.querySelector<HTMLDialogElement>(
+  '#minimap-problem-dialog'
+);
+const minimapProblemDialogTitle = document.querySelector<HTMLElement>(
+  '#minimap-problem-dialog-title'
+);
+const minimapProblemDialogBody = document.querySelector<HTMLElement>(
+  '#minimap-problem-dialog-body'
+);
 const toggleTimekeeperDisplayButton = document.querySelector<HTMLButtonElement>(
   '#toggle-timekeeper-display'
 );
@@ -1485,7 +1529,12 @@ const pageVisibilityState = {
 };
 const debugSnapshotState = {
   latestSnapshot: null as DebugSnapshot | null,
+  latestRecentEvents: [] as DebugSnapshotRecentEvent[],
   lastSampleNowMs: null as number | null,
+};
+const minimapProblemUiState = {
+  cells: [] as MinimapProblemCell[],
+  hoveredTileKey: null as string | null,
 };
 const debugTileLodState = {
   selectionFrozen: false,
@@ -1688,7 +1737,7 @@ function updateStatus(
   }
   if (viewportMinimapMini) {
     const showMinimap =
-      state.viewMode === '3d' && activeMinimapDisplayMode === 'graphical';
+      state.viewMode === '3d' && activeMinimapDisplayMode !== 'hidden';
     viewportMinimapMini.classList.toggle('is-hidden', !showMinimap);
     viewportMinimapMini.hidden = !showMinimap;
   }
@@ -1816,11 +1865,23 @@ function updateCompassDisplayModeUi(): void {
 }
 
 function formatMinimapDisplayModeLabel(mode: MinimapDisplayMode): string {
-  return mode === 'graphical' ? 'Visible' : 'Hidden';
+  if (mode === 'graphical') {
+    return 'Visible';
+  }
+  if (mode === 'heatmap') {
+    return 'Heat Map';
+  }
+  return 'Hidden';
 }
 
 function cycleMinimapDisplayMode(mode: MinimapDisplayMode): MinimapDisplayMode {
-  return mode === 'hidden' ? 'graphical' : 'hidden';
+  if (mode === 'hidden') {
+    return 'graphical';
+  }
+  if (mode === 'graphical') {
+    return 'heatmap';
+  }
+  return 'hidden';
 }
 
 function updateMinimapDisplayModeUi(): void {
@@ -1838,7 +1899,7 @@ function updateMinimapDisplayModeUi(): void {
   }
   if (viewportMinimapControls) {
     const showMinimap =
-      state.viewMode === '3d' && activeMinimapDisplayMode === 'graphical';
+      state.viewMode === '3d' && activeMinimapDisplayMode !== 'hidden';
     viewportMinimapControls.classList.toggle('is-hidden', !showMinimap);
     viewportMinimapControls.hidden = !showMinimap;
     viewportMinimapControls.setAttribute('aria-hidden', String(!showMinimap));
@@ -1850,6 +1911,9 @@ function updateMinimapDisplayModeUi(): void {
   if (zoomInMinimapButton) {
     zoomInMinimapButton.disabled =
       activeMinimapDisplayMode === 'hidden' || minimapZoom >= 2;
+  }
+  if (activeMinimapDisplayMode !== 'heatmap') {
+    hideMinimapProblemTooltip();
   }
 }
 
@@ -2100,6 +2164,7 @@ function setCompassDisplayMode(modeId: string | undefined): void {
 
 function setMinimapDisplayMode(modeId: string | undefined): void {
   activeMinimapDisplayMode = getNextMinimapDisplayMode(modeId);
+  uiRenderState.lastMinimapMiniSignature = '';
   updateMinimapDisplayModeUi();
   saveSession();
   requestRender();
@@ -2664,6 +2729,15 @@ function collectCurrentDebugSnapshot(
   );
 
   debugSnapshotState.latestSnapshot = { ...debugSnapshot };
+  debugSnapshotState.latestRecentEvents = collectMergedRecentDebugEvents(
+    debugRecentEventsState.events,
+    rendererStats.recentEvents,
+    nowMs,
+    {
+      windowMs: DEBUG_RECENT_EVENT_WINDOW_MS,
+      maxEntries: MAX_DEBUG_RECENT_EVENTS,
+    }
+  );
   return debugSnapshot;
 }
 
@@ -3402,6 +3476,78 @@ function closeDialog(dialog: HTMLDialogElement | null): void {
   dialog?.close?.();
 }
 
+function hideMinimapProblemTooltip(): void {
+  minimapProblemUiState.hoveredTileKey = null;
+  if (!viewportMinimapProblemTooltip) {
+    return;
+  }
+  viewportMinimapProblemTooltip.classList.add('is-hidden');
+  viewportMinimapProblemTooltip.hidden = true;
+  viewportMinimapProblemTooltip.setAttribute('aria-hidden', 'true');
+}
+
+function showMinimapProblemTooltip(
+  cell: MinimapProblemCell,
+  clientX: number,
+  clientY: number
+): void {
+  if (!viewportMinimapProblemTooltip) {
+    return;
+  }
+  minimapProblemUiState.hoveredTileKey = cell.key;
+  viewportMinimapProblemTooltip.innerHTML =
+    buildMinimapProblemTooltipMarkup(cell);
+  viewportMinimapProblemTooltip.hidden = false;
+  viewportMinimapProblemTooltip.classList.remove('is-hidden');
+  viewportMinimapProblemTooltip.setAttribute('aria-hidden', 'false');
+  viewportMinimapProblemTooltip.style.left = `${Math.round(clientX + 14)}px`;
+  viewportMinimapProblemTooltip.style.top = `${Math.round(clientY - 12)}px`;
+}
+
+function resolveMinimapProblemCellAtClientPoint(
+  clientX: number,
+  clientY: number
+): MinimapProblemCell | null {
+  if (
+    !viewportMinimapMini ||
+    viewportMinimapMini.hidden ||
+    minimapProblemUiState.cells.length === 0
+  ) {
+    return null;
+  }
+
+  const rect = viewportMinimapMini.getBoundingClientRect();
+  const { canvasX, canvasY } = getMinimapProblemCanvasPoint(
+    {
+      width: viewportMinimapMini.width,
+      height: viewportMinimapMini.height,
+    },
+    {
+      width: rect.width,
+      height: rect.height,
+    },
+    clientX - rect.left,
+    clientY - rect.top
+  );
+  return getHoveredMinimapProblemCell(
+    minimapProblemUiState.cells,
+    canvasX,
+    canvasY
+  );
+}
+
+function openMinimapProblemDialog(cell: MinimapProblemCell): void {
+  minimapProblemDialogTitle?.replaceChildren(
+    document.createTextNode(
+      `Tile Heat Map Details: ${cell.tileKind} @ ${cell.worldX}:${cell.worldY}`
+    )
+  );
+  if (minimapProblemDialogBody) {
+    minimapProblemDialogBody.innerHTML = buildMinimapProblemDialogMarkup(cell);
+  }
+  openDialog(minimapProblemDialog);
+}
+
 function teleportToSelectedTileKind(): void {
   const targetKind = debugTileKindSelect?.value;
   if (!targetKind) {
@@ -3942,36 +4088,66 @@ function render(): FrameLoopActivityLike {
   }
   if (
     viewportMinimapMini &&
-    activeMinimapDisplayMode === 'graphical' &&
+    activeMinimapDisplayMode !== 'hidden' &&
     !viewportMinimapMini.hidden
   ) {
-    const minimapMiniSignature = getMinimapMiniSignature({
-      width: viewportMinimapMini.width,
-      height: viewportMinimapMini.height,
-      playerX: spatial.playerX,
-      playerY: spatial.playerY,
-      facingAngle: spatial.facing,
-      zoom: minimapZoom,
-    });
-    if (minimapMiniSignature !== uiRenderState.lastMinimapMiniSignature) {
-      const minimapContext = viewportMinimapMini.getContext('2d');
-      if (minimapContext) {
-        minimapContext.imageSmoothingEnabled = false;
+    const minimapContext = viewportMinimapMini.getContext('2d');
+    if (minimapContext) {
+      minimapContext.imageSmoothingEnabled = false;
+      if (activeMinimapDisplayMode === 'heatmap') {
         minimapContext.clearRect(
           0,
           0,
           viewportMinimapMini.width,
           viewportMinimapMini.height
         );
-        render2D(minimapContext, state, {
+        minimapProblemUiState.cells = renderMinimapProblemHeatmap(
+          minimapContext,
+          state,
+          {
+            width: viewportMinimapMini.width,
+            height: viewportMinimapMini.height,
+            rotation: 0,
+            facingAngle: spatial.facing,
+            zoom: minimapZoom,
+            showTimeOverlay: false,
+          },
+          {
+            recentEvents: debugSnapshotState.latestRecentEvents,
+            latestSnapshot: debugSnapshotState.latestSnapshot,
+            currentTileX: spatial.gridX,
+            currentTileY: spatial.gridY,
+          }
+        );
+        uiRenderState.lastMinimapMiniSignature = '';
+      } else {
+        const minimapMiniSignature = getMinimapMiniSignature({
           width: viewportMinimapMini.width,
           height: viewportMinimapMini.height,
-          rotation: 0,
+          playerX: spatial.playerX,
+          playerY: spatial.playerY,
           facingAngle: spatial.facing,
           zoom: minimapZoom,
-          showTimeOverlay: false,
+          displayMode: activeMinimapDisplayMode,
         });
-        uiRenderState.lastMinimapMiniSignature = minimapMiniSignature;
+        if (minimapMiniSignature !== uiRenderState.lastMinimapMiniSignature) {
+          minimapContext.clearRect(
+            0,
+            0,
+            viewportMinimapMini.width,
+            viewportMinimapMini.height
+          );
+          render2D(minimapContext, state, {
+            width: viewportMinimapMini.width,
+            height: viewportMinimapMini.height,
+            rotation: 0,
+            facingAngle: spatial.facing,
+            zoom: minimapZoom,
+            showTimeOverlay: false,
+          });
+          uiRenderState.lastMinimapMiniSignature = minimapMiniSignature;
+        }
+        minimapProblemUiState.cells = [];
       }
     }
   }
@@ -4598,6 +4774,47 @@ toggleCompassDisplayButton?.addEventListener('click', () => {
 });
 toggleMinimapDisplayButton?.addEventListener('click', () => {
   setMinimapDisplayMode(cycleMinimapDisplayMode(activeMinimapDisplayMode));
+});
+viewportMinimapMini?.addEventListener('mouseleave', () => {
+  hideMinimapProblemTooltip();
+});
+viewportMinimapMini?.addEventListener('mousemove', (event) => {
+  if (
+    activeMinimapDisplayMode !== 'heatmap' ||
+    viewportMinimapMini.hidden ||
+    minimapProblemUiState.cells.length === 0
+  ) {
+    hideMinimapProblemTooltip();
+    return;
+  }
+
+  const hoveredCell = resolveMinimapProblemCellAtClientPoint(
+    event.clientX,
+    event.clientY
+  );
+  if (!hoveredCell) {
+    hideMinimapProblemTooltip();
+    return;
+  }
+  showMinimapProblemTooltip(hoveredCell, event.clientX, event.clientY);
+});
+viewportMinimapMini?.addEventListener('click', (event) => {
+  if (
+    activeMinimapDisplayMode !== 'heatmap' ||
+    viewportMinimapMini.hidden ||
+    minimapProblemUiState.cells.length === 0
+  ) {
+    return;
+  }
+
+  const hoveredCell = resolveMinimapProblemCellAtClientPoint(
+    event.clientX,
+    event.clientY
+  );
+  if (!hoveredCell) {
+    return;
+  }
+  openMinimapProblemDialog(hoveredCell);
 });
 toggleMusicButton?.addEventListener('click', () => {
   toggleAudioPreferenceSetting('musicEnabled');

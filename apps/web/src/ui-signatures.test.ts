@@ -243,5 +243,11 @@ describe('ui signature helpers', () => {
         playerX: minimap.playerX + 1,
       })
     ).not.toBe(getMinimapMiniSignature(minimap));
+    expect(
+      getMinimapMiniSignature({
+        ...minimap,
+        displayMode: 'heatmap',
+      })
+    ).not.toBe(getMinimapMiniSignature(minimap));
   });
 });

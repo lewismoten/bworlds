@@ -192,7 +192,8 @@ export function parseSavedSession(raw: string | null): SavedSession | null {
     if (
       typeof parsed?.minimapDisplayMode !== 'undefined' &&
       parsed.minimapDisplayMode !== 'hidden' &&
-      parsed.minimapDisplayMode !== 'graphical'
+      parsed.minimapDisplayMode !== 'graphical' &&
+      parsed.minimapDisplayMode !== 'heatmap'
     ) {
       return null;
     }

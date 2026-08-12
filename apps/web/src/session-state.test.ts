@@ -59,7 +59,7 @@ describe('session state', () => {
       worldSeed: 'spec-seed',
       timekeeperDisplayMode: 'graphical',
       compassDisplayMode: 'graphical',
-      minimapDisplayMode: 'graphical',
+      minimapDisplayMode: 'heatmap',
       minimapZoom: 1.4,
       timeOffsetMs: 42000,
       timeFrozen: true,
@@ -123,7 +123,7 @@ describe('session state', () => {
         worldSeed: 'spec-seed',
         timekeeperDisplayMode: 'graphical',
         compassDisplayMode: 'graphical',
-        minimapDisplayMode: 'graphical',
+        minimapDisplayMode: 'heatmap',
         minimapZoom: 1.4,
         timeFrozen: true,
         frozenWorldTimeMs: 123456,
@@ -263,6 +263,20 @@ describe('session state', () => {
         })
       )
     ).toBeNull();
+
+    expect(
+      parseSavedSession(
+        JSON.stringify({
+          player: { x: 0, y: 0, facing: 0 },
+          stack: [{ id: 'overworld', depth: 0 }],
+          minimapDisplayMode: 'heatmap',
+        })
+      )
+    ).toEqual(
+      expect.objectContaining({
+        minimapDisplayMode: 'heatmap',
+      })
+    );
 
     expect(
       parseSavedSession(

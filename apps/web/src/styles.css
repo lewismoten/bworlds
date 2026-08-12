@@ -388,6 +388,93 @@ button:hover {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
 }
 
+.viewport-minimap-problem-tooltip {
+  position: fixed;
+  z-index: 7;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: 0.7rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid rgba(244, 226, 137, 0.3);
+  background: linear-gradient(
+    180deg,
+    rgba(17, 25, 34, 0.96),
+    rgba(7, 12, 18, 0.96)
+  );
+  color: #edf5cf;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+}
+
+.minimap-problem-tooltip-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff7d0;
+}
+
+.minimap-problem-tooltip-meta {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 0.28rem;
+  font-size: 0.74rem;
+  color: #c7d7b2;
+}
+
+.minimap-problem-tooltip-list {
+  margin: 0.55rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.minimap-problem-dialog-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.minimap-problem-dialog-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.8rem;
+}
+
+.minimap-problem-dialog-summary div,
+.minimap-problem-dialog-issues li {
+  padding: 0.8rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(19, 30, 42, 0.82);
+  border: 1px solid rgba(162, 188, 214, 0.16);
+}
+
+.minimap-problem-dialog-summary dt {
+  margin: 0 0 0.22rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #98adc0;
+}
+
+.minimap-problem-dialog-summary dd {
+  margin: 0;
+  color: #f4f7dc;
+}
+
+.minimap-problem-dialog-issues ul {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.minimap-problem-dialog-issues li {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.minimap-problem-dialog-issues strong {
+  color: #fff3bf;
+}
+
 #viewport-2d,
 .viewport-text,
 .viewport-3d {

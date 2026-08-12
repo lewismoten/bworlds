@@ -89,6 +89,7 @@ describe('time controls', () => {
   it('normalizes the viewport minimap mode to a supported display', () => {
     expect(getNextMinimapDisplayMode('hidden')).toBe('hidden');
     expect(getNextMinimapDisplayMode('graphical')).toBe('graphical');
+    expect(getNextMinimapDisplayMode('heatmap')).toBe('heatmap');
     expect(getNextMinimapDisplayMode('unknown')).toBe('hidden');
   });
 

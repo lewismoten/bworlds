@@ -85,6 +85,7 @@ type MinimapMiniSignatureOptions = {
   playerY: number;
   facingAngle: number;
   zoom: number;
+  displayMode?: string;
 };
 
 export function getStatusSignature(options: StatusSignatureOptions): string {
@@ -186,6 +187,7 @@ export function getMinimapMiniSignature(
     options.playerY.toFixed(2),
     options.facingAngle.toFixed(4),
     options.zoom.toFixed(2),
+    options.displayMode ?? 'graphical',
   ].join('|');
 }
 
