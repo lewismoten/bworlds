@@ -565,7 +565,7 @@ worker-backed generation. The worker runtime notes live in
 - [ ] Fall back to road geometry for unsupported cases.
 - [x] Show route splat weights in terrain debug mode.
 - [x] Add a toggle for road and path splat layers.
-- [ ] Compare splat roads against mesh road draw calls.
+- [x] Compare splat roads against mesh road draw calls.
 - [ ] Test roads follow terrain height without gaps.
 - [x] Test roads remain continuous across chunk borders.
 - [ ] Test intersections blend without visible seams.

@@ -14,6 +14,7 @@ renderer-free splat grid against one naive per-cell terrain path.
 ## Main API
 
 - `compareTerrainSplatChunkPerformance(...)`
+- `compareTerrainRouteSplatPathPerformance(...)`
 - `estimateTerrainSplatMaterialReuse(...)`
 
 ## Comparison model
@@ -24,11 +25,16 @@ renderer-free splat grid against one naive per-cell terrain path.
 - the splat side assumes one shared terrain material/program for the whole chunk
 - the splat side assumes one texture array binding per populated map type: base
   color, normal, and roughness
+- the route-only comparison treats legacy road or trail meshes as extra overlay
+  draw calls per route-bearing cell, while the splat side assumes those route
+  layers stay inside the shared terrain pass and add no extra draw calls
 
 ## Output
 
 - legacy and splat estimates for draw calls, materials, programs, and texture
   bindings
+- route-only estimates for extra mesh-road draw calls versus route layers baked
+  into the shared terrain splat path
 - deterministic texture-memory and terrain frame-time estimates for the same
   chunk under legacy vs shared splat paths
 - distinct texture counts per map type

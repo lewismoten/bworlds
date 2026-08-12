@@ -6,6 +6,7 @@ import {
 } from './index.ts';
 import {
   compareTerrainSplatChunkPerformance,
+  compareTerrainRouteSplatPathPerformance,
   estimateTerrainSplatMaterialReuse,
 } from './performance-estimate.ts';
 import {
@@ -79,6 +80,60 @@ describe('terrain splat performance estimate', () => {
     );
     expect(comparison.reductions.programCount).toBeGreaterThan(0);
     expect(comparison.reductionRatios.programCount).toBeGreaterThan(0);
+  });
+
+  it('compares route splat roads against extra mesh-road draw calls', () => {
+    const { grid } = createComparisonFixture();
+
+    const comparison = compareTerrainRouteSplatPathPerformance({
+      grid,
+      routeLayerIds: ['dirt-road', 'gravel-road'],
+    });
+
+    expect(comparison.legacyMesh.routeCellCount).toBeGreaterThan(0);
+    expect(comparison.legacyMesh.drawCallCount).toBe(
+      comparison.legacyMesh.routeCellCount
+    );
+    expect(comparison.splat.drawCallCount).toBe(0);
+    expect(comparison.reductions.drawCallCount).toBeGreaterThan(0);
+    expect(comparison.reductionRatios.drawCallCount).toBe(1);
+  });
+
+  it('includes trail splat cells when comparing route overlay draw calls', () => {
+    const { grid } = createComparisonFixture({
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 3,
+      },
+      resolveKind: ({ x, y }) => ({
+        kind: y >= 2 ? 'path' : x >= 2 ? 'road' : 'plains',
+        signals: {
+          moisture: y >= 2 ? 0.46 : 0.52,
+          roadSignal: y >= 2 ? 0.12 : x >= 2 ? 0.84 : 0,
+          season: 'summer',
+          slope: 0.08,
+          temperature: 0.68,
+        },
+      }),
+    });
+
+    const comparison = compareTerrainRouteSplatPathPerformance({
+      grid,
+      routeLayerIds: [
+        'dirt-road',
+        'gravel-road',
+        'dirt-trail',
+        'gravel-trail',
+        'grass-trail',
+      ],
+    });
+
+    expect(comparison.legacyMesh.routeCellCount).toBeGreaterThan(0);
+    expect(comparison.legacyMesh.materialCount).toBeGreaterThan(0);
+    expect(comparison.reductions.programCount).toBeGreaterThan(0);
+    expect(comparison.reductions.estimatedFrameTimeMs).toBeGreaterThan(0);
   });
 
   it('reports shared splat material reuse across compatible chunks', () => {
@@ -279,6 +334,33 @@ function createComparisonFixture(
       defaultTint: '#8d897f',
       defaultRoughness: 0.72,
     },
+    {
+      id: 'dirt-trail',
+      baseColorTextureId: 'dirt-trail/base',
+      normalTextureId: 'dirt-trail/normal',
+      roughnessTextureId: 'dirt-trail/roughness',
+      textureScale: 3.2,
+      defaultTint: '#7d674d',
+      defaultRoughness: 0.79,
+    },
+    {
+      id: 'gravel-trail',
+      baseColorTextureId: 'gravel-trail/base',
+      normalTextureId: 'gravel-trail/normal',
+      roughnessTextureId: 'gravel-trail/roughness',
+      textureScale: 2.8,
+      defaultTint: '#90867b',
+      defaultRoughness: 0.76,
+    },
+    {
+      id: 'grass-trail',
+      baseColorTextureId: 'grass-trail/base',
+      normalTextureId: 'grass-trail/normal',
+      roughnessTextureId: 'grass-trail/roughness',
+      textureScale: 3.5,
+      defaultTint: '#739050',
+      defaultRoughness: 0.74,
+    },
   ]);
   const kindCatalog = createTerrainKindSplatCatalog(
     createOverworldTerrainSplatDefinitions({
@@ -293,6 +375,9 @@ function createComparisonFixture(
       snowLayerId: 'snow',
       dirtRoadLayerId: 'dirt-road',
       gravelRoadLayerId: 'gravel-road',
+      dirtTrailLayerId: 'dirt-trail',
+      gravelTrailLayerId: 'gravel-trail',
+      grassTrailLayerId: 'grass-trail',
     }),
     layerCatalog
   );
@@ -373,6 +458,15 @@ function createTextureResolver() {
     'gravel-road/base': createTextureSource('gravel-road/base'),
     'gravel-road/normal': createTextureSource('gravel-road/normal'),
     'gravel-road/roughness': createTextureSource('gravel-road/roughness'),
+    'dirt-trail/base': createTextureSource('dirt-trail/base'),
+    'dirt-trail/normal': createTextureSource('dirt-trail/normal'),
+    'dirt-trail/roughness': createTextureSource('dirt-trail/roughness'),
+    'gravel-trail/base': createTextureSource('gravel-trail/base'),
+    'gravel-trail/normal': createTextureSource('gravel-trail/normal'),
+    'gravel-trail/roughness': createTextureSource('gravel-trail/roughness'),
+    'grass-trail/base': createTextureSource('grass-trail/base'),
+    'grass-trail/normal': createTextureSource('grass-trail/normal'),
+    'grass-trail/roughness': createTextureSource('grass-trail/roughness'),
   } as const;
 
   return (textureId: string) =>

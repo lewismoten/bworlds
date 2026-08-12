@@ -46,6 +46,31 @@ export type TerrainSplatChunkPerformanceComparison = {
   };
 };
 
+export type TerrainRouteSplatPathPerformanceEstimate = {
+  routeCellCount: number;
+  drawCallCount: number;
+  materialCount: number;
+  programCount: number;
+  estimatedFrameTimeMs: number;
+};
+
+export type TerrainRouteSplatPathPerformanceComparison = {
+  legacyMesh: TerrainRouteSplatPathPerformanceEstimate;
+  splat: TerrainRouteSplatPathPerformanceEstimate;
+  reductions: {
+    drawCallCount: number;
+    materialCount: number;
+    programCount: number;
+    estimatedFrameTimeMs: number;
+  };
+  reductionRatios: {
+    drawCallCount: number;
+    materialCount: number;
+    programCount: number;
+    estimatedFrameTimeMs: number;
+  };
+};
+
 export type TerrainSplatChunkMaterialReuseEstimate = {
   chunkId: string;
   activeLayerIds: readonly TerrainMaterialLayerId[];
@@ -205,6 +230,81 @@ export function compareTerrainSplatChunkPerformance(
       ),
       estimatedFrameTimeMs: toReductionRatio(
         legacy.estimatedFrameTimeMs,
+        splat.estimatedFrameTimeMs
+      ),
+    },
+  };
+}
+
+export function compareTerrainRouteSplatPathPerformance(params: {
+  grid: TerrainSplatSampleGrid;
+  routeLayerIds: readonly TerrainMaterialLayerId[];
+}): TerrainRouteSplatPathPerformanceComparison {
+  const routeLayerIdSet = new Set(params.routeLayerIds);
+  const routeSignatures = new Set<string>();
+  let routeCellCount = 0;
+
+  for (const sample of params.grid.samples) {
+    const routeEntries = sample.entries
+      .filter((entry) => routeLayerIdSet.has(entry.layerId))
+      .sort((left, right) => left.layerId.localeCompare(right.layerId));
+    if (routeEntries.length === 0) {
+      continue;
+    }
+    routeCellCount += 1;
+    routeSignatures.add(
+      routeEntries
+        .map((entry) => `${entry.layerId}@${entry.weight.toFixed(3)}`)
+        .join('|')
+    );
+  }
+
+  const legacyMesh = {
+    routeCellCount,
+    drawCallCount: routeCellCount,
+    materialCount: routeSignatures.size,
+    programCount: routeSignatures.size,
+    estimatedFrameTimeMs: estimateTerrainFrameTimeMs({
+      drawCallCount: routeCellCount,
+      materialCount: routeSignatures.size,
+      textureBindingCount: routeSignatures.size,
+      cellCount: routeCellCount,
+    }),
+  } satisfies TerrainRouteSplatPathPerformanceEstimate;
+
+  const splat = {
+    routeCellCount,
+    drawCallCount: 0,
+    materialCount: 0,
+    programCount: 0,
+    estimatedFrameTimeMs: 0,
+  } satisfies TerrainRouteSplatPathPerformanceEstimate;
+
+  return {
+    legacyMesh,
+    splat,
+    reductions: {
+      drawCallCount: legacyMesh.drawCallCount - splat.drawCallCount,
+      materialCount: legacyMesh.materialCount - splat.materialCount,
+      programCount: legacyMesh.programCount - splat.programCount,
+      estimatedFrameTimeMs:
+        legacyMesh.estimatedFrameTimeMs - splat.estimatedFrameTimeMs,
+    },
+    reductionRatios: {
+      drawCallCount: toReductionRatio(
+        legacyMesh.drawCallCount,
+        splat.drawCallCount
+      ),
+      materialCount: toReductionRatio(
+        legacyMesh.materialCount,
+        splat.materialCount
+      ),
+      programCount: toReductionRatio(
+        legacyMesh.programCount,
+        splat.programCount
+      ),
+      estimatedFrameTimeMs: toReductionRatio(
+        legacyMesh.estimatedFrameTimeMs,
         splat.estimatedFrameTimeMs
       ),
     },
