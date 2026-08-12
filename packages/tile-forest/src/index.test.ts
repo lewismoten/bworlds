@@ -585,7 +585,7 @@ describe('tile forest', () => {
     expect(trunkMeshes).toHaveLength(0);
   });
 
-  it('uses background low-detail tree instances when reduced quality constrains a full-detail forest tile', () => {
+  it('collapses reduced-quality full-detail forest tiles entirely to background low-detail tree instances', () => {
     const tile = getForestTile();
     const state = createForestTestState();
     state.player.x = 8;
@@ -643,7 +643,7 @@ describe('tile forest', () => {
     });
 
     expect(reducedTreeGroups.length).toBeLessThan(defaultTreeGroups.length);
-    expect(reducedTreeGroups.length).toBeLessThanOrEqual(1);
+    expect(reducedTreeGroups).toHaveLength(0);
     expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
   });
 

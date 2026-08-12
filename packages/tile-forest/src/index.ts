@@ -1466,6 +1466,9 @@ function* createForestModelProgressive({
       renderQuality
     );
   }
+  if (fullDetailDescriptors.length === 0) {
+    return group;
+  }
 
   const firstTreeBatchCount = Math.ceil(fullDetailDescriptors.length / 2);
   const primaryTreeDescriptors = fullDetailDescriptors.slice(
@@ -4543,17 +4546,7 @@ function splitForestFullDetailTreeDescriptors(
   }
 
   const player = state?.player;
-  const dx = player ? tileX - player.x : 0;
-  const dy = player ? tileY - player.y : 0;
-  const distanceSquared = player ? dx * dx + dy * dy : 0;
-  const baseFullCount =
-    quality === 'minimal'
-      ? distanceSquared === 0
-        ? 1
-        : 0
-      : distanceSquared === 0
-        ? 1
-        : 0;
+  const baseFullCount = 0;
   const rankedDescriptors = [...descriptors].sort((left, right) => {
     const leftHistorical = getTreeHistoricalState(left).landmark ? 1 : 0;
     const rightHistorical = getTreeHistoricalState(right).landmark ? 1 : 0;
