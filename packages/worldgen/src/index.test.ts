@@ -957,6 +957,27 @@ describe('world generator', () => {
     });
   });
 
+  it('keeps player-facing runtime tile heights aligned with the shared terrain sampler', () => {
+    const runtime = createWorldRuntime({
+      seed: 'spec',
+      activateRegistry: false,
+    });
+    const { generator, state } = runtime;
+    const samples = [
+      { x: 10, y: 20 },
+      { x: -3, y: -3 },
+      { x: 0, y: 0 },
+    ];
+
+    for (const sample of samples) {
+      state.player.x = sample.x;
+      state.player.y = sample.y;
+      expect(state.getCurrentTile().surfaceHeight).toBe(
+        generator.sampleTerrainHeight(sample.x, sample.y)
+      );
+    }
+  });
+
   it('keeps preview sampling deterministic after bounded cache eviction churn', () => {
     const generator = createGenerator();
     const baselinePreviewKind = generator.samplePreviewSurfaceKind(10, 20);

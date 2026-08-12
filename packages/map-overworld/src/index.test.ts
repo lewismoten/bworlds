@@ -1,6 +1,88 @@
 import { describe, expect, it } from 'vitest';
 import { createOverworldCompositionPlugin } from './index.ts';
 
+describe('map overworld tile caching', () => {
+  it('keeps stateful decorated tile reads separate from stateless cached reads', () => {
+    const plugin = createOverworldCompositionPlugin();
+    const map = plugin.createMap?.({
+      seed: 'spec',
+      context: {
+        id: 'overworld',
+        label: 'Overworld',
+        type: 'overworld',
+        depth: 0,
+        origin: { x: 0, y: 0 },
+      },
+      plugins: {
+        getDefaultTileKind() {
+          return 'plains';
+        },
+        getTileDefinition(kind: string) {
+          return {
+            name: kind,
+            color: '#000',
+            miniColor: '#111',
+            walkable: true,
+            wallHeight: 0,
+          };
+        },
+        createWorldAction() {
+          return null;
+        },
+        classifyTerrainTile() {
+          return { kind: 'plains' };
+        },
+        classifyOverworldTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        decorateOverworldTile({
+          tile,
+          state,
+        }: {
+          tile: { kind: string; surfaceHeight?: number };
+          state?: unknown;
+        }) {
+          if (state) {
+            tile.surfaceHeight = 0.25;
+          }
+          return tile;
+        },
+        decorateTownTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        decorateBuildingTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        decorateDepthTile({ tile }: { tile: { kind: string } }) {
+          return tile;
+        },
+        resolveOverworldTile() {
+          return null;
+        },
+        resolveOverworldAnchors() {
+          return {
+            townAnchors: [],
+            bridgeAnchors: [],
+            poiAnchors: [],
+          };
+        },
+      } as never,
+    });
+    if (!map) {
+      throw new Error(
+        'Expected overworld map plugin to create an overworld map.'
+      );
+    }
+
+    expect(map.getTile(3, 4).surfaceHeight).toBeUndefined();
+    expect(
+      map.getTile(3, 4, {
+        player: { x: 3, y: 4, facing: 0 },
+      } as never).surfaceHeight
+    ).toBe(0.25);
+  });
+});
+
 describe('map overworld glider travel', () => {
   it('offers a glider action from mountain-adjacent high ground', () => {
     const plugin = createOverworldCompositionPlugin();

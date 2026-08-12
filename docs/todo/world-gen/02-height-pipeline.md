@@ -48,7 +48,7 @@
 - [ ] Log the plugin that caused an invalid height.
 - [x] Test deterministic height sampling.
 - [x] Test exact chunk border height equality.
-- [ ] Test player height against rendered terrain height.
+- [x] Test player height against rendered terrain height.
 
 Current support:
 
@@ -105,6 +105,12 @@ Current support:
   `sampleTerrainHeight(...)` behavior explicitly and verifies that adjacent
   chunk-border sample coordinates resolve exactly equal heights on both sides
   of east-west and south-north seams.
+- That same runtime test coverage now also verifies that the player-facing
+  state tile in `createWorldRuntime(...)` resolves the same `surfaceHeight` as
+  the shared `sampleTerrainHeight(...)` query at the active player position.
+- `map-overworld` now also keeps stateful tile-cache entries separate from
+  stateless reads and fills missing runtime `surfaceHeight` values from the
+  shared overworld relief function before caching the player-facing tile.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height

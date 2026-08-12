@@ -38,6 +38,7 @@ import {
   createContextMapPlugin,
   createEnterMapAction,
 } from '@bworlds/map-support';
+import { resolveOverworldReliefHeight } from '@bworlds/runtime-overworld-relief';
 import {
   composeOverworldTileFromPlugins,
   createOverworldTerrainSignalSampler,
@@ -82,7 +83,7 @@ function createOverworldMap(
     y: number,
     state?: WorldStateLike
   ): OverworldTile {
-    return composeOverworldTileFromPlugins({
+    const tile = composeOverworldTileFromPlugins({
       seed,
       x,
       y,
@@ -91,6 +92,13 @@ function createOverworldMap(
       initialTile: { kind: defaultTileKind },
       state,
     });
+    if (state && typeof tile.surfaceHeight !== 'number') {
+      tile.surfaceHeight = resolveOverworldReliefHeight(
+        sampleTerrainSignals(x, y).elevation,
+        tile
+      );
+    }
+    return tile;
   }
 
   function getTile(x: number, y: number, state?: WorldStateLike) {
@@ -104,7 +112,7 @@ function createOverworldMap(
       cache.clear();
       activeRevision = nextRevision;
     }
-    const key = `${x}:${y}`;
+    const key = `${x}:${y}:${state ? 'stateful' : 'stateless'}`;
     return cache.getOrCreate(key, () => classifyTile(x, y, state));
   }
 
