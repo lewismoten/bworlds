@@ -12,7 +12,7 @@
 
 - [x] Add a Mercator projection plugin.
 - [ ] Add a Transverse Mercator plugin.
-- [ ] Add a Miller cylindrical plugin.
+- [x] Add a Miller cylindrical plugin.
 - [ ] Add a generic conic projection plugin.
 - [ ] Add an Albers equal-area conic plugin.
 - [ ] Add an azimuthal projection plugin.
@@ -45,6 +45,10 @@ Current support:
   `createMercatorMapProjectionPlugin()`, which gives the map stack one
   concrete conformal projection with longitude wrapping, latitude clamping,
   and inverse projection support.
+- `@bworlds/map-support` now also exposes
+  `createMillerCylindricalMapProjectionPlugin()`, which gives the map stack a
+  less pole-stretched cylindrical option with full `±90` latitude support and
+  inverse projection support.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

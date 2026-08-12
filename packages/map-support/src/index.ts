@@ -16,6 +16,9 @@ export type * from './map-projections.ts';
 export {
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
+  createMillerCylindricalMapProjectionPlugin,
+  MILLER_MAX_PROJECTED_Y,
+  MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
 } from './map-projections.ts';
 

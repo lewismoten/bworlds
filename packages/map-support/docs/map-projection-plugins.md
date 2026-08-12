@@ -16,6 +16,7 @@ or globe plugins land.
 Current built-in support:
 
 - `createMercatorMapProjectionPlugin()`
+- `createMillerCylindricalMapProjectionPlugin()`
 
 ## Coordinate Contract
 
@@ -94,3 +95,24 @@ The projected range is normalized to:
 
 This gives later map UIs one stable starting projection before the rest of the
 projection catalog is implemented.
+
+## Miller Cylindrical
+
+`createMillerCylindricalMapProjectionPlugin()` provides a second built-in
+projection with gentler polar stretching than Mercator.
+
+It currently:
+
+- uses `id: 'miller-cylindrical'`
+- declares `distortion: 'compromise'`
+- wraps world X but not world Y
+- supports the full `±90` latitude range
+- supports inverse projection back to `worldX/worldY`
+
+The projected range is normalized to:
+
+- `mapX` within `-1..1` for `worldX` within `-180..180`
+- `mapY` within `-1..1` for `worldY` within `-90..90`
+
+This gives later map UIs one less pole-distorted cylindrical option while the
+rest of the projection catalog is still being built.

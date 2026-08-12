@@ -38,15 +38,16 @@ export interface MapProjectionPlugin {
   bounds: MapProjectionBounds;
   wrapping: MapProjectionWrapping;
   distortion: MapProjectionDistortion;
-  project(
-    coordinate: MapProjectionWorldCoordinate
-  ): MapProjectionMapCoordinate;
+  project(coordinate: MapProjectionWorldCoordinate): MapProjectionMapCoordinate;
   invert?(
     coordinate: MapProjectionMapCoordinate
   ): MapProjectionWorldCoordinate | null;
 }
 
 export const MERCATOR_MAX_WORLD_LATITUDE = 85.0511287798066;
+export const MILLER_MAX_WORLD_LATITUDE = 90;
+export const MILLER_MAX_PROJECTED_Y =
+  1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * degreesToRadians(90)));
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -133,18 +134,58 @@ export function createMercatorMapProjectionPlugin(): MapProjectionPlugin {
   });
 }
 
+export function createMillerCylindricalMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'miller-cylindrical',
+    label: 'Miller Cylindrical',
+    distortion: 'compromise',
+    bounds: {
+      minWorldX: -180,
+      maxWorldX: 180,
+      minWorldY: -MILLER_MAX_WORLD_LATITUDE,
+      maxWorldY: MILLER_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: true,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLatitude = clamp(
+        worldY,
+        -MILLER_MAX_WORLD_LATITUDE,
+        MILLER_MAX_WORLD_LATITUDE
+      );
+      const latitudeRadians = degreesToRadians(clampedLatitude);
+      return {
+        mapX: worldX / 180,
+        mapY: snapNearZero(
+          (1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * latitudeRadians))) /
+            MILLER_MAX_PROJECTED_Y
+        ),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedY = mapY * MILLER_MAX_PROJECTED_Y;
+      return {
+        worldX: mapX * 180,
+        worldY: radiansToDegrees(
+          (Math.atan(Math.exp(projectedY / 1.25)) - Math.PI / 4) / 0.4
+        ),
+      };
+    },
+  });
+}
+
 function normalizeMapProjectionWorldCoordinate(
   coordinate: MapProjectionWorldCoordinate
 ): MapProjectionWorldCoordinate {
   return {
-    worldX: normalizeFiniteNumber(
-      coordinate.worldX,
-      'Map projection worldX'
-    ),
-    worldY: normalizeFiniteNumber(
-      coordinate.worldY,
-      'Map projection worldY'
-    ),
+    worldX: normalizeFiniteNumber(coordinate.worldX, 'Map projection worldX'),
+    worldY: normalizeFiniteNumber(coordinate.worldY, 'Map projection worldY'),
   };
 }
 
@@ -197,14 +238,10 @@ function normalizeMapProjectionBounds(
   };
 
   if (normalized.minWorldX > normalized.maxWorldX) {
-    throw new Error(
-      'Map projection bounds minWorldX must be <= maxWorldX.'
-    );
+    throw new Error('Map projection bounds minWorldX must be <= maxWorldX.');
   }
   if (normalized.minWorldY > normalized.maxWorldY) {
-    throw new Error(
-      'Map projection bounds minWorldY must be <= maxWorldY.'
-    );
+    throw new Error('Map projection bounds minWorldY must be <= maxWorldY.');
   }
   if (normalized.minMapX > normalized.maxMapX) {
     throw new Error('Map projection bounds minMapX must be <= maxMapX.');

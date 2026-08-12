@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
+  createMillerCylindricalMapProjectionPlugin,
+  MILLER_MAX_PROJECTED_Y,
+  MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
 } from './map-projections.ts';
 
@@ -188,5 +191,38 @@ describe('map projections', () => {
     expect(inverted?.worldX).toBeCloseTo(90, 10);
     expect(inverted?.worldY).toBeCloseTo(45, 10);
     expect(MERCATOR_MAX_WORLD_LATITUDE).toBeCloseTo(85.0511287798066, 10);
+  });
+
+  it('projects and inverts Miller cylindrical coordinates across the full latitude range', () => {
+    const projection = createMillerCylindricalMapProjectionPlugin();
+
+    expect(projection.id).toBe('miller-cylindrical');
+    expect(projection.label).toBe('Miller Cylindrical');
+    expect(projection.distortion).toBe('compromise');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: true,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const northPole = projection.project({
+      worldX: 180,
+      worldY: 90,
+    });
+    expect(northPole.mapX).toBe(1);
+    expect(northPole.mapY).toBeCloseTo(1, 10);
+
+    const forward = projection.project({
+      worldX: -45,
+      worldY: 45,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(-45, 10);
+    expect(inverted?.worldY).toBeCloseTo(45, 10);
+    expect(MILLER_MAX_WORLD_LATITUDE).toBe(90);
+    expect(MILLER_MAX_PROJECTED_Y).toBeGreaterThan(0);
   });
 });
