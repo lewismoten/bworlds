@@ -4711,6 +4711,47 @@ describe('render3d visibility helpers', () => {
     ).toBeNull();
   });
 
+  it('treats shared-floor-only visible tiles as rendered without a fallback reason', () => {
+    expect(
+      getVisibleTileDebugInfoFromState(
+        new Map([
+          [
+            '4:-3',
+            {
+              tilePluginOwnerLabel: 'tile-plains',
+              requestedDetailLevel: 'full',
+              detailLevel: 'full',
+              fallbackReason: null,
+              modelRoot: null,
+              supportsModel: false,
+              sharedFloorInstance: {
+                kind: 'plains',
+                variant: 0,
+                tileX: 4,
+                tileY: -3,
+                surfaceHeight: 0.2,
+                thickness: 0.03,
+                tilePluginOwnerLabel: 'tile-plains',
+              },
+            },
+          ],
+        ]),
+        new Map(),
+        4,
+        -3
+      )
+    ).toEqual({
+      tileKey: '4:-3',
+      plugin: 'tile-plains',
+      requestedDetailLevel: 'full',
+      renderedDetailLevel: 'full',
+      cachedDetailLevel: null,
+      fallbackReason: null,
+      hasVisibleModel: true,
+      supportsModel: false,
+    });
+  });
+
   it('summarizes static matrix updates by visible tile plugin', () => {
     expect(
       summarizeVisibleTileStaticMatrixUpdatesByPlugin([

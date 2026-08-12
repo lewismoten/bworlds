@@ -2304,13 +2304,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     const finalSceneResourceStats = collectSceneResourceStats(tileNode);
     const finalUniqueTextures = collectUniqueObjectTextures(tileNode);
-    const fallbackReason = pluginModel
-      ? undefined
-      : getFallbackBoxReason(
-          lastRejectedSummary,
-          usedTilePluginModelFactory,
-          builtWallHeightFallback
-        );
+    const fallbackReason =
+      pluginModel || sharedFloorInstance
+        ? undefined
+        : getFallbackBoxReason(
+            lastRejectedSummary,
+            usedTilePluginModelFactory,
+            builtWallHeightFallback
+          );
 
     return {
       key,
@@ -4454,6 +4455,7 @@ export function getVisibleTileDebugInfoFromState(
       | 'fallbackReason'
       | 'modelRoot'
       | 'supportsModel'
+      | 'sharedFloorInstance'
     >
   >,
   lastSuccessfulVisibleTileDetailLevels: ReadonlyMap<
@@ -4486,7 +4488,7 @@ export function getVisibleTileDebugInfoFromState(
     renderedDetailLevel: entry?.detailLevel ?? null,
     cachedDetailLevel,
     fallbackReason: entry?.fallbackReason ?? null,
-    hasVisibleModel: Boolean(entry?.modelRoot),
+    hasVisibleModel: Boolean(entry?.modelRoot || entry?.sharedFloorInstance),
     supportsModel:
       typeof entry?.supportsModel === 'boolean' ? entry.supportsModel : null,
   };
