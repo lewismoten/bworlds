@@ -143,7 +143,7 @@
 
 ## Chunk Generation
 
-- [ ] Generate splat weights while building terrain chunks.
+- [x] Generate splat weights while building terrain chunks.
 - [x] Keep splat generation separate from mesh creation.
 - [x] Generate weight data in workers where practical.
 - [x] Transfer compact splat buffers to the main thread.
@@ -338,6 +338,9 @@
 - Added `@bworlds/terrain-splat-support/chunk-cache` so chunk splat data can
   reuse one bounded cache keyed to terrain state, ignore camera-only movement,
   and rebuild only when the serialized chunk inputs or terrain revision change.
+- Added `@bworlds/terrain-splat-support/chunk-build` so terrain chunk builders
+  can generate packed splat weights through one cache-aware entry point without
+  coupling splat generation to mesh creation.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
