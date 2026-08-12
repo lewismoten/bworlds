@@ -64,6 +64,11 @@ Current support:
   grid, east/south seam diagnostics, sampled seam-height deltas, and wireframe
   SVG without waiting for the full live terrain chunk renderer to replace the
   main world floor path; see `docs/terrain-chunk-debug-page.md`.
+- That debug page now also compares each logical `16x16` tile cell against the
+  shared terrain-preview dominant layer category and reports parity matches
+  versus mismatches, which gives Phase 1 one explicit inspection path toward
+  verifying that the 2D tile map still represents the same terrain story as
+  the future shared 3D chunk surface.
 - `@bworlds/terrain-splat-support/height-field` now emits seam-safe vertex
   normals from the shared world-space height samples and keeps reduced-LOD
   index buffers aligned to the actual vertex grid, so chunk renderers can reuse

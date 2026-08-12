@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { OverworldSignals } from '@bworlds/plugin-api';
 import {
   resolveTerrainPreviewBiomeId,
+  resolveTerrainPreviewParity,
   resolveTerrainPreviewReadout,
   resolveTerrainPreviewReadoutFromSignals,
 } from './terrain-preview-readout.ts';
@@ -87,5 +88,33 @@ describe('terrain preview readout', () => {
     expect(first).toEqual(second);
     expect(first.biomeId.length).toBeGreaterThan(0);
     expect(first.dominantLayerId).not.toBeNull();
+  });
+
+  it('reports whether a logical tile kind stays compatible with the preview dominant layer', () => {
+    expect(
+      resolveTerrainPreviewParity({
+        kind: 'forest',
+        dominantLayerId: 'soil',
+      })
+    ).toEqual(
+      expect.objectContaining({
+        kindCategory: 'vegetation',
+        layerCategory: 'plain',
+        matches: true,
+      })
+    );
+
+    expect(
+      resolveTerrainPreviewParity({
+        kind: 'road',
+        dominantLayerId: 'grass-a',
+      })
+    ).toEqual(
+      expect.objectContaining({
+        kindCategory: 'route',
+        layerCategory: 'vegetation',
+        matches: false,
+      })
+    );
   });
 });

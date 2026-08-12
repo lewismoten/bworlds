@@ -15,6 +15,24 @@ export type TerrainPreviewReadout = {
   dominantLayerId: TerrainMaterialLayerId | null;
 };
 
+export type TerrainPreviewParityCategory =
+  | 'water'
+  | 'shore'
+  | 'vegetation'
+  | 'plain'
+  | 'rock'
+  | 'route'
+  | 'cave'
+  | 'settlement'
+  | 'unknown';
+
+export type TerrainPreviewParity = {
+  kindCategory: TerrainPreviewParityCategory;
+  layerCategory: TerrainPreviewParityCategory;
+  matches: boolean;
+  reason: string;
+};
+
 const terrainSignalSamplerCache = new Map<
   string,
   ReturnType<typeof createOverworldTerrainSignalSampler>
@@ -320,6 +338,128 @@ export function resolveTerrainPreviewLayerEntry(
   return layerId
     ? (TERRAIN_PREVIEW_LAYER_CATALOG.byId.get(layerId) ?? null)
     : null;
+}
+
+export function resolveTerrainPreviewKindCategory(
+  kind: Kind
+): TerrainPreviewParityCategory {
+  const normalized = kind.trim().toLowerCase();
+  if (
+    normalized === 'ocean' ||
+    normalized === 'river' ||
+    normalized === 'water'
+  ) {
+    return 'water';
+  }
+  if (
+    normalized === 'shore' ||
+    normalized === 'sand' ||
+    normalized === 'dock' ||
+    normalized === 'ship'
+  ) {
+    return 'shore';
+  }
+  if (
+    normalized === 'road' ||
+    normalized === 'bridge' ||
+    normalized === 'rail' ||
+    normalized.includes('trail')
+  ) {
+    return 'route';
+  }
+  if (
+    normalized === 'forest' ||
+    normalized === 'swamp' ||
+    normalized.includes('wood')
+  ) {
+    return 'vegetation';
+  }
+  if (
+    normalized === 'mountain' ||
+    normalized === 'quarry' ||
+    normalized === 'ice' ||
+    normalized === 'snow'
+  ) {
+    return 'rock';
+  }
+  if (
+    normalized === 'cave' ||
+    normalized === 'dungeon' ||
+    normalized.startsWith('cave-')
+  ) {
+    return 'cave';
+  }
+  if (
+    normalized === 'town' ||
+    normalized === 'station' ||
+    normalized === 'building'
+  ) {
+    return 'settlement';
+  }
+  if (
+    normalized === 'plains' ||
+    normalized === 'floor' ||
+    normalized === 'interior'
+  ) {
+    return 'plain';
+  }
+  return 'unknown';
+}
+
+export function resolveTerrainPreviewLayerCategory(
+  layerId: TerrainMaterialLayerId | null
+): TerrainPreviewParityCategory {
+  if (!layerId) {
+    return 'unknown';
+  }
+  if (layerId.startsWith('road-') || layerId.startsWith('trail-')) {
+    return 'route';
+  }
+  if (
+    layerId === 'grass-a' ||
+    layerId === 'grass-b' ||
+    layerId === 'leaf' ||
+    layerId === 'mud'
+  ) {
+    return 'vegetation';
+  }
+  if (layerId === 'soil' || layerId === 'dirt' || layerId === 'gravel') {
+    return 'plain';
+  }
+  if (layerId === 'sand') {
+    return 'shore';
+  }
+  if (layerId === 'rock' || layerId === 'snow') {
+    return 'rock';
+  }
+  return 'unknown';
+}
+
+export function resolveTerrainPreviewParity(params: {
+  kind: Kind;
+  dominantLayerId: TerrainMaterialLayerId | null;
+}): TerrainPreviewParity {
+  const kindCategory = resolveTerrainPreviewKindCategory(params.kind);
+  const layerCategory = resolveTerrainPreviewLayerCategory(
+    params.dominantLayerId
+  );
+  const matches =
+    kindCategory === layerCategory ||
+    (kindCategory === 'vegetation' && layerCategory === 'plain') ||
+    (kindCategory === 'plain' && layerCategory === 'vegetation') ||
+    (kindCategory === 'shore' && layerCategory === 'plain') ||
+    (kindCategory === 'settlement' && layerCategory === 'plain') ||
+    (kindCategory === 'cave' && layerCategory === 'rock') ||
+    (kindCategory === 'water' && layerCategory === 'shore');
+
+  return {
+    kindCategory,
+    layerCategory,
+    matches,
+    reason: matches
+      ? `${kindCategory} tile remains compatible with ${layerCategory} terrain`
+      : `${kindCategory} tile diverges from ${layerCategory} terrain`,
+  };
 }
 
 function resolveNaturalTerrainPreviewBiomeId(

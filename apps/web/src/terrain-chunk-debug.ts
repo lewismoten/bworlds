@@ -20,6 +20,7 @@ import {
 } from '@bworlds/worldgen';
 import {
   getTerrainPreviewSignalSampler,
+  resolveTerrainPreviewParity,
   resolveTerrainPreviewBiomeId,
   TERRAIN_PREVIEW_KIND_CATALOG,
   TERRAIN_PREVIEW_LAYER_CATALOG,
@@ -37,10 +38,14 @@ export type TerrainChunkDebugOptions = {
 export type TerrainChunkDebugCell = {
   column: number;
   row: number;
+  tileKind: string;
+  biomeId: string;
   colorHex: string;
   dominantLayerId: string | null;
   dominantWeightPercent: string;
   activeLayerIds: readonly string[];
+  parityMatches: boolean;
+  parityReason: string;
 };
 
 export type TerrainChunkDebugSeamSummary = {
@@ -67,6 +72,9 @@ export type TerrainChunkDebugSnapshot = {
   dominantLayerId: string | null;
   cellCount: number;
   chunkCells: readonly TerrainChunkDebugCell[];
+  logicalTileCellCount: number;
+  parityMatchCount: number;
+  parityMismatchCount: number;
   heightRange: {
     min: number;
     max: number;
@@ -166,14 +174,38 @@ export function createTerrainChunkDebugSnapshot(
     catalog: TERRAIN_PREVIEW_LAYER_CATALOG,
     routeLayerIds: TERRAIN_PREVIEW_ROUTE_LAYER_IDS,
   });
-  const chunkCells = gridDebug.view.cells.map((cell) => ({
-    column: cell.column,
-    row: cell.row,
-    colorHex: cell.colorHex,
-    dominantLayerId: cell.dominantLayerId,
-    dominantWeightPercent: `${Math.round(cell.dominantWeight * 100)}%`,
-    activeLayerIds: cell.activeLayerIds,
-  }));
+  const chunkCells = gridDebug.view.cells.map((cell) => {
+    const tileKind = generator.samplePreviewSurfaceKind(
+      currentBounds.minX + cell.column,
+      currentBounds.minY + cell.row
+    );
+    const signalsAtTile = terrainSignals(
+      currentBounds.minX + cell.column,
+      currentBounds.minY + cell.row
+    );
+    const biomeId = resolveTerrainPreviewBiomeId(tileKind, signalsAtTile);
+    const parity = resolveTerrainPreviewParity({
+      kind: tileKind,
+      dominantLayerId: cell.dominantLayerId,
+    });
+    return {
+      column: cell.column,
+      row: cell.row,
+      tileKind,
+      biomeId,
+      colorHex: cell.colorHex,
+      dominantLayerId: cell.dominantLayerId,
+      dominantWeightPercent: `${Math.round(cell.dominantWeight * 100)}%`,
+      activeLayerIds: cell.activeLayerIds,
+      parityMatches: parity.matches,
+      parityReason: parity.reason,
+    };
+  });
+  const logicalTileCells = chunkCells.filter(
+    (cell) =>
+      cell.column < snapshotCellSpan(currentBounds) &&
+      cell.row < snapshotCellSpan(currentBounds)
+  );
   const seamSummaries: TerrainChunkDebugSeamSummary[] = [
     createSeamSummary({
       edge: 'east',
@@ -201,6 +233,11 @@ export function createTerrainChunkDebugSnapshot(
     dominantLayerId: resolveDominantLayerId(chunkCells),
     cellCount: chunkCells.length,
     chunkCells,
+    logicalTileCellCount: logicalTileCells.length,
+    parityMatchCount: logicalTileCells.filter((cell) => cell.parityMatches)
+      .length,
+    parityMismatchCount: logicalTileCells.filter((cell) => !cell.parityMatches)
+      .length,
     heightRange: {
       min: Math.min(...heights),
       max: Math.max(...heights),
@@ -226,9 +263,30 @@ export function buildTerrainChunkDebugMarkup(
         <div
           class="terrain-chunk-debug-grid-cell"
           style="background:${cell.colorHex}"
-          title="(${cell.column}, ${cell.row}) ${escapeHtml(cell.dominantLayerId ?? 'none')} ${escapeHtml(cell.dominantWeightPercent)}"
+          title="(${cell.column}, ${cell.row}) ${escapeHtml(cell.tileKind)} -> ${escapeHtml(cell.dominantLayerId ?? 'none')} ${escapeHtml(cell.dominantWeightPercent)}"
         >
           <span>${escapeHtml(cell.dominantLayerId ?? 'none')}</span>
+        </div>
+      `
+    )
+    .join('');
+  const logicalTileGridMarkup = snapshot.chunkCells
+    .filter(
+      (cell) =>
+        cell.column <
+          snapshot.chunkBounds.maxX - snapshot.chunkBounds.minX + 1 &&
+        cell.row < snapshot.chunkBounds.maxY - snapshot.chunkBounds.minY + 1
+    )
+    .map(
+      (cell) => `
+        <div
+          class="terrain-chunk-debug-grid-cell terrain-chunk-debug-grid-cell-${
+            cell.parityMatches ? 'match' : 'mismatch'
+          }"
+          style="background:${cell.parityMatches ? '#163323' : '#4a1616'}"
+          title="(${cell.column}, ${cell.row}) ${escapeHtml(cell.tileKind)} / ${escapeHtml(cell.biomeId)} -> ${escapeHtml(cell.dominantLayerId ?? 'none')} (${escapeHtml(cell.parityReason)})"
+        >
+          <span>${escapeHtml(cell.tileKind)}</span>
         </div>
       `
     )
@@ -314,6 +372,9 @@ export function buildTerrainChunkDebugMarkup(
             <div><dt>Border Segments</dt><dd>${snapshot.wireframe.borderSegmentCount}</dd></div>
             <div><dt>Height Range</dt><dd>${formatNumber(snapshot.heightRange.min)}..${formatNumber(snapshot.heightRange.max)}</dd></div>
             <div><dt>Dominant Layer</dt><dd>${escapeHtml(snapshot.dominantLayerId ?? 'none')}</dd></div>
+            <div><dt>Logical Tiles</dt><dd>${snapshot.logicalTileCellCount}</dd></div>
+            <div><dt>Parity Matches</dt><dd>${snapshot.parityMatchCount}</dd></div>
+            <div><dt>Parity Mismatches</dt><dd>${snapshot.parityMismatchCount}</dd></div>
           </dl>
           <p class="terrain-chunk-debug-note">
             Active layers: ${escapeHtml(snapshot.activeLayerIds.join(', ') || 'none')}
@@ -324,6 +385,15 @@ export function buildTerrainChunkDebugMarkup(
           <div class="terrain-chunk-debug-grid" style="grid-template-columns: repeat(${snapshot.sampleBounds.maxX - snapshot.sampleBounds.minX + 1}, minmax(0, 1fr));">
             ${chunkGridMarkup}
           </div>
+        </article>
+        <article class="terrain-chunk-debug-card">
+          <h2>Logical Tile Parity</h2>
+          <div class="terrain-chunk-debug-grid" style="grid-template-columns: repeat(${snapshot.chunkBounds.maxX - snapshot.chunkBounds.minX + 1}, minmax(0, 1fr));">
+            ${logicalTileGridMarkup}
+          </div>
+          <p class="terrain-chunk-debug-note">
+            Green cells stay broadly compatible with the shared terrain preview category. Red cells show where the logical tile kind and dominant terrain layer drift apart.
+          </p>
         </article>
       </section>
       <section class="terrain-chunk-debug-grid-layout">
@@ -495,6 +565,10 @@ function resolveDominantLayerId(
     }
   }
   return dominant;
+}
+
+function snapshotCellSpan(bounds: TerrainChunkHeightSampleBounds): number {
+  return bounds.maxX - bounds.minX;
 }
 
 function buildWireframeSvg(snapshot: TerrainChunkDebugSnapshot): string {

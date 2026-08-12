@@ -15,6 +15,8 @@ Current responsibilities:
 - derive one chunk wireframe view from the shared terrain geometry plan
 - compare east and south neighbor chunk seams using the shared seam analyzer
 - show the dominant splat layer grid before a live material/shader path exists
+- compare the `16x16` logical tile mix against the shared terrain-preview
+  interpretation so 2D-versus-3D parity drift can be inspected explicitly
 
 Current limits:
 
