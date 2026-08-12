@@ -25,6 +25,11 @@ Progressive loading:
 - Reduced-quality forest keeps low-detail trunk silhouettes on every visible
   remaining forest tile so grounded trees remain readable even after the
   background subset is thinned aggressively.
+- Non-empty low-detail forest tiles now use that low-detail trunk
+  `InstancedMesh` as the tile root, and non-empty full-detail forest tiles now
+  also promote one existing tree instance batch to the tile root. That removes
+  one otherwise empty wrapper `Group` from the common forest path without
+  changing any of the world-space tree matrices or close-detail attachments.
 - Reduced-quality full-detail forest tiles now also stop building the last
   player-tile full-detail tree and return after the low-detail canopy path, so
   reduced quality no longer spends progressive tree work on the foreground

@@ -410,7 +410,11 @@ low` visible recovery, and full-detail `tile-sign` tiles now use their post
       the tile root and attach the mouth-void and tunnel-back meshes beneath it
       instead of wrapping all three pieces in a dedicated `Group`, which
       removes one static `Object3D` from each reduced-quality cave entrance
-      without changing the silhouette.
+      without changing the silhouette, and non-empty `tile-forest` models now
+      also promote an existing tree instanced batch to the tile root instead of
+      returning a dedicated wrapper group, which removes one static
+      `Object3D` from the common forest path without changing any world-space
+      tree matrices or close-detail attachments.
 
 ## LOD Stability
 

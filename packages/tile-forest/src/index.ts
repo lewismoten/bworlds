@@ -1448,7 +1448,7 @@ function* createForestModelProgressive({
       descriptors,
       renderQuality
     );
-    return group;
+    return collapseForestTileRoot(group);
   }
 
   const { fullDetailDescriptors, backgroundInstanceDescriptors } =
@@ -1477,7 +1477,7 @@ function* createForestModelProgressive({
     );
   }
   if (fullDetailDescriptors.length === 0) {
-    return group;
+    return collapseForestTileRoot(group);
   }
 
   const firstTreeBatchCount = Math.ceil(fullDetailDescriptors.length / 2);
@@ -1979,7 +1979,44 @@ function* createForestModelProgressive({
     label: 'close-effects',
   };
 
-  return group;
+  return collapseForestTileRoot(group);
+}
+
+function collapseForestTileRoot(group: ThreeObject3DLike): ThreeObject3DLike {
+  const rootChildren = Array.isArray(
+    (group as { children?: ThreeObject3DLike[] }).children
+  )
+    ? (((group as { children?: ThreeObject3DLike[] }).children ??
+        []) as ThreeObject3DLike[])
+    : [];
+  if (rootChildren.length === 0) {
+    return group;
+  }
+
+  const preferredRoot =
+    rootChildren.find(
+      (child) => child.userData?.forestTreeLowDetailInstancedPart === 'trunk'
+    ) ??
+    rootChildren.find(
+      (child) => child.userData?.forestTreeTrunkInstanced === true
+    ) ??
+    rootChildren.find(
+      (child) => child.userData?.forestTreeBranchInstanced === true
+    ) ??
+    rootChildren.find(
+      (child) => child.userData?.forestTreeFoliageInstanced === true
+    ) ??
+    rootChildren[0];
+  if (!preferredRoot) {
+    return group;
+  }
+
+  rootChildren.forEach((child) => {
+    if (child !== preferredRoot) {
+      preferredRoot.add(child);
+    }
+  });
+  return preferredRoot;
 }
 
 function addForestFullDetailTree(

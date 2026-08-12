@@ -200,6 +200,26 @@ describe('tile forest', () => {
     ).toBe(true);
   });
 
+  it('uses the low-detail trunk instanced mesh as the forest root instead of a wrapper group', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const lowModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'low',
+    }) as FakeNode;
+
+    expect(lowModel).toBeInstanceOf(FakeInstancedMesh);
+    expect(lowModel.userData?.forestTreeLowDetailInstancedPart).toBe('trunk');
+    expect(
+      lowModel.children.every((node) => node instanceof FakeInstancedMesh)
+    ).toBe(true);
+  });
+
   it('keeps the low-detail forest material set within a small shared budget', () => {
     const tile = getForestTile();
     const state = createForestTestState();
@@ -347,16 +367,11 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    const instancedTrunks = lowModel.children.filter(
-      (child) =>
-        child instanceof FakeInstancedMesh &&
-        child.userData?.forestTreeLowDetailInstancedPart === 'trunk'
-    ) as FakeInstancedMesh[];
-    const instancedCanopies = lowModel.children.filter(
-      (child) =>
-        child instanceof FakeInstancedMesh &&
-        child.userData?.forestTreeLowDetailInstancedPart === 'canopy'
-    ) as FakeInstancedMesh[];
+    const instancedTrunks = collectLowDetailForestPartMeshes(lowModel, 'trunk');
+    const instancedCanopies = collectLowDetailForestPartMeshes(
+      lowModel,
+      'canopy'
+    );
 
     expect(instancedTrunks).toHaveLength(1);
     expect(instancedCanopies.length).toBeGreaterThan(1);
@@ -901,6 +916,26 @@ describe('tile forest', () => {
     expect(treeWrapperGroups).toHaveLength(0);
   });
 
+  it('uses an instanced tree batch as the full-detail forest root instead of a wrapper group', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const model = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeNode;
+
+    expect(model).toBeInstanceOf(FakeInstancedMesh);
+    expect(
+      model.userData?.forestTreeTrunkInstanced === true ||
+        model.userData?.forestTreeBranchInstanced === true
+    ).toBe(true);
+  });
+
   it('batches full-detail tree trunk segments into instanced meshes', () => {
     const tile = getForestTile();
     const state = createForestTestState();
@@ -1126,16 +1161,14 @@ describe('tile forest', () => {
       },
     }) as FakeGroup;
 
-    const instancedTrunks = reducedLowModel.children.filter(
-      (child) =>
-        child instanceof FakeInstancedMesh &&
-        child.userData?.forestTreeLowDetailInstancedPart === 'trunk'
+    const instancedTrunks = collectLowDetailForestPartMeshes(
+      reducedLowModel,
+      'trunk'
     );
-    const instancedCanopies = reducedLowModel.children.filter(
-      (child) =>
-        child instanceof FakeInstancedMesh &&
-        child.userData?.forestTreeLowDetailInstancedPart === 'canopy'
-    ) as FakeInstancedMesh[];
+    const instancedCanopies = collectLowDetailForestPartMeshes(
+      reducedLowModel,
+      'canopy'
+    );
 
     expect(instancedTrunks).toHaveLength(1);
     expect(instancedCanopies).toHaveLength(1);
@@ -1700,6 +1733,22 @@ function collectForestSampledMaterials(
   }
 
   return materials;
+}
+
+function collectLowDetailForestPartMeshes(
+  root: FakeNode | undefined,
+  part: 'trunk' | 'canopy'
+): FakeInstancedMesh[] {
+  const meshes: FakeInstancedMesh[] = [];
+  root?.traverse((node) => {
+    if (
+      node instanceof FakeInstancedMesh &&
+      node.userData?.forestTreeLowDetailInstancedPart === part
+    ) {
+      meshes.push(node);
+    }
+  });
+  return meshes;
 }
 
 function collectTreeInstanceColors(model: FakeGroup): {
