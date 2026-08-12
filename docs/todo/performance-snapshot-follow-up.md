@@ -58,7 +58,7 @@
 
 - [ ] Remove unnecessary one-child groups from scene models.
 - [ ] Investigate the 106 groups containing only one child.
-- [ ] Report one-child group counts by plugin.
+- [x] Report one-child group counts by plugin.
 - [ ] Flatten groups that provide no transform or semantic value.
 - [ ] Investigate the 656 static objects using matrix auto-update.
 - [ ] Disable matrix auto-update for truly static objects.

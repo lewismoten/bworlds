@@ -78,7 +78,6 @@ import {
   parseSavedSession,
   serializeSessionSnapshot,
 } from './session-state.ts';
-import { installDeferredClientErrorSnapshotReporter } from './client-error-snapshot-loader.ts';
 import { createTeleportPin, normalizeTeleportPins } from './teleport-pins.ts';
 import {
   AUDIO_CATEGORIES,
@@ -140,18 +139,13 @@ import {
   getDebugSignature,
   normalizeWorldSeed,
 } from './debug-panel.ts';
-import {
-  buildDebugSnapshotExport,
-  formatDebugSnapshotFilename,
-  type DebugSnapshotRecentEvent,
-} from './debug-snapshot.ts';
+import { type DebugSnapshotRecentEvent } from './debug-snapshot.ts';
 import {
   collectMergedRecentDebugEvents,
   formatRecentDebugEventReason,
   getMostRecentDebugEventByType,
 } from './recent-debug-events.ts';
 import { shouldCollectDebugSnapshot } from './debug-sampling.ts';
-import { collectGraphicsCapabilities } from './graphics-capabilities.ts';
 import {
   findRandomTileDestination,
   listTileTeleportOptions,
@@ -1449,11 +1443,15 @@ let runtimePerformanceIssueReporterPromise: Promise<
       | null
   ) => Promise<boolean>
 > | null = null;
-installDeferredClientErrorSnapshotReporter({
-  tracking: () => runtimePerformanceTrackingState,
-  eventTarget: window,
-  abortSignal: pageLifecycleSignal,
-});
+void import('./client-error-snapshot-loader.ts').then(
+  ({ installDeferredClientErrorSnapshotReporter }) => {
+    installDeferredClientErrorSnapshotReporter({
+      tracking: () => runtimePerformanceTrackingState,
+      eventTarget: window,
+      abortSignal: pageLifecycleSignal,
+    });
+  }
+);
 function getAudioCategoryVolume(category: AudioCategory): number {
   return audioPreferenceState.categoryVolumes[category];
 }
@@ -2528,6 +2526,8 @@ function collectCurrentDebugSnapshot(
     staticMatrixUpdateTopPluginLabel:
       rendererStats.staticMatrixUpdateTopPluginLabel,
     staticMatrixUpdateSummary: rendererStats.staticMatrixUpdateSummary,
+    oneChildGroupTopPluginLabel: rendererStats.oneChildGroupTopPluginLabel,
+    oneChildGroupSummary: rendererStats.oneChildGroupSummary,
     object3dCount: rendererStats.object3dCount,
     visibleObjectCount: rendererStats.visibleObjectCount,
     invisibleObjectCount: rendererStats.invisibleObjectCount,
@@ -2769,7 +2769,14 @@ function getDecreasingLimitStatus(
   return 'ok';
 }
 
-function downloadCurrentDebugSnapshot(): void {
+async function downloadCurrentDebugSnapshot(): Promise<void> {
+  const [
+    { buildDebugSnapshotExport, formatDebugSnapshotFilename },
+    { collectGraphicsCapabilities },
+  ] = await Promise.all([
+    import('./debug-snapshot.ts'),
+    import('./graphics-capabilities.ts'),
+  ]);
   const nowMs = performance.now();
   const latestSnapshot = collectCurrentDebugSnapshot(
     nowMs,

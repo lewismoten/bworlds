@@ -368,6 +368,8 @@ type Render3DController = {
     clonedMaterialSummary: string;
     staticMatrixUpdateTopPluginLabel: string;
     staticMatrixUpdateSummary: string;
+    oneChildGroupTopPluginLabel: string;
+    oneChildGroupSummary: string;
     object3dCount: number;
     visibleObjectCount: number;
     invisibleObjectCount: number;
@@ -970,6 +972,7 @@ type DynamicTileNode = {
   visibleMeshCount: number;
   visibleInstancedMeshCount: number;
   renderedInstanceCount: number;
+  oneChildGroupCount?: number;
   staticMatrixAutoUpdateCount?: number;
   materialCount: number;
   clonedMaterialCount?: number;
@@ -2287,6 +2290,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       visibleInstancedMeshCount:
         finalSceneResourceStats.visibleInstancedMeshCount,
       renderedInstanceCount: finalSceneResourceStats.renderedInstanceCount,
+      oneChildGroupCount: finalSceneResourceStats.oneChildGroupCount,
       staticMatrixAutoUpdateCount:
         finalSceneResourceStats.staticMatrixAutoUpdateCount,
       materialCount: finalSceneResourceStats.materialCount,
@@ -2995,6 +2999,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       summarizeVisibleTileStaticMatrixUpdatesByPlugin(
         visibleTileNodes.values()
       );
+    const visibleTileOneChildGroupStats =
+      summarizeVisibleTileOneChildGroupsByPlugin(visibleTileNodes.values());
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -3061,6 +3067,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       staticMatrixUpdateTopPluginLabel:
         visibleTileStaticMatrixUpdateStats.topLabel,
       staticMatrixUpdateSummary: visibleTileStaticMatrixUpdateStats.summary,
+      oneChildGroupTopPluginLabel: visibleTileOneChildGroupStats.topLabel,
+      oneChildGroupSummary: visibleTileOneChildGroupStats.summary,
       object3dCount: sceneResourceStats.object3dCount,
       visibleObjectCount: sceneResourceStats.visibleObjectCount,
       invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
@@ -5747,6 +5755,19 @@ export function summarizeVisibleTileStaticMatrixUpdatesByPlugin(
   };
 }
 
+export function summarizeVisibleTileOneChildGroupsByPlugin(
+  entries: Iterable<
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'oneChildGroupCount'>
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(entries, 'oneChildGroupCount');
+}
+
 function summarizeVisibleTileCountByPlugin<
   K extends keyof Pick<
     DynamicTileNode,
@@ -5756,6 +5777,7 @@ function summarizeVisibleTileCountByPlugin<
     | 'renderedInstanceCount'
     | 'materialCount'
     | 'clonedMaterialCount'
+    | 'oneChildGroupCount'
     | 'drawCallCount'
   >,
 >(

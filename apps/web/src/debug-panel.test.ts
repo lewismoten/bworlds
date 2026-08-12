@@ -99,6 +99,8 @@ describe('debug panel', () => {
       clonedMaterialSummary: 'tile-forest:3, tile-town:1',
       staticMatrixUpdateTopPluginLabel: 'tile-forest',
       staticMatrixUpdateSummary: 'tile-forest:9, tile-town:6',
+      oneChildGroupTopPluginLabel: 'tile-forest',
+      oneChildGroupSummary: 'tile-forest:11, tile-town:7',
       lastLodFailureReason:
         '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
       lastFallbackReason: '15:-9 / tile-forest: low failed',
@@ -158,6 +160,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Mesh Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Unique Material Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Cloned Material Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('One-Child Group Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('One-Child Group Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Avg FPS');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Full Tile Build');
     expect(buildDebugMarkup(snapshot)).toContain('Avg Low Tile Build');

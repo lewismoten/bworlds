@@ -68,6 +68,8 @@ export type DebugSnapshot = {
   clonedMaterialSummary?: string;
   staticMatrixUpdateTopPluginLabel?: string;
   staticMatrixUpdateSummary?: string;
+  oneChildGroupTopPluginLabel?: string;
+  oneChildGroupSummary?: string;
   latestQualityChangeLimiter?: string;
   latestQualityChangeSummary?: string;
   reducedQualityDurationSec?: number;
@@ -287,6 +289,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.clonedMaterialSummary ?? '',
     snapshot.staticMatrixUpdateTopPluginLabel ?? '',
     snapshot.staticMatrixUpdateSummary ?? '',
+    snapshot.oneChildGroupTopPluginLabel ?? '',
+    snapshot.oneChildGroupSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
     snapshot.lastFallbackReason ?? '',
     snapshot.currentTilePlugin ?? '',
@@ -474,6 +478,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Fallback Summary</dt><dd>${snapshot.fallbackBoxSummary || 'None'}</dd></div>
     <div><dt>Static Matrix Plugin</dt><dd>${snapshot.staticMatrixUpdateTopPluginLabel || 'None'}</dd></div>
     <div><dt>Static Matrix Summary</dt><dd>${snapshot.staticMatrixUpdateSummary || 'None'}</dd></div>
+    <div><dt>One-Child Group Plugin</dt><dd>${snapshot.oneChildGroupTopPluginLabel || 'None'}</dd></div>
+    <div><dt>One-Child Group Summary</dt><dd>${snapshot.oneChildGroupSummary || 'None'}</dd></div>
     <div><dt>Last LOD Failure</dt><dd>${snapshot.lastLodFailureReason || 'None'}</dd></div>
     <div><dt>Fallback Reason</dt><dd>${snapshot.lastFallbackReason || 'None'}</dd></div>
     <div><dt>Current Tile Plugin</dt><dd>${snapshot.currentTilePlugin || 'None'}</dd></div>
