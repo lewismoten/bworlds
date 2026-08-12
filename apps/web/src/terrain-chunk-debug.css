@@ -1,0 +1,191 @@
+.terrain-chunk-debug-shell {
+  min-height: 100vh;
+  padding: 32px;
+  color: #e5e7eb;
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 30%),
+    linear-gradient(180deg, #08111f 0%, #0f172a 100%);
+  font:
+    16px/1.5 'Iowan Old Style',
+    'Palatino Linotype',
+    'Book Antiqua',
+    Palatino,
+    serif;
+}
+
+.terrain-chunk-debug-shell a {
+  color: #93c5fd;
+}
+
+.terrain-chunk-debug-hero,
+.terrain-chunk-debug-form,
+.terrain-chunk-debug-grid-layout {
+  max-width: 1280px;
+  margin: 0 auto 24px;
+}
+
+.terrain-chunk-debug-kicker {
+  margin: 0 0 8px;
+  color: #7dd3fc;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.terrain-chunk-debug-hero h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+}
+
+.terrain-chunk-debug-lede {
+  max-width: 72ch;
+  color: #cbd5e1;
+}
+
+.terrain-chunk-debug-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.terrain-chunk-debug-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.terrain-chunk-debug-form input,
+.terrain-chunk-debug-form select,
+.terrain-chunk-debug-form button {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  font: inherit;
+}
+
+.terrain-chunk-debug-form input,
+.terrain-chunk-debug-form select {
+  padding: 10px 12px;
+}
+
+.terrain-chunk-debug-form button {
+  align-self: end;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #0f766e, #0f4c81);
+  cursor: pointer;
+}
+
+.terrain-chunk-debug-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.terrain-chunk-debug-checkbox input {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.terrain-chunk-debug-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.terrain-chunk-debug-card {
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.78);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.24);
+}
+
+.terrain-chunk-debug-card h2,
+.terrain-chunk-debug-card h3,
+.terrain-chunk-debug-seams h2 {
+  margin-top: 0;
+}
+
+.terrain-chunk-debug-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.terrain-chunk-debug-metrics div {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.terrain-chunk-debug-metrics dt {
+  margin-bottom: 4px;
+  color: #94a3b8;
+  font-size: 0.84rem;
+}
+
+.terrain-chunk-debug-metrics dd {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.terrain-chunk-debug-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.terrain-chunk-debug-grid-cell {
+  display: flex;
+  align-items: end;
+  min-height: 44px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.66rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.terrain-chunk-debug-grid-cell span {
+  display: block;
+  inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terrain-chunk-debug-wireframe {
+  inline-size: 100%;
+  block-size: auto;
+  border-radius: 16px;
+}
+
+.terrain-chunk-debug-seams {
+  display: grid;
+  gap: 16px;
+}
+
+.terrain-chunk-debug-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #fca5a5;
+}
+
+.terrain-chunk-debug-note {
+  color: #cbd5e1;
+}
+
+@media (max-width: 720px) {
+  .terrain-chunk-debug-shell {
+    padding: 18px;
+  }
+
+  .terrain-chunk-debug-form {
+    grid-template-columns: 1fr;
+  }
+}

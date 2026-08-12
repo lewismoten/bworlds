@@ -33,8 +33,8 @@
 - [x] Keep splat weights continuous across chunk borders.
 - [ ] Keep route and river influence continuous across borders.
 - [ ] Recalculate normals from seam-safe height samples.
-- [ ] Add a chunk seam debug view.
-- [ ] Add a chunk wireframe debug view.
+- [x] Add a chunk seam debug view.
+- [x] Add a chunk wireframe debug view.
 
 Current support:
 
@@ -59,6 +59,11 @@ Current support:
   terrain chunk geometry plan into deduplicated border and interior wireframe
   segments, so future overlays can inspect chunk topology without rebuilding
   mesh edges in renderer-specific code.
+- `apps/web` now exposes `/debug/terrain-chunks/`, which builds one real
+  preview chunk from the current seed and surfaces the shared dominant splat
+  grid, east/south seam diagnostics, sampled seam-height deltas, and wireframe
+  SVG without waiting for the full live terrain chunk renderer to replace the
+  main world floor path; see `docs/terrain-chunk-debug-page.md`.
 - `@bworlds/terrain-splat-support/height-field` now emits seam-safe vertex
   normals from the shared world-space height samples and keeps reduced-LOD
   index buffers aligned to the actual vertex grid, so chunk renderers can reuse

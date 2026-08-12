@@ -40,6 +40,10 @@ describe('debug directory', () => {
           href: '/debug/trees/',
           routeLabel: '/debug/trees/',
         }),
+        expect.objectContaining({
+          href: '/debug/terrain-chunks/',
+          routeLabel: '/debug/terrain-chunks/',
+        }),
       ])
     );
   });
@@ -57,5 +61,6 @@ describe('debug directory', () => {
     expect(markup).toContain('Sound Debug');
     expect(markup).toContain('Sound Bank Debug');
     expect(markup).toContain('Tree Conservatory');
+    expect(markup).toContain('Terrain Chunk Debug');
   });
 });

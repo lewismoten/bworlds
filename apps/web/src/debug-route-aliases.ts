@@ -20,6 +20,8 @@ export const DEBUG_ROUTE_ALIASES = [
   '/debug/sound-bank.html',
   '/debug/trees',
   '/debug/trees/index.html',
+  '/debug/terrain-chunks',
+  '/debug/terrain-chunks/index.html',
 ] as const;
 
 export function resolveDebugRouteRedirect(pathname: string): string | null {

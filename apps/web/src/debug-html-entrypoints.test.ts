@@ -17,6 +17,8 @@ const DEBUG_HTML_ENTRY_PATHS = [
   'apps/web/debug/sound-bank/index.html',
   'apps/web/debug/trees.html',
   'apps/web/debug/trees/index.html',
+  'apps/web/debug/terrain-chunks.html',
+  'apps/web/debug/terrain-chunks/index.html',
 ] as const;
 
 describe('debug html entrypoints', () => {

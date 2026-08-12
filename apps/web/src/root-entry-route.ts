@@ -5,6 +5,7 @@ export const ROOT_ENTRY_PAGE_PATHS = [
   '/debug/sounds/',
   '/debug/sound-bank/',
   '/debug/trees/',
+  '/debug/terrain-chunks/',
 ] as const;
 
 export type RootEntryPagePath = (typeof ROOT_ENTRY_PAGE_PATHS)[number];
@@ -82,6 +83,16 @@ const ROOT_ENTRY_ROUTE_DEFINITIONS: readonly RootEntryRouteDefinition[] = [
       '/debug/trees/index.html',
     ],
     entryHtmlPath: '/debug/trees/index.html',
+  },
+  {
+    pagePath: '/debug/terrain-chunks/',
+    aliases: [
+      '/debug/terrain-chunks',
+      '/debug/terrain-chunks/',
+      '/debug/terrain-chunks.html',
+      '/debug/terrain-chunks/index.html',
+    ],
+    entryHtmlPath: '/debug/terrain-chunks/index.html',
   },
 ];
 

@@ -80,6 +80,15 @@ export const DEBUG_DIRECTORY_ENTRIES: DebugDirectoryEntry[] = [
     description:
       'Generates deterministic forest tree sets for any tile so species, ages, capabilities, and structural profiles can be inspected quickly.',
   },
+  {
+    id: 'terrain-chunk-debug',
+    title: 'Terrain Chunk Debug',
+    href: '/debug/terrain-chunks/',
+    routeLabel: '/debug/terrain-chunks/',
+    category: 'Dedicated Debug Page',
+    description:
+      'Builds one shared terrain chunk from the current world seed and exposes its dominant splat grid, seam analysis, and geometry wireframe.',
+  },
 ];
 
 export function buildDebugDirectoryMarkup(

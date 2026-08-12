@@ -15,6 +15,7 @@ describe('root entry route', () => {
       '/debug/sounds/',
       '/debug/sound-bank/',
       '/debug/trees/',
+      '/debug/terrain-chunks/',
     ]);
   });
 
@@ -73,6 +74,18 @@ describe('root entry route', () => {
     expect(resolveRootEntryPagePath('/debug/trees/index.html')).toBe(
       '/debug/trees/'
     );
+    expect(resolveRootEntryPagePath('/debug/terrain-chunks')).toBe(
+      '/debug/terrain-chunks/'
+    );
+    expect(resolveRootEntryPagePath('/debug/terrain-chunks/')).toBe(
+      '/debug/terrain-chunks/'
+    );
+    expect(resolveRootEntryPagePath('/debug/terrain-chunks.html')).toBe(
+      '/debug/terrain-chunks/'
+    );
+    expect(resolveRootEntryPagePath('/debug/terrain-chunks/index.html')).toBe(
+      '/debug/terrain-chunks/'
+    );
     expect(resolveRootEntryPagePath('/')).toBeNull();
   });
 
@@ -95,6 +108,9 @@ describe('root entry route', () => {
     );
     expect(resolveRootEntryPagePath('/bworlds/debug/trees/')).toBe(
       '/debug/trees/'
+    );
+    expect(resolveRootEntryPagePath('/bworlds/debug/terrain-chunks/')).toBe(
+      '/debug/terrain-chunks/'
     );
 
     expect(resolveRootEntryRoute('/bworlds/debug/index.html')).toEqual({
@@ -122,6 +138,9 @@ describe('root entry route', () => {
     );
     expect(resolveRootEntryHtmlPath('/debug/trees/')).toBe(
       '/debug/trees/index.html'
+    );
+    expect(resolveRootEntryHtmlPath('/debug/terrain-chunks/')).toBe(
+      '/debug/terrain-chunks/index.html'
     );
     expect(resolveRootEntryHtmlPath('/bworlds/debug/')).toBe(
       '/bworlds/debug/index.html'

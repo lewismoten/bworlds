@@ -26,6 +26,8 @@ describe('debug route aliases', () => {
       '/debug/sound-bank.html',
       '/debug/trees',
       '/debug/trees/index.html',
+      '/debug/terrain-chunks',
+      '/debug/terrain-chunks/index.html',
     ]);
   });
 
@@ -75,6 +77,12 @@ describe('debug route aliases', () => {
     expect(resolveDebugRouteRedirect('/debug/trees/index.html')).toBe(
       '/debug/trees/'
     );
+    expect(resolveDebugRouteRedirect('/debug/terrain-chunks')).toBe(
+      '/debug/terrain-chunks/'
+    );
+    expect(resolveDebugRouteRedirect('/debug/terrain-chunks/index.html')).toBe(
+      '/debug/terrain-chunks/'
+    );
   });
 
   it('preserves a mounted base path when redirecting debug routes', () => {
@@ -97,6 +105,9 @@ describe('debug route aliases', () => {
     expect(resolveDebugRouteRedirect('/bworlds/debug/trees/index.html')).toBe(
       '/bworlds/debug/trees/'
     );
+    expect(resolveDebugRouteRedirect('/bworlds/debug/terrain-chunks')).toBe(
+      '/bworlds/debug/terrain-chunks/'
+    );
   });
 
   it('leaves canonical and unrelated routes alone', () => {
@@ -106,6 +117,7 @@ describe('debug route aliases', () => {
     expect(resolveDebugRouteRedirect('/debug/sounds/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/sound-bank/')).toBeNull();
     expect(resolveDebugRouteRedirect('/debug/trees/')).toBeNull();
+    expect(resolveDebugRouteRedirect('/debug/terrain-chunks/')).toBeNull();
     expect(resolveDebugRouteRedirect('/')).toBeNull();
     expect(resolveDebugRouteRedirect('/town')).toBeNull();
   });

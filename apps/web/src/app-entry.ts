@@ -27,6 +27,9 @@ export async function bootstrap(): Promise<void> {
     case '/debug/trees/':
       await import('./tree-debug-page.ts');
       return;
+    case '/debug/terrain-chunks/':
+      await import('./terrain-chunk-debug-page.ts');
+      return;
     default:
       break;
   }
