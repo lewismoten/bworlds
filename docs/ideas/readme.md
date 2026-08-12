@@ -67,7 +67,13 @@ Add different geographic layers where areas of the world have a 0.0 to 1.0 influ
 - Wild West
   Tiles can take on various chracteristics based on support for different layers. Players can choose starting towns in areas heavily influenced by one thing or another.
 
-Moss on trees facing away from equator
+- Puzzle challenges where multiple people in your blob/group needs to stand on different switches or use their abilites to progress.
+
+- Click and point adventures. Text adventures (terminal). Side/Top scrolling games. Old "3D" action. Vector 3D.
+
+Moss on trees facing away from equator in humid zones
+
+- Compass: Set way points, Save way points in journal. See beam in distance for way point, or trail on land leading to it, sticking to larger roads, then smaller paths until no path exists to the point, show a direct path around obstructions.
 
 - Currency regions: Overlapping regions that accept/trade/buy with a particular currency
 
@@ -77,17 +83,26 @@ Oddities of Fun: Flea Circus, Barrel Organ/Organ Grinder, Puppet Show, Magician,
 - Altimeter
 - Flight Instruments 6-pack (steam gauges) or PFD (Glass Cockpit) + flight wall of aircraft in the area
 - Look at how to control various transports to real life
-  - Animal (Horse, Buggy, Stage Coach, Caravan)
-  - Vehicle (Car, Bus, 18 Wheeler, Fire Engine, Law Enforcement, Race Car, Towtruck, RV, 5th Wheel Camper, Ambulance, Ice Cream Truck, Antique Car, Tractor, Parking lot tram)
-  - Boats (Tall Ship, Sailing, Motor, Ship, Tug, Liner, Cruise, Paddle/Steam, Row, Kyak, Inner Tube, Foot paddle boat)
+  - Animal (Horse, Buggy, Stage Coach, Caravan, Camel)
+  - Human Powered (Bicycle, Pogo Stick, Skate board, Unicycle, Tricycle, Penny-Farthing/High-wheelers/Ordinaries, Boneshaker, Monowheel, Zip Line, Monte Toboggan, Rickshaw, one/two wheeled self balancing personal transporter, Cyclos, Party Bike)
+  - Ice (Ice Yacht, Snow Mobile, Snow Cruiser, Dog Sled, Bob Sled, Skiing, Reindeer Sled)
+  - Vehicle (Car, Bus, 18 Wheeler, Fire Engine, Law Enforcement, Race Car, Towtruck, RV, 5th Wheel Camper, Ambulance, Ice Cream Truck, Antique Car, Tractor, Parking lot tram, Golf Cart, Gokart, Herse, Hot Dog Shaped Car, Tuk Tuk, Motorcycle, Moped, Drag Racing/Strip, Jet Truck, Chicken Bus, Tourist Bus/Tram/Trolly, Jeepney, Dune Buggy)
+  - Unique (Tornato Intercept Vehicle TIV, Amphibious Car, Suspension Railway, Transit Elevated Bus, Devils Hoverbike)
+  - Military (Sub, Tank, Rocket Launcher, Jeep, Aircraft Carrier)
+  - Boats (Tall Ship, Sailing, Motor, Ship, Tug, Liner, Cruise, Paddle/Steam, Row, Kyak, Inner Tube, Foot paddle boat, House Boat, Viking Boat, Horse Ferry,Gondola, Amphibious Boat, Bangkok Clones, Hovercraft, Barco De Totora, Barrel, Raft, Floating Island)
     - Docks, Harbors, Light Houses, Ship Yard, Freight Yard
     - Automated Routes - Ferry, Scenic, Tourism, Transport, Freight
-  - Aircraft (747, 172, Experimental, Glider, Balloon)
+  - Aircraft (747, 172, Experimental, Glider, Balloon, Blimp, Flying Fortress/City, Helicopter, Jetpack, VTOL, Paraclider, Parachute)
     - Airport, Tower, Radar, Landing Strip, Landing Lights, Lights on tall towers, Flight Wall of Aircraft in area, Radio chatter, Runway numbers based on orientation and R/L
     - Automated Routes
     - Balloon Festivals, Air shows
-  - Train (Trolly, Monorail, Steam, Electric, Deisel, Metro/Subway, Freight, Caboose)
+  - Train (Trolly, Monorail, Steam, Electric, Deisel, Metro/Subway, Freight, Caboose, Incline, Funicular, Bamboo Train, Maglev, Schwebebahn, Tramway)
     - Train yard, Signals, Caboose, Track switch, Signs
     - Automated Routes, Freight Delivery
   - Theme Park / Carnival Rides (operator / rider): Swings, Ferris Wheel, Meri-go-round, kids rides, Roller Coaster, Log Flume, Casino
     - Animal rides: Pony, Elephant, Horse, Donkey, Galapagos Turtle
+  - Rockets: Launch satelites, Shuttle
+  - Future: Teleport, Space Elevator, Worm Hole, Dimensional Gate, Point-to-Point Rocket Travel, Planetary Travel, Faster than light (FTL) drive, Hyperspace Bubble, Warp Drive, Vaccume Travel
+  - Fantasy: Portal, Teleport, Giant Lizards, Dire Wolves, Oversized Beetles, Battle-Armoured Mammoths, Dragons, Gryphons, Oversized Owles, Giant Bats, Giant Sea Turtles, Leviathans, Arcane Airships like Galleons/Zepplins powered by fire elementals, enchanted levitation crystals, or anti-gravity runes, Spelljamming & Ether-Sailes to sail across void-space or planar oceans with magical helms powered by spell casters, Magical trans running on ley-line rails or elemental egines, Portals & Waygates such as stone arches, mirror gateways, ancient rings; Teleportation circles with inscribed sigils networks in cities or towers requiring sequence keys or focal components to access; blinking and shadow-walking for short-range/long-range spacial jumps, by stepping through adjacent planes, Sending spirit or mental form across astral plane while physical body is anchored behind, world trees & dimensional bridges whose roots and branches physically connect different realms or planes of existence, planar vessels of magical barges or planar shifting devices capable of breaching the boundaries between elemental or outer planes. Enchanged personal items such as flying brooms, carpet networks, winged boots, or boots that cover vast distances in a single stride; shadow stride & tree stride bypassing geography by steppinginto one shadow or tree trunk and emerging instantly from another connected to the network
+  - Science Fiction: A blue police phone box, shuttle
+  - Stage Magician: Diapppear with cloud of Smoke, metamorphosis, Vanishing inside cabinets/teleportation boxes, Levitation, Low-flying/floating carpet, Peppers Ghost, Trap door, Under Stage Lift, Human Cannonball, Bullet Catch Container, Walk through walls
