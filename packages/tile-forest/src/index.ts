@@ -4359,52 +4359,57 @@ function addLowDetailForestTreeInstances(
   tileY: number,
   descriptors: ForestTreeDescriptor[]
 ) {
-  const trunkBuckets = new Map<string, ForestTreeDescriptor[]>();
+  if (descriptors.length === 0) {
+    return;
+  }
 
+  const trunkBuckets = new Map<ForestTreeForm, ForestTreeDescriptor[]>();
   for (const descriptor of descriptors) {
-    const styleKey = descriptor.form;
-    if (!trunkBuckets.has(styleKey)) {
-      trunkBuckets.set(styleKey, []);
+    const bucket = trunkBuckets.get(descriptor.form);
+    if (bucket) {
+      bucket.push(descriptor);
+    } else {
+      trunkBuckets.set(descriptor.form, [descriptor]);
     }
-    trunkBuckets.get(styleKey)!.push(descriptor);
   }
 
   const lowDetailMatrixScratch = new three.Matrix4();
-  for (const [styleKey, bucket] of trunkBuckets.entries()) {
-    const form = (bucket[0]?.form ?? styleKey) as ForestTreeDescriptor['form'];
-    const style = getLowDetailTreeStyle(three, form);
-    const trunkInstances = new three.InstancedMesh(
-      geometry.trunk,
-      style.trunkMaterial,
-      bucket.length
+  const dominantForm = resolveDominantLowDetailForestForm(descriptors);
+  const trunkStyle = getLowDetailTreeStyle(three, dominantForm);
+  const trunkInstances = new three.InstancedMesh(
+    geometry.trunk,
+    trunkStyle.trunkMaterial,
+    descriptors.length
+  );
+  trunkInstances.userData = {
+    ...(trunkInstances.userData ?? {}),
+    [RENDER_STATS_CATEGORY_KEY]: 'tree',
+    [TREE_FORM_KEY]: dominantForm,
+    forestTreeLowDetailInstancedPart: 'trunk',
+  };
+  descriptors.forEach((descriptor, index) => {
+    const trunkRadiusScale =
+      (Math.max(0.04, descriptor.radius) * descriptor.scale) / 0.1;
+    trunkInstances.setMatrixAt(
+      index,
+      writeLowDetailInstancedMatrix(
+        lowDetailMatrixScratch,
+        tileX + descriptor.x,
+        descriptor.trunkHeight * descriptor.scale * 0.5,
+        tileY + descriptor.y,
+        trunkRadiusScale,
+        descriptor.trunkHeight * descriptor.scale,
+        trunkRadiusScale
+      )
     );
-    trunkInstances.userData = {
-      ...(trunkInstances.userData ?? {}),
-      [RENDER_STATS_CATEGORY_KEY]: 'tree',
-      [TREE_FORM_KEY]: form,
-      forestTreeLowDetailInstancedPart: 'trunk',
-    };
-    bucket.forEach((descriptor, index) => {
-      const trunkRadiusScale =
-        (Math.max(0.04, descriptor.radius) * descriptor.scale) / 0.1;
-      trunkInstances.setMatrixAt(
-        index,
-        writeLowDetailInstancedMatrix(
-          lowDetailMatrixScratch,
-          tileX + descriptor.x,
-          descriptor.trunkHeight * descriptor.scale * 0.5,
-          tileY + descriptor.y,
-          trunkRadiusScale,
-          descriptor.trunkHeight * descriptor.scale,
-          trunkRadiusScale
-        )
-      );
-    });
-    group.add(trunkInstances);
+  });
+  group.add(trunkInstances);
 
+  for (const [form, bucket] of trunkBuckets.entries()) {
+    const canopyStyle = getLowDetailTreeStyle(three, form);
     const canopyInstances = new three.InstancedMesh(
       geometry.foliage,
-      style.foliageMaterial,
+      canopyStyle.foliageMaterial,
       bucket.length
     );
     canopyInstances.userData = {
@@ -4431,6 +4436,25 @@ function addLowDetailForestTreeInstances(
     });
     group.add(canopyInstances);
   }
+}
+
+function resolveDominantLowDetailForestForm(
+  descriptors: readonly ForestTreeDescriptor[]
+): ForestTreeForm {
+  const formCounts = new Map<ForestTreeForm, number>();
+  for (const descriptor of descriptors) {
+    formCounts.set(
+      descriptor.form,
+      (formCounts.get(descriptor.form) ?? 0) + 1
+    );
+  }
+
+  return [...formCounts.entries()].sort((left, right) => {
+    if (left[1] !== right[1]) {
+      return right[1] - left[1];
+    }
+    return left[0].localeCompare(right[0]);
+  })[0]?.[0] ?? 'broadleaf';
 }
 
 function splitForestFullDetailTreeDescriptors(

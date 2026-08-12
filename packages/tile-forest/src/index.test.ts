@@ -16,6 +16,7 @@ import {
   getForestBirds,
   getForestLandmark,
   getForestMeadows,
+  getForestTreeSpeciesIds,
 } from './index.ts';
 import {
   FakeGroup,
@@ -313,6 +314,53 @@ describe('tile forest', () => {
     lowMaterials.forEach((material) => {
       expect(fullMaterials.has(material)).toBe(true);
     });
+  });
+
+  it('collapses mixed low-detail forest tiles to one shared trunk mesh', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    let targetTile: { x: number; y: number } | null = null;
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const speciesIds = new Set(getForestTreeSpeciesIds(tileX, tileY));
+        if (speciesIds.has('pine') && (speciesIds.has('oak') || speciesIds.has('birch'))) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    const lowModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const instancedTrunks = lowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'trunk'
+    ) as FakeInstancedMesh[];
+    const instancedCanopies = lowModel.children.filter(
+      (child) =>
+        child instanceof FakeInstancedMesh &&
+        child.userData?.forestTreeLowDetailInstancedPart === 'canopy'
+    ) as FakeInstancedMesh[];
+
+    expect(instancedTrunks).toHaveLength(1);
+    expect(instancedCanopies.length).toBeGreaterThan(1);
+    expect(instancedTrunks[0]?.count).toBeGreaterThan(1);
+    const totalCanopyInstances = instancedCanopies.reduce(
+      (sum, mesh) => sum + mesh.count,
+      0
+    );
+    expect(totalCanopyInstances).toBe(instancedTrunks[0]?.count);
   });
 
   it('reuses invariant full-detail forest accessory materials across tiles on one host', () => {

@@ -83,6 +83,11 @@
       flagged transforms live.
 - [x] Report static matrix updates by plugin.
 - [ ] Reduce total Object3D count without changing visuals.
+      Progress: low-detail `tile-forest` tiles now collapse every trunk into
+      one shared instanced mesh per tile instead of splitting trunks by tree
+      form. Mixed low-detail forest tiles still keep separate canopy buckets so
+      pine silhouettes remain recognizable, but they no longer pay an extra
+      low-detail trunk container for each form present in the tile.
 
 ## LOD Stability
 
