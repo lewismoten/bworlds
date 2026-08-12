@@ -20,6 +20,7 @@ import {
 import {
   FakeGroup,
   FakeInstancedMesh,
+  FakeMesh,
   FakeNode,
   createForestTestState,
   fakeThree,
@@ -224,6 +225,60 @@ describe('tile forest', () => {
     });
 
     expect(materials.size).toBeLessThanOrEqual(3);
+  });
+
+  it('reuses full-detail forest family materials in low-detail tree instances', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const fullModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const lowModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'low',
+    }) as FakeGroup;
+
+    const fullMaterials = new Set<unknown>();
+    fullModel.traverse((node) => {
+      if (
+        (node instanceof FakeMesh || node instanceof FakeInstancedMesh) &&
+        node.material
+      ) {
+        const nodeMaterials = Array.isArray(node.material)
+          ? node.material
+          : [node.material];
+        nodeMaterials.forEach((material) => fullMaterials.add(material));
+      }
+    });
+
+    const lowMaterials = new Set<unknown>();
+    lowModel.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.renderStatKind === 'tree' &&
+        node.material
+      ) {
+        const nodeMaterials = Array.isArray(node.material)
+          ? node.material
+          : [node.material];
+        nodeMaterials.forEach((material) => lowMaterials.add(material));
+      }
+    });
+
+    expect(lowMaterials.size).toBeGreaterThan(0);
+    lowMaterials.forEach((material) => {
+      expect(fullMaterials.has(material)).toBe(true);
+    });
   });
 
   it('reuses invariant full-detail forest accessory materials across tiles on one host', () => {

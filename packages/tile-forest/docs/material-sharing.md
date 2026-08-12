@@ -22,6 +22,8 @@ forest scenes.
 For one Three host:
 
 - bark and foliage stay cached per tree family
+- low-detail tree instances reuse those same family bark and foliage materials
+  instead of creating a separate low-detail-only pair
 - accessory materials are cached once and reused across every forest tile
 
 That keeps the structural tree silhouette readable while reducing material

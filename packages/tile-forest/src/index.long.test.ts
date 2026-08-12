@@ -1978,11 +1978,15 @@ describe('tile forest', () => {
       (child) => child instanceof FakeMesh
     ) as FakeMesh | undefined;
     const firstFoliage = firstPine?.children.find(
-      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
-    ) as FakeMesh | undefined;
+      (child) =>
+        (child instanceof FakeMesh || child instanceof FakeInstancedMesh) &&
+        child.userData?.forestTreeFoliage
+    ) as FakeMesh | FakeInstancedMesh | undefined;
     const secondFoliage = secondPine?.children.find(
-      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
-    ) as FakeMesh | undefined;
+      (child) =>
+        (child instanceof FakeMesh || child instanceof FakeInstancedMesh) &&
+        child.userData?.forestTreeFoliage
+    ) as FakeMesh | FakeInstancedMesh | undefined;
 
     expect(firstTrunk?.material).toBe(secondTrunk?.material);
     expect(firstFoliage?.material).toBe(secondFoliage?.material);
@@ -2036,11 +2040,15 @@ describe('tile forest', () => {
       (child) => child instanceof FakeMesh
     ) as FakeMesh | undefined;
     const firstFoliage = firstPine?.children.find(
-      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
-    ) as FakeMesh | undefined;
+      (child) =>
+        (child instanceof FakeMesh || child instanceof FakeInstancedMesh) &&
+        child.userData?.forestTreeFoliage
+    ) as FakeMesh | FakeInstancedMesh | undefined;
     const secondFoliage = secondPine?.children.find(
-      (child) => child instanceof FakeMesh && child.userData?.forestTreeFoliage
-    ) as FakeMesh | undefined;
+      (child) =>
+        (child instanceof FakeMesh || child instanceof FakeInstancedMesh) &&
+        child.userData?.forestTreeFoliage
+    ) as FakeMesh | FakeInstancedMesh | undefined;
 
     expect(firstTrunk?.material).toBeDefined();
     expect(secondTrunk?.material).toBeDefined();
@@ -2879,9 +2887,12 @@ describe('tile forest', () => {
       detailLevel: 'full',
     }) as FakeGroup;
 
-    const foliageMeshes: FakeMesh[] = [];
+    const foliageMeshes: Array<FakeMesh | FakeInstancedMesh> = [];
     model.traverse((node) => {
-      if (node instanceof FakeMesh && node.userData?.forestTreeFoliage) {
+      if (
+        (node instanceof FakeMesh || node instanceof FakeInstancedMesh) &&
+        node.userData?.forestTreeFoliage
+      ) {
         foliageMeshes.push(node);
       }
     });
@@ -3803,9 +3814,12 @@ describe('tile forest', () => {
       detailLevel: 'low',
     }) as FakeGroup;
 
-    const fullBirds: FakeNode[] = [];
+    const fullBirds: FakeInstancedMesh[] = [];
     fullModel.traverse((node) => {
-      if (node.userData?.forestBird) {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestBirdInstancedPart === 'body'
+      ) {
         fullBirds.push(node);
       }
     });
@@ -3821,9 +3835,8 @@ describe('tile forest', () => {
     expect(lowBirdCount).toBe(0);
 
     const firstBird = fullBirds[0];
-    const initialX = firstBird.position.x;
-    const initialY = firstBird.position.y;
-    const initialLeftWing = firstBird.children[0]?.rotation.z;
+    const initialX = firstBird.matrices[0]?.position.x ?? 0;
+    const initialY = firstBird.matrices[0]?.position.y ?? 0;
 
     tile?.sync3DModel?.({
       three: fakeThree as never,
@@ -3837,9 +3850,8 @@ describe('tile forest', () => {
       environment: {},
     });
 
-    expect(firstBird.position.x).not.toBe(initialX);
-    expect(firstBird.position.y).not.toBe(initialY);
-    expect(firstBird.children[0]?.rotation.z).not.toBe(initialLeftWing);
+    expect(firstBird.matrices[0]?.position.x ?? 0).not.toBe(initialX);
+    expect(firstBird.matrices[0]?.position.y ?? 0).not.toBe(initialY);
   });
 
   it('renders breadcrumb trails only in full-detail forest models', () => {

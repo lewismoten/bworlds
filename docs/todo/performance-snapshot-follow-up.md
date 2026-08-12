@@ -14,7 +14,10 @@
       forest landmark, wildlife, meadow, breadcrumb, and bird accessory
       materials now resolve through one host-level shared bundle instead of
       maintaining separate broadleaf-versus-conifer duplicates for those
-      non-structural props.
+      non-structural props, and low-detail forest tree instances now reuse the
+      same family bark and foliage materials as nearby full-detail forest tiles
+      instead of introducing a separate low-detail-only material pair during
+      LOD recovery.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First

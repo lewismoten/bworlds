@@ -359,10 +359,6 @@ const forestFireflyMaterialCache = new WeakMap<
   ThreeHostLike,
   ThreeMaterialLike
 >();
-const forestLowDetailTreeStyleCache = new WeakMap<
-  ThreeHostLike,
-  Pick<ForestTreeStyle, 'trunkMaterial' | 'foliageMaterial'>
->();
 const forestSharedAccessoryStyleCache = new WeakMap<
   ThreeHostLike,
   Pick<
@@ -3896,28 +3892,14 @@ function getSharedForestAccessoryStyle(
 }
 
 function getLowDetailTreeStyle(
-  three: ThreeHostLike
+  three: ThreeHostLike,
+  form: ForestTreeForm
 ): Pick<ForestTreeStyle, 'trunkMaterial' | 'foliageMaterial'> {
-  const cached = forestLowDetailTreeStyleCache.get(three);
-  if (cached) {
-    return cached;
-  }
-
-  const next = {
-    trunkMaterial: new three.MeshStandardMaterial({
-      color: tintHexColor(TREE_BARK_COLOR, 0.94),
-      roughness: 0.97,
-      metalness: 0.01,
-    }),
-    foliageMaterial: new three.MeshStandardMaterial({
-      color: tintHexColor(TREE_FOLIAGE_COLOR, 0.94),
-      roughness: 0.99,
-      metalness: 0.01,
-      flatShading: true,
-    }),
+  const sharedFamilyStyle = getTreeStyle(three, 0, 0, form === 'pine' ? 2 : 0);
+  return {
+    trunkMaterial: sharedFamilyStyle.trunkMaterial,
+    foliageMaterial: sharedFamilyStyle.foliageMaterial,
   };
-  forestLowDetailTreeStyleCache.set(three, next);
-  return next;
 }
 
 function getTreeStyleCache(three: ThreeHostLike) {
@@ -4227,9 +4209,9 @@ function addLowDetailForestTreeInstances(
   }
 
   const lowDetailMatrixScratch = new three.Matrix4();
-  const style = getLowDetailTreeStyle(three);
   for (const [styleKey, bucket] of trunkBuckets.entries()) {
     const form = (bucket[0]?.form ?? styleKey) as ForestTreeDescriptor['form'];
+    const style = getLowDetailTreeStyle(three, form);
     const trunkInstances = new three.InstancedMesh(
       geometry.trunk,
       style.trunkMaterial,
