@@ -118,6 +118,10 @@ describe('debug panel', () => {
       currentTileFallbackReason: 'low failed',
       currentTileHasVisibleModel: true,
       currentTileSupportsModel: true,
+      currentTileTerrainSurfaceMode: 'legacy-mesh',
+      currentTileSharedSplatEligible: true,
+      currentTileTerrainSurfaceReason:
+        'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
       object3dCount: 318,
       groupCount: 54,
       meshCount: 180,

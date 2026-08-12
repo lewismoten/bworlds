@@ -34,6 +34,7 @@ import {
   type Model3DResourceCostEstimate,
   type RenderBudget,
   type RenderBudgetDetailLevel,
+  type TerrainSurfaceRenderMode,
   type TileLike,
   type TilePlugin,
   type ViewMode,
@@ -312,6 +313,9 @@ type Render3DController = {
     fallbackReason: string | null;
     hasVisibleModel: boolean;
     supportsModel: boolean | null;
+    terrainSurfaceMode: TerrainSurfaceRenderMode | null;
+    sharedSplatEligible: boolean;
+    terrainSurfaceReason: string | null;
   } | null;
   getStats(): {
     drawCalls: number;
@@ -3730,6 +3734,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     fallbackReason: string | null;
     hasVisibleModel: boolean;
     supportsModel: boolean | null;
+    terrainSurfaceMode: TerrainSurfaceRenderMode | null;
+    sharedSplatEligible: boolean;
+    terrainSurfaceReason: string | null;
   } | null {
     return getVisibleTileDebugInfoFromState(
       visibleTileNodes,

@@ -2760,6 +2760,12 @@ function collectCurrentDebugSnapshot(
     currentTileDebugInfo?.hasVisibleModel ?? false;
   debugSnapshot.currentTileSupportsModel =
     currentTileDebugInfo?.supportsModel ?? null;
+  debugSnapshot.currentTileTerrainSurfaceMode =
+    currentTileDebugInfo?.terrainSurfaceMode ?? undefined;
+  debugSnapshot.currentTileSharedSplatEligible =
+    currentTileDebugInfo?.sharedSplatEligible ?? false;
+  debugSnapshot.currentTileTerrainSurfaceReason =
+    currentTileDebugInfo?.terrainSurfaceReason ?? undefined;
   debugSnapshot.resourceWarnings = [
     ...getPerformanceWarnings(debugSnapshot),
     ...getWorkQueueWarnings(debugSnapshot),

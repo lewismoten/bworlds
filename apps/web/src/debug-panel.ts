@@ -88,6 +88,9 @@ export type DebugSnapshot = {
   currentTileFallbackReason?: string;
   currentTileHasVisibleModel?: boolean;
   currentTileSupportsModel?: boolean | null;
+  currentTileTerrainSurfaceMode?: string;
+  currentTileSharedSplatEligible?: boolean;
+  currentTileTerrainSurfaceReason?: string;
   object3dCount: number;
   visibleObjectCount?: number;
   invisibleObjectCount?: number;
@@ -317,6 +320,9 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
       : snapshot.currentTileSupportsModel
         ? '1'
         : '0',
+    snapshot.currentTileTerrainSurfaceMode ?? '',
+    snapshot.currentTileSharedSplatEligible ? '1' : '0',
+    snapshot.currentTileTerrainSurfaceReason ?? '',
     snapshot.object3dCount,
     snapshot.groupCount,
     snapshot.meshCount,
@@ -510,7 +516,10 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
           : 'No'
     }</dd></div>
     <div><dt>Current Tile Has Model</dt><dd>${snapshot.currentTileHasVisibleModel ? 'Yes' : 'No'}</dd></div>
+    <div><dt>Current Tile Surface Mode</dt><dd>${snapshot.currentTileTerrainSurfaceMode || 'None'}</dd></div>
+    <div><dt>Current Tile Shared Splat Eligible</dt><dd>${snapshot.currentTileSharedSplatEligible ? 'Yes' : 'No'}</dd></div>
     <div><dt>Current Tile Fallback</dt><dd>${snapshot.currentTileFallbackReason || 'None'}</dd></div>
+    <div><dt>Current Tile Surface Reason</dt><dd>${snapshot.currentTileTerrainSurfaceReason || 'None'}</dd></div>
     <div><dt>Active Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Three.js Objects</dt><dd>${snapshot.object3dCount}</dd></div>
     <div><dt>Object Plugin</dt><dd>${snapshot.objectTopPluginLabel || 'None'}</dd></div>

@@ -1312,6 +1312,10 @@ describe('runtime performance tracking', () => {
         renderedDetailLevel: 'full',
         cachedDetailLevel: null,
         fallbackReason: null,
+        terrainSurfaceMode: 'legacy-mesh',
+        sharedSplatEligible: false,
+        terrainSurfaceReason:
+          'renderer still uses legacy terrain mesh and shared floor batches',
         hasVisibleModel: true,
       },
       resourceWarnings: ['tile-plains:5'],

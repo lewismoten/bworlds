@@ -1,5 +1,5 @@
 import type { TerrainSurfaceRenderMode, TileLike } from '@bworlds/plugin-api';
-import { createTerrainRouteRenderPlan } from '@bworlds/terrain-splat-support/route-render-plan';
+import { createTerrainRouteRenderPlan } from '../../terrain-splat-support/src/route-render-plan.ts';
 
 export type TileTerrainSurfaceSelection = {
   activeMode: TerrainSurfaceRenderMode;

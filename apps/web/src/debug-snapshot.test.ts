@@ -280,6 +280,10 @@ describe('debug snapshot', () => {
         currentTileFallbackReason: 'low failed',
         currentTileHasVisibleModel: true,
         currentTileSupportsModel: true,
+        currentTileTerrainSurfaceMode: 'legacy-mesh',
+        currentTileSharedSplatEligible: true,
+        currentTileTerrainSurfaceReason:
+          'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
         object3dCount: 318,
         visibleObjectCount: 301,
         invisibleObjectCount: 17,
@@ -698,6 +702,10 @@ describe('debug snapshot', () => {
         renderedDetailLevel: 'low',
         cachedDetailLevel: 'low',
         fallbackReason: 'low failed',
+        terrainSurfaceMode: 'legacy-mesh',
+        sharedSplatEligible: true,
+        terrainSurfaceReason:
+          'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
         supportsModel: true,
         hasVisibleModel: true,
       },

@@ -63,6 +63,9 @@ export type RuntimePerformanceIssueReport = {
     renderedDetailLevel: string | null;
     cachedDetailLevel: string | null;
     fallbackReason: string | null;
+    terrainSurfaceMode: string | null;
+    sharedSplatEligible: boolean;
+    terrainSurfaceReason: string | null;
     hasVisibleModel: boolean;
   };
   resourceWarnings: string[];
@@ -176,6 +179,12 @@ export function buildRuntimePerformanceIssueReport(
         options.debugSnapshot.currentTileCachedDetailLevel?.trim() || null,
       fallbackReason:
         options.debugSnapshot.currentTileFallbackReason?.trim() || null,
+      terrainSurfaceMode:
+        options.debugSnapshot.currentTileTerrainSurfaceMode?.trim() || null,
+      sharedSplatEligible:
+        options.debugSnapshot.currentTileSharedSplatEligible ?? false,
+      terrainSurfaceReason:
+        options.debugSnapshot.currentTileTerrainSurfaceReason?.trim() || null,
       hasVisibleModel:
         options.debugSnapshot.currentTileHasVisibleModel ?? false,
     },

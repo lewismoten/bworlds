@@ -317,6 +317,9 @@ export type DebugSnapshotExport = {
       renderedDetailLevel: string | null;
       cachedDetailLevel: string | null;
       fallbackReason: string | null;
+      terrainSurfaceMode: string | null;
+      sharedSplatEligible: boolean;
+      terrainSurfaceReason: string | null;
       supportsModel: boolean | null;
       hasVisibleModel: boolean;
     };
@@ -727,6 +730,12 @@ export function buildDebugSnapshotExport(
           options.snapshot.currentTileCachedDetailLevel?.trim() || null,
         fallbackReason:
           options.snapshot.currentTileFallbackReason?.trim() || null,
+        terrainSurfaceMode:
+          options.snapshot.currentTileTerrainSurfaceMode?.trim() || null,
+        sharedSplatEligible:
+          options.snapshot.currentTileSharedSplatEligible ?? false,
+        terrainSurfaceReason:
+          options.snapshot.currentTileTerrainSurfaceReason?.trim() || null,
         supportsModel: options.snapshot.currentTileSupportsModel ?? null,
         hasVisibleModel: options.snapshot.currentTileHasVisibleModel ?? false,
       },

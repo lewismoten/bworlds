@@ -219,6 +219,10 @@ describe('runtime performance snapshot store', () => {
             cachedDetailLevel: 'low',
             fallbackReason:
               'tile has no plugin model and uses the wall-height fallback',
+            terrainSurfaceMode: 'legacy-mesh',
+            sharedSplatEligible: false,
+            terrainSurfaceReason:
+              'renderer still uses legacy terrain mesh and shared floor batches',
             hasVisibleModel: true,
           },
           resourceWarnings: [
@@ -317,6 +321,10 @@ describe('runtime performance snapshot store', () => {
         renderedDetailLevel: 'full',
         cachedDetailLevel: 'full',
         fallbackReason: null,
+        terrainSurfaceMode: 'legacy-mesh',
+        sharedSplatEligible: true,
+        terrainSurfaceReason:
+          'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
         hasVisibleModel: true,
       },
       resourceWarnings: [],
@@ -430,6 +438,10 @@ describe('runtime performance snapshot store', () => {
         cachedDetailLevel: 'low',
         fallbackReason:
           'tile has no plugin model and uses the wall-height fallback',
+        terrainSurfaceMode: 'legacy-mesh',
+        sharedSplatEligible: false,
+        terrainSurfaceReason:
+          'renderer still uses legacy terrain mesh and shared floor batches',
         hasVisibleModel: true,
       },
       resourceWarnings: [],
