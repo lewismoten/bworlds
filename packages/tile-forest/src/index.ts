@@ -70,6 +70,7 @@ import type {
   Create3DModelContext,
   Create3DModelProgress,
   CreateWorldActionContext,
+  RenderBudgetQualityLevel,
   RuntimePlugin,
   ThreeBufferGeometryLike,
   ThreeGeometryLike,
@@ -1404,6 +1405,7 @@ function* createForestModelProgressive({
   tileX,
   tileY,
   detailLevel = 'full',
+  renderBudget,
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
   const group = new three.Group();
   const renderCloseDetails = shouldRenderForestCloseDetails(
@@ -1431,9 +1433,35 @@ function* createForestModelProgressive({
     return group;
   }
 
-  const firstTreeBatchCount = Math.ceil(descriptors.length / 2);
-  const primaryTreeDescriptors = descriptors.slice(0, firstTreeBatchCount);
-  const secondaryTreeDescriptors = descriptors.slice(firstTreeBatchCount);
+  const {
+    fullDetailDescriptors,
+    backgroundInstanceDescriptors,
+  } = splitForestFullDetailTreeDescriptors(
+    descriptors,
+    state,
+    tileX,
+    tileY,
+    renderBudget?.quality
+  );
+  if (backgroundInstanceDescriptors.length > 0) {
+    addLowDetailForestTreeInstances(
+      three,
+      group,
+      geometry,
+      tileX,
+      tileY,
+      backgroundInstanceDescriptors
+    );
+  }
+
+  const firstTreeBatchCount = Math.ceil(fullDetailDescriptors.length / 2);
+  const primaryTreeDescriptors = fullDetailDescriptors.slice(
+    0,
+    firstTreeBatchCount
+  );
+  const secondaryTreeDescriptors = fullDetailDescriptors.slice(
+    firstTreeBatchCount
+  );
   const trunkSegments: ForestTrunkSegmentInstance[] = [];
   const totalSteps = secondaryTreeDescriptors.length > 0 ? 6 : 5;
 
@@ -4403,6 +4431,76 @@ function addLowDetailForestTreeInstances(
     });
     group.add(canopyInstances);
   }
+}
+
+function splitForestFullDetailTreeDescriptors(
+  descriptors: readonly ForestTreeDescriptor[],
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number,
+  quality: RenderBudgetQualityLevel | null | undefined
+): {
+  fullDetailDescriptors: ForestTreeDescriptor[];
+  backgroundInstanceDescriptors: ForestTreeDescriptor[];
+} {
+  if (
+    quality === 'full' ||
+    quality == null ||
+    descriptors.length <= 2
+  ) {
+    return {
+      fullDetailDescriptors: [...descriptors],
+      backgroundInstanceDescriptors: [],
+    };
+  }
+
+  const player = state?.player;
+  const dx = player ? tileX - player.x : 0;
+  const dy = player ? tileY - player.y : 0;
+  const distanceSquared = player ? dx * dx + dy * dy : 0;
+  const baseFullCount =
+    quality === 'minimal'
+      ? distanceSquared <= 1
+        ? 2
+        : 1
+      : distanceSquared <= 1
+        ? 4
+        : distanceSquared <= 4
+          ? 3
+          : 2;
+  const rankedDescriptors = [...descriptors].sort((left, right) => {
+    const leftHistorical = getTreeHistoricalState(left).landmark ? 1 : 0;
+    const rightHistorical = getTreeHistoricalState(right).landmark ? 1 : 0;
+    if (leftHistorical !== rightHistorical) {
+      return rightHistorical - leftHistorical;
+    }
+    const leftScore = left.scale * left.trunkHeight;
+    const rightScore = right.scale * right.trunkHeight;
+    if (leftScore !== rightScore) {
+      return rightScore - leftScore;
+    }
+    return left.variety - right.variety;
+  });
+  const fullDetailSet = new Set(
+    rankedDescriptors.slice(0, Math.min(descriptors.length, baseFullCount))
+  );
+  const fullDetailDescriptors = descriptors.filter((descriptor) =>
+    fullDetailSet.has(descriptor)
+  );
+  const backgroundInstanceDescriptors = descriptors.filter(
+    (descriptor) => !fullDetailSet.has(descriptor)
+  );
+
+  return {
+    fullDetailDescriptors:
+      fullDetailDescriptors.length > 0
+        ? fullDetailDescriptors
+        : descriptors.slice(0, 1),
+    backgroundInstanceDescriptors:
+      fullDetailDescriptors.length > 0
+        ? backgroundInstanceDescriptors
+        : descriptors.slice(1),
+  };
 }
 
 function addForestMeadowFlowerInstances(

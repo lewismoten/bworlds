@@ -134,6 +134,7 @@ import {
   collectVisibleTileResourceStats,
   countRecentMetricEvents,
   countEquivalentShareableMaterials,
+  createStarField,
   createTilePluginModelFromCostEstimate,
   resumeProgressiveTileModelBuild,
   disposeAndClearObject3D,
@@ -346,6 +347,18 @@ describe('render3d visibility helpers', () => {
       treeObjectCount: 1,
       treeMeshCount: 1,
       treeMaterialRefCount: 1,
+    });
+  });
+
+  it('shares a single material across ambient star sprites', () => {
+    const starField = createStarField();
+
+    expect(collectSceneResourceStats(starField as never)).toMatchObject({
+      spriteCount: 360,
+      materialRefCount: 360,
+      materialCount: 1,
+      sharedMaterialCount: 359,
+      clonedMaterialCount: 0,
     });
   });
 

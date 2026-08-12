@@ -44,7 +44,13 @@
 - [ ] Reuse shared materials instead of cloning them.
 - [ ] Cache materials by their effective property values.
 - [ ] Avoid cloning materials only to change unused values.
-- [ ] Share SpriteMaterial instances where possible.
+- [x] Share SpriteMaterial instances where possible.
+      Progress: the ambient night-sky star field already uses `THREE.Sprite`
+      nodes for distant stars, and `render3d` now reuses one shared
+      `SpriteMaterial` across the full 360-star field instead of allocating a
+      unique material per star. That removes roughly 359 avoidable scene-unique
+      material references from the persistent sky layer while keeping the
+      per-star brightness variation through sprite scale.
 - [ ] Report material cache hit and miss counts.
 - [ ] Fail tests when material counts regress sharply.
 

@@ -500,6 +500,67 @@ describe('tile forest', () => {
     expect(trunkMeshes).toHaveLength(0);
   });
 
+  it('uses background low-detail tree instances when reduced quality constrains a full-detail forest tile', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    state.player.x = 8;
+    state.player.y = 6;
+
+    const defaultModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const reducedModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'full',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    const defaultTreeGroups: FakeGroup[] = [];
+    const reducedTreeGroups: FakeGroup[] = [];
+    const reducedBackgroundInstances: FakeInstancedMesh[] = [];
+    defaultModel.traverse((node) => {
+      if (
+        node instanceof FakeGroup &&
+        node.userData?.renderStatKind === 'tree'
+      ) {
+        defaultTreeGroups.push(node);
+      }
+    });
+    reducedModel.traverse((node) => {
+      if (
+        node instanceof FakeGroup &&
+        node.userData?.renderStatKind === 'tree'
+      ) {
+        reducedTreeGroups.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        typeof node.userData?.forestTreeLowDetailInstancedPart === 'string'
+      ) {
+        reducedBackgroundInstances.push(node);
+      }
+    });
+
+    expect(reducedTreeGroups.length).toBeLessThan(defaultTreeGroups.length);
+    expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
+  });
+
   it('renders meadow grass only in full-detail forest models', () => {
     const tile = getForestTile();
     const state = createForestTestState();

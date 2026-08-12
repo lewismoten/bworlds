@@ -6402,20 +6402,19 @@ function applyShadowSettings(
   });
 }
 
-function createStarField(): THREE.Group {
+export function createStarField(): THREE.Group {
   const root = new THREE.Group();
+  const sharedMaterial = new THREE.SpriteMaterial({
+    color: '#eef6ff',
+    transparent: true,
+    opacity: 0.92,
+    depthWrite: false,
+    depthTest: true,
+    fog: false,
+  });
 
   for (let index = 0; index < 360; index += 1) {
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        color: '#eef6ff',
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        depthTest: true,
-        fog: false,
-      })
-    );
+    const sprite = new THREE.Sprite(sharedMaterial);
     sprite.userData = {
       theta: hash2D(STAR_THETA_SEED, index, 0) * Math.PI * 2,
       phi: hash2D(STAR_PHI_SEED, 0, index) * Math.PI * 0.88 + 0.16,
@@ -6459,10 +6458,11 @@ function syncStarField(
       child.userData.brightness *
       horizonFade *
       Math.max(0.72, Math.min(1.6, starDensity));
-    child.material.opacity = opacity;
     child.visible = opacity > 0.015;
     const scale =
-      child.userData.scale * Math.max(0.75, Math.min(1.8, starDensity));
+      child.userData.scale *
+      (0.58 + opacity * 0.9) *
+      Math.max(0.75, Math.min(1.8, starDensity));
     child.scale.set(scale, scale, 1);
   });
 }
