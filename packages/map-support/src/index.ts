@@ -13,11 +13,17 @@ import type {
   WorldMapLike,
 } from '@bworlds/plugin-api';
 export type * from './map-projections.ts';
+export type * from './map-layer-generators.ts';
 export type * from './map-feature-policies.ts';
 export type * from './map-features.ts';
 export type * from './map-pmtiles.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
+export {
+  createPhysicalMapFeatureGeneratorPlugin,
+  createReliefMapFeatureGeneratorPlugin,
+  createTopographicMapFeatureGeneratorPlugin,
+} from './map-layer-generators.ts';
 export {
   createHydrologyFeatureZoomRange,
   createTransportFeatureZoomRange,

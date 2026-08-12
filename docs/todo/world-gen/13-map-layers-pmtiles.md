@@ -68,8 +68,18 @@ Current support:
 
 ## Physical Layers
 
-- [ ] Add topographic, relief, and physical map plugins.
+- [x] Add topographic, relief, and physical map plugins.
 - [ ] Add elevation, slope, and geology map plugins.
+
+Current support:
+
+- `@bworlds/map-support` now exposes
+  `createTopographicMapFeatureGeneratorPlugin(...)`,
+  `createReliefMapFeatureGeneratorPlugin(...)`, and
+  `createPhysicalMapFeatureGeneratorPlugin(...)`, so later physical map layers
+  can share conventional `topographic`, `relief`, and `physical` PMTiles
+  generator wrappers instead of re-declaring those layer ids and plugin shapes
+  in each map product.
 
 ## Climate Layers
 
