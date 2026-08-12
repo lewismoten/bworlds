@@ -909,6 +909,59 @@ describe('tile town', () => {
     );
   });
 
+  it('keeps full-detail town wall and roof materials stable across repeated builds on one host', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+
+    const first = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const second = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 4,
+      tileY: 8,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const firstBodyMaterial = findTownInstancedPartMaterial(
+      first,
+      'building-body'
+    );
+    const firstRoofMaterial = findTownInstancedPartMaterial(
+      first,
+      'building-roof'
+    );
+    const secondBodyMaterial = findTownInstancedPartMaterial(
+      second,
+      'building-body'
+    );
+    const secondRoofMaterial = findTownInstancedPartMaterial(
+      second,
+      'building-roof'
+    );
+
+    expect(firstBodyMaterial).toBeDefined();
+    expect(firstRoofMaterial).toBeDefined();
+    expect(secondBodyMaterial).toBe(firstBodyMaterial);
+    expect(secondRoofMaterial).toBe(firstRoofMaterial);
+    expect(
+      new Set([
+        firstBodyMaterial,
+        secondBodyMaterial,
+        firstRoofMaterial,
+        secondRoofMaterial,
+      ]).size
+    ).toBe(2);
+  });
+
   it('reuses full-detail banner cloth materials across repeated builds', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
@@ -1048,6 +1101,22 @@ function findTownBannerMaterial(root: FakeGroup) {
     }
 
     material = Array.isArray(node.material) ? node.material[0] : node.material;
+  });
+  return material;
+}
+
+function findTownInstancedPartMaterial(root: FakeGroup, part: string) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (
+      material ||
+      !(node instanceof FakeInstancedMesh) ||
+      node.userData?.townInstancedPart !== part ||
+      Array.isArray(node.material)
+    ) {
+      return;
+    }
+    material = node.material;
   });
   return material;
 }

@@ -119,6 +119,10 @@
       Progress: route dock labels, town sign labels, and dungeon gate bars now
       have repeated-build regression tests that fail if those paths start
       allocating extra unique materials on the same Three host, and
+      full-detail town building wall and roof instance materials now also have
+      a repeated-build regression test on one host so that expensive painted
+      surface materials cannot quietly start cloning while cheaper town
+      materials still happen to be shared, and
       `tile-forest` now keeps a sampled full-detail forest sweep on the same
       host within the bounded shared palette across repeated builds instead of
       allowing the material set to grow between passes.
