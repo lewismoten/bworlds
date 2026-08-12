@@ -322,18 +322,23 @@
   `@bworlds/terrain-splat-support/sample-grid` so one chunk build can expose
   dominant layers, mixed-cell counts, and render-free active-layer previews for
   grass/dirt/road/forest chunk validation before shared material integration.
+- Synced the second-delivery checklist with implemented support-package
+  coverage for four-layer normalization, forest/rock/sand/road mappings,
+  deterministic terrain boundary blending, bounded deterministic texture
+  variants, and biome-driven splat weighting that are already covered by the
+  current tests and package docs.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
 
 ## Second Delivery
 
-- [ ] Add four-layer blending.
-- [ ] Add forest, rock, sand, and road layers.
-- [ ] Add terrain boundary blending.
-- [ ] Add deterministic texture variants.
+- [x] Add four-layer blending.
+- [x] Add forest, rock, sand, and road layers.
+- [x] Add terrain boundary blending.
+- [x] Add deterministic texture variants.
 - [x] Add UV rotation and mirroring.
-- [ ] Add biome-driven splat weights.
+- [x] Add biome-driven splat weights.
 - [x] Add slope-driven splat weights.
 - [x] Add LOD support.
 

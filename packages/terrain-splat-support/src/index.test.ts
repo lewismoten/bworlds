@@ -647,6 +647,28 @@ describe('terrain splat support', () => {
     expect(normalized.entries.every((entry) => entry.weight > 0)).toBe(true);
   });
 
+  it('keeps up to four active layers after normalization', () => {
+    const normalized = normalizeTerrainSplatSample({
+      entries: [
+        { layerId: 'grass', weight: 0.34 },
+        { layerId: 'soil', weight: 0.26 },
+        { layerId: 'rock', weight: 0.22 },
+        { layerId: 'sand', weight: 0.18 },
+      ],
+    });
+
+    expect(normalized.entries).toHaveLength(4);
+    expect(normalized.entries.map((entry) => entry.layerId)).toEqual([
+      'grass',
+      'soil',
+      'rock',
+      'sand',
+    ]);
+    expect(
+      normalized.entries.reduce((sum, entry) => sum + entry.weight, 0)
+    ).toBeCloseTo(1, 6);
+  });
+
   it('falls back to one deterministic layer when every weight collapses away', () => {
     expect(
       normalizeTerrainSplatSample(
