@@ -37,3 +37,11 @@ The full-detail roadside sign now also uses its post `InstancedMesh` as the
 tile root and attaches the brace, placards, label planes, and lantern pieces
 beneath it, so each sign tile avoids one otherwise empty wrapper `Group`
 without changing the placard layout or night-light placement.
+
+Material reuse:
+
+- repeated full-detail sign builds on one Three host are expected to stay
+  within one shared seven-material palette for the post, placard, trim,
+  lantern, and three cached label surfaces
+- the regression test locks that budget so repeated nearby sign builds cannot
+  quietly start allocating extra equivalent materials on the same host

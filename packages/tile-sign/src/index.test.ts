@@ -772,6 +772,33 @@ describe('tile sign', () => {
     expect(secondLabelMaterials).toEqual(firstLabelMaterials);
   });
 
+  it('keeps repeated sign builds on one host within the shared material budget', () => {
+    const repeatedModels: FakeNode[] = [];
+
+    for (let index = 0; index < 4; index += 1) {
+      const model = signTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: createMultiPlacardSignState() as never,
+        tile: { kind: 'sign' },
+        tileX: 8,
+        tileY: 8,
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(7);
+  });
+
   it('places full-detail sign post and placard parts directly under the sign root', () => {
     const model = signTile?.create3DModel?.({
       three: fakeThree as never,

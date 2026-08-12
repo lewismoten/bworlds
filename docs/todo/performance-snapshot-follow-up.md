@@ -189,6 +189,9 @@
       and lantern materials cannot quietly grow between passes, and
       `tile-mountain` now keeps repeated mountain builds on one host within
       one shared two-material palette so rock and snow materials cannot
+      quietly grow between passes, and `tile-sign` now keeps repeated full-
+      detail sign builds on one host within one shared seven-material palette
+      so post, placard, trim, lantern, and cached label materials cannot
       quietly grow between passes.
 
 ## Instancing
