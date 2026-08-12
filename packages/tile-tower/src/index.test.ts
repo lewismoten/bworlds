@@ -152,14 +152,33 @@ describe('tile tower', () => {
       detailLevel: 'low',
     }) as { children?: unknown[] } | null | undefined;
 
-    expect(low?.children).toHaveLength(3);
+    expect(low?.children).toHaveLength(2);
     expect(full?.children?.length ?? 0).toBeGreaterThan(
       low?.children?.length ?? 0
     );
   });
+
+  it('uses the low-detail tower base mesh as the root instead of a wrapper group', () => {
+    const plugin = createTowerTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'tower');
+    const three = createFakeThree() as never;
+
+    const low = tile?.create3DModel?.({
+      tile: { kind: 'tower' },
+      three,
+      state: {} as never,
+      tileX: 8,
+      tileY: -3,
+      detailLevel: 'low',
+    }) as Mesh | null | undefined;
+
+    expect(low).toBeInstanceOf(Mesh);
+    expect(low?.position).toMatchObject({ x: 8, y: 0.11, z: -3 });
+    expect(low?.children).toHaveLength(2);
+  });
 });
 
-class Group {
+class BaseNode {
   children: unknown[] = [];
   position = {
     x: 0,
@@ -195,53 +214,26 @@ class Group {
   }
 }
 
-class Mesh {
-  position = {
-    x: 0,
-    y: 0,
-    z: 0,
-    set: (x: number, y: number, z: number) => {
-      this.position.x = x;
-      this.position.y = y;
-      this.position.z = z;
-      return this.position;
-    },
-  };
-  rotation = { x: 0, y: 0, z: 0 };
-  visible = true;
-  userData?: Record<string, unknown>;
+class Group extends BaseNode {}
+
+class Mesh extends BaseNode {
   constructor(
     public geometry: unknown,
     public material: unknown
-  ) {}
-  traverse(visit: (child: unknown) => void) {
-    visit(this);
+  ) {
+    super();
   }
 }
 
-class PointLight {
-  position = {
-    x: 0,
-    y: 0,
-    z: 0,
-    set: (x: number, y: number, z: number) => {
-      this.position.x = x;
-      this.position.y = y;
-      this.position.z = z;
-      return this.position;
-    },
-  };
-  rotation = { x: 0, y: 0, z: 0 };
-  visible = true;
+class PointLight extends BaseNode {
   userData: Record<string, unknown> = {};
   constructor(
     public color: unknown,
     public intensity: unknown,
     public distance: unknown,
     public decay: unknown
-  ) {}
-  traverse(visit: (child: unknown) => void) {
-    visit(this);
+  ) {
+    super();
   }
 }
 
@@ -293,7 +285,7 @@ function createFakeThree() {
 
 type GroupNode = InstanceType<typeof Group>;
 
-function createModelSignature(model: GroupNode | undefined) {
+function createModelSignature(model: BaseNode | undefined) {
   const signature: Array<Record<string, unknown>> = [];
   model?.traverse((node) => {
     if (typeof node !== 'object' || node === null) {

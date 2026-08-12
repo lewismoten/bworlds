@@ -16,3 +16,7 @@ Low-detail towers keep a shorter two-step path:
 
 The synchronous `create3DModel()` path exhausts the same generator so the
 progressive and eager builds stay structurally aligned.
+
+The low-detail tower silhouette now also uses the base cylinder mesh as its
+root and attaches the shaft and roof beneath it, so reduced-quality tower
+tiles avoid one otherwise empty wrapper `Group` without changing the silhouette.

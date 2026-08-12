@@ -234,7 +234,11 @@
       smaller keep, corner towers, gate pieces, and gate beacon nodes beneath
       it instead of wrapping them in a dedicated `Group`, which removes one
       static `Object3D` from each reduced-quality dungeon tile without changing
-      the silhouette or beacon placement.
+      the silhouette or beacon placement, and the low-detail tower silhouette
+      now uses its base cylinder mesh as the root and hangs the shaft and roof
+      beneath it instead of wrapping those meshes in a dedicated `Group`, which
+      removes one static `Object3D` from each reduced-quality tower tile
+      without changing the silhouette.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so

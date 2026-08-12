@@ -67,7 +67,6 @@ function* createTowerModelProgressive({
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
   const { stoneMaterial, trimMaterial, roofMaterial, lampMaterial } =
     getTowerSharedMaterials(three);
-  const group = new three.Group();
 
   const totalSteps = detailLevel === 'low' ? 2 : 3;
 
@@ -76,14 +75,13 @@ function* createTowerModelProgressive({
     stoneMaterial
   );
   base.position.set(tileX, 0.11, tileY);
-  group.add(base);
 
   const shaft = new three.Mesh(
     getSharedCylinderGeometry(three, 0.42, 0.5, 1.48, 8),
     stoneMaterial
   );
-  shaft.position.set(tileX, 0.96, tileY);
-  group.add(shaft);
+  shaft.position.set(0, 0.85, 0);
+  base.add(shaft);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -95,15 +93,18 @@ function* createTowerModelProgressive({
       getSharedConeGeometry(three, 0.52, 0.3, 8),
       roofMaterial
     );
-    lowCap.position.set(tileX, 1.8, tileY);
-    group.add(lowCap);
+    lowCap.position.set(0, 1.69, 0);
+    base.add(lowCap);
     yield {
       completedSteps: 2,
       totalSteps,
       label: 'roof',
     };
-    return group;
+    return base;
   }
+
+  const group = new three.Group();
+  group.add(base);
 
   const ring = new three.Mesh(
     getSharedCylinderGeometry(three, 0.5, 0.56, 0.08, 8),
