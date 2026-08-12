@@ -39,7 +39,7 @@
 - [x] Show which plugin created a selected feature.
 - [ ] Show which plugin changed a selected height sample.
 - [x] Show plugin execution timings by region.
-- [ ] Toggle selected generation layers in debug views.
+- [x] Toggle selected generation layers in debug views.
 
 Current support:
 
@@ -70,6 +70,10 @@ Current support:
   normalized feature record directly from its stable id so debug panels can
   show the owning `pluginId` for the currently selected feature without
   rescanning the full region.
+- Region-run results now also expose one `declaredLayers` catalog derived from
+  plugin declarations, including each layer's `pluginId`, `recordType`,
+  optional description, and current `recordCount`, so debug views can render
+  stable layer toggles even when a declared layer emits zero records.
 - Region-run results now also expose one `pluginTimings` list with
   `pluginId`, `durationMs`, and `recordCount` per layer, so debug panels can
   attribute regional generation cost before a renderer-specific inspector

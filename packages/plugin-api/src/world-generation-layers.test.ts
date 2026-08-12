@@ -344,6 +344,22 @@ describe('world generation layer plugins', () => {
             ];
           },
         }),
+        createWorldGenerationLayerPlugin({
+          id: 'naming',
+          order: {
+            priority: 30,
+            after: ['climate'],
+          },
+          outputRecords: [
+            {
+              recordType: 'feature-name',
+              description: 'stable generated names for regional features',
+            },
+          ],
+          run() {
+            return [];
+          },
+        }),
       ],
     });
 
@@ -361,19 +377,42 @@ describe('world generation layer plugins', () => {
     expect(result.orderedPlugins.map((plugin) => plugin.id)).toEqual([
       'terrain',
       'climate',
+      'naming',
     ]);
-    expect(result.pluginTimings).toHaveLength(2);
+    expect(result.pluginTimings).toHaveLength(3);
     expect(result.pluginTimings.map((timing) => timing.pluginId)).toEqual([
       'terrain',
       'climate',
+      'naming',
     ]);
     expect(result.pluginTimings.map((timing) => timing.recordCount)).toEqual([
       2,
       1,
+      0,
     ]);
     expect(
       result.pluginTimings.every((timing) => timing.durationMs >= 0)
     ).toBe(true);
+    expect(result.declaredLayers).toEqual([
+      {
+        pluginId: 'terrain',
+        recordType: 'height-sample',
+        description: undefined,
+        recordCount: 2,
+      },
+      {
+        pluginId: 'climate',
+        recordType: 'biome-region',
+        description: undefined,
+        recordCount: 1,
+      },
+      {
+        pluginId: 'naming',
+        recordType: 'feature-name',
+        description: 'stable generated names for regional features',
+        recordCount: 0,
+      },
+    ]);
     expect(result.getRecordById('terrain:near')).toEqual({
       id: 'terrain:near',
       type: 'height-sample',
@@ -646,6 +685,7 @@ describe('world generation layer plugins', () => {
 
     expect(first).toBe(second);
     expect(third).not.toBe(first);
+    expect(first.declaredLayers).toBe(second.declaredLayers);
     expect(first.getRecordById('terrain:0')).toBe(second.getRecordById('terrain:0'));
     expect(first.pluginTimings).toBe(second.pluginTimings);
     expect(runCount).toBe(2);

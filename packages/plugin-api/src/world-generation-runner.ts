@@ -37,11 +37,19 @@ export interface WorldGenerationPluginTiming {
   recordCount: number;
 }
 
+export interface WorldGenerationDeclaredLayer {
+  pluginId: WorldGenerationLayerPluginId;
+  recordType: WorldGenerationRecordType;
+  description?: string;
+  recordCount: number;
+}
+
 export interface WorldGenerationRegionRunResult {
   readonly bounds: WorldGenerationBounds;
   readonly orderedPlugins: readonly WorldGenerationLayerPlugin[];
   readonly records: readonly WorldGenerationFeatureRecordLike[];
   readonly pluginTimings: readonly WorldGenerationPluginTiming[];
+  readonly declaredLayers: readonly WorldGenerationDeclaredLayer[];
   getRecordById(recordId: string): WorldGenerationFeatureRecordLike | null;
   queryRecords(
     query?: WorldGenerationRecordQuery
@@ -126,6 +134,7 @@ function runWorldGenerationRegion(params: {
   const records: WorldGenerationFeatureRecordLike[] = [];
   const recordsById = new Map<string, WorldGenerationFeatureRecordLike>();
   const pluginTimings: WorldGenerationPluginTiming[] = [];
+  const declaredLayerCounts = new Map<string, number>();
   const queryCache = new Map<string, readonly WorldGenerationFeatureRecordLike[]>();
   const summaryCache = new Map<string, readonly WorldGenerationRecordSummary[]>();
 
@@ -160,6 +169,10 @@ function runWorldGenerationRegion(params: {
         pluginId: normalizedRecord.pluginId,
         recordType: normalizedRecord.type,
       });
+      declaredLayerCounts.set(
+        dependencyKey,
+        (declaredLayerCounts.get(dependencyKey) ?? 0) + 1
+      );
       const bucket = dependencyIndex.get(dependencyKey);
       if (bucket) {
         bucket.push(normalizedRecord);
@@ -170,12 +183,29 @@ function runWorldGenerationRegion(params: {
   }
 
   const frozenRecords = Object.freeze(records.slice());
+  const declaredLayers = Object.freeze(
+    params.orderedPlugins.flatMap((plugin) =>
+      plugin.outputRecords.map((outputRecord) => {
+        const dependencyKey = createWorldGenerationDependencyKey({
+          pluginId: plugin.id,
+          recordType: outputRecord.recordType,
+        });
+        return {
+          pluginId: plugin.id,
+          recordType: outputRecord.recordType,
+          description: outputRecord.description,
+          recordCount: declaredLayerCounts.get(dependencyKey) ?? 0,
+        };
+      })
+    )
+  );
 
   return {
     bounds: params.bounds,
     orderedPlugins: Object.freeze(params.orderedPlugins.slice()),
     records: frozenRecords,
     pluginTimings: Object.freeze(pluginTimings.slice()),
+    declaredLayers,
     getRecordById(recordId) {
       const normalizedId = normalizeOptionalString(recordId);
       if (!normalizedId) {

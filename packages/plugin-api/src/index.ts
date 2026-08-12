@@ -114,6 +114,7 @@ export {
   createWorldGenerationChunkBounds,
   createWorldGenerationRegionRunner,
   type WorldGenerationChunkRecordQuery,
+  type WorldGenerationDeclaredLayer,
   type WorldGenerationPluginTiming,
   type WorldGenerationRecordQuery,
   type WorldGenerationRecordSummary,
