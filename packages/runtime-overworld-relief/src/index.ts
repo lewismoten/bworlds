@@ -2,6 +2,7 @@ import { clamp, smoothstep } from '@bworlds/core';
 import { createRuntimePlugin } from '@bworlds/plugin-api';
 import type {
   DecorateOverworldTileContext,
+  OverworldSignals,
   RuntimePlugin,
   TileLike,
 } from '@bworlds/plugin-api';
@@ -36,13 +37,40 @@ export function decorateOverworldRelief({
     return tile;
   }
 
-  tile.surfaceHeight = resolveOverworldReliefHeight(signals.elevation, {
-    kind: tile.kind,
-  });
+  tile.surfaceHeight = resolveOverworldReliefHeightFromSignals(signals, tile);
   return tile;
 }
 
 export function resolveOverworldReliefHeight(
+  elevation: number,
+  tile: Pick<TileLike, 'kind'>
+): number {
+  return clamp(
+    resolveOverworldContinentUpliftHeight(elevation, tile) +
+      resolveOverworldMountainDetailHeight(elevation, tile),
+    0,
+    0.36
+  );
+}
+
+export function resolveOverworldReliefHeightFromSignals(
+  signals: Pick<OverworldSignals, 'elevation' | 'riverSignal'>,
+  tile: Pick<TileLike, 'kind'>
+): number {
+  if (RELIEF_DISABLED_KINDS.has(tile.kind)) {
+    return 0;
+  }
+
+  return clamp(
+    resolveOverworldContinentUpliftHeight(signals.elevation, tile) +
+      resolveOverworldMountainDetailHeight(signals.elevation, tile) +
+      resolveOverworldRiverCarvingHeight(signals.riverSignal, tile),
+    0,
+    0.36
+  );
+}
+
+export function resolveOverworldContinentUpliftHeight(
   elevation: number,
   tile: Pick<TileLike, 'kind'>
 ): number {
@@ -51,6 +79,27 @@ export function resolveOverworldReliefHeight(
   }
 
   const hillProgress = smoothstep(0.28, 0.72, elevation);
-  const plateauBias = smoothstep(0.56, 0.72, elevation) * 0.03;
-  return clamp(hillProgress * 0.34 + plateauBias, 0, 0.36);
+  return clamp(hillProgress * 0.34, 0, 0.34);
+}
+
+export function resolveOverworldMountainDetailHeight(
+  elevation: number,
+  tile: Pick<TileLike, 'kind'>
+): number {
+  if (RELIEF_DISABLED_KINDS.has(tile.kind)) {
+    return 0;
+  }
+
+  return smoothstep(0.56, 0.72, elevation) * 0.03;
+}
+
+export function resolveOverworldRiverCarvingHeight(
+  riverSignal: number,
+  tile: Pick<TileLike, 'kind'>
+): number {
+  if (RELIEF_DISABLED_KINDS.has(tile.kind)) {
+    return 0;
+  }
+
+  return -smoothstep(0.72, 0.94, riverSignal) * 0.02;
 }

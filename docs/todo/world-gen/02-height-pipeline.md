@@ -125,9 +125,10 @@ Current support:
   world-space bounds and coarse or fine query resolutions without tying the
   authoritative height path to renderer-only noise.
 - `createWorldGenerator(...)` now routes its current preview terrain-height
-  query through one sorted `overworld-relief` influence stack, so the existing
-  relief-based height sampler already uses the ordered plugin composition path
-  instead of a package-local one-off formula.
+  query through one sorted default layer stack of `continent-uplift`,
+  `mountain-detail`, and `river-carving`, so the existing relief-based height
+  sampler now already uses explicit ordered layers instead of a package-local
+  one-off formula.
 - That same generator entry point now also accepts `heightInfluencePlugins`,
   which lets callers compose ordered uplift, carving, grading, and other
   signed height-delta layers directly into the shared terrain sampler while

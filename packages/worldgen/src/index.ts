@@ -32,7 +32,8 @@ import {
   getOverworldPlacementChance,
   isNearOverworldLand,
 } from '@bworlds/overworld-support';
-import { resolveOverworldReliefHeight } from '@bworlds/runtime-overworld-relief';
+export { createDefaultTerrainHeightInfluencePlugins } from './default-terrain-height-influences.ts';
+import { createDefaultTerrainHeightInfluencePlugins } from './default-terrain-height-influences.ts';
 export {
   createWorldTerrainHeightInfluencePlugin,
   sampleWorldTerrainHeightInfluences,
@@ -45,7 +46,6 @@ export {
   type WorldTerrainHeightInfluenceSamplingDeclaration,
 } from './terrain-height-influences.ts';
 import {
-  createWorldTerrainHeightInfluencePlugin,
   sampleWorldTerrainHeightInfluences,
   sortWorldTerrainHeightInfluencePlugins,
   type WorldTerrainHeightInfluencePlugin,
@@ -396,20 +396,9 @@ export function createWorldGenerator({
   };
   const previewTerrainHeightInfluencePlugins =
     sortWorldTerrainHeightInfluencePlugins([
-      createWorldTerrainHeightInfluencePlugin({
-        id: 'overworld-relief',
-        sampling: {
-          resolutions: ['coarse', 'fine'],
-        },
-        sample({ worldX, worldY }) {
-          const kind = samplePreviewSurfaceKind(worldX, worldY);
-          return resolveOverworldReliefHeight(
-            terrainSignals(worldX, worldY).elevation,
-            {
-              kind,
-            }
-          );
-        },
+      ...createDefaultTerrainHeightInfluencePlugins({
+        sampleTerrainSignals: terrainSignals,
+        sampleSurfaceKind: samplePreviewSurfaceKind,
       }),
       ...heightInfluencePlugins,
     ]);

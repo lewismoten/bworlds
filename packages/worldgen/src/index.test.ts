@@ -10,6 +10,7 @@ import {
   clampTerrainHeightValue,
   convertFeetToWorldHeightUnits,
   convertWorldHeightUnitsToFeet,
+  createDefaultTerrainHeightInfluencePlugins,
   createBuiltinContentPackCatalog,
   createDefaultPluginRegistry,
   createPluginRegistryFromPack,
@@ -36,6 +37,12 @@ import {
   WORLD_TERRAIN_MIN_HEIGHT,
   WORLD_TERRAIN_SEA_LEVEL,
 } from './index.ts';
+import {
+  resolveOverworldContinentUpliftHeight,
+  resolveOverworldMountainDetailHeight,
+  resolveOverworldReliefHeightFromSignals,
+  resolveOverworldRiverCarvingHeight,
+} from '@bworlds/runtime-overworld-relief';
 import type {
   PluginPackDefinitionLike,
   ResolveWorldEnvironmentContext,
@@ -972,7 +979,7 @@ describe('world generator', () => {
           id: 'continent-uplift',
           order: {
             priority: 20,
-            after: ['overworld-relief'],
+            after: ['river-carving'],
           },
           sample() {
             return {
@@ -1021,7 +1028,7 @@ describe('world generator', () => {
         createWorldTerrainHeightInfluencePlugin({
           id: 'broken-river-carving',
           order: {
-            after: ['overworld-relief'],
+            after: ['river-carving'],
           },
           sample() {
             return Number.NaN;
@@ -1032,6 +1039,55 @@ describe('world generator', () => {
 
     expect(() => generator.sampleTerrainHeight(10, 20)).toThrow(
       'Terrain height influence broken-river-carving amount must be a finite number.'
+    );
+  });
+
+  it('builds the default shared terrain height stack as explicit ordered layers', () => {
+    const sampleTerrainSignals = createOverworldTerrainSignalSampler('spec');
+    const influences = createDefaultTerrainHeightInfluencePlugins({
+      sampleTerrainSignals,
+      sampleSurfaceKind() {
+        return 'plains';
+      },
+    });
+
+    expect(influences.map((plugin) => plugin.id)).toEqual([
+      'continent-uplift',
+      'mountain-detail',
+      'river-carving',
+    ]);
+    expect(influences[1]?.order?.after).toEqual(['continent-uplift']);
+    expect(influences[2]?.order?.after).toEqual(['mountain-detail']);
+
+    const signals = sampleTerrainSignals(10, 20);
+    const tile = { kind: 'plains' as const };
+    const sampledAmounts = influences.map((plugin) => {
+      const sampled = plugin.sample({
+        seed: 'spec',
+        worldX: 10,
+        worldY: 20,
+        resolution: 'coarse',
+      });
+      if (typeof sampled === 'number') {
+        return sampled;
+      }
+      if (!sampled) {
+        return 0;
+      }
+      return sampled.amount;
+    });
+
+    expect(sampledAmounts[0]).toBeCloseTo(
+      resolveOverworldContinentUpliftHeight(signals.elevation, tile)
+    );
+    expect(sampledAmounts[1]).toBeCloseTo(
+      resolveOverworldMountainDetailHeight(signals.elevation, tile)
+    );
+    expect(sampledAmounts[2]).toBeCloseTo(
+      resolveOverworldRiverCarvingHeight(signals.riverSignal, tile)
+    );
+    expect(sampledAmounts.reduce((sum, amount) => sum + amount, 0)).toBeCloseTo(
+      resolveOverworldReliefHeightFromSignals(signals, tile)
     );
   });
 

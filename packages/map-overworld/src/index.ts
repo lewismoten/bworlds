@@ -38,7 +38,7 @@ import {
   createContextMapPlugin,
   createEnterMapAction,
 } from '@bworlds/map-support';
-import { resolveOverworldReliefHeight } from '@bworlds/runtime-overworld-relief';
+import { resolveOverworldReliefHeightFromSignals } from '@bworlds/runtime-overworld-relief';
 import {
   composeOverworldTileFromPlugins,
   createOverworldTerrainSignalSampler,
@@ -93,8 +93,8 @@ function createOverworldMap(
       state,
     });
     if (state && typeof tile.surfaceHeight !== 'number') {
-      tile.surfaceHeight = resolveOverworldReliefHeight(
-        sampleTerrainSignals(x, y).elevation,
+      tile.surfaceHeight = resolveOverworldReliefHeightFromSignals(
+        sampleTerrainSignals(x, y),
         tile
       );
     }

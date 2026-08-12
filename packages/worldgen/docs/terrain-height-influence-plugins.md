@@ -81,20 +81,25 @@ attribution and height-pipeline debugging.
 ## Current Usage
 
 `createWorldGenerator(...)` now routes its current preview terrain height path
-through one sorted height-influence stack containing the existing
-`overworld-relief` influence. This keeps current terrain behavior stable while
-moving the sampler onto the ordered plugin composition path needed for the full
+through one sorted default height-influence stack:
+
+- `continent-uplift`
+- `mountain-detail`
+- `river-carving`
+
+These layers preserve the current shared relief behavior while moving the
+sampler onto the ordered plugin composition path needed for the full
 authoritative height pipeline.
 
 Callers can also pass `heightInfluencePlugins` into `createWorldGenerator(...)`
 to extend that stack. Those caller-supplied influences are merged with the
-built-in `overworld-relief` layer and sorted together by `priority`,
+built-in default layers and sorted together by `priority`,
 `after`, and `before`.
 
 That gives current tests and future worldgen packages one real composition
 entry point for:
 
-- continent uplift after base relief
+- continent uplift from the shared elevation field
 - mountain detail after uplift
 - river carving after mountains
 - route grading after hydrology

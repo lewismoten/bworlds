@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   createOverworldReliefRuntimePlugin,
   decorateOverworldRelief,
+  resolveOverworldContinentUpliftHeight,
+  resolveOverworldMountainDetailHeight,
+  resolveOverworldReliefHeightFromSignals,
   resolveOverworldReliefHeight,
+  resolveOverworldRiverCarvingHeight,
 } from './index.ts';
 
 const plugin = createOverworldReliefRuntimePlugin();
@@ -30,6 +34,42 @@ describe('runtime overworld relief', () => {
     expect(resolveOverworldReliefHeight(0.7, { kind: 'river' })).toBe(0);
     expect(resolveOverworldReliefHeight(0.7, { kind: 'mountain' })).toBe(0);
     expect(resolveOverworldReliefHeight(0.7, { kind: 'rail' })).toBe(0);
+  });
+
+  it('splits relief into uplift, mountain detail, and river carving components', () => {
+    const tile = { kind: 'plains' as const };
+    const elevation = 0.68;
+    const riverSignal = 0.83;
+
+    const uplift = resolveOverworldContinentUpliftHeight(elevation, tile);
+    const mountainDetail = resolveOverworldMountainDetailHeight(
+      elevation,
+      tile
+    );
+    const riverCarving = resolveOverworldRiverCarvingHeight(riverSignal, tile);
+
+    expect(uplift).toBeGreaterThan(0);
+    expect(mountainDetail).toBeGreaterThan(0);
+    expect(riverCarving).toBeLessThanOrEqual(0);
+    expect(
+      resolveOverworldReliefHeightFromSignals(
+        {
+          elevation,
+          riverSignal,
+        },
+        tile
+      )
+    ).toBeCloseTo(uplift + mountainDetail + riverCarving);
+  });
+
+  it('keeps legacy elevation-only relief compatibility without river carving', () => {
+    const tile = { kind: 'forest' as const };
+    const elevation = 0.64;
+
+    expect(resolveOverworldReliefHeight(elevation, tile)).toBeCloseTo(
+      resolveOverworldContinentUpliftHeight(elevation, tile) +
+        resolveOverworldMountainDetailHeight(elevation, tile)
+    );
   });
 
   it('stays deterministic through the runtime plugin hook', () => {
