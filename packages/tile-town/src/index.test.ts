@@ -196,7 +196,7 @@ function normalizeMaterialOptions(
   return normalized;
 }
 
-function createModelSignature(model: FakeGroup) {
+function createModelSignature(model: FakeNode) {
   const signature: Array<Record<string, unknown>> = [];
   model.traverse((node) => {
     signature.push({
@@ -232,7 +232,7 @@ function createModelSignature(model: FakeGroup) {
   return signature;
 }
 
-function collectTownInstancedParts(model: FakeGroup) {
+function collectTownInstancedParts(model: FakeNode) {
   const parts: string[] = [];
   model.traverse((node) => {
     if (typeof node.userData?.townInstancedPart === 'string') {
@@ -384,17 +384,13 @@ describe('tile town', () => {
       tileX: 3,
       tileY: 7,
       detailLevel: 'low',
-    }) as FakeGroup;
+    }) as FakeInstancedMesh;
 
     expect(lowModel.children.length).toBeLessThan(fullModel.children.length);
-    const lowBodyInstances = lowModel.children.filter(
-      (child) =>
-        child instanceof FakeInstancedMesh &&
-        child.userData?.townInstancedPart === 'low-building-body'
-    ) as FakeInstancedMesh[];
-    expect(lowBodyInstances).toHaveLength(1);
-    expect(lowBodyInstances[0]?.count).toBe(descriptorCount);
-    expect(lowBodyInstances[0]?.matrices).toHaveLength(descriptorCount);
+    expect(lowModel).toBeInstanceOf(FakeInstancedMesh);
+    expect(lowModel.userData?.townInstancedPart).toBe('low-building-body');
+    expect(lowModel.count).toBe(descriptorCount);
+    expect(lowModel.matrices).toHaveLength(descriptorCount);
     expect(
       fullModel.children.some(
         (child) =>
@@ -402,6 +398,24 @@ describe('tile town', () => {
           child.userData?.townInstancedPart === 'building-body'
       )
     ).toBe(true);
+  });
+
+  it('returns the low-detail town body instances directly without a wrapper group', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+
+    const lowModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createTownState(),
+      tile: { kind: 'town', poi: { type: 'town', name: 'Oakcross' } } as never,
+      tileX: 3,
+      tileY: 7,
+      detailLevel: 'low',
+    }) as FakeInstancedMesh;
+
+    expect(lowModel).toBeInstanceOf(FakeInstancedMesh);
+    expect(lowModel.userData?.townInstancedPart).toBe('low-building-body');
+    expect(lowModel.children).toHaveLength(0);
   });
 
   it('passes render quality through to textured town surface materials', () => {

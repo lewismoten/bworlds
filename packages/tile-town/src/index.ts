@@ -375,8 +375,7 @@ function* createTownModelProgressive({
         )
       );
     });
-    group.add(lowBodyInstances);
-    return group;
+    return lowBodyInstances;
   }
 
   const firstBuildingBatchCount = Math.ceil(descriptors.length / 2);

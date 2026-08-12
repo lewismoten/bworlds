@@ -173,7 +173,9 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       snapshots and moved the top draw-call hotspot back to `tile-forest`, and
       full-detail `tile-forest` now batches branch and foliage instance sets
       tile-wide by compatible form/material buckets instead of emitting one
-      branch mesh and one foliage mesh per tree.
+      branch mesh and one foliage mesh per tree, and low-detail `tile-town`
+      tiles now return their instanced distant-building body mesh directly
+      instead of wrapping that single child in a no-op group.
 
 ## LOD Stability
 
