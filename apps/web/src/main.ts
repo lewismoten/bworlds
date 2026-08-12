@@ -246,7 +246,8 @@ import {
   getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
-import { resolveTerrainPreviewReadout } from './terrain-preview-readout.ts';
+import { loadTerrainPreviewReadoutModule } from './terrain-preview-readout-loader.ts';
+import { resolveTerrainSextantReadout } from './terrain-sextant-readout.ts';
 import {
   buildMinimapProblemDialogMarkup,
   getMinimapProblemCanvasPoint,
@@ -1558,6 +1559,12 @@ const DEBUG_RECENT_EVENT_WINDOW_MS = 30_000;
 const debugRecentEventsState = {
   events: [] as DebugSnapshotRecentEvent[],
 };
+let terrainPreviewReadoutModule: Awaited<
+  ReturnType<typeof loadTerrainPreviewReadoutModule>
+> | null = null;
+let terrainPreviewReadoutModulePromise: Promise<Awaited<
+  ReturnType<typeof loadTerrainPreviewReadoutModule>
+> | null> | null = null;
 const runtimePluginEventChannel = createPluginEventChannel({
   onListenerError: createPluginEventChannelListenerErrorHandler(),
 });
@@ -4401,11 +4408,14 @@ function render(): FrameLoopActivityLike {
       terrainTileDebugInfo?.cachedDetailLevel ??
       terrainTileDebugInfo?.requestedDetailLevel ??
       null;
-    const terrainPreviewReadout = resolveTerrainPreviewReadout({
+    const terrainPreviewReadoutModule = getTerrainPreviewReadoutModule();
+    const terrainSextantReadout = resolveTerrainSextantReadout({
+      module: terrainPreviewReadoutModule,
       seed: currentWorldSeed,
       x: gridX,
       y: gridY,
       kind: spatial.tile.kind,
+      fallbackHeight: terrainHeight,
     });
     const sextantSignature = getSextantSignature({
       latitude: gps.latitude,
@@ -4416,9 +4426,10 @@ function render(): FrameLoopActivityLike {
       chunkY: terrainChunkCoordinates.chunkY,
       localX: terrainChunkCoordinates.localX,
       localY: terrainChunkCoordinates.localY,
-      terrainHeight,
-      terrainDominantLayerId: terrainPreviewReadout.dominantLayerId,
-      biomeId: terrainPreviewReadout.biomeId,
+      terrainHeight: terrainSextantReadout.terrainHeight,
+      terrainDominantLayerId:
+        terrainSextantReadout.terrainPreviewReadout?.dominantLayerId ?? null,
+      biomeId: terrainSextantReadout.terrainPreviewReadout?.biomeId ?? null,
       terrainLod,
     });
     if (sextantSignature !== uiRenderState.lastSextantSignature) {
@@ -4431,9 +4442,10 @@ function render(): FrameLoopActivityLike {
         chunkY: terrainChunkCoordinates.chunkY,
         localX: terrainChunkCoordinates.localX,
         localY: terrainChunkCoordinates.localY,
-        terrainHeight,
-        terrainDominantLayerId: terrainPreviewReadout.dominantLayerId,
-        biomeId: terrainPreviewReadout.biomeId,
+        terrainHeight: terrainSextantReadout.terrainHeight,
+        terrainDominantLayerId:
+          terrainSextantReadout.terrainPreviewReadout?.dominantLayerId ?? null,
+        biomeId: terrainSextantReadout.terrainPreviewReadout?.biomeId ?? null,
         terrainLod,
       });
       uiRenderState.lastSextantSignature = sextantSignature;
@@ -4534,6 +4546,26 @@ function requestRender(): void {
     return;
   }
   pendingFrameHandle = requestAnimationFrame(loop);
+}
+
+function getTerrainPreviewReadoutModule() {
+  if (terrainPreviewReadoutModule) {
+    return terrainPreviewReadoutModule;
+  }
+  if (!terrainPreviewReadoutModulePromise) {
+    terrainPreviewReadoutModulePromise = loadTerrainPreviewReadoutModule()
+      .then((module) => {
+        terrainPreviewReadoutModule = module;
+        requestRender();
+        return module;
+      })
+      .catch((error) => {
+        terrainPreviewReadoutModulePromise = null;
+        console.error('Failed to load terrain preview readout.', error);
+        return null;
+      });
+  }
+  return null;
 }
 
 function showHmrNotice(message: string, durationMs = 8000): void {

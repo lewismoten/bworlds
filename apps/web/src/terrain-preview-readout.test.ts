@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { OverworldSignals } from '@bworlds/plugin-api';
 import {
+  createBuiltinContentPackCatalog,
+  createWorldGenerator,
+} from '@bworlds/worldgen';
+import {
+  resolveTerrainPreviewHeight,
   resolveTerrainPreviewBiomeId,
   resolveTerrainPreviewParity,
   resolveTerrainPreviewReadout,
@@ -88,6 +93,34 @@ describe('terrain preview readout', () => {
     expect(first).toEqual(second);
     expect(first.biomeId.length).toBeGreaterThan(0);
     expect(first.dominantLayerId).not.toBeNull();
+  });
+
+  it('resolves preview heights from the shared worldgen terrain height sampler', () => {
+    const generator = createWorldGenerator({
+      seed: 'preview-readout-seed',
+      plugins: createBuiltinContentPackCatalog().createRegistry(),
+    });
+
+    expect(
+      resolveTerrainPreviewHeight({
+        seed: 'preview-readout-seed',
+        x: 128,
+        y: -64,
+      })
+    ).toBe(generator.sampleTerrainHeight(128, -64));
+    expect(
+      resolveTerrainPreviewHeight({
+        seed: 'preview-readout-seed',
+        x: 128,
+        y: -64,
+      })
+    ).toBe(
+      resolveTerrainPreviewHeight({
+        seed: 'preview-readout-seed',
+        x: 128,
+        y: -64,
+      })
+    );
   });
 
   it('reports whether a logical tile kind stays compatible with the preview dominant layer', () => {

@@ -62,6 +62,10 @@ Current support:
   sampling through `createWorldGenerator().sampleTerrainHeight(x, y)`, while
   `samplePreviewSurfaceHeight(x, y)` remains as the compatibility alias for
   older callers that still use the preview-specific name.
+- `apps/web` now routes the sextant terrain-height readout through that shared
+  `sampleTerrainHeight(x, y)` path whenever the deferred terrain preview module
+  is loaded, while keeping the decorated runtime tile height as the temporary
+  bootstrap fallback until that module resolves.
 - The preview height sampler uses the same overworld terrain signals and relief
   curve as the current runtime relief decorator, so map previews and future
   shared terrain callers can query one reusable world-space surface height

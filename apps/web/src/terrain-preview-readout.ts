@@ -6,9 +6,12 @@ import {
   createTerrainKindSplatCatalog,
   createTerrainMaterialLayerCatalog,
   resolveTerrainKindSplatSample,
-  type TerrainMaterialLayerCatalogEntry,
   type TerrainMaterialLayerId,
 } from '@bworlds/terrain-splat-support';
+import {
+  createBuiltinContentPackCatalog,
+  createWorldGenerator,
+} from '@bworlds/worldgen';
 
 export type TerrainPreviewReadout = {
   biomeId: string;
@@ -37,6 +40,12 @@ const terrainSignalSamplerCache = new Map<
   string,
   ReturnType<typeof createOverworldTerrainSignalSampler>
 >();
+const terrainPreviewGeneratorCache = new Map<
+  string,
+  ReturnType<typeof createWorldGenerator>
+>();
+const terrainPreviewPluginRegistry =
+  createBuiltinContentPackCatalog().createRegistry();
 
 export const TERRAIN_PREVIEW_LAYER_CATALOG = createTerrainMaterialLayerCatalog([
   {
@@ -278,6 +287,17 @@ export function resolveTerrainPreviewReadoutFromSignals(params: {
   };
 }
 
+export function resolveTerrainPreviewHeight(params: {
+  seed: string;
+  x: number;
+  y: number;
+}): number {
+  return getTerrainPreviewGenerator(params.seed).sampleTerrainHeight(
+    params.x,
+    params.y
+  );
+}
+
 export function resolveTerrainPreviewBiomeId(
   kind: Kind,
   signals: OverworldSignals
@@ -332,15 +352,20 @@ export function getTerrainPreviewSignalSampler(seed: string) {
   return sampler;
 }
 
-export function resolveTerrainPreviewLayerEntry(
-  layerId: TerrainMaterialLayerId | null
-): TerrainMaterialLayerCatalogEntry | null {
-  return layerId
-    ? (TERRAIN_PREVIEW_LAYER_CATALOG.byId.get(layerId) ?? null)
-    : null;
+function getTerrainPreviewGenerator(seed: string) {
+  const cached = terrainPreviewGeneratorCache.get(seed);
+  if (cached) {
+    return cached;
+  }
+  const generator = createWorldGenerator({
+    seed,
+    plugins: terrainPreviewPluginRegistry,
+  });
+  terrainPreviewGeneratorCache.set(seed, generator);
+  return generator;
 }
 
-export function resolveTerrainPreviewKindCategory(
+function resolveTerrainPreviewKindCategory(
   kind: Kind
 ): TerrainPreviewParityCategory {
   const normalized = kind.trim().toLowerCase();
@@ -406,7 +431,7 @@ export function resolveTerrainPreviewKindCategory(
   return 'unknown';
 }
 
-export function resolveTerrainPreviewLayerCategory(
+function resolveTerrainPreviewLayerCategory(
   layerId: TerrainMaterialLayerId | null
 ): TerrainPreviewParityCategory {
   if (!layerId) {
