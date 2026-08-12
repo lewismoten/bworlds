@@ -362,6 +362,18 @@ describe('world generation layer plugins', () => {
       'terrain',
       'climate',
     ]);
+    expect(result.pluginTimings).toHaveLength(2);
+    expect(result.pluginTimings.map((timing) => timing.pluginId)).toEqual([
+      'terrain',
+      'climate',
+    ]);
+    expect(result.pluginTimings.map((timing) => timing.recordCount)).toEqual([
+      2,
+      1,
+    ]);
+    expect(
+      result.pluginTimings.every((timing) => timing.durationMs >= 0)
+    ).toBe(true);
     expect(result.records).toEqual([
       {
         id: 'terrain:near',
@@ -601,6 +613,7 @@ describe('world generation layer plugins', () => {
 
     expect(first).toBe(second);
     expect(third).not.toBe(first);
+    expect(first.pluginTimings).toBe(second.pluginTimings);
     expect(runCount).toBe(2);
   });
 });

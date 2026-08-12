@@ -31,10 +31,17 @@ export interface WorldGenerationRecordSummary {
   count: number;
 }
 
+export interface WorldGenerationPluginTiming {
+  pluginId: WorldGenerationLayerPluginId;
+  durationMs: number;
+  recordCount: number;
+}
+
 export interface WorldGenerationRegionRunResult {
   readonly bounds: WorldGenerationBounds;
   readonly orderedPlugins: readonly WorldGenerationLayerPlugin[];
   readonly records: readonly WorldGenerationFeatureRecordLike[];
+  readonly pluginTimings: readonly WorldGenerationPluginTiming[];
   queryRecords(
     query?: WorldGenerationRecordQuery
   ): readonly WorldGenerationFeatureRecordLike[];
@@ -116,6 +123,7 @@ function runWorldGenerationRegion(params: {
 }): WorldGenerationRegionRunResult {
   const dependencyIndex = new Map<string, WorldGenerationFeatureRecordLike[]>();
   const records: WorldGenerationFeatureRecordLike[] = [];
+  const pluginTimings: WorldGenerationPluginTiming[] = [];
   const queryCache = new Map<string, readonly WorldGenerationFeatureRecordLike[]>();
   const summaryCache = new Map<string, readonly WorldGenerationRecordSummary[]>();
 
@@ -126,6 +134,7 @@ function runWorldGenerationRegion(params: {
   } satisfies Omit<WorldGenerationLayerContext, 'queryRecords'>;
 
   for (const plugin of params.orderedPlugins) {
+    const startMs = getMonotonicTimestampMs();
     const pluginRecords = plugin.run({
       ...contextBase,
       queryRecords(dependency: WorldGenerationLayerDependency) {
@@ -135,6 +144,11 @@ function runWorldGenerationRegion(params: {
           params.bounds
         );
       },
+    });
+    pluginTimings.push({
+      pluginId: plugin.id,
+      durationMs: clampDurationMs(getMonotonicTimestampMs() - startMs),
+      recordCount: pluginRecords.length,
     });
     for (const record of pluginRecords) {
       const normalizedRecord = normalizeFeatureRecord(plugin.id, record);
@@ -158,6 +172,7 @@ function runWorldGenerationRegion(params: {
     bounds: params.bounds,
     orderedPlugins: Object.freeze(params.orderedPlugins.slice()),
     records: frozenRecords,
+    pluginTimings: Object.freeze(pluginTimings.slice()),
     queryRecords(query = {}) {
       const normalizedQuery = normalizeRecordQuery(query);
       const cacheKey = createRecordQueryCacheKey(normalizedQuery);
@@ -211,6 +226,23 @@ function runWorldGenerationRegion(params: {
       return this.summarizeRecords(normalizeChunkRecordQuery(query));
     },
   };
+}
+
+function getMonotonicTimestampMs(): number {
+  if (
+    typeof performance !== 'undefined' &&
+    typeof performance.now === 'function'
+  ) {
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function clampDurationMs(value: number): number {
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return value;
 }
 
 function queryDependencyRecords(

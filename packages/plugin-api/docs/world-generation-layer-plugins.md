@@ -73,6 +73,7 @@ and query helper for these layer plugins:
 - filters records by bounds, plugin id, record type, and zoom relevance
 - summarizes matching records by `pluginId` and `recordType`
 - exposes chunk-scoped summaries through `summarizeChunkRecords(...)`
+- reports per-plugin `durationMs` and `recordCount` through `pluginTimings`
 - caches repeated region runs by seed, world revision, bounds, and plugin set
 
 This gives worldgen packages one concrete regional-query path before the
