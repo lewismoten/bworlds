@@ -137,6 +137,26 @@ const fakeThree = {
   DoubleSide: 'DoubleSide',
 } as const;
 
+function createCountingFakeThree() {
+  let groupCount = 0;
+  class CountingGroup extends FakeGroup {
+    constructor() {
+      super();
+      groupCount += 1;
+    }
+  }
+
+  return {
+    three: {
+      ...fakeThree,
+      Group: CountingGroup,
+    },
+    getGroupCount() {
+      return groupCount;
+    },
+  } as const;
+}
+
 const plugin = createRouteTilePlugin();
 const roadTile = plugin.tiles?.find((tile) => tile.kind === 'road');
 const dockTile = plugin.tiles?.find((tile) => tile.kind === 'dock');
@@ -592,6 +612,22 @@ describe('tile route', () => {
     expect(model.children).toHaveLength(1);
     expect(model.children[0]).toBeInstanceOf(FakeMesh);
     expect(model.children[0]?.position.y).toBeGreaterThan(0);
+  });
+
+  it('does not instantiate a fallback wrapper group for connected road models', () => {
+    const state = createStraightRoadModelState();
+    const countingHost = createCountingFakeThree();
+    const model = roadTile?.create3DModel?.({
+      three: countingHost.three as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 12,
+      tileY: -4,
+      detailLevel: 'low',
+    }) as FakeMesh;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(countingHost.getGroupCount()).toBe(0);
   });
 
   it('renders lowered paddle-boat boarding ramps on non-route docks', () => {

@@ -1132,28 +1132,7 @@ function* createRoadGroupProgressive({
       ? 1 + (includeShoulders ? 2 : 1)
       : (includeCenterPatch ? 1 : 0) + connections.length;
   let completedSteps = 0;
-  const shouldUseRoadRibbonAsRoot = connections.length !== 1;
-  const attachCenterPatchToRoadRibbon =
-    shouldUseRoadRibbonAsRoot && includeCenterPatch;
-  const group = shouldUseRoadRibbonAsRoot ? null : new three.Group();
-  if (group) {
-    group.position.set(tileX, 0, tileY);
-  }
-  if (includeCenterPatch && !attachCenterPatchToRoadRibbon) {
-    const centerPatch = new three.Mesh(
-      new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
-      style.shoulderMaterial
-    );
-    centerPatch.position.y = ROAD_SURFACE_HEIGHT;
-    centerPatch.scale.z = 0.85;
-    group?.add(centerPatch);
-    completedSteps += 1;
-    yield {
-      completedSteps,
-      totalSteps,
-      label: 'center-patch',
-    };
-  }
+  const attachCenterPatchToRoadRibbon = includeCenterPatch;
 
   if (connections.length === 2) {
     const curve = createRoadCurve(
@@ -1281,7 +1260,7 @@ function* createRoadGroupProgressive({
     };
   }
 
-  return rootRoadRibbon ?? group;
+  return rootRoadRibbon;
 }
 
 function getRoadConnections(

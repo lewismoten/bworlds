@@ -286,7 +286,10 @@
       full-detail `tile-dungeon` now uses its base keep mesh as the root and
       attaches the central keep, instanced towers, gate pieces, banner
       hardware, banner cloth, and beacon content beneath it instead of
-      returning a dedicated wrapper group.
+      returning a dedicated wrapper group, and connected `tile-route` road
+      builds now remove their stale unreachable fallback `Group` branch so the
+      road renderer only uses the explicit ribbon-root path that the isolated,
+      straight, and junction road tests already exercise.
 - [x] Investigate the 656 static objects using matrix auto-update.
       Progress: renderer diagnostics now count static `matrixAutoUpdate`
       owners separately by plugin, and the renderer regression tests cover
