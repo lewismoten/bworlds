@@ -325,7 +325,10 @@ describe('tile forest', () => {
     for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
       for (let tileX = 0; tileX < 24; tileX += 1) {
         const speciesIds = new Set(getForestTreeSpeciesIds(tileX, tileY));
-        if (speciesIds.has('pine') && (speciesIds.has('oak') || speciesIds.has('birch'))) {
+        if (
+          speciesIds.has('pine') &&
+          (speciesIds.has('oak') || speciesIds.has('birch'))
+        ) {
           targetTile = { x: tileX, y: tileY };
           break;
         }
@@ -640,6 +643,7 @@ describe('tile forest', () => {
     });
 
     expect(reducedTreeGroups.length).toBeLessThan(defaultTreeGroups.length);
+    expect(reducedTreeGroups.length).toBeLessThanOrEqual(2);
     expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
   });
 

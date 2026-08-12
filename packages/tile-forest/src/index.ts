@@ -1434,12 +1434,10 @@ function* createForestModelProgressive({
     return group;
   }
 
-  const {
-    fullDetailDescriptors,
-    backgroundInstanceDescriptors,
-  } = splitForestFullDetailTreeDescriptors(
-    descriptors,
-    state,
+  const { fullDetailDescriptors, backgroundInstanceDescriptors } =
+    splitForestFullDetailTreeDescriptors(
+      descriptors,
+      state,
       tileX,
       tileY,
       renderBudget?.quality
@@ -1460,9 +1458,8 @@ function* createForestModelProgressive({
     0,
     firstTreeBatchCount
   );
-  const secondaryTreeDescriptors = fullDetailDescriptors.slice(
-    firstTreeBatchCount
-  );
+  const secondaryTreeDescriptors =
+    fullDetailDescriptors.slice(firstTreeBatchCount);
   const trunkSegments: ForestTrunkSegmentInstance[] = [];
   const totalSteps = secondaryTreeDescriptors.length > 0 ? 6 : 5;
 
@@ -4435,18 +4432,17 @@ function resolveDominantLowDetailForestForm(
 ): ForestTreeForm {
   const formCounts = new Map<ForestTreeForm, number>();
   for (const descriptor of descriptors) {
-    formCounts.set(
-      descriptor.form,
-      (formCounts.get(descriptor.form) ?? 0) + 1
-    );
+    formCounts.set(descriptor.form, (formCounts.get(descriptor.form) ?? 0) + 1);
   }
 
-  return [...formCounts.entries()].sort((left, right) => {
-    if (left[1] !== right[1]) {
-      return right[1] - left[1];
-    }
-    return left[0].localeCompare(right[0]);
-  })[0]?.[0] ?? 'broadleaf';
+  return (
+    [...formCounts.entries()].sort((left, right) => {
+      if (left[1] !== right[1]) {
+        return right[1] - left[1];
+      }
+      return left[0].localeCompare(right[0]);
+    })[0]?.[0] ?? 'broadleaf'
+  );
 }
 
 function splitForestFullDetailTreeDescriptors(
@@ -4459,11 +4455,7 @@ function splitForestFullDetailTreeDescriptors(
   fullDetailDescriptors: ForestTreeDescriptor[];
   backgroundInstanceDescriptors: ForestTreeDescriptor[];
 } {
-  if (
-    quality === 'full' ||
-    quality == null ||
-    descriptors.length <= 2
-  ) {
+  if (quality === 'full' || quality == null || descriptors.length <= 2) {
     return {
       fullDetailDescriptors: [...descriptors],
       backgroundInstanceDescriptors: [],
@@ -4480,10 +4472,10 @@ function splitForestFullDetailTreeDescriptors(
         ? 2
         : 1
       : distanceSquared <= 1
-        ? 4
+        ? 2
         : distanceSquared <= 4
-          ? 3
-          : 2;
+          ? 1
+          : 1;
   const rankedDescriptors = [...descriptors].sort((left, right) => {
     const leftHistorical = getTreeHistoricalState(left).landmark ? 1 : 0;
     const rightHistorical = getTreeHistoricalState(right).landmark ? 1 : 0;

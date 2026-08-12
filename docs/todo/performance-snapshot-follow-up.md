@@ -133,6 +133,12 @@
 - [x] Show visibility radius reduction as a consequence.
 - [x] Avoid calling the tier healthy while quality is reduced.
 - [x] Track how long the renderer remains in reduced quality.
+- [ ] Reduce full-detail forest tree count more aggressively while quality is reduced.
+      Progress: reduced-quality `tile-forest` full-detail tiles now keep at
+      most two full-detail trees on the player tile and one on nearby forest
+      tiles, pushing the rest through the existing low-detail instanced
+      background path so chunk draw calls fall sooner when the renderer is
+      already constrained.
 - [ ] Track recovery back to full quality.
 - [ ] Add hysteresis before restoring full graphics quality.
 
