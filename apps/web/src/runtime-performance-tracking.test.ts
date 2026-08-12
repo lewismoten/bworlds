@@ -606,12 +606,7 @@ describe('runtime performance tracking', () => {
       }),
     });
 
-    expect(issue?.summary).toBe(
-      'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).'
-    );
-    expect(issue?.reasons).toEqual([
-      'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).',
-    ]);
+    expect(issue).toBeNull();
   });
 
   it('skips runtime issue reports when only generic budget pressure remains', () => {
@@ -701,9 +696,20 @@ describe('runtime performance tracking', () => {
       route: '/',
       debugSnapshot: createDebugSnapshot({
         currentTilePlugin: 'tile-forest',
-        resourceWarnings: [
-          'Instanced meshes are missing from the visible scene.',
-        ],
+        maxTileBuildMs: 8,
+        averageTileBuildMs: 4,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxSummary: undefined,
+        fallbackBoxTopPluginLabel: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: 'Budget rejection',
+        resourceWarnings: [],
       }),
     });
     const secondIssue = buildRuntimePerformanceIssueReport({
@@ -713,7 +719,20 @@ describe('runtime performance tracking', () => {
         currentTilePlugin: 'tile-route',
         drawCallTopPluginLabel: 'tile-route',
         drawCallSummary: 'tile-route dominates draw calls.',
-        resourceWarnings: ['Chunk-generation queue is backing up.'],
+        maxTileBuildMs: 8,
+        averageTileBuildMs: 4,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxSummary: undefined,
+        fallbackBoxTopPluginLabel: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: 'Budget rejection',
+        resourceWarnings: [],
       }),
     });
 
@@ -747,7 +766,7 @@ describe('runtime performance tracking', () => {
         lastLodFailureReason: undefined,
         lastFallbackReason: undefined,
         resourceWarnings: [
-          'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).',
+          'LOD swaps are too frequent (5.0/s, top plugin tile-forest at 4.0/s).',
         ],
       }),
     });
@@ -774,16 +793,16 @@ describe('runtime performance tracking', () => {
         lastLodFailureReason: undefined,
         lastFallbackReason: undefined,
         resourceWarnings: [
-          'Chunk-generation queue is backing up (412 queued, avg flush 2.0, max flush 4).',
+          'LOD swaps are too frequent (7.0/s, top plugin tile-forest at 6.0/s).',
         ],
       }),
     });
 
     expect(firstIssue?.summary).toBe(
-      'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).'
+      'LOD swaps are too frequent (5.0/s, top plugin tile-forest at 4.0/s).'
     );
     expect(secondIssue?.summary).toBe(
-      'Chunk-generation queue is backing up (412 queued, avg flush 2.0, max flush 4).'
+      'LOD swaps are too frequent (7.0/s, top plugin tile-forest at 6.0/s).'
     );
     expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
   });

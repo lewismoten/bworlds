@@ -22,6 +22,12 @@ plugin model rejections, queue starvation, synchronous tile-build stalls, LOD
 swap churn, fallback churn, retained-resource leaks, heap growth, stationary
 tile rebuild churn, and explicit latest LOD/fallback failures.
 
+Symptom-only resource warnings no longer create issue reports on their own.
+Queue backlog narration, retained-resource symptom summaries, stationary rebuild
+symptoms, and missing-instancing hints still appear in the live debug data, but
+the client now keeps them local unless a separate direct plugin/tile/runtime
+failure is active at the same time.
+
 Issue reports are throttled by a stable issue hash derived from the saved issue
 summary for five seconds so repeated reports of the same user-visible problem
 do not thrash the local endpoint.

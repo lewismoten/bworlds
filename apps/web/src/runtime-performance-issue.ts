@@ -782,7 +782,6 @@ function isDirectRuntimePerformanceIssueReason(reason: string): boolean {
     reason.startsWith('Initial world generation ') ||
     reason.startsWith('Visible tile generation ') ||
     reason.startsWith('Memory after region change ') ||
-    reason.startsWith('Chunk-generation queue is backing up ') ||
     reason.startsWith('Synchronous tile build is too slow ') ||
     reason.startsWith(
       'Pending world-build scheduler is starving queued work '
@@ -792,13 +791,10 @@ function isDirectRuntimePerformanceIssueReason(reason: string): boolean {
     reason.includes(' rejected ') ||
     reason.startsWith('LOD swaps are too frequent ') ||
     reason.startsWith('Fallback models are dominated by one plugin ') ||
-    reason.startsWith('No tiles are visible, but ') ||
     reason.startsWith('Heap usage keeps climbing ') ||
     reason.startsWith('Heap usage keeps climbing while idle ') ||
-    reason.startsWith('Tile nodes keep rebuilding while stationary ') ||
     reason.startsWith('Latest LOD failure: ') ||
-    reason.startsWith('Latest fallback reason: ') ||
-    reason.startsWith('Instanced meshes are missing from the visible scene')
+    reason.startsWith('Latest fallback reason: ')
   );
 }
 
