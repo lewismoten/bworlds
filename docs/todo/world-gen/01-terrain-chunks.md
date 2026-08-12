@@ -55,6 +55,10 @@ Current support:
   seam analysis payload for adjacent chunk borders, so future inspectors can
   surface exact layer and weight mismatches before the live chunk debug overlay
   lands.
+- `@bworlds/terrain-splat-support/chunk-wireframe-debug` now turns one shared
+  terrain chunk geometry plan into deduplicated border and interior wireframe
+  segments, so future overlays can inspect chunk topology without rebuilding
+  mesh edges in renderer-specific code.
 - `@bworlds/terrain-splat-support/height-field` now emits seam-safe vertex
   normals from the shared world-space height samples and keeps reduced-LOD
   index buffers aligned to the actual vertex grid, so chunk renderers can reuse

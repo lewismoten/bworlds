@@ -206,6 +206,7 @@ export type OverworldTerrainSplatLayerSet = {
 
 export * from './route-render-plan.ts';
 export * from './chunk-seam-debug.ts';
+export * from './chunk-wireframe-debug.ts';
 
 export const MAX_TERRAIN_SPLAT_SAMPLE_LAYERS = 4;
 export const MIN_TERRAIN_SPLAT_WEIGHT = 0.01;
