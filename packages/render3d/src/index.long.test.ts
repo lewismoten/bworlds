@@ -526,6 +526,10 @@ describe('render3d representative render-budget integrations', () => {
       shaderDefineSignatureCount: stats.shaderDefineSignatureCount,
       textureCount: stats.textureCount,
       visibleMeshCount: stats.visibleMeshCount,
+      oneChildGroupCount: stats.oneChildGroupCount,
+      oneChildGroupPlainWrapperCount: stats.oneChildGroupPlainWrapperCount,
+      oneChildGroupTransformCount: stats.oneChildGroupTransformCount,
+      oneChildGroupTaggedCount: stats.oneChildGroupTaggedCount,
     };
 
     expect(
@@ -546,6 +550,12 @@ describe('render3d representative render-budget integrations', () => {
         sampledStats
       )}`
     ).toBeLessThanOrEqual(1);
+    expect(
+      sampledStats.oneChildGroupPlainWrapperCount,
+      `Representative nearby scene plain one-child wrappers regressed: ${JSON.stringify(
+        sampledStats
+      )}`
+    ).toBeLessThanOrEqual(8);
   });
 });
 
