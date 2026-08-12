@@ -76,6 +76,7 @@ export function buildMusicDebugParameterReport(
       })
     ),
     trackStats: snapshot.trackStats,
+    sectionVelocityStats: snapshot.sectionVelocityStats,
     motifValidation: snapshot.motifValidation,
     timingValidation: snapshot.timingValidation,
     cadenceValidation: snapshot.cadenceValidation,

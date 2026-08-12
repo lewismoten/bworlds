@@ -40,7 +40,11 @@
 - [ ] Show pitch bends as curves over the note lane.
 - [ ] Add toggles to hide automation lanes when too busy.
 - [ ] Show articulation names when hovering over notes.
-- [ ] Report velocity min, max, and average by section.
+- [x] Report velocity min, max, and average by section.
+      Progress: the music debug snapshot and export report now include
+      per-section velocity summaries for melody, harmony, bass, and percussion,
+      and the laboratory summary renders a `Section Velocity` line with min,
+      max, and average velocity per role in each section.
 - [ ] Report dynamic range by track and section.
 - [x] Warn when a track uses too few velocity levels.
       Progress: track stats now record min/max/average velocity plus distinct

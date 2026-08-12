@@ -70,6 +70,11 @@ import {
   type MusicDebugTrackStats,
 } from './music-debug-track-stats.ts';
 import {
+  createMusicDebugSectionVelocityStats,
+  formatMusicDebugSectionVelocitySummary,
+  type MusicDebugSectionVelocityStats,
+} from './music-debug-section-velocity.ts';
+import {
   formatMusicDebugPercussionEvents,
   formatMusicDebugPercussionVoiceCounts,
 } from './music-debug-percussion-report.ts';
@@ -229,6 +234,7 @@ export type MusicDebugSnapshot = {
   sectionLayerActivity: MusicDebugSectionLayerActivity[];
   sectionProminence: MusicDebugSectionProminence[];
   sectionLayerComparisons: MusicDebugSectionLayerComparison[];
+  sectionVelocityStats: MusicDebugSectionVelocityStats[];
   lyrics: MusicDebugLyricLine[];
   loopStartOffsetMs: number;
   loopEndOffsetMs: number;
@@ -579,6 +585,10 @@ export function createMusicDebugSnapshot(
     blueprint: song.blueprint,
     prominence: sectionProminence,
   });
+  const sectionVelocityStats = createMusicDebugSectionVelocityStats({
+    notes: song.notes,
+    sections: song.sections,
+  });
   const densityValidation = validateMusicDebugDensity({
     sections: song.sections,
     activities: sectionLayerActivity,
@@ -648,6 +658,7 @@ export function createMusicDebugSnapshot(
     sectionLayerActivity: [],
     sectionProminence: [],
     sectionLayerComparisons: [],
+    sectionVelocityStats,
     lyrics,
     loopStartOffsetMs: song.loopStartOffsetMs,
     loopEndOffsetMs: song.loopEndOffsetMs,
@@ -699,6 +710,7 @@ export function createMusicDebugSnapshot(
     sectionLayerActivity,
     sectionProminence,
     sectionLayerComparisons,
+    sectionVelocityStats,
     midiAudit: {
       exportedBpm: null,
       exportedDurationMs: 0,
@@ -1053,6 +1065,9 @@ export function buildMusicDebugSummaryMarkup(
     </div>
     <div class="music-debug-role-counts">
       <span>Track Timing ${formatMusicDebugTrackTimingSummary(snapshot.trackStats).join(' | ')}</span>
+    </div>
+    <div class="music-debug-role-counts">
+      <span>Section Velocity ${formatMusicDebugSectionVelocitySummary(snapshot.sectionVelocityStats)}</span>
     </div>
     <div class="music-debug-role-counts">
       <span>Interval Match ${formatMusicDebugIntervalComparison(snapshot.intervalComparison)}</span>
