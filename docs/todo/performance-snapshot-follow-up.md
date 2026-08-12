@@ -231,6 +231,11 @@
 
 - [ ] Remove unnecessary one-child groups from scene models.
 - [ ] Investigate the 106 groups containing only one child.
+      Progress: renderer scene-resource stats now split one-child groups into
+      plain identity wrappers, transform pivots, and tagged semantic groups,
+      and the web debug snapshot/panel now exposes those three counts so the
+      remaining scene-graph cleanup can target likely no-op wrappers first
+      instead of flattening meaningful animated or tagged pivots blindly.
 - [x] Report one-child group counts by plugin.
 - [ ] Flatten groups that provide no transform or semantic value.
       Progress: `tile-forest` now places each full-detail tree's branch,

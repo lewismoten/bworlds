@@ -299,6 +299,9 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 0.75,
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
+      oneChildGroupPlainWrapperCount: 0,
+      oneChildGroupTransformCount: 0,
+      oneChildGroupTaggedCount: 0,
       matrixAutoUpdateCount: 0,
       staticMatrixAutoUpdateCount: 0,
       pointsCount: 0,
@@ -1043,6 +1046,9 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 13 / 14,
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
+      oneChildGroupPlainWrapperCount: 0,
+      oneChildGroupTransformCount: 0,
+      oneChildGroupTaggedCount: 0,
       matrixAutoUpdateCount: 0,
       staticMatrixAutoUpdateCount: 0,
       pointsCount: 1,
@@ -1145,6 +1151,9 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 2 / 3,
       emptyGroupCount: 0,
       oneChildGroupCount: 0,
+      oneChildGroupPlainWrapperCount: 0,
+      oneChildGroupTransformCount: 0,
+      oneChildGroupTaggedCount: 0,
       matrixAutoUpdateCount: 0,
       staticMatrixAutoUpdateCount: 0,
       pointsCount: 2,
@@ -1302,6 +1311,9 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 1.25,
       emptyGroupCount: 0,
       oneChildGroupCount: 1,
+      oneChildGroupPlainWrapperCount: 1,
+      oneChildGroupTransformCount: 0,
+      oneChildGroupTaggedCount: 0,
       matrixAutoUpdateCount: 0,
       staticMatrixAutoUpdateCount: 0,
       pointsCount: 0,
@@ -1373,14 +1385,16 @@ describe('render3d visibility helpers', () => {
       createMockStatGeometry('nested-geometry', 3)
     );
     const oneChildGroup = createMockObject3D(undefined, [nestedMesh]);
+    oneChildGroup.position.x = 2;
     const deepLeaf = createMockObject3D(
       createMockMaterial(),
       [],
       createMockStatGeometry('deep-geometry', 5)
     );
-    const deepBranch = createMockObject3D(undefined, [
-      createMockObject3D(undefined, [deepLeaf]),
-    ]);
+    const taggedGroup = createMockObject3D(undefined, [deepLeaf], undefined, {
+      semanticGroup: true,
+    });
+    const deepBranch = createMockObject3D(undefined, [taggedGroup]);
     const root = createMockObject3D(undefined, [
       emptyGroup,
       oneChildGroup,
@@ -1402,6 +1416,9 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 10 / 7,
       emptyGroupCount: 1,
       oneChildGroupCount: 3,
+      oneChildGroupPlainWrapperCount: 1,
+      oneChildGroupTransformCount: 1,
+      oneChildGroupTaggedCount: 1,
       matrixAutoUpdateCount: 0,
       staticMatrixAutoUpdateCount: 0,
       pointsCount: 0,
@@ -1530,6 +1547,9 @@ describe('render3d visibility helpers', () => {
       averageHierarchyDepth: 1,
       emptyGroupCount: 0,
       oneChildGroupCount: 1,
+      oneChildGroupPlainWrapperCount: 1,
+      oneChildGroupTransformCount: 0,
+      oneChildGroupTaggedCount: 0,
       matrixAutoUpdateCount: 2,
       staticMatrixAutoUpdateCount: 1,
       pointsCount: 0,
@@ -7493,6 +7513,9 @@ function createMockObject3D(
     isLight,
     castShadow,
     matrixAutoUpdate,
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1, z: 1 },
     updateMatrix: vi.fn(),
     userData,
     material,

@@ -2611,6 +2611,10 @@ function collectCurrentDebugSnapshot(
     averageHierarchyDepth: rendererStats.averageHierarchyDepth,
     emptyGroupCount: rendererStats.emptyGroupCount,
     oneChildGroupCount: rendererStats.oneChildGroupCount,
+    oneChildGroupPlainWrapperCount:
+      rendererStats.oneChildGroupPlainWrapperCount,
+    oneChildGroupTransformCount: rendererStats.oneChildGroupTransformCount,
+    oneChildGroupTaggedCount: rendererStats.oneChildGroupTaggedCount,
     matrixAutoUpdateCount: rendererStats.matrixAutoUpdateCount,
     staticMatrixAutoUpdateCount: rendererStats.staticMatrixAutoUpdateCount,
     pointsCount: rendererStats.pointsCount,

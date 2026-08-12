@@ -398,6 +398,9 @@ type Render3DController = {
     averageHierarchyDepth: number;
     emptyGroupCount: number;
     oneChildGroupCount: number;
+    oneChildGroupPlainWrapperCount: number;
+    oneChildGroupTransformCount: number;
+    oneChildGroupTaggedCount: number;
     matrixAutoUpdateCount: number;
     staticMatrixAutoUpdateCount: number;
     pointsCount: number;
@@ -1270,6 +1273,9 @@ type SceneResourceStats = {
   averageHierarchyDepth: number;
   emptyGroupCount: number;
   oneChildGroupCount: number;
+  oneChildGroupPlainWrapperCount: number;
+  oneChildGroupTransformCount: number;
+  oneChildGroupTaggedCount: number;
   matrixAutoUpdateCount: number;
   staticMatrixAutoUpdateCount: number;
   pointsCount: number;
@@ -1457,6 +1463,9 @@ function createEmptySceneResourceStats(): SceneResourceStats {
     averageHierarchyDepth: 0,
     emptyGroupCount: 0,
     oneChildGroupCount: 0,
+    oneChildGroupPlainWrapperCount: 0,
+    oneChildGroupTransformCount: 0,
+    oneChildGroupTaggedCount: 0,
     matrixAutoUpdateCount: 0,
     staticMatrixAutoUpdateCount: 0,
     pointsCount: 0,
@@ -3441,6 +3450,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       averageHierarchyDepth: sceneResourceStats.averageHierarchyDepth,
       emptyGroupCount: sceneResourceStats.emptyGroupCount,
       oneChildGroupCount: sceneResourceStats.oneChildGroupCount,
+      oneChildGroupPlainWrapperCount:
+        sceneResourceStats.oneChildGroupPlainWrapperCount,
+      oneChildGroupTransformCount:
+        sceneResourceStats.oneChildGroupTransformCount,
+      oneChildGroupTaggedCount: sceneResourceStats.oneChildGroupTaggedCount,
       matrixAutoUpdateCount: sceneResourceStats.matrixAutoUpdateCount,
       staticMatrixAutoUpdateCount:
         sceneResourceStats.staticMatrixAutoUpdateCount,
@@ -5624,6 +5638,9 @@ export function collectSceneResourceStats(
   let maxHierarchyDepth = 0;
   let emptyGroupCount = 0;
   let oneChildGroupCount = 0;
+  let oneChildGroupPlainWrapperCount = 0;
+  let oneChildGroupTransformCount = 0;
+  let oneChildGroupTaggedCount = 0;
   let matrixAutoUpdateCount = 0;
   let staticMatrixAutoUpdateCount = 0;
   let pointsCount = 0;
@@ -5697,6 +5714,19 @@ export function collectSceneResourceStats(
         emptyGroupCount += 1;
       } else if (childCount === 1) {
         oneChildGroupCount += 1;
+        const hasTransform = hasNonIdentityObjectTransform(
+          child as THREE.Object3D
+        );
+        const hasTags = hasMeaningfulObjectUserData(child as THREE.Object3D);
+        if (hasTransform) {
+          oneChildGroupTransformCount += 1;
+        }
+        if (hasTags) {
+          oneChildGroupTaggedCount += 1;
+        }
+        if (!hasTransform && !hasTags) {
+          oneChildGroupPlainWrapperCount += 1;
+        }
       }
     }
     if ((child as THREE.Object3D).type === 'InstancedMesh') {
@@ -5898,6 +5928,9 @@ export function collectSceneResourceStats(
       object3dCount > 0 ? totalHierarchyDepth / object3dCount : 0,
     emptyGroupCount,
     oneChildGroupCount,
+    oneChildGroupPlainWrapperCount,
+    oneChildGroupTransformCount,
+    oneChildGroupTaggedCount,
     matrixAutoUpdateCount,
     staticMatrixAutoUpdateCount,
     pointsCount,
@@ -6049,6 +6082,30 @@ function hasDynamicTransformUserData(
     }
   }
   return false;
+}
+
+function hasNonIdentityObjectTransform(
+  object: Partial<Pick<THREE.Object3D, 'position' | 'rotation' | 'scale'>>
+): boolean {
+  const position = object.position;
+  if (position && (position.x !== 0 || position.y !== 0 || position.z !== 0)) {
+    return true;
+  }
+  const rotation = object.rotation;
+  if (rotation && (rotation.x !== 0 || rotation.y !== 0 || rotation.z !== 0)) {
+    return true;
+  }
+  const scale = object.scale;
+  if (scale && (scale.x !== 1 || scale.y !== 1 || scale.z !== 1)) {
+    return true;
+  }
+  return false;
+}
+
+function hasMeaningfulObjectUserData(
+  object: Pick<THREE.Object3D, 'userData'>
+): boolean {
+  return Object.keys(object.userData ?? {}).length > 0;
 }
 
 function traverseSceneGraphWithDepth(

@@ -252,6 +252,9 @@ export type DebugSnapshotExport = {
     averageHierarchyDepth: number;
     emptyGroupCount: number;
     oneChildGroupCount: number;
+    oneChildGroupPlainWrapperCount: number;
+    oneChildGroupTransformCount: number;
+    oneChildGroupTaggedCount: number;
     topOneChildGroupPlugin: string | null;
     oneChildGroupSummary: string;
     matrixAutoUpdateCount: number;
@@ -591,6 +594,11 @@ export function buildDebugSnapshotExport(
       averageHierarchyDepth: options.snapshot.averageHierarchyDepth ?? 0,
       emptyGroupCount: options.snapshot.emptyGroupCount ?? 0,
       oneChildGroupCount: options.snapshot.oneChildGroupCount ?? 0,
+      oneChildGroupPlainWrapperCount:
+        options.snapshot.oneChildGroupPlainWrapperCount ?? 0,
+      oneChildGroupTransformCount:
+        options.snapshot.oneChildGroupTransformCount ?? 0,
+      oneChildGroupTaggedCount: options.snapshot.oneChildGroupTaggedCount ?? 0,
       topOneChildGroupPlugin:
         options.snapshot.oneChildGroupTopPluginLabel?.trim() || null,
       oneChildGroupSummary: options.snapshot.oneChildGroupSummary ?? '',

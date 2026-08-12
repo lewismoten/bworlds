@@ -110,6 +110,9 @@ export type DebugSnapshot = {
   averageHierarchyDepth?: number;
   emptyGroupCount?: number;
   oneChildGroupCount?: number;
+  oneChildGroupPlainWrapperCount?: number;
+  oneChildGroupTransformCount?: number;
+  oneChildGroupTaggedCount?: number;
   matrixAutoUpdateCount?: number;
   staticMatrixAutoUpdateCount?: number;
   pointsCount: number;
@@ -502,6 +505,9 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Static Matrix Summary</dt><dd>${snapshot.staticMatrixUpdateSummary || 'None'}</dd></div>
     <div><dt>One-Child Group Plugin</dt><dd>${snapshot.oneChildGroupTopPluginLabel || 'None'}</dd></div>
     <div><dt>One-Child Group Summary</dt><dd>${snapshot.oneChildGroupSummary || 'None'}</dd></div>
+    <div><dt>One-Child Plain Wrappers</dt><dd>${snapshot.oneChildGroupPlainWrapperCount ?? 0}</dd></div>
+    <div><dt>One-Child Transform Pivots</dt><dd>${snapshot.oneChildGroupTransformCount ?? 0}</dd></div>
+    <div><dt>One-Child Tagged Groups</dt><dd>${snapshot.oneChildGroupTaggedCount ?? 0}</dd></div>
     <div><dt>Last LOD Failure</dt><dd>${snapshot.lastLodFailureReason || 'None'}</dd></div>
     <div><dt>Fallback Reason</dt><dd>${snapshot.lastFallbackReason || 'None'}</dd></div>
     <div><dt>Current Tile Plugin</dt><dd>${snapshot.currentTilePlugin || 'None'}</dd></div>
