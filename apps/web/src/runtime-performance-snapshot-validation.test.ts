@@ -101,6 +101,7 @@ describe('runtime performance snapshot validation', () => {
       'midiExportMs',
       'songGenerationMs',
       'visibleTileGeneration.averageMs',
+      'visibleTileGeneration.buildsPerSecond',
       'visibleTileGeneration.maxMs',
       'visibleTileGeneration.pendingTileCount',
       'wavExportMs',
@@ -323,6 +324,31 @@ describe('runtime performance snapshot validation', () => {
       )} ms exceeded ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMaxMs.toFixed(1)} ms.`,
     },
     {
+      name: 'visible tile build rate minimum',
+      limit:
+        DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationBuildsPerSecondMin,
+      bound: 'minimum',
+      apply: (value: number) => ({
+        path: 'visibleTileGeneration.buildsPerSecond',
+        set(
+          snapshot: ReturnType<typeof createValidRuntimePerformanceSnapshot>
+        ) {
+          snapshot.metrics.visibleTileGeneration = {
+            averageMs: 4,
+            maxMs: 8,
+            buildsPerSecond: value,
+            pendingTileCount: 0,
+          };
+        },
+      }),
+      expectedViolation: `Visible tile build rate ${(
+        DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationBuildsPerSecondMin -
+        0.1
+      ).toFixed(
+        1
+      )} builds/s fell below minimum ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationBuildsPerSecondMin.toFixed(1)} builds/s.`,
+    },
+    {
       name: 'pending tile count',
       limit: DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount,
       apply: (value: number) => ({
@@ -467,6 +493,8 @@ describe('runtime performance snapshot validation', () => {
   ] as const;
 
   for (const limitCase of limitCases) {
+    const isMinimumBound = limitCase.bound === 'minimum';
+
     it(`accepts ${limitCase.name} exactly at the configured limit`, () => {
       const snapshot = createValidRuntimePerformanceSnapshot();
       limitCase.apply(limitCase.limit).set(snapshot);
@@ -481,7 +509,9 @@ describe('runtime performance snapshot validation', () => {
 
     it(`accepts ${limitCase.name} just below the configured limit`, () => {
       const snapshot = createValidRuntimePerformanceSnapshot();
-      limitCase.apply(limitCase.limit - 0.1).set(snapshot);
+      limitCase
+        .apply(isMinimumBound ? limitCase.limit + 0.1 : limitCase.limit - 0.1)
+        .set(snapshot);
       snapshot.violations = collectRuntimePerformanceViolations(
         snapshot.metrics,
         snapshot.limits
@@ -493,7 +523,9 @@ describe('runtime performance snapshot validation', () => {
 
     it(`requires a violation when ${limitCase.name} is just above the configured limit`, () => {
       const snapshot = createValidRuntimePerformanceSnapshot();
-      limitCase.apply(limitCase.limit + 1).set(snapshot);
+      limitCase
+        .apply(isMinimumBound ? limitCase.limit - 0.1 : limitCase.limit + 1)
+        .set(snapshot);
       snapshot.violations = collectRuntimePerformanceViolations(
         snapshot.metrics,
         snapshot.limits

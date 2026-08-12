@@ -265,19 +265,25 @@ function collectRuntimePerformanceIssueReasons(
     );
   }
 
-  if (debugSnapshot.lastLodFailureReason?.trim()) {
-    reasons.push(
-      `Latest LOD failure: ${ensureTrailingPeriod(
-        debugSnapshot.lastLodFailureReason.trim().replace(/[.!?]+$/u, '')
-      )}`
-    );
+  if (hasActiveLodFailureSignal(debugSnapshot)) {
+    const lastLodFailureReason = debugSnapshot.lastLodFailureReason?.trim();
+    if (lastLodFailureReason) {
+      reasons.push(
+        `Latest LOD failure: ${ensureTrailingPeriod(
+          lastLodFailureReason.replace(/[.!?]+$/u, '')
+        )}`
+      );
+    }
   }
-  if (debugSnapshot.lastFallbackReason?.trim()) {
-    reasons.push(
-      `Latest fallback reason: ${ensureTrailingPeriod(
-        debugSnapshot.lastFallbackReason.trim().replace(/[.!?]+$/u, '')
-      )}`
-    );
+  if (hasActiveFallbackSignal(debugSnapshot)) {
+    const lastFallbackReason = debugSnapshot.lastFallbackReason?.trim();
+    if (lastFallbackReason) {
+      reasons.push(
+        `Latest fallback reason: ${ensureTrailingPeriod(
+          lastFallbackReason.replace(/[.!?]+$/u, '')
+        )}`
+      );
+    }
   }
 
   reasons.push(...debugSnapshot.resourceWarnings);
@@ -285,6 +291,34 @@ function collectRuntimePerformanceIssueReasons(
     reasons.push(...describeRuntimePerformanceHotspots(debugSnapshot));
   }
   return [...new Set(reasons.map((reason) => reason.trim()).filter(Boolean))];
+}
+
+function hasActiveLodFailureSignal(debugSnapshot: DebugSnapshot): boolean {
+  if (
+    (debugSnapshot.lowerLodRecoveriesPerSecond ?? 0) > 0 ||
+    (debugSnapshot.lodReplacementsPerSecond ?? 0) > 0
+  ) {
+    return true;
+  }
+  const requestedDetailLevel =
+    debugSnapshot.currentTileRequestedDetailLevel?.trim().toLowerCase() ?? '';
+  const renderedDetailLevel =
+    debugSnapshot.currentTileRenderedDetailLevel?.trim().toLowerCase() ?? '';
+  return (
+    requestedDetailLevel.length > 0 &&
+    renderedDetailLevel.length > 0 &&
+    requestedDetailLevel !== renderedDetailLevel
+  );
+}
+
+function hasActiveFallbackSignal(debugSnapshot: DebugSnapshot): boolean {
+  if ((debugSnapshot.fallbackBoxesPerSecond ?? 0) > 0) {
+    return true;
+  }
+  if (debugSnapshot.currentTileFallbackReason?.trim()) {
+    return true;
+  }
+  return debugSnapshot.currentTileHasVisibleModel === false;
 }
 
 function describeRuntimePerformanceHotspots(

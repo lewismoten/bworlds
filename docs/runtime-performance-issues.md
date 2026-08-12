@@ -28,6 +28,12 @@ growth trends, stationary rebuild symptoms, and missing-instancing hints still
 appear in the live debug data, but the client now keeps them local unless a
 separate direct plugin/tile/runtime failure is active at the same time.
 
+The client also now treats `lastLodFailureReason` and `lastFallbackReason` as
+active only while the corresponding runtime signal is still present. If a tile
+has already recovered back to its requested LOD and is no longer producing
+fallback boxes, stale recent-event strings stay in the debug context instead of
+triggering another runtime issue post by themselves.
+
 Issue reports are throttled by a stable issue hash derived from the saved issue
 summary for five seconds, and the client now reports a given hash only when it
 first appears or reappears after clearing. A persistent unchanged issue no

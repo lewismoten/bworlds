@@ -4,6 +4,7 @@ export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
   initialWorldGenerationMs: 4_000,
   visibleTileGenerationAverageMs: 8,
   visibleTileGenerationMaxMs: 16,
+  visibleTileGenerationBuildsPerSecondMin: 1,
   pendingTileCount: 8,
   maximumFrameMs: 50,
   memoryAfterRegionChangeMb: 512,
@@ -203,6 +204,15 @@ export function collectRuntimePerformanceViolations(
   ) {
     violations.push(
       `Visible tile maximum generation ${metrics.visibleTileGeneration.maxMs.toFixed(1)} ms exceeded ${limits.visibleTileGenerationMaxMs.toFixed(1)} ms.`
+    );
+  }
+  if (
+    typeof metrics.visibleTileGeneration?.buildsPerSecond === 'number' &&
+    metrics.visibleTileGeneration.buildsPerSecond <
+      limits.visibleTileGenerationBuildsPerSecondMin
+  ) {
+    violations.push(
+      `Visible tile build rate ${metrics.visibleTileGeneration.buildsPerSecond.toFixed(1)} builds/s fell below minimum ${limits.visibleTileGenerationBuildsPerSecondMin.toFixed(1)} builds/s.`
     );
   }
   if (
