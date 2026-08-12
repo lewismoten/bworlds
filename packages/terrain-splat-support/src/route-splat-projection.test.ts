@@ -63,4 +63,53 @@ describe('terrain route splat projection', () => {
     expect(projection.points[1]?.y).toBeCloseTo(1.4);
     expect(projection.points[2]?.y).toBeCloseTo(0.7);
   });
+
+  it('interpolates route splat heights between terrain samples to avoid gaps along the road', () => {
+    const heightField = createTerrainHeightField({
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      resolveHeight: ({ x, y }) => x + y,
+    });
+
+    const projection = projectTerrainRouteSplatOntoHeightField({
+      heightField,
+      points: [
+        { x: 0.5, z: 0.5, weight: 1, layerId: 'dirt-road' },
+        { x: 1.5, z: 0.5, weight: 1, layerId: 'dirt-road' },
+        { x: 1.25, z: 1.75, weight: 0.7, layerId: 'gravel-road' },
+      ],
+    });
+
+    expect(projection.points[0]?.y).toBeCloseTo(1);
+    expect(projection.points[1]?.y).toBeCloseTo(2);
+    expect(projection.points[2]?.y).toBeCloseTo(3);
+  });
+
+  it('clamps route splat projection samples at the edge of the height field instead of leaving height gaps', () => {
+    const heightField = createTerrainHeightField({
+      bounds: {
+        minX: 10,
+        maxX: 12,
+        minY: 20,
+        maxY: 22,
+      },
+      resolveHeight: ({ x, y }) => (x - 10) * 0.3 + (y - 20) * 0.4,
+    });
+
+    const projection = projectTerrainRouteSplatOntoHeightField({
+      heightField,
+      surfaceOffsetY: 0.01,
+      points: [
+        { x: 9.5, z: 19.5, weight: 1, layerId: 'dirt-road' },
+        { x: 12.5, z: 22.5, weight: 0.6, layerId: 'gravel-road' },
+      ],
+    });
+
+    expect(projection.points[0]?.y).toBeCloseTo(0.01);
+    expect(projection.points[1]?.y).toBeCloseTo(1.41);
+  });
 });

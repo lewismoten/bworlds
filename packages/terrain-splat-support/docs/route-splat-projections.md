@@ -20,3 +20,5 @@ and trail splat samples onto the shared terrain height field.
 - heights come from the shared terrain height field via bilinear sampling
 - invalid weights are clamped into `0..1` so later blend stages can rely on
   bounded splat influence
+- interpolated and edge-clamped height sampling keeps neighboring route splat
+  points aligned to the terrain surface instead of leaving visible height gaps
