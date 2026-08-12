@@ -16,6 +16,8 @@
       summaries such as plugin rejection totals, scheduler starvation totals,
       LOD-swap churn, fallback dominance, and heap-growth trend warnings now
       stay local to the client unless an explicit failure reason is present,
+      even when those summaries are rewrapped into the latest LOD/fallback
+      reason fields by the recent-event pipeline,
       and expected non-plugin tile fallback reasons such as
       `tile has no plugin model` and
       `tile has no plugin model and uses the wall-height fallback` now also

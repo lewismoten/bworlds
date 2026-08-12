@@ -896,6 +896,8 @@ function isGenericRuntimePerformanceBudgetReason(reason: string): boolean {
   return (
     normalized.startsWith('Maximum frame time ') ||
     normalized.startsWith('Draw calls ') ||
+    normalized.startsWith('Objects per visible tile is high ') ||
+    normalized.startsWith('Objects per tree is high ') ||
     normalized.startsWith('Active Three.js object count ') ||
     normalized.startsWith('Audio node count ') ||
     normalized.startsWith('Synchronous tile build is too slow ') ||
@@ -906,6 +908,16 @@ function isGenericRuntimePerformanceBudgetReason(reason: string): boolean {
     normalized.startsWith('Shader program count is high ') ||
     normalized.startsWith('Shadow light count is high ') ||
     normalized.startsWith('Active audio source count is high ') ||
+    normalized.startsWith('Chunk-generation queue is backing up ') ||
+    normalized.startsWith('Render budget is rejecting plugin models ') ||
+    normalized.startsWith(
+      'Pending world-build scheduler is starving queued work '
+    ) ||
+    normalized.startsWith('LOD swaps are too frequent ') ||
+    normalized.startsWith('Fallback models are dominated by one plugin ') ||
+    normalized.startsWith('Heap usage keeps climbing ') ||
+    normalized.startsWith('Heap usage keeps climbing while idle ') ||
+    normalized.startsWith('No tiles are visible, but ') ||
     normalized.startsWith('Visibility radius reduced to ') ||
     normalized.startsWith('Weather visibility capped draw distance at ') ||
     normalized.startsWith('Scene draw calls ') ||
