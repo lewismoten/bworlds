@@ -66,3 +66,5 @@ Add different geographic layers where areas of the world have a 0.0 to 1.0 influ
 Tiles can take on various chracteristics based on support for different layers. Players can choose starting towns in areas heavily influenced by one thing or another.
 
 Moss on trees facing away from equator
+
+- Currency regions: Overlapping regions that accept/trade/buy with a particular currency
