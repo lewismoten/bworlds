@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@bworlds/cache-support": "file:../cache-support",
     "@bworlds/core": "file:../core",
     "@bworlds/plugin-api": "file:../plugin-api"
   },
   "exports": {
     ".": "./src/index.ts",
+    "./chunk-cache": "./src/chunk-cache.ts",
     "./sample-grid": "./src/sample-grid.ts",
     "./worker-contract": "./src/worker-contract.ts",
     "./variant-pool": "./src/variant-pool.ts",

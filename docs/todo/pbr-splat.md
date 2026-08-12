@@ -147,9 +147,9 @@
 - [x] Keep splat generation separate from mesh creation.
 - [x] Generate weight data in workers where practical.
 - [x] Transfer compact splat buffers to the main thread.
-- [ ] Cache splat data with terrain chunk data.
-- [ ] Rebuild splat data only when terrain state changes.
-- [ ] Avoid rebuilding splat data for camera movement.
+- [x] Cache splat data with terrain chunk data.
+- [x] Rebuild splat data only when terrain state changes.
+- [x] Avoid rebuilding splat data for camera movement.
 
 ## LOD Support
 
@@ -335,6 +335,9 @@
   packed splat outputs, transferables, and adaptive build metrics can move
   through one serializable worker request/result contract without coupling
   splat generation to mesh creation.
+- Added `@bworlds/terrain-splat-support/chunk-cache` so chunk splat data can
+  reuse one bounded cache keyed to terrain state, ignore camera-only movement,
+  and rebuild only when the serialized chunk inputs or terrain revision change.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
