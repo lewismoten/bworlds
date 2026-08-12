@@ -121,6 +121,16 @@ export const EQUAL_EARTH_MAX_PROJECTED_X =
 export const EQUAL_EARTH_MAX_PROJECTED_Y = evaluateEqualEarthY(Math.PI / 3);
 export const EQUAL_EARTH_MAX_SOLVER_ITERATIONS = 12;
 export const EQUAL_EARTH_SOLVER_TOLERANCE = 1e-12;
+export const GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE = 180;
+export const GOODE_HOMOLOSINE_MAX_WORLD_LATITUDE = 90;
+export const GOODE_HOMOLOSINE_TRANSITION_LATITUDE_DEGREES =
+  40.733333333333334;
+export const GOODE_HOMOLOSINE_TRANSITION_LATITUDE_RADIANS =
+  degreesToRadians(GOODE_HOMOLOSINE_TRANSITION_LATITUDE_DEGREES);
+export const GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET = 0.0528;
+export const GOODE_HOMOLOSINE_MAX_PROJECTED_X = 2 * Math.SQRT2;
+export const GOODE_HOMOLOSINE_MAX_PROJECTED_Y =
+  Math.SQRT2 - GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET;
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -1147,6 +1157,106 @@ export function createEqualEarthMapProjectionPlugin(): MapProjectionPlugin {
             denominator;
       const latitudeRadians = Math.asin(
         clamp((2 * Math.sin(theta)) / Math.sqrt(3), -1, 1)
+      );
+      return {
+        worldX: radiansToDegrees(longitudeRadians),
+        worldY: radiansToDegrees(latitudeRadians),
+      };
+    },
+  });
+}
+
+export function createGoodeHomolosineMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'goode-homolosine',
+    label: 'Goode Homolosine',
+    distortion: 'equal-area',
+    bounds: {
+      minWorldX: -GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE,
+      maxWorldX: GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE,
+      minWorldY: -GOODE_HOMOLOSINE_MAX_WORLD_LATITUDE,
+      maxWorldY: GOODE_HOMOLOSINE_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLongitude = clamp(
+        worldX,
+        -GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE,
+        GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE
+      );
+      const clampedLatitude = clamp(
+        worldY,
+        -GOODE_HOMOLOSINE_MAX_WORLD_LATITUDE,
+        GOODE_HOMOLOSINE_MAX_WORLD_LATITUDE
+      );
+      const longitudeRadians = degreesToRadians(clampedLongitude);
+      const latitudeRadians = degreesToRadians(clampedLatitude);
+      if (
+        Math.abs(latitudeRadians) <=
+        GOODE_HOMOLOSINE_TRANSITION_LATITUDE_RADIANS
+      ) {
+        return {
+          mapX: snapNearZero(
+            (longitudeRadians * Math.cos(latitudeRadians)) /
+              GOODE_HOMOLOSINE_MAX_PROJECTED_X
+          ),
+          mapY: snapNearZero(
+            latitudeRadians / GOODE_HOMOLOSINE_MAX_PROJECTED_Y
+          ),
+        };
+      }
+
+      const theta = solveMollweideTheta(latitudeRadians);
+      const projectedY =
+        Math.SQRT2 * Math.sin(theta) -
+        Math.sign(latitudeRadians) * GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET;
+      return {
+        mapX: snapNearZero(
+          ((2 * Math.SQRT2) / Math.PI) *
+            longitudeRadians *
+            Math.cos(theta) /
+            GOODE_HOMOLOSINE_MAX_PROJECTED_X
+        ),
+        mapY: snapNearZero(projectedY / GOODE_HOMOLOSINE_MAX_PROJECTED_Y),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * GOODE_HOMOLOSINE_MAX_PROJECTED_X;
+      const projectedY = mapY * GOODE_HOMOLOSINE_MAX_PROJECTED_Y;
+      if (
+        Math.abs(projectedY) <=
+        GOODE_HOMOLOSINE_TRANSITION_LATITUDE_RADIANS
+      ) {
+        const latitudeRadians = projectedY;
+        const cosineLatitude = Math.cos(latitudeRadians);
+        const longitudeRadians =
+          Math.abs(cosineLatitude) <= 1e-12
+            ? 0
+            : projectedX / cosineLatitude;
+        return {
+          worldX: radiansToDegrees(longitudeRadians),
+          worldY: radiansToDegrees(latitudeRadians),
+        };
+      }
+
+      const adjustedProjectedY =
+        projectedY +
+        Math.sign(projectedY) * GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET;
+      const theta = Math.asin(clamp(adjustedProjectedY / Math.SQRT2, -1, 1));
+      const cosineTheta = Math.cos(theta);
+      const longitudeRadians =
+        Math.abs(cosineTheta) <= 1e-12
+          ? 0
+          : (Math.PI * projectedX) / (2 * Math.SQRT2 * cosineTheta);
+      const latitudeRadians = Math.asin(
+        clamp((2 * theta + Math.sin(2 * theta)) / Math.PI, -1, 1)
       );
       return {
         worldX: radiansToDegrees(longitudeRadians),

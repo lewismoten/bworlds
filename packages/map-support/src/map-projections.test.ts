@@ -17,6 +17,7 @@ import {
   createAlbersEqualAreaConicMapProjectionPlugin,
   createGenericConicMapProjectionPlugin,
   createEqualEarthMapProjectionPlugin,
+  createGoodeHomolosineMapProjectionPlugin,
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
@@ -43,6 +44,12 @@ import {
   EQUAL_EARTH_MAX_SOLVER_ITERATIONS,
   EQUAL_EARTH_MAX_WORLD_LATITUDE,
   EQUAL_EARTH_MAX_WORLD_LONGITUDE,
+  GOODE_HOMOLOSINE_MAX_PROJECTED_X,
+  GOODE_HOMOLOSINE_MAX_PROJECTED_Y,
+  GOODE_HOMOLOSINE_MAX_WORLD_LATITUDE,
+  GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE,
+  GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET,
+  GOODE_HOMOLOSINE_TRANSITION_LATITUDE_DEGREES,
   MOLLWEIDE_MAX_PROJECTED_X,
   MOLLWEIDE_MAX_PROJECTED_Y,
   MOLLWEIDE_MAX_SOLVER_ITERATIONS,
@@ -704,5 +711,47 @@ describe('map projections', () => {
     expect(EQUAL_EARTH_MAX_PROJECTED_X).toBeGreaterThan(2.5);
     expect(EQUAL_EARTH_MAX_PROJECTED_Y).toBeGreaterThan(1.2);
     expect(EQUAL_EARTH_MAX_SOLVER_ITERATIONS).toBe(12);
+  });
+
+  it('projects and inverts Goode homolosine coordinates across both branch regions', () => {
+    const projection = createGoodeHomolosineMapProjectionPlugin();
+
+    expect(projection.id).toBe('goode-homolosine');
+    expect(projection.label).toBe('Goode Homolosine');
+    expect(projection.distortion).toBe('equal-area');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const sinusoidalBranch = projection.project({
+      worldX: 30,
+      worldY: 20,
+    });
+    const sinusoidalInverted = projection.invert?.(sinusoidalBranch);
+    expect(sinusoidalInverted?.worldX).toBeCloseTo(30, 10);
+    expect(sinusoidalInverted?.worldY).toBeCloseTo(20, 10);
+
+    const mollweideBranch = projection.project({
+      worldX: 60,
+      worldY: 55,
+    });
+    const mollweideInverted = projection.invert?.(mollweideBranch);
+    expect(mollweideInverted?.worldX).toBeCloseTo(60, 10);
+    expect(mollweideInverted?.worldY).toBeCloseTo(55, 10);
+
+    expect(GOODE_HOMOLOSINE_MAX_WORLD_LONGITUDE).toBe(180);
+    expect(GOODE_HOMOLOSINE_MAX_WORLD_LATITUDE).toBe(90);
+    expect(GOODE_HOMOLOSINE_TRANSITION_LATITUDE_DEGREES).toBeCloseTo(
+      40.733333333333334,
+      10
+    );
+    expect(GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET).toBeCloseTo(0.0528, 10);
+    expect(GOODE_HOMOLOSINE_MAX_PROJECTED_X).toBeCloseTo(2 * Math.SQRT2, 10);
+    expect(GOODE_HOMOLOSINE_MAX_PROJECTED_Y).toBeGreaterThan(1.3);
   });
 });

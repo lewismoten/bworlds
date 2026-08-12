@@ -20,6 +20,7 @@ Current built-in support:
 - `createAlbersEqualAreaConicMapProjectionPlugin()`
 - `createGenericConicMapProjectionPlugin()`
 - `createEqualEarthMapProjectionPlugin()`
+- `createGoodeHomolosineMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
 - `createMollweideMapProjectionPlugin()`
@@ -297,6 +298,28 @@ and vertical extents derived from the published polynomial coefficients.
 This gives later map UIs a modern full-world equal-area projection with a
 less aggressively stretched appearance than Mollweide while still fitting the
 shared normalized plugin contract.
+
+## Goode Homolosine
+
+`createGoodeHomolosineMapProjectionPlugin()` provides a global equal-area
+composite projection that uses sinusoidal math near the equator and
+Mollweide math toward the poles.
+
+It currently:
+
+- uses `id: 'goode-homolosine'`
+- declares `distortion: 'equal-area'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- supports the full `±180` longitude and `±90` latitude range
+- switches branches at `±40.733333333333334` degrees latitude
+
+The projected range is normalized from the standard uninterrupted
+homolosine extents, including the usual Mollweide Y offset outside the
+equatorial branch.
+
+This gives later map UIs a classic full-world equal-area composite
+projection while still fitting the same normalized plugin contract.
 
 ## Miller Cylindrical
 
