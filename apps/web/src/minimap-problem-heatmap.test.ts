@@ -111,7 +111,7 @@ describe('minimap problem heatmap', () => {
     expect(parseMinimapProblemTileKey('oops')).toBeNull();
   });
 
-  it('builds heatmap cells from recent events and current snapshot warnings', () => {
+  it('builds heatmap cells from tile events and tile-scoped snapshot warnings', () => {
     const cells = buildMinimapProblemCells(
       createState(),
       {
@@ -133,6 +133,7 @@ describe('minimap problem heatmap', () => {
           renderQualityLimiters: 'Scene materials exceeded the hard cap',
           currentTileFallbackReason:
             '10:-4 / tile-plains: built wall-height fallback',
+          lastLodFailureReason: '10:-4 / tile-plains: full-detail build failed',
           resourceWarnings: ['Active audio source count is high (26 > 24).'],
         }),
         currentTileX: 10,
@@ -147,16 +148,51 @@ describe('minimap problem heatmap', () => {
       expect.objectContaining({
         tileKind: 'plains',
         severity: 'critical',
+        issueCount: 2,
       })
     );
-    expect(currentTile?.issues.map((issue) => issue.category)).toEqual(
-      expect.arrayContaining(['audio', 'lod', 'quality'])
-    );
+    expect(currentTile?.issues.map((issue) => issue.category)).toEqual([
+      'lod',
+      'lod',
+    ]);
     expect(neighborTile).toEqual(
       expect.objectContaining({
         tileKind: 'forest',
         severity: 'critical',
         issueCount: 1,
+      })
+    );
+  });
+
+  it('does not attach scene-wide quality and budget warnings to the current tile', () => {
+    const cells = buildMinimapProblemCells(
+      createState(),
+      {
+        width: 220,
+        height: 220,
+        zoom: 1,
+      },
+      {
+        recentEvents: [],
+        latestSnapshot: createSnapshot({
+          performanceTier: 'critical',
+          renderQualityLimiters:
+            'Visibility radius reduced to 10; Scene materials exceeded the hard cap',
+          resourceWarnings: [
+            'Chunk draw calls exceeded the soft cap.',
+            'Visible meshes exceeded the soft cap.',
+            'Active audio source count is high (26 > 24).',
+          ],
+        }),
+        currentTileX: 10,
+        currentTileY: -4,
+      }
+    );
+
+    expect(cells.find((cell) => cell.key === '10:-4')).toEqual(
+      expect.objectContaining({
+        severity: 'none',
+        issueCount: 0,
       })
     );
   });

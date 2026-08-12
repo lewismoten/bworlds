@@ -13,15 +13,18 @@ The heat-map overlay is driven by two live inputs:
 - recent renderer and local debug events merged through
   `collectMergedRecentDebugEvents(...)`
 - the latest `DebugSnapshot`, especially:
-  - `renderQualityLimiters`
   - `lastLodFailureReason`
   - `currentTileFallbackReason`
-  - `resourceWarnings`
 
 Tile-keyed renderer events stay attached to their original tile coordinates.
-Snapshot-only warnings that do not carry tile coordinates, such as elevated
-audio pressure or current-tile fallback state, are attached to the player's
-current tile so the HUD still exposes them spatially.
+Only tile-scoped snapshot warnings are attached to the player's current tile.
+Right now that means current-tile fallback and current-tile LOD failure reasons.
+
+Scene-wide renderer pressure such as reduced visibility radius, weather draw
+distance caps, chunk draw-call pressure, scene material caps, visible mesh caps,
+or global audio pressure are intentionally not assigned to any one tile in the
+heat map. Those remain global diagnostics in the debug snapshot and runtime
+issue reporting instead of making the standing tile look permanently unhealthy.
 
 ## Rendering
 

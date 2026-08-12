@@ -301,7 +301,9 @@ function buildMinimapProblemIndex(options: {
   }
 
   const currentTileKey = `${options.currentTileX}:${options.currentTileY}`;
-  for (const issue of getSnapshotProblemIssues(options.latestSnapshot)) {
+  for (const issue of getCurrentTileSnapshotProblemIssues(
+    options.latestSnapshot
+  )) {
     appendProblemIssue(index, currentTileKey, issue);
   }
 
@@ -346,7 +348,7 @@ function toEventProblemIssue(
   };
 }
 
-function getSnapshotProblemIssues(
+function getCurrentTileSnapshotProblemIssues(
   snapshot: DebugSnapshot | null
 ): MinimapProblemIssue[] {
   if (!snapshot) {
@@ -354,18 +356,6 @@ function getSnapshotProblemIssues(
   }
 
   const issues: MinimapProblemIssue[] = [];
-  const qualitySummary = snapshot.renderQualityLimiters?.trim();
-  if (qualitySummary && qualitySummary !== 'None') {
-    issues.push({
-      category: 'quality',
-      severity:
-        snapshot.performanceTier === 'critical' ? 'critical' : 'warning',
-      label: 'Graphics quality',
-      summary: qualitySummary,
-      source: 'snapshot',
-    });
-  }
-
   const currentTileFallback = snapshot.currentTileFallbackReason?.trim();
   if (currentTileFallback) {
     issues.push({
@@ -384,27 +374,6 @@ function getSnapshotProblemIssues(
       severity: 'critical',
       label: 'LOD failure',
       summary: currentTileLodReason,
-      source: 'snapshot',
-    });
-  }
-
-  for (const warning of snapshot.resourceWarnings ?? []) {
-    const trimmed = warning.trim();
-    if (!trimmed) {
-      continue;
-    }
-    const category = classifyMinimapProblemCategory(trimmed);
-    const severity: Exclude<MinimapProblemSeverity, 'none'> =
-      trimmed.toLowerCase().includes('over budget') ||
-      trimmed.toLowerCase().includes('exceed') ||
-      trimmed.toLowerCase().includes('backing up')
-        ? 'critical'
-        : 'warning';
-    issues.push({
-      category,
-      severity,
-      label: formatMinimapProblemLabel(category),
-      summary: trimmed,
       source: 'snapshot',
     });
   }
