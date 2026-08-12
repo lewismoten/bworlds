@@ -1,4 +1,8 @@
-import { createBoundedCache, type CacheLike } from '@bworlds/cache-support';
+import {
+  createBoundedCache,
+  getOrCreateCacheValue,
+  type CacheLike,
+} from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
@@ -693,12 +697,15 @@ function createSignLabelMaterial(
   style: SignStyle,
   poi: NearbyPoi
 ): ThreeMaterialLike {
-  return createBasicMaterial(three, {
-    map: getSignLabelTexture(three, style, poi),
-    transparent: true,
-    depthWrite: false,
-    side: three.DoubleSide,
-  });
+  const key = getSignLabelCacheKey(style, poi);
+  return getOrCreateCacheValue(style.labelMaterialCache, key, () =>
+    createBasicMaterial(three, {
+      map: getSignLabelTexture(three, style, poi),
+      transparent: true,
+      depthWrite: false,
+      side: three.DoubleSide,
+    })
+  );
 }
 
 function createSignLabelPlane(
@@ -724,7 +731,7 @@ function getSignLabelTexture(
   style: SignStyle,
   poi: NearbyPoi
 ) {
-  const key = `${style.key}:${poi.name}:${poi.arrow}`;
+  const key = getSignLabelCacheKey(style, poi);
   return getOrCreatePaintedCanvasTexture(style.labelCache, key, three, {
     width: 256,
     height: 96,
@@ -748,6 +755,10 @@ function getSignLabelTexture(
       }
     },
   });
+}
+
+function getSignLabelCacheKey(style: SignStyle, poi: NearbyPoi): string {
+  return `${style.key}:${poi.name}:${poi.arrow}`;
 }
 
 function getNearbyPois(
@@ -825,6 +836,9 @@ function getRegionalSignStyle(
         trimColor: styleVariant.variant.trimColor,
         textColor: '#24150c',
         labelCache: createBoundedCache<string, ThreeTextureLike>(
+          SIGN_LABEL_CACHE_LIMIT
+        ),
+        labelMaterialCache: createBoundedCache<string, ThreeMaterialLike>(
           SIGN_LABEL_CACHE_LIMIT
         ),
         postMaterial: new host.MeshStandardMaterial({
@@ -1029,6 +1043,7 @@ interface SignStyle {
   trimColor: string;
   textColor: string;
   labelCache: CacheLike<string, ThreeTextureLike>;
+  labelMaterialCache: CacheLike<string, ThreeMaterialLike>;
   postMaterial: ThreeMaterialLike;
   placardMaterial: ThreeMaterialLike;
   trimMaterial: ThreeMaterialLike;

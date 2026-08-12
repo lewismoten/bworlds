@@ -722,6 +722,36 @@ describe('tile sign', () => {
     expect(arrowHeadInstances[0]?.matrices).toHaveLength(3);
   });
 
+  it('reuses full-detail label materials across repeated sign builds', () => {
+    const first = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+    const second = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createMultiPlacardSignState() as never,
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+    }) as FakeGroup | undefined;
+
+    const firstLabelMaterials = first?.children
+      .filter((child) => child.userData?.signFullDetailPart === 'text-plane')
+      .map((child) => (child as FakeMesh).material) as
+      FakeMaterial[] | undefined;
+    const secondLabelMaterials = second?.children
+      .filter((child) => child.userData?.signFullDetailPart === 'text-plane')
+      .map((child) => (child as FakeMesh).material) as
+      FakeMaterial[] | undefined;
+
+    expect(firstLabelMaterials).toHaveLength(3);
+    expect(secondLabelMaterials).toHaveLength(3);
+    expect(secondLabelMaterials).toEqual(firstLabelMaterials);
+  });
+
   it('places full-detail sign post and placard parts directly under the sign root', () => {
     const model = signTile?.create3DModel?.({
       three: fakeThree as never,

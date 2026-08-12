@@ -19,6 +19,9 @@ Current full-detail optimizations:
 - each placard now uses one double-sided label plane instead of separate front
   and back label meshes, which also lets one textured label material serve both
   viewing directions
+- label textures and their `MeshBasicMaterial` wrappers are cached per host and
+  sign style, so repeated builds of the same placard text reuse both the canvas
+  texture and the label material instead of manufacturing equivalent materials
 - the sign's tiny box and cone parts collapse their geometry groups to one
   shared single-material draw group so default primitive grouping does not
   inflate draw-call and material-group diagnostics for a small roadside prop
