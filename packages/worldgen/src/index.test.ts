@@ -13,7 +13,9 @@ import {
   createPluginRegistryFromPacks,
   createWorldRuntime,
   createWorldGenerator,
+  getTerrainChunkCellBounds,
   getTerrainChunkCoordinates,
+  getTerrainChunkHeightSampleBounds,
   listContentPacks,
   listBuiltinContentPacks,
   TERRAIN_CHUNK_CELL_SIZE,
@@ -110,6 +112,43 @@ describe('world generator', () => {
       localX: 15,
       localY: 15,
     });
+  });
+
+  it('derives world-space cell bounds for terrain chunks', () => {
+    expect(getTerrainChunkCellBounds(0, 0)).toEqual({
+      minX: 0,
+      maxX: 15,
+      minY: 0,
+      maxY: 15,
+    });
+    expect(getTerrainChunkCellBounds(1, -2)).toEqual({
+      minX: 16,
+      maxX: 31,
+      minY: -32,
+      maxY: -17,
+    });
+  });
+
+  it('derives seam-safe height sample bounds for neighboring terrain chunks', () => {
+    expect(getTerrainChunkHeightSampleBounds(0, 0)).toEqual({
+      minX: 0,
+      maxX: 16,
+      minY: 0,
+      maxY: 16,
+    });
+    expect(getTerrainChunkHeightSampleBounds(-1, -1)).toEqual({
+      minX: -16,
+      maxX: 0,
+      minY: -16,
+      maxY: 0,
+    });
+
+    const center = getTerrainChunkHeightSampleBounds(0, 0);
+    const east = getTerrainChunkHeightSampleBounds(1, 0);
+    const south = getTerrainChunkHeightSampleBounds(0, 1);
+
+    expect(center.maxX).toBe(east.minX);
+    expect(center.maxY).toBe(south.minY);
   });
 
   it('lists built-in content packs with manifest metadata', () => {

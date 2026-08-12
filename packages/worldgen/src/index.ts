@@ -33,10 +33,15 @@ import {
   isNearOverworldLand,
 } from '@bworlds/overworld-support';
 export {
+  getTerrainChunkCellBounds,
   getTerrainChunkCoordinates,
+  getTerrainChunkHeightSampleBounds,
   TERRAIN_CHUNK_CELL_SIZE,
   TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE,
+  type TerrainChunkCellBounds,
   type TerrainChunkCoordinates,
+  type TerrainChunkHeightSampleBounds,
+  type TerrainChunkId,
 } from './terrain-chunks.ts';
 
 type Point = { x: number; y: number };

@@ -36,6 +36,11 @@
 - [ ] Add a chunk seam debug view.
 - [ ] Add a chunk wireframe debug view.
 
+Current support:
+
+- `@bworlds/worldgen` exposes chunk cell bounds and 17x17 height-sample bounds
+  so later height-field builders can share one world-space seam contract.
+
 ## Sextant Panel
 
 - [x] Show current chunk X.

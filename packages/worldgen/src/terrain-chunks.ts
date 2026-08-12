@@ -1,12 +1,26 @@
 export const TERRAIN_CHUNK_CELL_SIZE = 16;
 export const TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE = TERRAIN_CHUNK_CELL_SIZE + 1;
 
+export type TerrainChunkId = {
+  chunkX: number;
+  chunkY: number;
+};
+
 export type TerrainChunkCoordinates = {
   chunkX: number;
   chunkY: number;
   localX: number;
   localY: number;
 };
+
+export type TerrainChunkCellBounds = {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+};
+
+export type TerrainChunkHeightSampleBounds = TerrainChunkCellBounds;
 
 export function getTerrainChunkCoordinates(
   worldX: number,
@@ -20,5 +34,34 @@ export function getTerrainChunkCoordinates(
     chunkY,
     localX: worldX - chunkX * TERRAIN_CHUNK_CELL_SIZE,
     localY: worldY - chunkY * TERRAIN_CHUNK_CELL_SIZE,
+  };
+}
+
+export function getTerrainChunkCellBounds(
+  chunkX: number,
+  chunkY: number
+): TerrainChunkCellBounds {
+  const minX = chunkX * TERRAIN_CHUNK_CELL_SIZE;
+  const minY = chunkY * TERRAIN_CHUNK_CELL_SIZE;
+
+  return {
+    minX,
+    maxX: minX + TERRAIN_CHUNK_CELL_SIZE - 1,
+    minY,
+    maxY: minY + TERRAIN_CHUNK_CELL_SIZE - 1,
+  };
+}
+
+export function getTerrainChunkHeightSampleBounds(
+  chunkX: number,
+  chunkY: number
+): TerrainChunkHeightSampleBounds {
+  const bounds = getTerrainChunkCellBounds(chunkX, chunkY);
+
+  return {
+    minX: bounds.minX,
+    maxX: bounds.maxX + 1,
+    minY: bounds.minY,
+    maxY: bounds.maxY + 1,
   };
 }
