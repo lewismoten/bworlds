@@ -24,6 +24,7 @@ Current responsibilities:
 - plan one bounded active layer pool for neighboring chunk groups
 - plan aligned texture-array slots and validate descriptor consistency before
   renderer upload code exists
+- resolve deterministic per-layer UV transforms for rotation and mirroring
 
 Why this comes first:
 
@@ -48,3 +49,5 @@ Current limits:
   signal inputs rather than final renderer integration
 - recommended overworld mappings now cover grass, forest floor, sand, dirt,
   path, road, rocky, snow, and mud surface families
+- UV transform support currently resolves metadata only; renderer code still
+  needs to apply the transforms in shared terrain materials

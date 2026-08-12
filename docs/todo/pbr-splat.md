@@ -12,14 +12,14 @@
 
 ## PBR Layer Data
 
-- [ ] Store base color texture per terrain layer.
-- [ ] Store normal texture per terrain layer.
-- [ ] Store roughness texture per terrain layer.
+- [x] Store base color texture per terrain layer.
+- [x] Store normal texture per terrain layer.
+- [x] Store roughness texture per terrain layer.
 - [ ] Store metalness texture only when needed.
 - [ ] Store ambient occlusion texture when useful.
-- [ ] Store texture scale per terrain layer.
-- [ ] Store default tint per terrain layer.
-- [ ] Store roughness defaults per terrain layer.
+- [x] Store texture scale per terrain layer.
+- [x] Store default tint per terrain layer.
+- [x] Store roughness defaults per terrain layer.
 - [x] Validate all PBR layer definitions.
 
 ## Texture Arrays
@@ -102,9 +102,9 @@
 - [x] Allow several variants per terrain material family.
 - [x] Limit each terrain family to a small variant pool.
 - [x] Pick texture variants deterministically.
-- [ ] Support 90 degree texture rotation.
-- [ ] Support texture mirroring.
-- [ ] Use UV transforms instead of duplicate textures.
+- [x] Support 90 degree texture rotation.
+- [x] Support texture mirroring.
+- [x] Use UV transforms instead of duplicate textures.
 - [ ] Add small tint variation without new materials.
 - [ ] Add large-scale tint noise across terrain chunks.
 
@@ -115,8 +115,8 @@
 - [ ] Prevent texture seams at chunk borders.
 - [ ] Avoid visible repetition at logical tile boundaries.
 - [ ] Support per-layer texture scale.
-- [ ] Support per-layer UV rotation.
-- [ ] Keep UV transforms deterministic.
+- [x] Support per-layer UV rotation.
+- [x] Keep UV transforms deterministic.
 
 ## Shader
 
@@ -209,7 +209,7 @@
 
 - [x] Reject splat weights containing NaN values.
 - [x] Reject splat weights outside zero to one.
-- [ ] Reject samples whose weights do not sum near one.
+- [x] Reject samples whose weights do not sum near one.
 - [x] Reject invalid terrain layer indices.
 - [x] Reject texture arrays with mismatched dimensions.
 - [ ] Warn about unused terrain texture layers.
@@ -271,6 +271,11 @@
   from the shared layer catalog, keep layer indices aligned across array
   purposes, reject mismatched dimensions or formats before WebGL upload, and
   estimate array memory usage for future terrain budget tooling.
+- Added deterministic terrain UV transform support in
+  `@bworlds/terrain-splat-support` so terrain layers can advertise quarter-turn
+  rotation and axis mirroring without duplicating textures. The support
+  package now validates those options and resolves one stable transform from
+  seed, world position, and layer ID for later shared-material integration.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -281,7 +286,7 @@
 - [ ] Add forest, rock, sand, and road layers.
 - [ ] Add terrain boundary blending.
 - [ ] Add deterministic texture variants.
-- [ ] Add UV rotation and mirroring.
+- [x] Add UV rotation and mirroring.
 - [ ] Add biome-driven splat weights.
 - [ ] Add slope-driven splat weights.
 - [ ] Add LOD support.
@@ -305,12 +310,13 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/chunk-sample-grids.md` and
 `packages/terrain-splat-support/docs/variant-pools.md`, plus
 `packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, plus
-`packages/terrain-splat-support/docs/texture-array-plans.md`, and focused tests
-cover normalization, packing, validation, deterministic mapping, chunk border
+`packages/terrain-splat-support/docs/texture-array-plans.md`, plus
+`packages/terrain-splat-support/docs/uv-transforms.md`, and focused tests cover
+normalization, packing, validation, deterministic mapping, chunk border
 stability, chunk layer-usage analysis, bounded family variant selection,
 neighborhood shared-layer planning, stable terrain family resolution for the
-same seed, and texture-array plan validation for aligned dimensions, formats,
-and memory estimates.
+same seed, texture-array plan validation for aligned dimensions, formats, and
+memory estimates, plus deterministic UV rotation and mirroring resolution.
 
 # Roads and Paths as Terrain Splats
 

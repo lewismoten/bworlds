@@ -24,6 +24,18 @@ export type TerrainMaterialLayerDefinition = {
   defaultTint: string;
   defaultRoughness: number;
   defaultMetalness?: number;
+  uvRotationQuarterTurns?: readonly TerrainUvRotationQuarterTurn[];
+  allowMirrorU?: boolean;
+  allowMirrorV?: boolean;
+};
+
+export type TerrainUvRotationQuarterTurn = 0 | 1 | 2 | 3;
+
+export type TerrainMaterialLayerUvTransform = {
+  textureScale: number;
+  rotationQuarterTurns: TerrainUvRotationQuarterTurn;
+  mirrorU: boolean;
+  mirrorV: boolean;
 };
 
 export type TerrainMaterialLayerCatalogEntry =
@@ -108,6 +120,15 @@ export const MIN_TERRAIN_SPLAT_WEIGHT = 0.01;
 export const PACKED_TERRAIN_SPLAT_WEIGHT_MAX = 255;
 
 const TERRAIN_SPLAT_VARIANT_LABEL = registerHashLabel('terrain-splat-variant');
+const TERRAIN_SPLAT_UV_ROTATION_LABEL = registerHashLabel(
+  'terrain-splat-uv-rotation'
+);
+const TERRAIN_SPLAT_UV_MIRROR_U_LABEL = registerHashLabel(
+  'terrain-splat-uv-mirror-u'
+);
+const TERRAIN_SPLAT_UV_MIRROR_V_LABEL = registerHashLabel(
+  'terrain-splat-uv-mirror-v'
+);
 
 export function validateTerrainMaterialLayerDefinition(
   layer: TerrainMaterialLayerDefinition
@@ -187,6 +208,50 @@ export function validateTerrainMaterialLayerDefinition(
   ) {
     errors.push(
       `Terrain material layer ${formatLayerLabel(layer.id)} must omit defaultMetalness or define it within 0..1.`
+    );
+  }
+  if (layer.uvRotationQuarterTurns !== undefined) {
+    if (!Array.isArray(layer.uvRotationQuarterTurns)) {
+      errors.push(
+        `Terrain material layer ${formatLayerLabel(layer.id)} must omit uvRotationQuarterTurns or define an array of quarter turns.`
+      );
+    } else if (layer.uvRotationQuarterTurns.length === 0) {
+      errors.push(
+        `Terrain material layer ${formatLayerLabel(layer.id)} must not use an empty uvRotationQuarterTurns array.`
+      );
+    } else {
+      const seenQuarterTurns = new Set<TerrainUvRotationQuarterTurn>();
+      for (const quarterTurns of layer.uvRotationQuarterTurns) {
+        if (!isTerrainUvRotationQuarterTurn(quarterTurns)) {
+          errors.push(
+            `Terrain material layer ${formatLayerLabel(layer.id)} uvRotationQuarterTurns entries must stay within 0..3.`
+          );
+          continue;
+        }
+        if (seenQuarterTurns.has(quarterTurns)) {
+          errors.push(
+            `Terrain material layer ${formatLayerLabel(layer.id)} must not repeat uvRotationQuarterTurns entries.`
+          );
+          continue;
+        }
+        seenQuarterTurns.add(quarterTurns);
+      }
+    }
+  }
+  if (
+    layer.allowMirrorU !== undefined &&
+    typeof layer.allowMirrorU !== 'boolean'
+  ) {
+    errors.push(
+      `Terrain material layer ${formatLayerLabel(layer.id)} must omit allowMirrorU or define a boolean.`
+    );
+  }
+  if (
+    layer.allowMirrorV !== undefined &&
+    typeof layer.allowMirrorV !== 'boolean'
+  ) {
+    errors.push(
+      `Terrain material layer ${formatLayerLabel(layer.id)} must omit allowMirrorV or define a boolean.`
     );
   }
 
@@ -922,6 +987,38 @@ export function selectTerrainMaterialLayerVariant(
   return layerIds[offset] ?? layerIds[0];
 }
 
+export function resolveTerrainMaterialLayerUvTransform(
+  layer: TerrainMaterialLayerDefinition,
+  input: Pick<ResolveTerrainKindSplatSampleInput, 'seed' | 'x' | 'y' | 'kind'>
+): TerrainMaterialLayerUvTransform {
+  const rotationQuarterTurns = resolveTerrainUvRotationQuarterTurns(
+    layer.uvRotationQuarterTurns,
+    {
+      seed: input.seed,
+      x: input.x + hashString(layer.id),
+      y: input.y,
+      label: TERRAIN_SPLAT_UV_ROTATION_LABEL,
+    }
+  );
+
+  return {
+    textureScale: layer.textureScale,
+    rotationQuarterTurns,
+    mirrorU: resolveTerrainUvMirrorFlag(layer.allowMirrorU, {
+      seed: input.seed,
+      x: input.x,
+      y: input.y + hashString(layer.id),
+      label: TERRAIN_SPLAT_UV_MIRROR_U_LABEL,
+    }),
+    mirrorV: resolveTerrainUvMirrorFlag(layer.allowMirrorV, {
+      seed: input.seed,
+      x: input.x,
+      y: input.y + hashString(layer.id) + 1,
+      label: TERRAIN_SPLAT_UV_MIRROR_V_LABEL,
+    }),
+  };
+}
+
 function collapseTerrainSplatWeights(
   entries: readonly TerrainSplatWeight[]
 ): TerrainSplatWeight[] {
@@ -950,6 +1047,56 @@ function clampWeight(value: number): number {
     return 0;
   }
   return Math.min(1, Math.max(0, value));
+}
+
+function resolveTerrainUvRotationQuarterTurns(
+  options: readonly TerrainUvRotationQuarterTurn[] | undefined,
+  input: {
+    seed: Seed;
+    x: number;
+    y: number;
+    label: number;
+  }
+): TerrainUvRotationQuarterTurn {
+  const normalizedOptions =
+    options?.filter(
+      (quarterTurns): quarterTurns is TerrainUvRotationQuarterTurn =>
+        isTerrainUvRotationQuarterTurn(quarterTurns)
+    ) ?? [];
+  if (normalizedOptions.length === 0) {
+    return 0;
+  }
+  if (normalizedOptions.length === 1) {
+    return normalizedOptions[0] ?? 0;
+  }
+
+  const seedHash = appendHashSeedLabel(
+    resolveHashSeedInput(input.seed),
+    input.label
+  );
+  const index = Math.floor(
+    hash2DWithSeed(seedHash, input.x, input.y) * normalizedOptions.length
+  );
+  return normalizedOptions[index] ?? normalizedOptions[0] ?? 0;
+}
+
+function resolveTerrainUvMirrorFlag(
+  allowed: boolean | undefined,
+  input: {
+    seed: Seed;
+    x: number;
+    y: number;
+    label: number;
+  }
+): boolean {
+  if (allowed !== true) {
+    return false;
+  }
+  const seedHash = appendHashSeedLabel(
+    resolveHashSeedInput(input.seed),
+    input.label
+  );
+  return hash2DWithSeed(seedHash, input.x, input.y) >= 0.5;
 }
 
 function quantizeTerrainSplatWeight(value: number): number {
@@ -983,6 +1130,12 @@ function isNormalizedScalar(value: unknown): value is number {
     value >= 0 &&
     value <= 1
   );
+}
+
+function isTerrainUvRotationQuarterTurn(
+  value: unknown
+): value is TerrainUvRotationQuarterTurn {
+  return value === 0 || value === 1 || value === 2 || value === 3;
 }
 
 function formatLayerLabel(value: string): string {

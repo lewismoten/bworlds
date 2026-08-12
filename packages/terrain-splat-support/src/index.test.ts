@@ -7,6 +7,7 @@ import {
   normalizeTerrainSplatSample,
   packTerrainSplatSample,
   PACKED_TERRAIN_SPLAT_WEIGHT_MAX,
+  resolveTerrainMaterialLayerUvTransform,
   resolveTerrainKindSplatSample,
   unpackTerrainSplatSample,
   validateTerrainKindSplatDefinition,
@@ -27,6 +28,8 @@ describe('terrain splat support', () => {
         textureScale: 3,
         defaultTint: '#88aa55',
         defaultRoughness: 0.9,
+        uvRotationQuarterTurns: [0, 1, 2, 3],
+        allowMirrorU: true,
       },
       {
         id: 'soil',
@@ -59,6 +62,9 @@ describe('terrain splat support', () => {
         defaultTint: 'green',
         defaultRoughness: 1.4,
         defaultMetalness: -0.1,
+        uvRotationQuarterTurns: [0, 0.5 as 0 | 1 | 2 | 3, 0],
+        allowMirrorU: 'yes' as unknown as boolean,
+        allowMirrorV: 'no' as unknown as boolean,
       })
     ).toEqual(
       expect.arrayContaining([
@@ -70,8 +76,99 @@ describe('terrain splat support', () => {
         'Terrain material layer "" must define a #RRGGBB defaultTint.',
         'Terrain material layer "" must define defaultRoughness within 0..1.',
         'Terrain material layer "" must omit defaultMetalness or define it within 0..1.',
+        'Terrain material layer "" uvRotationQuarterTurns entries must stay within 0..3.',
+        'Terrain material layer "" must not repeat uvRotationQuarterTurns entries.',
+        'Terrain material layer "" must omit allowMirrorU or define a boolean.',
+        'Terrain material layer "" must omit allowMirrorV or define a boolean.',
       ])
     );
+  });
+
+  it('resolves deterministic terrain UV transforms from layer configuration', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 3,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      uvRotationQuarterTurns: [0, 1, 2, 3] as const,
+      allowMirrorU: true,
+      allowMirrorV: true,
+    };
+
+    const first = resolveTerrainMaterialLayerUvTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 18,
+      y: 27,
+      kind: 'plains',
+    });
+    const second = resolveTerrainMaterialLayerUvTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 18,
+      y: 27,
+      kind: 'plains',
+    });
+    const shifted = resolveTerrainMaterialLayerUvTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 19,
+      y: 27,
+      kind: 'plains',
+    });
+    const sampledTransforms = [
+      first,
+      shifted,
+      resolveTerrainMaterialLayerUvTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 20,
+        y: 27,
+        kind: 'plains',
+      }),
+      resolveTerrainMaterialLayerUvTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 21,
+        y: 27,
+        kind: 'plains',
+      }),
+    ];
+    const uniqueTransforms = new Set(
+      sampledTransforms.map((transform) => JSON.stringify(transform))
+    );
+
+    expect(second).toEqual(first);
+    expect(first.textureScale).toBe(3);
+    expect([0, 1, 2, 3]).toContain(first.rotationQuarterTurns);
+    expect(typeof first.mirrorU).toBe('boolean');
+    expect(typeof first.mirrorV).toBe('boolean');
+    expect(uniqueTransforms.size).toBeGreaterThan(1);
+  });
+
+  it('defaults terrain UV transforms when no extra options are configured', () => {
+    expect(
+      resolveTerrainMaterialLayerUvTransform(
+        {
+          id: 'soil',
+          baseColorTextureId: 'soil/base',
+          normalTextureId: 'soil/normal',
+          roughnessTextureId: 'soil/roughness',
+          textureScale: 2,
+          defaultTint: '#7b5a3d',
+          defaultRoughness: 0.8,
+        },
+        {
+          seed: 'pbr-splat-seed',
+          x: 2,
+          y: 4,
+          kind: 'dirt',
+        }
+      )
+    ).toEqual({
+      textureScale: 2,
+      rotationQuarterTurns: 0,
+      mirrorU: false,
+      mirrorV: false,
+    });
   });
 
   it('normalizes, clamps, trims, and stabilizes terrain splat weights', () => {
