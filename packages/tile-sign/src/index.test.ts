@@ -313,7 +313,7 @@ function createMultiPlacardSignState() {
   };
 }
 
-function createModelSignature(model: FakeGroup | undefined) {
+function createModelSignature(model: FakeNode | undefined) {
   const signature: Array<Record<string, unknown>> = [];
   model?.traverse((node) => {
     signature.push({
@@ -344,7 +344,7 @@ function createModelSignature(model: FakeGroup | undefined) {
   return signature;
 }
 
-function collectSignInstancedParts(model: FakeGroup | undefined) {
+function collectSignInstancedParts(model: FakeNode | undefined) {
   const parts: string[] = [];
   model?.traverse((node) => {
     if (typeof node.userData?.signInstancedPart === 'string') {
@@ -470,7 +470,7 @@ describe('tile sign', () => {
       tile: { kind: 'sign' },
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     let glowMesh: FakeMesh | null = null;
     let pointLight: FakePointLight | null = null;
@@ -584,12 +584,12 @@ describe('tile sign', () => {
       tileX: 8,
       tileY: 8,
     });
-    let progressiveModel: FakeGroup | undefined;
+    let progressiveModel: FakeNode | undefined;
 
     while (true) {
       const next = progressiveBuild?.next();
       if (next?.done) {
-        progressiveModel = next.value as FakeGroup | undefined;
+        progressiveModel = next.value as FakeNode | undefined;
         break;
       }
     }
@@ -609,7 +609,7 @@ describe('tile sign', () => {
       tile: { kind: 'sign' },
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     const lanternParts = model?.children.filter(
       (child) => typeof child.userData?.signLanternPart === 'string'
@@ -636,7 +636,7 @@ describe('tile sign', () => {
       tile: { kind: 'sign' },
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const second = signTile?.create3DModel?.({
       three: fakeThree as never,
       state: createSignState('Oakcross'),
@@ -835,9 +835,12 @@ describe('tile sign', () => {
         lowPointLightCount += 1;
       }
     });
-    const lowDetailParts = low?.children.filter(
-      (child) => typeof child.userData?.signLowDetailPart === 'string'
-    );
+    const lowDetailParts: string[] = [];
+    low?.traverse((child) => {
+      if (typeof child.userData?.signLowDetailPart === 'string') {
+        lowDetailParts.push(child.userData.signLowDetailPart);
+      }
+    });
     const nestedLowDetailGroups = low?.children.filter(
       (child) =>
         child instanceof FakeGroup &&
@@ -852,15 +855,35 @@ describe('tile sign', () => {
     );
     expect(lowPointLightCount).toBe(0);
     expect(
-      lowDetailParts?.map((child) => child.userData?.signLowDetailPart).sort()
+      lowDetailParts.sort()
     ).toEqual(['placard', 'post']);
     expect(nestedLowDetailGroups).toHaveLength(0);
+  });
+
+  it('uses the low-detail post mesh as the root instead of a wrapper group', () => {
+    const low = signTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createSignState('Oakcross'),
+      tile: { kind: 'sign' },
+      tileX: 8,
+      tileY: 8,
+      detailLevel: 'low',
+    }) as FakeMesh | undefined;
+
+    expect(low).toBeInstanceOf(FakeMesh);
+    expect(low?.position.x).toBe(8);
+    expect(low?.position.z).toBe(8);
+    expect(low?.position.y ?? 0).toBeGreaterThan(0.3);
+    expect(
+      low?.children.some((child) => child.userData?.signLowDetailPart === 'placard')
+    ).toBe(true);
+    expect(low?.userData?.signLowDetailPart).toBe('post');
   });
 });
 
 function countSharedMaterialReferences(
-  left: FakeGroup | undefined,
-  right: FakeGroup | undefined
+  left: FakeNode | undefined,
+  right: FakeNode | undefined
 ): number {
   const leftMaterials = collectMeshMaterials(left);
   const rightMaterials = collectMeshMaterials(right);
@@ -875,7 +898,7 @@ function countSharedMaterialReferences(
   return sharedCount;
 }
 
-function collectMeshMaterials(root: FakeGroup | undefined): Set<FakeMaterial> {
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root?.traverse((node) => {
     if (node instanceof FakeMesh || node instanceof FakeInstancedMesh) {

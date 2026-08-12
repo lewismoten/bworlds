@@ -284,7 +284,11 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       tile-wide by compatible form/material buckets instead of emitting one
       branch mesh and one foliage mesh per tree, and low-detail `tile-town`
       tiles now return their instanced distant-building body mesh directly
-      instead of wrapping that single child in a no-op group.
+      instead of wrapping that single child in a no-op group, and low-detail
+      `tile-sign` tiles now use their main post mesh as the root and attach the
+      simplified placard and optional brace beneath it instead of wrapping the
+      silhouette in a dedicated `Group`, which removes one static `Object3D`
+      from each reduced-quality sign tile without changing the silhouette.
 
 ## LOD Stability
 

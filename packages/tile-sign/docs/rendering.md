@@ -27,3 +27,8 @@ Current full-detail optimizations:
 - the sign's tiny box and cone parts collapse their geometry groups to one
   shared single-material draw group so default primitive grouping does not
   inflate draw-call and material-group diagnostics for a small roadside prop
+
+The reduced-quality sign silhouette now also uses its main post mesh as the
+tile root and attaches the simplified placard and optional brace beneath it, so
+each low-detail sign tile avoids one otherwise empty wrapper `Group` without
+changing the silhouette.

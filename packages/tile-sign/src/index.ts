@@ -224,24 +224,23 @@ function* createSignModelProgressive({
   detailLevel = 'full',
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
   const style = getRegionalSignStyle(three, tileX, tileY);
-  const group = new three.Group();
   const nearbyPois = getNearbyPois(state, tileX, tileY);
   const placardCount = Math.max(1, Math.min(3, nearbyPois.length || 1));
   const useSecondPost =
     placardCount > 2 && hash2D(SIGN_SECOND_POST_SEED, tileX, tileY) > 0.48;
 
   if (detailLevel === 'low') {
-    addLowDetailSign(
-      group,
+    return addLowDetailSign(
+      tileX,
+      tileY,
       three,
       style,
       placardCount,
       getLowDetailSignHeading(nearbyPois)
     );
-    group.position.set(tileX, 0, tileY);
-    return group;
   }
 
+  const group = new three.Group();
   const totalSteps = 3;
   group.position.set(tileX, 0, tileY);
   yield {
@@ -434,7 +433,8 @@ function findNearestAnchor<
 }
 
 function addLowDetailSign(
-  group: ThreeObject3DLike,
+  tileX: number,
+  tileY: number,
   three: ThreeHostLike,
   style: SignStyle,
   placardCount: number,
@@ -449,12 +449,11 @@ function addLowDetailSign(
     ),
     style.postMaterial
   );
-  post.position.y = style.postHeight * 0.41;
+  post.position.set(tileX, style.postHeight * 0.41, tileY);
   post.userData = {
     ...(post.userData ?? {}),
     signLowDetailPart: 'post',
   };
-  group.add(post);
 
   if (placardCount > 1) {
     const brace = new three.Mesh(
@@ -466,12 +465,12 @@ function addLowDetailSign(
       ),
       style.trimMaterial
     );
-    brace.position.y = style.postHeight * 0.6;
+    brace.position.y = style.postHeight * 0.19;
     brace.userData = {
       ...(brace.userData ?? {}),
       signLowDetailPart: 'brace',
     };
-    group.add(brace);
+    post.add(brace);
   }
 
   const placard = new three.Mesh(
@@ -483,13 +482,15 @@ function addLowDetailSign(
     ),
     style.placardMaterial
   );
-  placard.position.set(0, style.postHeight * 0.72, 0);
+  placard.position.set(0, style.postHeight * 0.31, 0);
   placard.rotation.y = -heading;
   placard.userData = {
     ...(placard.userData ?? {}),
     signLowDetailPart: 'placard',
   };
-  group.add(placard);
+  post.add(placard);
+
+  return post;
 }
 
 function getLowDetailSignHeading(nearbyPois: NearbyPoi[]): number {
