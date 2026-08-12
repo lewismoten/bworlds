@@ -81,6 +81,11 @@
 - [ ] Investigate the 106 groups containing only one child.
 - [x] Report one-child group counts by plugin.
 - [ ] Flatten groups that provide no transform or semantic value.
+      Progress: `tile-forest` now places each full-detail tree's branch,
+      foliage, bark-damage, and historical-marker instance sets directly under
+      the tile root instead of a dedicated wrapper group per tree, preserving
+      the same transforms and metadata on the instanced children while trimming
+      one avoidable `Group` from every full-detail tree.
 - [ ] Investigate the 656 static objects using matrix auto-update.
 - [ ] Disable matrix auto-update for truly static objects.
       Progress: `render3d` now freezes each visible tile root group at build

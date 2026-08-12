@@ -550,6 +550,33 @@ describe('tile forest', () => {
     expect(foliageInstances.every((mesh) => mesh.count > 0)).toBe(true);
   });
 
+  it('places full-detail tree instance sets directly under the tile root', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const model = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const treeWrapperGroups: FakeGroup[] = [];
+    model.traverse((node) => {
+      if (
+        node instanceof FakeGroup &&
+        node !== model &&
+        node.userData?.renderStatKind === 'tree'
+      ) {
+        treeWrapperGroups.push(node);
+      }
+    });
+
+    expect(treeWrapperGroups).toHaveLength(0);
+  });
+
   it('batches full-detail tree trunk segments into instanced meshes', () => {
     const tile = getForestTile();
     const state = createForestTestState();
@@ -642,7 +669,7 @@ describe('tile forest', () => {
       }
     });
 
-    expect(reducedTreeGroups.length).toBeLessThan(defaultTreeGroups.length);
+    expect(defaultTreeGroups).toHaveLength(0);
     expect(reducedTreeGroups).toHaveLength(0);
     expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
   });

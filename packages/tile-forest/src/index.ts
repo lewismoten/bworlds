@@ -1974,20 +1974,15 @@ function addForestFullDetailTree(
   const canopy = getTreeCanopyState(descriptor);
   const damage = getTreeDamageState(descriptor);
   const historical = getTreeHistoricalState(descriptor);
-
-  const tree = new three.Group();
-  tree.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-  tree.scale.setScalar(structure.scale);
-  tree.rotation.x = Math.atan2(
+  const treeRotationX = Math.atan2(
     structure.trunkLeanZ,
     Math.max(0.001, structure.trunkHeight)
   );
-  tree.rotation.z = -Math.atan2(
+  const treeRotationZ = -Math.atan2(
     structure.trunkLeanX,
     Math.max(0.001, structure.trunkHeight)
   );
-  tree.userData = {
-    ...(tree.userData ?? {}),
+  const treeUserData = {
     [TREE_FORM_KEY]: descriptor.form,
     [RENDER_STATS_CATEGORY_KEY]: 'tree',
     ...(historical.landmark
@@ -1997,6 +1992,16 @@ function addForestFullDetailTree(
           forestHistoricalTreeProminence: historical.prominence,
         }
       : {}),
+  };
+  const applyTreeTransform = (node: ThreeObject3DLike) => {
+    node.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
+    node.scale.setScalar(structure.scale);
+    node.rotation.x = treeRotationX;
+    node.rotation.z = treeRotationZ;
+    node.userData = {
+      ...(node.userData ?? {}),
+      ...treeUserData,
+    };
   };
 
   addForestFullDetailTrunk(
@@ -2038,7 +2043,8 @@ function addForestFullDetailTree(
         )
       );
     });
-    tree.add(branchInstances);
+    applyTreeTransform(branchInstances);
+    group.add(branchInstances);
   }
 
   if (canopy.foliage.length > 0) {
@@ -2078,7 +2084,8 @@ function addForestFullDetailTree(
       descriptor.variety,
       leadClump.x + leadClump.y + leadClump.z
     );
-    tree.add(foliageInstances);
+    applyTreeTransform(foliageInstances);
+    group.add(foliageInstances);
   }
 
   if (damage.barkMarks.length > 0) {
@@ -2112,7 +2119,8 @@ function addForestFullDetailTree(
         )
       );
     });
-    tree.add(barkDamageInstances);
+    applyTreeTransform(barkDamageInstances);
+    group.add(barkDamageInstances);
   }
 
   if (historical.landmark) {
@@ -2143,10 +2151,9 @@ function addForestFullDetailTree(
         )
       );
     }
-    tree.add(markerInstances);
+    applyTreeTransform(markerInstances);
+    group.add(markerInstances);
   }
-
-  group.add(tree);
 }
 
 function getTreeGeometry(three: ThreeHostLike): TreeGeometry {

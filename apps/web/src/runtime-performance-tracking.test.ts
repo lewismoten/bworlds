@@ -461,6 +461,60 @@ describe('runtime performance tracking', () => {
     expect(issue).toBeNull();
   });
 
+  it('skips runtime issue reports when only the generic reduced-tier status remains', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        fps: 60,
+        averageFps: 60,
+        frameMs: 16.7,
+        worstRecentFrameMs: 16.7,
+        targetFps: 60,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters: '',
+        reducedQualityDurationSec: 8.4,
+        latestQualityChangeLimiter: undefined,
+        latestQualityChangeSummary: undefined,
+        visibilityRadius: 18,
+        weatherVisibilityRadiusCap: undefined,
+        drawCalls: 120,
+        object3dCount: 900,
+        visibleObjectCount: 300,
+        maxChunkDrawCalls: 16,
+        maxChunkObjectCount: 36,
+        maxChunkMeshes: 16,
+        maxChunkTriangleCount: 5000,
+        materialCount: 12,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 40,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 8,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxSummary: undefined,
+        fallbackBoxTopPluginLabel: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [],
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
   it('posts runtime issue reports to the dedicated vite endpoint', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
     const issue = buildRuntimePerformanceIssueReport({

@@ -43,6 +43,10 @@ Current layout:
 - Full-detail trees now collapse each tree's repeated branches into one
   `InstancedMesh` and each tree's repeated foliage clumps into one
   `InstancedMesh`.
+- Full-detail forest now places those per-tree branch, foliage, bark-damage,
+  and historical-marker instance sets directly under the tile root instead of a
+  dedicated wrapper group per tree, while preserving the same transforms and
+  metadata on the instance sets themselves.
 - Full-detail trunk segments now also batch at the tile level into shared
   `InstancedMesh` groups keyed by taper geometry and material, so dense forest
   tiles do not pay two standalone trunk draw calls per tree before close-detail
