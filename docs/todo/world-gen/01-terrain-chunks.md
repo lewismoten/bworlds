@@ -32,7 +32,7 @@
 - [x] Use world-space UVs across all chunk borders.
 - [x] Keep splat weights continuous across chunk borders.
 - [ ] Keep route and river influence continuous across borders.
-- [ ] Recalculate normals from seam-safe height samples.
+- [x] Recalculate normals from seam-safe height samples.
 - [x] Add a chunk seam debug view.
 - [x] Add a chunk wireframe debug view.
 
@@ -70,11 +70,11 @@ Current support:
   verifying that the 2D tile map still represents the same terrain story as
   the future shared 3D chunk surface.
 - `@bworlds/terrain-splat-support/height-field` now emits seam-safe vertex
-  normals from the shared world-space height samples and keeps reduced-LOD
-  index buffers aligned to the actual vertex grid, so chunk renderers can reuse
-  one normal contract without introducing coarse-mesh seam bugs; exact curved
-  seam parity still needs one extra height-sample ring outside the local chunk
-  bounds.
+  normals from the shared world-space height samples, supports extra
+  `normalSampleRing` world-space samples so curved borders can match across
+  neighboring chunks, and keeps reduced-LOD index buffers aligned to the actual
+  vertex grid so chunk renderers can reuse one normal contract without
+  introducing coarse-mesh seam bugs.
 
 ## Sextant Panel
 

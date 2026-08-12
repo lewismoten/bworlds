@@ -6,8 +6,6 @@ import {
   createTerrainSplatSampleGrid,
   createTerrainSplatViewerDebugModel,
   type TerrainChunkWireframeDebugView,
-  type TerrainMaterialLayerCatalogEntry,
-  type TerrainMaterialLayerId,
   type TerrainSplatSampleGrid,
 } from '@bworlds/terrain-splat-support';
 import {
@@ -447,6 +445,7 @@ function createPreviewHeightField(
 ) {
   return createTerrainHeightField({
     bounds,
+    normalSampleRing: 1,
     resolveHeight: ({ x, y }) => generator.samplePreviewSurfaceHeight(x, y),
   });
 }
@@ -658,18 +657,4 @@ function escapeHtml(value: string): string {
 
 function escapeAttribute(value: string): string {
   return escapeHtml(value).replaceAll("'", '&#39;');
-}
-
-export function resolveTerrainChunkDebugLayerTint(
-  layerId: TerrainMaterialLayerId | null
-): string {
-  return (
-    (layerId
-      ? TERRAIN_PREVIEW_LAYER_CATALOG.byId.get(layerId)?.defaultTint
-      : null) ?? '#6b7280'
-  );
-}
-
-export function listTerrainChunkDebugLayers(): readonly TerrainMaterialLayerCatalogEntry[] {
-  return TERRAIN_PREVIEW_LAYER_CATALOG.entries;
 }

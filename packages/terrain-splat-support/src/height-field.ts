@@ -9,6 +9,14 @@ export type TerrainHeightField = {
   width: number;
   height: number;
   heights: Float32Array;
+  normalSampleRing: number;
+  normalSampleMinX: number;
+  normalSampleMaxX: number;
+  normalSampleMinY: number;
+  normalSampleMaxY: number;
+  normalSampleWidth: number;
+  normalSampleHeight: number;
+  normalSampleHeights: Float32Array;
 };
 
 export type TerrainSplatHeightGeometryPlan = {
@@ -32,6 +40,7 @@ export function createTerrainHeightField(params: {
     maxY: number;
     step?: number;
   };
+  normalSampleRing?: number;
   resolveHeight: (position: { x: number; y: number }) => number;
 }): TerrainHeightField {
   const step = normalizePositiveStep(params.bounds.step ?? 1);
@@ -42,12 +51,33 @@ export function createTerrainHeightField(params: {
   const width = cellWidth + 1;
   const height = cellHeight + 1;
   const heights = new Float32Array(width * height);
+  const normalSampleRing = normalizeNonNegativeInteger(
+    params.normalSampleRing ?? 0,
+    'Terrain height field normalSampleRing'
+  );
+  const normalSampleMinX = params.bounds.minX - normalSampleRing * step;
+  const normalSampleMaxX = params.bounds.maxX + normalSampleRing * step;
+  const normalSampleMinY = params.bounds.minY - normalSampleRing * step;
+  const normalSampleMaxY = params.bounds.maxY + normalSampleRing * step;
+  const normalSampleWidth = width + normalSampleRing * 2;
+  const normalSampleHeight = height + normalSampleRing * 2;
+  const normalSampleHeights = new Float32Array(
+    normalSampleWidth * normalSampleHeight
+  );
 
   for (let row = 0; row < height; row += 1) {
     for (let column = 0; column < width; column += 1) {
       const x = params.bounds.minX + column * step;
       const y = params.bounds.minY + row * step;
       heights[row * width + column] = params.resolveHeight({ x, y });
+    }
+  }
+  for (let row = 0; row < normalSampleHeight; row += 1) {
+    for (let column = 0; column < normalSampleWidth; column += 1) {
+      const x = normalSampleMinX + column * step;
+      const y = normalSampleMinY + row * step;
+      normalSampleHeights[row * normalSampleWidth + column] =
+        params.resolveHeight({ x, y });
     }
   }
 
@@ -60,6 +90,14 @@ export function createTerrainHeightField(params: {
     width,
     height,
     heights,
+    normalSampleRing,
+    normalSampleMinX,
+    normalSampleMaxX,
+    normalSampleMinY,
+    normalSampleMaxY,
+    normalSampleWidth,
+    normalSampleHeight,
+    normalSampleHeights,
   };
 }
 
@@ -164,26 +202,40 @@ function resolveTerrainHeightFieldNormal(
   row: number,
   lodStepMultiplier: number
 ): { x: number; y: number; z: number } {
+  const sampleColumn = column + field.normalSampleRing;
+  const sampleRow = row + field.normalSampleRing;
   const leftColumn = clampHeightFieldCoordinate(
-    column - lodStepMultiplier,
-    field.width
+    sampleColumn - lodStepMultiplier,
+    field.normalSampleWidth
   );
   const rightColumn = clampHeightFieldCoordinate(
-    column + lodStepMultiplier,
-    field.width
+    sampleColumn + lodStepMultiplier,
+    field.normalSampleWidth
   );
   const downRow = clampHeightFieldCoordinate(
-    row - lodStepMultiplier,
-    field.height
+    sampleRow - lodStepMultiplier,
+    field.normalSampleHeight
   );
   const upRow = clampHeightFieldCoordinate(
-    row + lodStepMultiplier,
-    field.height
+    sampleRow + lodStepMultiplier,
+    field.normalSampleHeight
   );
-  const leftHeight = getTerrainHeightFieldSample(field, leftColumn, row);
-  const rightHeight = getTerrainHeightFieldSample(field, rightColumn, row);
-  const downHeight = getTerrainHeightFieldSample(field, column, downRow);
-  const upHeight = getTerrainHeightFieldSample(field, column, upRow);
+  const leftHeight = getTerrainHeightFieldNormalSample(
+    field,
+    leftColumn,
+    sampleRow
+  );
+  const rightHeight = getTerrainHeightFieldNormalSample(
+    field,
+    rightColumn,
+    sampleRow
+  );
+  const downHeight = getTerrainHeightFieldNormalSample(
+    field,
+    sampleColumn,
+    downRow
+  );
+  const upHeight = getTerrainHeightFieldNormalSample(field, sampleColumn, upRow);
   const deltaX = (rightColumn - leftColumn) * field.step;
   const deltaZ = (upRow - downRow) * field.step;
   const crossX = -(rightHeight - leftHeight) * deltaZ;
@@ -200,6 +252,15 @@ function resolveTerrainHeightFieldNormal(
     y: crossY / length,
     z: crossZ / length,
   };
+}
+
+function getTerrainHeightFieldNormalSample(
+  field: TerrainHeightField,
+  column: number,
+  row: number
+): number {
+  assertInBounds(field.normalSampleWidth, field.normalSampleHeight, column, row);
+  return field.normalSampleHeights[row * field.normalSampleWidth + column] ?? 0;
 }
 
 function assertCompatibleHeightField(
@@ -253,6 +314,13 @@ function normalizePositiveStep(step: number): number {
     );
   }
   return step;
+}
+
+function normalizeNonNegativeInteger(value: number, label: string): number {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+    throw new Error(`${label} must be a non-negative integer.`);
+  }
+  return value;
 }
 
 function normalizeGeometryLodStepMultiplier(value: number): number {

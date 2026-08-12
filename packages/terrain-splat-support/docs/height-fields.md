@@ -29,10 +29,11 @@ weight generation.
 ## Current normal behavior
 
 - normals are derived from the same shared corner samples that drive positions
-- chunk borders therefore agree on planar seams where both sides observe the
-  same slope
-- exact curved-seam border normals still need one extra sample ring beyond the
-  local chunk bounds, which this module does not yet request
+- `normalSampleRing` can request one or more extra world-space sample rings so
+  border normals can compare against the same neighboring heights on both sides
+  of a chunk seam
+- chunk borders therefore agree on both planar and curved seams when callers
+  provide the extra ring their normal sampling needs
 
 ## Current limits
 

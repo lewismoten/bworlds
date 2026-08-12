@@ -284,6 +284,87 @@ describe('terrain splat height field', () => {
     }
   });
 
+  it('keeps neighboring chunk border normals identical for curved heights when an extra normal sample ring is present', () => {
+    const resolveHeight = ({ x, y }: { x: number; y: number }) =>
+      x * x * 0.08 + y * 0.11 + Math.sin(y * 0.5) * 0.03;
+    const leftHeightField = createTerrainHeightField({
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      normalSampleRing: 1,
+      resolveHeight,
+    });
+    const rightHeightField = createTerrainHeightField({
+      bounds: {
+        minX: 2,
+        maxX: 4,
+        minY: 0,
+        maxY: 2,
+      },
+      normalSampleRing: 1,
+      resolveHeight,
+    });
+    const { kindCatalog } = createCatalogs();
+    const leftGrid = createTerrainSplatSampleGrid({
+      seed: 'neighbor-curved-normal-left',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(() => ({
+        kind: 'plains',
+      })),
+      fallbackLayerId: 'grass-a',
+    });
+    const rightGrid = createTerrainSplatSampleGrid({
+      seed: 'neighbor-curved-normal-right',
+      bounds: {
+        minX: 2,
+        maxX: 4,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(() => ({
+        kind: 'plains',
+      })),
+      fallbackLayerId: 'grass-a',
+    });
+
+    const leftGeometryPlan = createTerrainSplatHeightGeometryPlan({
+      grid: leftGrid,
+      heightField: leftHeightField,
+    });
+    const rightGeometryPlan = createTerrainSplatHeightGeometryPlan({
+      grid: rightGrid,
+      heightField: rightHeightField,
+    });
+
+    for (let row = 0; row < leftGeometryPlan.height; row += 1) {
+      const leftOffset =
+        (row * leftGeometryPlan.width + (leftGeometryPlan.width - 1)) * 3;
+      const rightOffset = row * rightGeometryPlan.width * 3;
+      expect(leftGeometryPlan.normals[leftOffset]).toBeCloseTo(
+        rightGeometryPlan.normals[rightOffset],
+        6
+      );
+      expect(leftGeometryPlan.normals[leftOffset + 1]).toBeCloseTo(
+        rightGeometryPlan.normals[rightOffset + 1],
+        6
+      );
+      expect(leftGeometryPlan.normals[leftOffset + 2]).toBeCloseTo(
+        rightGeometryPlan.normals[rightOffset + 2],
+        6
+      );
+    }
+  });
+
   it('keeps splat weights independent from the selected terrain height field', () => {
     const { kindCatalog } = createCatalogs();
     const grid = createTerrainSplatSampleGrid({
