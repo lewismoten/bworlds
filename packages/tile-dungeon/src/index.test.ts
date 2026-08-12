@@ -692,6 +692,42 @@ describe('tile dungeon', () => {
     );
   });
 
+  it('places full-detail banner cloth directly under the dungeon root when supports are instanced separately', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const bannerMeshes: FakeMesh[] = [];
+    const oneChildBannerGroups: FakeGroup[] = [];
+
+    fullModel.traverse((node) => {
+      if (
+        node instanceof FakeMesh &&
+        typeof node.userData?.dungeonBanner === 'string'
+      ) {
+        bannerMeshes.push(node);
+      }
+      if (
+        node instanceof FakeGroup &&
+        node.children.length === 1 &&
+        typeof node.children[0]?.userData?.dungeonBanner === 'string'
+      ) {
+        oneChildBannerGroups.push(node);
+      }
+    });
+
+    expect(bannerMeshes.length).toBeGreaterThan(0);
+    expect(oneChildBannerGroups).toHaveLength(0);
+  });
+
   it('recreates dungeon regional styles after bounded cache eviction churn', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');

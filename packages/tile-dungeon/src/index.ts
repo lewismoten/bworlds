@@ -829,26 +829,9 @@ function createDungeonBanner(
   index: number,
   includeSupports = true
 ) {
-  const banner = new three.Group();
-  banner.position.set(descriptor.x, descriptor.y, descriptor.z);
-  banner.rotation.y = descriptor.rotationY;
-
-  if (includeSupports) {
-    const pole = new three.Mesh(
-      new three.CylinderGeometry(0.018, 0.022, descriptor.height, 5),
-      style.trimMaterial
-    );
-    pole.position.y = descriptor.height * 0.5;
-    banner.add(pole);
-
-    const crossbar = new three.Mesh(
-      new three.BoxGeometry(descriptor.width * 0.88, 0.028, 0.028),
-      style.trimMaterial
-    );
-    crossbar.position.set(descriptor.width * 0.46, descriptor.height - 0.03, 0);
-    banner.add(crossbar);
-  }
-
+  const localClothX = descriptor.width * 0.48;
+  const localClothY = descriptor.height - descriptor.length * 0.5;
+  const localClothZ = 0;
   const cloth = markPoiWindResponder(
     new three.Mesh(
       new three.PlaneGeometry(descriptor.width, descriptor.length),
@@ -875,15 +858,43 @@ function createDungeonBanner(
         2,
     }
   );
-  cloth.position.set(
-    descriptor.width * 0.48,
-    descriptor.height - descriptor.length * 0.5,
-    0
-  );
   cloth.userData = {
     ...(cloth.userData ?? {}),
     [DUNGEON_BANNER_KEY]: descriptor.label,
   };
+
+  if (!includeSupports) {
+    const cosRotation = Math.cos(descriptor.rotationY);
+    const sinRotation = Math.sin(descriptor.rotationY);
+    cloth.position.set(
+      descriptor.x + localClothX * cosRotation - localClothZ * sinRotation,
+      descriptor.y + localClothY,
+      descriptor.z + localClothX * sinRotation + localClothZ * cosRotation
+    );
+    cloth.rotation.y = descriptor.rotationY;
+    return cloth;
+  }
+
+  const banner = new three.Group();
+  banner.position.set(descriptor.x, descriptor.y, descriptor.z);
+  banner.rotation.y = descriptor.rotationY;
+
+  {
+    const pole = new three.Mesh(
+      new three.CylinderGeometry(0.018, 0.022, descriptor.height, 5),
+      style.trimMaterial
+    );
+    pole.position.y = descriptor.height * 0.5;
+    banner.add(pole);
+
+    const crossbar = new three.Mesh(
+      new three.BoxGeometry(descriptor.width * 0.88, 0.028, 0.028),
+      style.trimMaterial
+    );
+    crossbar.position.set(descriptor.width * 0.46, descriptor.height - 0.03, 0);
+    banner.add(crossbar);
+  }
+  cloth.position.set(localClothX, localClothY, localClothZ);
   banner.add(cloth);
   return banner;
 }

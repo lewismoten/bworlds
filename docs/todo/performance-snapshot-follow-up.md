@@ -132,7 +132,11 @@
       foliage, bark-damage, and historical-marker instance sets directly under
       the tile root instead of a dedicated wrapper group per tree, preserving
       the same transforms and metadata on the instanced children while trimming
-      one avoidable `Group` from every full-detail tree.
+      one avoidable `Group` from every full-detail tree, and full-detail
+      `tile-dungeon` banners now place their wind-driven cloth meshes directly
+      under the dungeon root whenever the support poles and crossbars are
+      already emitted through shared instanced sets, which removes one
+      avoidable one-child wrapper per banner without changing banner motion.
 - [x] Investigate the 656 static objects using matrix auto-update.
       Progress: renderer diagnostics now count static `matrixAutoUpdate`
       owners separately by plugin, and the renderer regression tests cover
