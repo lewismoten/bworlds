@@ -4,6 +4,7 @@ import {
   getHeapGrowthWarning,
   getIdleAllocationWarning,
   getFallbackModelWarnings,
+  getLodSwapWarnings,
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
@@ -829,6 +830,34 @@ describe('debug panel', () => {
       getRenderBudgetViolationWarnings({
         tileModelBudgetViolationsPerSecond: 0,
         tileModelBudgetViolationTopPluginLabel: 'tile-forest',
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when LOD swaps exceed the acceptable rate', () => {
+    expect(
+      getLodSwapWarnings({
+        lodReplacementsPerSecond: 5,
+        lodReplacementTopPluginLabel: 'tile-forest',
+        lodReplacementSummary: 'tile-forest:4, tile-town:1',
+      })
+    ).toEqual([
+      'LOD swaps are too frequent (5.0/s, top plugin tile-forest at 4.0/s).',
+    ]);
+
+    expect(
+      getLodSwapWarnings({
+        lodReplacementsPerSecond: 5,
+        lodReplacementTopPluginLabel: 'tile-forest',
+        lodReplacementSummary: undefined,
+      })
+    ).toEqual(['LOD swaps are too frequent (5.0/s, top plugin tile-forest).']);
+
+    expect(
+      getLodSwapWarnings({
+        lodReplacementsPerSecond: 3,
+        lodReplacementTopPluginLabel: 'tile-forest',
+        lodReplacementSummary: 'tile-forest:3',
       })
     ).toEqual([]);
   });

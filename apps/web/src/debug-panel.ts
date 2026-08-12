@@ -964,6 +964,41 @@ export function getRenderBudgetViolationWarnings(
   ];
 }
 
+export function getLodSwapWarnings(
+  snapshot: Pick<
+    DebugSnapshot,
+    | 'lodReplacementsPerSecond'
+    | 'lodReplacementTopPluginLabel'
+    | 'lodReplacementSummary'
+  >,
+  {
+    maxLodReplacementsPerSecond = 3,
+  }: {
+    maxLodReplacementsPerSecond?: number;
+  } = {}
+): string[] {
+  const lodReplacementsPerSecond = snapshot.lodReplacementsPerSecond ?? 0;
+  if (lodReplacementsPerSecond <= maxLodReplacementsPerSecond) {
+    return [];
+  }
+
+  const label =
+    snapshot.lodReplacementTopPluginLabel?.trim() || 'unknown tile plugin';
+  const summaryEntries = parsePluginRateSummary(snapshot.lodReplacementSummary);
+  const topRate =
+    summaryEntries[0]?.plugin === label
+      ? summaryEntries[0].rate
+      : (summaryEntries.find((entry) => entry.plugin === label)?.rate ??
+        summaryEntries[0]?.rate ??
+        null);
+
+  return [
+    topRate === null
+      ? `LOD swaps are too frequent (${lodReplacementsPerSecond.toFixed(1)}/s, top plugin ${label}).`
+      : `LOD swaps are too frequent (${lodReplacementsPerSecond.toFixed(1)}/s, top plugin ${label} at ${topRate.toFixed(1)}/s).`,
+  ];
+}
+
 export function getFallbackModelWarnings(
   snapshot: Pick<
     DebugSnapshot,

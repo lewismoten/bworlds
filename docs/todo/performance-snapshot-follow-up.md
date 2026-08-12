@@ -118,7 +118,12 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 
 - [ ] Investigate why LOD swaps occur 24 times per second.
 - [ ] Report LOD swaps by tile and plugin.
-- [ ] Add a maximum acceptable LOD swap rate.
+- [x] Add a maximum acceptable LOD swap rate.
+      Progress: the live debug snapshot now emits a resource warning when
+      `lodReplacementsPerSecond` rises above the acceptable churn threshold,
+      and the warning carries the top plugin plus its swap rate summary so
+      LOD thrash is visible immediately during `errors.md` triage instead of
+      being buried in the raw swap counters.
 - [ ] Increase hysteresis when repeated swaps are detected.
 - [ ] Prevent LOD churn while the player remains nearly still.
 - [x] Keep the last valid model during failed LOD upgrades.
