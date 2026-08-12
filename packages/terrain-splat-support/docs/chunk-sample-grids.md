@@ -53,6 +53,9 @@ Blend zones:
 - this reduces hard single-layer boundaries and lets open grass, snow, roads,
   and forest-floor mixes taper across logical tile edges before renderer code
   exists
+- when one side of a boundary is a broad road or path tile, the same blend-zone
+  pass gives that road edge extra weight so adjacent terrain samples pick up a
+  deterministic dirt or gravel shoulder instead of stopping at a hard seam
 
 LOD grids:
 

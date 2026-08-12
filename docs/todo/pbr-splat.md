@@ -72,7 +72,7 @@
 - [x] Generate blend zones from neighboring terrain types.
 - [x] Keep blend widths deterministic.
 - [x] Keep blend weights continuous across chunk edges.
-- [ ] Blend road edges into surrounding ground.
+- [x] Blend road edges into surrounding ground.
 - [x] Blend forest floor gradually into open grass.
 - [x] Blend snow coverage gradually by local conditions.
 
@@ -167,7 +167,7 @@
 - [x] Use splat weights for broad dirt roads where suitable.
 - [ ] Use overlays for narrow trails where suitable.
 - [ ] Project road overlays onto terrain height.
-- [ ] Blend road shoulders into terrain splats.
+- [x] Blend road shoulders into terrain splats.
 - [ ] Reuse road materials across all chunks.
 
 ## Weather Effects
@@ -225,7 +225,7 @@
 - [x] Test texture rotation does not add new materials.
 - [x] Test tint variation does not add new materials.
 - [x] Test distant LOD keeps major terrain boundaries.
-- [ ] Test roads blend with surrounding terrain.
+- [x] Test roads blend with surrounding terrain.
 - [x] Test slope can increase rock material weight.
 - [ ] Test weather can alter wetness without new materials.
 - [ ] Test splatting reduces terrain material count.
@@ -363,7 +363,10 @@ sample-grid blend zones driven by neighboring world samples so forest-floor and
 snow transitions can taper across chunk boundaries without depending on
 renderer-only smoothing, plus deterministic coarse sample-grid LOD aggregation
 so distant terrain can reduce splat density while preserving major terrain
-identities and matching chunk-edge weights from the same world-space inputs.
+identities and matching chunk-edge weights from the same world-space inputs,
+plus road-aware sample-grid shoulder weighting so broad road tiles can bleed
+deterministic dirt/gravel edge material into adjacent terrain without needing
+renderer-only overlays.
 
 # Roads and Paths as Terrain Splats
 

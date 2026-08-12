@@ -639,11 +639,13 @@ function blendTerrainSplatGridSample(params: {
         continue;
       }
 
-      const blendWeight = computeTerrainSplatNeighborBlendWeight(
+      const blendWeight = computeTerrainSplatBoundaryBlendWeight({
+        centerKind: params.centerCell.tile.kind,
+        neighborKind: neighborCell.tile.kind,
         columnOffset,
         rowOffset,
-        params.blendWidth
-      );
+        blendWidth: params.blendWidth,
+      });
       if (blendWeight <= 0) {
         continue;
       }
@@ -683,6 +685,34 @@ function computeTerrainSplatNeighborBlendWeight(
   const directionalFactor = columnOffset !== 0 && rowOffset !== 0 ? 0.18 : 0.32;
 
   return distanceFactor * directionalFactor;
+}
+
+function computeTerrainSplatBoundaryBlendWeight(params: {
+  centerKind: Kind;
+  neighborKind: Kind;
+  columnOffset: number;
+  rowOffset: number;
+  blendWidth: number;
+}): number {
+  const baseWeight = computeTerrainSplatNeighborBlendWeight(
+    params.columnOffset,
+    params.rowOffset,
+    params.blendWidth
+  );
+  if (baseWeight <= 0) {
+    return 0;
+  }
+  if (
+    isRoadLikeTerrainKind(params.centerKind) !==
+    isRoadLikeTerrainKind(params.neighborKind)
+  ) {
+    return baseWeight * 1.35;
+  }
+  return baseWeight;
+}
+
+function isRoadLikeTerrainKind(kind: Kind): boolean {
+  return kind === 'road' || kind === 'path';
 }
 
 function normalizeTerrainSplatBlendWidth(value: unknown): number {

@@ -184,6 +184,59 @@ describe('terrain splat sample grid', () => {
     ).toEqual(expect.arrayContaining(['snow']));
   });
 
+  it('blends broad road shoulders into adjacent terrain samples', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x === 2 ? 'road' : 'plains',
+      signals: {
+        moisture: 0.5,
+        roadSignal: x === 2 ? 0.85 : 0,
+      },
+    }));
+
+    const unblendedGrid = createTerrainSplatSampleGrid({
+      seed: 'road-shoulder-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+    });
+    const blendedGrid = createTerrainSplatSampleGrid({
+      seed: 'road-shoulder-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    expect(
+      getTerrainSplatGridSample(unblendedGrid, 1, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).not.toEqual(expect.arrayContaining(['dirt-road']));
+    expect(
+      getTerrainSplatGridSample(blendedGrid, 1, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['dirt-road']));
+    expect(
+      getTerrainSplatGridSample(blendedGrid, 0, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).not.toEqual(expect.arrayContaining(['dirt-road']));
+  });
+
   it('keeps adjacent chunk borders identical when blend zones use world neighbors', () => {
     const { kindCatalog } = createGridCatalogs();
     const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
