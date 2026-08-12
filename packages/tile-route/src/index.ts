@@ -324,8 +324,12 @@ export function createRouteTilePlugin(): RuntimePlugin {
         tileX,
         tileY,
         detailLevel,
+        terrainSurfaceMode,
       }: Create3DModelContext) {
         if (state.getCurrentContext().type !== 'overworld') {
+          return null;
+        }
+        if (terrainSurfaceMode === 'shared-splat') {
           return null;
         }
         return runRoadModelBuildToCompletion(
@@ -338,8 +342,18 @@ export function createRouteTilePlugin(): RuntimePlugin {
           })
         );
       },
-      create3DModelProgressive({ three, state, tileX, tileY, detailLevel }) {
+      create3DModelProgressive({
+        three,
+        state,
+        tileX,
+        tileY,
+        detailLevel,
+        terrainSurfaceMode,
+      }: Create3DModelContext) {
         if (state.getCurrentContext().type !== 'overworld') {
+          return null;
+        }
+        if (terrainSurfaceMode === 'shared-splat') {
           return null;
         }
         return createRoadGroupProgressive({

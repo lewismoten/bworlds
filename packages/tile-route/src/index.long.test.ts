@@ -940,6 +940,36 @@ describe('tile route', () => {
     ]);
   });
 
+  it('skips flat road mesh generation when the renderer owns the terrain surface', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+    });
+
+    expect(
+      roadTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: state as never,
+        tile: { kind: 'road' } as never,
+        tileX: 0,
+        tileY: 0,
+        terrainSurfaceMode: 'shared-splat',
+      })
+    ).toBeNull();
+
+    expect(
+      roadTile?.create3DModelProgressive?.({
+        three: fakeThree as never,
+        state: state as never,
+        tile: { kind: 'road' } as never,
+        tileX: 0,
+        tileY: 0,
+        terrainSurfaceMode: 'shared-splat',
+      })
+    ).toBeNull();
+  });
+
   it('marks road shoulder ribbons as optional budget parts', () => {
     const state = createRoadModelState({
       '0:0': 'road',
@@ -1033,6 +1063,21 @@ describe('tile route', () => {
     expect(model?.children[0]?.userData?.routeInstancedPart).toBe(
       'forest-log-support'
     );
+  });
+
+  it('keeps bridge geometry active when the renderer owns the terrain surface', () => {
+    const state = createForestLogBridgeState();
+
+    expect(
+      bridgeTile?.create3DModel?.({
+        three: fakeThree as never,
+        state: state as never,
+        tile: { kind: 'bridge' } as never,
+        tileX: 0,
+        tileY: 0,
+        terrainSurfaceMode: 'shared-splat',
+      })
+    ).toBeTruthy();
   });
 
   it('builds forest-log bridges progressively before returning the final model', () => {

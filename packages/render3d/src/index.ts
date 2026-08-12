@@ -2057,6 +2057,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         tileY: y,
         detailLevel,
         renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
+        terrainSurfaceMode: 'legacy-mesh',
       },
     };
   }

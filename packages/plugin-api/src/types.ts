@@ -610,6 +610,7 @@ export interface Paint2DOverlayContext {
 
 export type RenderBudgetDetailLevel = 'full' | 'low';
 export type RenderBudgetQualityLevel = 'full' | 'reduced' | 'minimal';
+export type TerrainSurfaceRenderMode = 'legacy-mesh' | 'shared-splat';
 
 export interface RenderBudgetThreshold {
   soft: number;
@@ -669,6 +670,7 @@ export interface Create3DModelContext extends TileCoordinate {
   three: ThreeHostLike;
   detailLevel?: RenderBudgetDetailLevel;
   renderBudget?: RenderBudget;
+  terrainSurfaceMode?: TerrainSurfaceRenderMode;
 }
 
 export interface Report3DModelCostContext extends Create3DModelContext {
