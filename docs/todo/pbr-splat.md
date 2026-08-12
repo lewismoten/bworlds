@@ -37,9 +37,9 @@
 ## Terrain Layer Limits
 
 - [x] Set a maximum number of terrain material layers.
-- [ ] Limit nearby terrain to a small active layer set.
+- [x] Limit nearby terrain to a small active layer set.
 - [x] Keep unused terrain layers out of chunk data.
-- [ ] Reuse common layers across neighboring chunks.
+- [x] Reuse common layers across neighboring chunks.
 - [x] Warn when too many layers are active in one chunk.
 - [x] Prefer shared layers over creating new variants.
 
@@ -189,7 +189,7 @@
 - [ ] Measure terrain frame time after splatting.
 - [ ] Measure splat generation cost per chunk.
 - [ ] Set a terrain splat generation time budget.
-- [ ] Set a maximum active terrain layer count.
+- [x] Set a maximum active terrain layer count.
 - [ ] Add a lower-quality splat mode when overloaded.
 
 ## Debug View
@@ -260,6 +260,9 @@
 - Added `@bworlds/terrain-splat-support/variant-pool` to define bounded terrain
   material families and resolve deterministic layer variants from a shared pool
   instead of creating ad hoc per-chunk variants.
+- Added `@bworlds/terrain-splat-support/layer-pool-plan` to rank chunk layer
+  usage across a neighborhood, choose one bounded shared active layer set, and
+  report which chunk layers still overflow the shared budget.
 - [ ] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -292,9 +295,11 @@ deterministic terrain-kind mapping from seed plus world signals. Architecture
 notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/deterministic-mapping.md`, plus
 `packages/terrain-splat-support/docs/chunk-sample-grids.md` and
-`packages/terrain-splat-support/docs/variant-pools.md`, and focused tests cover
-normalization, packing, validation, deterministic mapping, chunk border
-stability, chunk layer-usage analysis, and bounded family variant selection.
+`packages/terrain-splat-support/docs/variant-pools.md`, plus
+`packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, and focused
+tests cover normalization, packing, validation, deterministic mapping, chunk
+border stability, chunk layer-usage analysis, bounded family variant selection,
+and neighborhood shared-layer planning.
 
 # Roads and Paths as Terrain Splats
 

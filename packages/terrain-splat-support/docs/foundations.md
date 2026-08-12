@@ -21,6 +21,7 @@ Current responsibilities:
 - flatten packed splat grids into transferable typed arrays
 - summarize chunk layer usage before renderer integration decides budgets
 - share deterministic terrain family variant pools across chunk generation paths
+- plan one bounded active layer pool for neighboring chunk groups
 
 Why this comes first:
 
