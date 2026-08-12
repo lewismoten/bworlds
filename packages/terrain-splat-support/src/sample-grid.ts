@@ -1,4 +1,4 @@
-import type { Kind, OverworldSignals, Seed } from '@bworlds/plugin-api';
+import type { Kind, Seed } from '@bworlds/plugin-api';
 import {
   normalizeTerrainSplatSample,
   packTerrainSplatSample,
@@ -40,6 +40,10 @@ export type TerrainSplatSampleGrid = {
   width: number;
   height: number;
   samples: readonly TerrainSplatSample[];
+};
+
+export type TerrainSplatSampleGridLodOptions = {
+  lodStepMultiplier: number;
 };
 
 export type PackedTerrainSplatSampleGrid = Omit<
@@ -152,6 +156,74 @@ export function createTerrainSplatSampleGrid(params: {
     step,
     width,
     height,
+    samples,
+  };
+}
+
+export function createTerrainSplatSampleGridLod(
+  params: {
+    seed: Seed;
+    bounds: TerrainSplatGridBounds;
+    kindCatalog:
+      | ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>
+      | {
+          byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+        };
+    resolveTile: ResolveTerrainSplatGridTile;
+    fallbackKind?: Kind;
+    fallbackLayerId?: TerrainMaterialLayerId;
+    blendWidth?: number;
+  } & TerrainSplatSampleGridLodOptions
+): TerrainSplatSampleGrid {
+  const baseBounds = normalizeTerrainSplatGridBounds(params.bounds);
+  const lodStepMultiplier = normalizeTerrainSplatLodStepMultiplier(
+    params.lodStepMultiplier
+  );
+  if (lodStepMultiplier === 1) {
+    return createTerrainSplatSampleGrid(params);
+  }
+
+  const lodBounds = normalizeTerrainSplatGridBounds({
+    minX: baseBounds.minX,
+    maxX: baseBounds.maxX,
+    minY: baseBounds.minY,
+    maxY: baseBounds.maxY,
+    step: baseBounds.step * lodStepMultiplier,
+  });
+  const resolveCell = createResolvedTerrainSplatGridCellResolver({
+    seed: params.seed,
+    kindCatalog: params.kindCatalog,
+    resolveTile: params.resolveTile,
+    fallbackKind: params.fallbackKind,
+    fallbackLayerId: params.fallbackLayerId,
+  });
+  const samples: TerrainSplatSample[] = [];
+
+  for (let row = 0; row < lodBounds.height; row += 1) {
+    for (let column = 0; column < lodBounds.width; column += 1) {
+      const x = lodBounds.minX + column * lodBounds.step;
+      const y = lodBounds.minY + row * lodBounds.step;
+      samples.push(
+        aggregateTerrainSplatGridLodSample({
+          x,
+          y,
+          baseStep: baseBounds.step,
+          lodStepMultiplier,
+          resolveCell,
+          fallbackLayerId: params.fallbackLayerId,
+        })
+      );
+    }
+  }
+
+  return {
+    minX: lodBounds.minX,
+    maxX: lodBounds.maxX,
+    minY: lodBounds.minY,
+    maxY: lodBounds.maxY,
+    step: lodBounds.step,
+    width: lodBounds.width,
+    height: lodBounds.height,
     samples,
   };
 }
@@ -625,6 +697,132 @@ function normalizeTerrainSplatBlendWidth(value: unknown): number {
   ) {
     throw new Error(
       'Terrain splat grid blendWidth must be a non-negative finite integer.'
+    );
+  }
+  return value;
+}
+
+function createResolvedTerrainSplatGridCellResolver(params: {
+  seed: Seed;
+  kindCatalog:
+    | ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>
+    | {
+        byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+      };
+  resolveTile: ResolveTerrainSplatGridTile;
+  fallbackKind?: Kind;
+  fallbackLayerId?: TerrainMaterialLayerId;
+}): (x: number, y: number) => ResolvedTerrainSplatGridCell {
+  const cellCache = new Map<string, ResolvedTerrainSplatGridCell>();
+
+  return (x: number, y: number): ResolvedTerrainSplatGridCell => {
+    const key = `${x}:${y}`;
+    const cached = cellCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const tile = params.resolveTile({ x, y });
+    const sample = resolveTerrainKindSplatSample(
+      {
+        seed: params.seed,
+        x,
+        y,
+        kind: tile.kind,
+        signals: tile.signals,
+      },
+      params.kindCatalog,
+      {
+        fallbackKind: params.fallbackKind,
+        fallbackLayerId: params.fallbackLayerId,
+      }
+    );
+    const resolved = { tile, sample };
+    cellCache.set(key, resolved);
+    return resolved;
+  };
+}
+
+function aggregateTerrainSplatGridLodSample(params: {
+  x: number;
+  y: number;
+  baseStep: number;
+  lodStepMultiplier: number;
+  resolveCell: (x: number, y: number) => ResolvedTerrainSplatGridCell;
+  fallbackLayerId?: TerrainMaterialLayerId;
+}): TerrainSplatSample {
+  const entries: Array<{ layerId: TerrainMaterialLayerId; weight: number }> =
+    [];
+
+  for (
+    let rowOffset = -params.lodStepMultiplier + 1;
+    rowOffset <= params.lodStepMultiplier - 1;
+    rowOffset += 1
+  ) {
+    for (
+      let columnOffset = -params.lodStepMultiplier + 1;
+      columnOffset <= params.lodStepMultiplier - 1;
+      columnOffset += 1
+    ) {
+      const sampleWeight = computeTerrainSplatLodAggregationWeight(
+        columnOffset,
+        rowOffset,
+        params.lodStepMultiplier
+      );
+      if (sampleWeight <= 0) {
+        continue;
+      }
+
+      const sample = params.resolveCell(
+        params.x + columnOffset * params.baseStep,
+        params.y + rowOffset * params.baseStep
+      ).sample;
+      for (const entry of sample.entries) {
+        entries.push({
+          layerId: entry.layerId,
+          weight: entry.weight * sampleWeight,
+        });
+      }
+    }
+  }
+
+  return normalizeTerrainSplatSample(
+    { entries },
+    {
+      fallbackLayerId: params.fallbackLayerId,
+    }
+  );
+}
+
+function computeTerrainSplatLodAggregationWeight(
+  columnOffset: number,
+  rowOffset: number,
+  lodStepMultiplier: number
+): number {
+  const chebyshevDistance = Math.max(
+    Math.abs(columnOffset),
+    Math.abs(rowOffset)
+  );
+  if (chebyshevDistance >= lodStepMultiplier) {
+    return 0;
+  }
+
+  const distanceFactor =
+    (lodStepMultiplier - chebyshevDistance) / lodStepMultiplier;
+  const directionalFactor = columnOffset !== 0 && rowOffset !== 0 ? 0.55 : 0.9;
+
+  return distanceFactor * directionalFactor;
+}
+
+function normalizeTerrainSplatLodStepMultiplier(value: unknown): number {
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value < 1 ||
+    !Number.isInteger(value)
+  ) {
+    throw new Error(
+      'Terrain splat grid lodStepMultiplier must be a positive finite integer.'
     );
   }
   return value;

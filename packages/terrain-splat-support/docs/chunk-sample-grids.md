@@ -17,6 +17,7 @@ Main responsibilities:
 Current API:
 
 - `createTerrainSplatSampleGrid(...)`
+- `createTerrainSplatSampleGridLod(...)`
 - `getTerrainSplatGridSample(...)`
 - `packTerrainSplatSampleGrid(...)`
 - `unpackTerrainSplatSampleGrid(...)`
@@ -52,6 +53,22 @@ Blend zones:
 - this reduces hard single-layer boundaries and lets open grass, snow, roads,
   and forest-floor mixes taper across logical tile edges before renderer code
   exists
+
+LOD grids:
+
+- `createTerrainSplatSampleGridLod(...)` resolves a coarser sample grid from
+  the same world-space tile resolver instead of downsampling only from one
+  already-built chunk
+- `lodStepMultiplier` increases the output `step` while keeping the same world
+  bounds, so distant terrain can use fewer splat samples
+- each coarse LOD sample aggregates weighted fine-sample influences from the
+  surrounding world-space neighborhood
+- because the aggregation resolves the same world coordinates on both sides of
+  a chunk edge, adjacent LOD chunk builds preserve matching border samples
+- major terrain identities such as forest and snow remain present near coarse
+  boundaries instead of collapsing to one unrelated dominant layer
+- this gives the renderer a stable, deterministic coarse splat input before any
+  mesh-decimation or crossfade logic exists
 
 Usage summaries:
 

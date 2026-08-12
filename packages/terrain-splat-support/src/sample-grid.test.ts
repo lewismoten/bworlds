@@ -6,6 +6,7 @@ import {
 } from './index.ts';
 import {
   createTerrainSplatGridTileResolver,
+  createTerrainSplatSampleGridLod,
   createTerrainSplatSampleGrid,
   getTerrainSplatGridSample,
   packTerrainSplatSampleGrid,
@@ -278,6 +279,138 @@ describe('terrain splat sample grid', () => {
         );
       });
     });
+  });
+
+  it('builds a coarser lod grid while preserving chunk bounds and edge samples', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x >= 4 ? 'forest' : y >= 4 ? 'snow' : 'plains',
+      signals: {
+        moisture: normalizeSignal(x + y, 0.55),
+        temperature: y >= 4 ? 0.18 : 0.68,
+        season: y >= 4 ? 'winter' : 'summer',
+      },
+    }));
+
+    const lodGrid = createTerrainSplatSampleGridLod({
+      seed: 'lod-grid-seed',
+      bounds: {
+        minX: 0,
+        maxX: 6,
+        minY: 0,
+        maxY: 6,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      lodStepMultiplier: 2,
+    });
+
+    expect(lodGrid.minX).toBe(0);
+    expect(lodGrid.maxX).toBe(6);
+    expect(lodGrid.minY).toBe(0);
+    expect(lodGrid.maxY).toBe(6);
+    expect(lodGrid.step).toBe(2);
+    expect(lodGrid.width).toBe(4);
+    expect(lodGrid.height).toBe(4);
+    expect(lodGrid.samples).toHaveLength(16);
+    expect(
+      getTerrainSplatGridSample(lodGrid, lodGrid.width - 1, 0).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['leaf']));
+    expect(
+      getTerrainSplatGridSample(lodGrid, 0, lodGrid.height - 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['snow']));
+  });
+
+  it('preserves major terrain boundaries across adjacent lod chunk builds', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x >= 4 ? 'forest' : y >= 4 ? 'snow' : 'plains',
+      signals: {
+        moisture: normalizeSignal(x + y, 0.58),
+        temperature: y >= 4 ? 0.22 : 0.7,
+        season: y >= 4 ? 'winter' : 'summer',
+      },
+    }));
+
+    const leftGrid = createTerrainSplatSampleGridLod({
+      seed: 'lod-border-seed',
+      bounds: {
+        minX: 0,
+        maxX: 4,
+        minY: 0,
+        maxY: 6,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      lodStepMultiplier: 2,
+    });
+    const rightGrid = createTerrainSplatSampleGridLod({
+      seed: 'lod-border-seed',
+      bounds: {
+        minX: 4,
+        maxX: 8,
+        minY: 0,
+        maxY: 6,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      lodStepMultiplier: 2,
+    });
+
+    for (let row = 0; row < leftGrid.height; row += 1) {
+      expect(
+        getTerrainSplatGridSample(leftGrid, leftGrid.width - 1, row)
+      ).toEqual(getTerrainSplatGridSample(rightGrid, 0, row));
+    }
+  });
+
+  it('keeps dominant terrain identities stable near major lod boundaries', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x >= 4 ? 'forest' : y >= 4 ? 'snow' : 'plains',
+      signals: {
+        moisture: x >= 4 ? 0.92 : 0.52,
+        temperature: y >= 4 ? 0.18 : 0.68,
+        season: y >= 4 ? 'winter' : 'summer',
+      },
+    }));
+
+    const lodGrid = createTerrainSplatSampleGridLod({
+      seed: 'lod-boundary-seed',
+      bounds: {
+        minX: 0,
+        maxX: 6,
+        minY: 0,
+        maxY: 6,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      lodStepMultiplier: 2,
+    });
+
+    expect(
+      getTerrainSplatGridSample(lodGrid, 1, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['grass-a', 'grass-b']));
+    expect(
+      getTerrainSplatGridSample(lodGrid, 2, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['leaf']));
+    expect(
+      getTerrainSplatGridSample(lodGrid, 1, 2).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['snow']));
   });
 
   it('rejects chunk bounds that do not divide evenly by the sample step', () => {

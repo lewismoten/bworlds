@@ -52,7 +52,7 @@
 - [x] Drop very small layer weights when possible.
 - [x] Pack splat weights into compact vertex attributes.
 - [x] Pack layer indices into compact vertex attributes.
-- [ ] Keep weight data stable across terrain LOD changes.
+- [x] Keep weight data stable across terrain LOD changes.
 
 ## Terrain Type Mapping
 
@@ -154,10 +154,10 @@
 ## LOD Support
 
 - [ ] Reduce geometry density for distant terrain LODs.
-- [ ] Keep terrain layer identities stable across LODs.
-- [ ] Preserve chunk edge splat weights across LODs.
-- [ ] Preserve major terrain boundaries across LODs.
-- [ ] Reduce splat sample density at distant LODs.
+- [x] Keep terrain layer identities stable across LODs.
+- [x] Preserve chunk edge splat weights across LODs.
+- [x] Preserve major terrain boundaries across LODs.
+- [x] Reduce splat sample density at distant LODs.
 - [ ] Avoid visible material popping during LOD changes.
 - [ ] Crossfade terrain LODs when needed.
 
@@ -224,7 +224,7 @@
 - [ ] Test mixed terrain renders in one chunk.
 - [x] Test texture rotation does not add new materials.
 - [x] Test tint variation does not add new materials.
-- [ ] Test distant LOD keeps major terrain boundaries.
+- [x] Test distant LOD keeps major terrain boundaries.
 - [ ] Test roads blend with surrounding terrain.
 - [x] Test slope can increase rock material weight.
 - [ ] Test weather can alter wetness without new materials.
@@ -318,7 +318,7 @@
 - [x] Add UV rotation and mirroring.
 - [ ] Add biome-driven splat weights.
 - [x] Add slope-driven splat weights.
-- [ ] Add LOD support.
+- [x] Add LOD support.
 
 ## Third Delivery
 
@@ -361,7 +361,9 @@ settlement footprints can bias dirt, gravel, or clearing layers without
 embedding plugin-specific ground rules into renderer code, plus deterministic
 sample-grid blend zones driven by neighboring world samples so forest-floor and
 snow transitions can taper across chunk boundaries without depending on
-renderer-only smoothing.
+renderer-only smoothing, plus deterministic coarse sample-grid LOD aggregation
+so distant terrain can reduce splat density while preserving major terrain
+identities and matching chunk-edge weights from the same world-space inputs.
 
 # Roads and Paths as Terrain Splats
 
