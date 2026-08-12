@@ -220,7 +220,7 @@
 
 - [x] Test splat weights always normalize to one.
 - [x] Test adjacent chunks share border splat weights.
-- [ ] Test terrain layers stay stable for one seed.
+- [x] Test terrain layers stay stable for one seed.
 - [ ] Test mixed terrain renders in one chunk.
 - [ ] Test texture rotation does not add new materials.
 - [ ] Test tint variation does not add new materials.
@@ -263,6 +263,9 @@
 - Added `@bworlds/terrain-splat-support/layer-pool-plan` to rank chunk layer
   usage across a neighborhood, choose one bounded shared active layer set, and
   report which chunk layers still overflow the shared budget.
+- Integrated terrain-kind splat mapping with shared material families so kinds
+  can resolve deterministic bounded variants through `baseFamilyId` instead of
+  embedding raw variant arrays.
 - [ ] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -299,7 +302,8 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, and focused
 tests cover normalization, packing, validation, deterministic mapping, chunk
 border stability, chunk layer-usage analysis, bounded family variant selection,
-and neighborhood shared-layer planning.
+neighborhood shared-layer planning, and stable terrain family resolution for
+the same seed.
 
 # Roads and Paths as Terrain Splats
 

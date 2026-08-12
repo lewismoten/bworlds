@@ -24,6 +24,8 @@ Current mapping model:
 - `resolveTerrainKindSplatSample(...)` picks one deterministic base layer for a
   tile kind, applies conditional blend layers from terrain signals, and
   normalizes the result
+- terrain-kind mappings can resolve their base layer from either explicit
+  `baseLayerIds` or one shared `baseFamilyId`
 - `createOverworldTerrainSplatDefinitions(...)` provides one recommended
   overworld mapping set for `plains`, `forest`, `mountain`, `shore`, `road`,
   and water/crossing exclusions

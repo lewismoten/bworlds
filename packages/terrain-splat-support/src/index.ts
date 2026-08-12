@@ -5,6 +5,11 @@ import {
   resolveHashSeedInput,
 } from '@bworlds/core/hash';
 import type { Kind, OverworldSignals, Seed } from '@bworlds/plugin-api';
+import {
+  resolveTerrainMaterialFamilyVariant,
+  type TerrainMaterialFamilyCatalogEntry,
+  type TerrainMaterialFamilyId,
+} from './variant-pool.ts';
 
 export type TerrainMaterialLayerId = string;
 
@@ -60,6 +65,7 @@ export type TerrainKindSplatBlendDefinition = {
 export type TerrainKindSplatDefinition = {
   kind: Kind;
   baseLayerIds?: readonly TerrainMaterialLayerId[];
+  baseFamilyId?: TerrainMaterialFamilyId;
   blends?: readonly TerrainKindSplatBlendDefinition[];
   exclude?: boolean;
 };
@@ -221,10 +227,25 @@ export function validateTerrainKindSplatDefinition(
           TerrainMaterialLayerId,
           TerrainMaterialLayerCatalogEntry
         >;
-      }
+      },
+  options: {
+    familyCatalog?:
+      | ReadonlyMap<TerrainMaterialFamilyId, TerrainMaterialFamilyCatalogEntry>
+      | {
+          byId: ReadonlyMap<
+            TerrainMaterialFamilyId,
+            TerrainMaterialFamilyCatalogEntry
+          >;
+        };
+  } = {}
 ): string[] {
   const errors: string[] = [];
   const layerMap = 'byId' in catalog ? catalog.byId : catalog;
+  const familyMap = options.familyCatalog
+    ? 'byId' in options.familyCatalog
+      ? options.familyCatalog.byId
+      : options.familyCatalog
+    : null;
 
   if (
     typeof definition.kind !== 'string' ||
@@ -237,11 +258,21 @@ export function validateTerrainKindSplatDefinition(
   }
 
   if (
-    !Array.isArray(definition.baseLayerIds) ||
-    definition.baseLayerIds.length === 0
+    (!Array.isArray(definition.baseLayerIds) ||
+      definition.baseLayerIds.length === 0) &&
+    typeof definition.baseFamilyId !== 'string'
   ) {
     errors.push(
-      `Terrain splat kind ${formatLayerLabel(definition.kind)} must define at least one baseLayerId unless it is excluded.`
+      `Terrain splat kind ${formatLayerLabel(definition.kind)} must define baseLayerIds or one baseFamilyId unless it is excluded.`
+    );
+  }
+  if (
+    Array.isArray(definition.baseLayerIds) &&
+    definition.baseLayerIds.length > 0 &&
+    typeof definition.baseFamilyId === 'string'
+  ) {
+    errors.push(
+      `Terrain splat kind ${formatLayerLabel(definition.kind)} must define baseLayerIds or baseFamilyId, not both.`
     );
   }
 
@@ -249,6 +280,20 @@ export function validateTerrainKindSplatDefinition(
     if (!layerMap.has(layerId)) {
       errors.push(
         `Terrain splat kind ${formatLayerLabel(definition.kind)} references unknown base layer ${formatLayerLabel(layerId)}.`
+      );
+    }
+  }
+  if (definition.baseFamilyId !== undefined) {
+    if (
+      typeof definition.baseFamilyId !== 'string' ||
+      definition.baseFamilyId.trim().length === 0
+    ) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(definition.kind)} must use a non-empty baseFamilyId when provided.`
+      );
+    } else if (!familyMap?.has(definition.baseFamilyId)) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(definition.kind)} references unknown base family ${formatLayerLabel(definition.baseFamilyId)}.`
       );
     }
   }
@@ -281,7 +326,17 @@ export function createTerrainKindSplatCatalog(
           TerrainMaterialLayerId,
           TerrainMaterialLayerCatalogEntry
         >;
-      }
+      },
+  options: {
+    familyCatalog?:
+      | ReadonlyMap<TerrainMaterialFamilyId, TerrainMaterialFamilyCatalogEntry>
+      | {
+          byId: ReadonlyMap<
+            TerrainMaterialFamilyId,
+            TerrainMaterialFamilyCatalogEntry
+          >;
+        };
+  } = {}
 ): {
   entries: readonly TerrainKindSplatCatalogEntry[];
   byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
@@ -290,7 +345,9 @@ export function createTerrainKindSplatCatalog(
   const byKind = new Map<Kind, TerrainKindSplatCatalogEntry>();
 
   definitions.forEach((definition, index) => {
-    errors.push(...validateTerrainKindSplatDefinition(definition, catalog));
+    errors.push(
+      ...validateTerrainKindSplatDefinition(definition, catalog, options)
+    );
     if (byKind.has(definition.kind)) {
       errors.push(
         `Terrain splat kind ${formatLayerLabel(definition.kind)} must be unique within the shared catalog.`
@@ -454,9 +511,22 @@ export function resolveTerrainKindSplatSample(
   options: {
     fallbackKind?: Kind;
     fallbackLayerId?: TerrainMaterialLayerId;
+    familyCatalog?:
+      | ReadonlyMap<TerrainMaterialFamilyId, TerrainMaterialFamilyCatalogEntry>
+      | {
+          byId: ReadonlyMap<
+            TerrainMaterialFamilyId,
+            TerrainMaterialFamilyCatalogEntry
+          >;
+        };
   } = {}
 ): TerrainSplatSample {
   const byKind = 'byKind' in kindCatalog ? kindCatalog.byKind : kindCatalog;
+  const familyMap = options.familyCatalog
+    ? 'byId' in options.familyCatalog
+      ? options.familyCatalog.byId
+      : options.familyCatalog
+    : null;
   const kindDefinition =
     byKind.get(input.kind) ??
     (options.fallbackKind ? byKind.get(options.fallbackKind) : undefined);
@@ -476,7 +546,13 @@ export function resolveTerrainKindSplatSample(
   }
 
   const baseLayerIds = kindDefinition.baseLayerIds ?? [];
-  const baseLayerId = selectTerrainMaterialLayerVariant(baseLayerIds, input);
+  const baseFamily =
+    typeof kindDefinition.baseFamilyId === 'string'
+      ? familyMap?.get(kindDefinition.baseFamilyId)
+      : undefined;
+  const baseLayerId = baseFamily
+    ? resolveTerrainMaterialFamilyVariant(baseFamily, input)
+    : selectTerrainMaterialLayerVariant(baseLayerIds, input);
   const signals = resolveTerrainKindSignals(input.signals);
   const entries: TerrainSplatWeight[] = [];
 

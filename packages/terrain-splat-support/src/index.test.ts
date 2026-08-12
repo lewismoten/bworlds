@@ -14,6 +14,7 @@ import {
   validatePackedTerrainSplatSample,
   validateTerrainSplatSample,
 } from './index.ts';
+import { createTerrainMaterialFamilyCatalog } from './variant-pool.ts';
 
 describe('terrain splat support', () => {
   it('accepts valid terrain material layer definitions and keeps stable indices', () => {
@@ -743,6 +744,144 @@ describe('terrain splat support', () => {
         'Terrain splat kind "plains" references unknown blend layer "leaf".',
       ])
     );
+  });
+
+  it('rejects terrain kind definitions that mix raw base layers with shared families', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+    const familyCatalog = createTerrainMaterialFamilyCatalog(
+      [
+        {
+          id: 'grass-family',
+          layerIds: ['grass'],
+        },
+      ],
+      layerCatalog
+    );
+
+    expect(
+      validateTerrainKindSplatDefinition(
+        {
+          kind: 'plains',
+          baseLayerIds: ['grass'],
+          baseFamilyId: 'grass-family',
+        },
+        layerCatalog,
+        {
+          familyCatalog,
+        }
+      )
+    ).toContain(
+      'Terrain splat kind "plains" must define baseLayerIds or baseFamilyId, not both.'
+    );
+  });
+
+  it('resolves terrain kind splat samples from shared material families', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass-a',
+        baseColorTextureId: 'grass-a/base',
+        normalTextureId: 'grass-a/normal',
+        roughnessTextureId: 'grass-a/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'grass-b',
+        baseColorTextureId: 'grass-b/base',
+        normalTextureId: 'grass-b/normal',
+        roughnessTextureId: 'grass-b/roughness',
+        textureScale: 3,
+        defaultTint: '#7fa650',
+        defaultRoughness: 0.88,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+    ]);
+    const familyCatalog = createTerrainMaterialFamilyCatalog(
+      [
+        {
+          id: 'grass-family',
+          layerIds: ['grass-a', 'grass-b'],
+        },
+      ],
+      layerCatalog
+    );
+    const kindCatalog = createTerrainKindSplatCatalog(
+      [
+        {
+          kind: 'plains',
+          baseFamilyId: 'grass-family',
+          blends: [
+            {
+              layerId: 'soil',
+              weight: 0.2,
+              when: {
+                minMoisture: 0.8,
+              },
+            },
+          ],
+        },
+      ],
+      layerCatalog,
+      {
+        familyCatalog,
+      }
+    );
+
+    const first = resolveTerrainKindSplatSample(
+      {
+        seed: 'family-seed',
+        x: 4,
+        y: 9,
+        kind: 'plains',
+        signals: {
+          moisture: 0.85,
+        },
+      },
+      kindCatalog,
+      {
+        familyCatalog,
+      }
+    );
+    const second = resolveTerrainKindSplatSample(
+      {
+        seed: 'family-seed',
+        x: 4,
+        y: 9,
+        kind: 'plains',
+        signals: {
+          moisture: 0.85,
+        },
+      },
+      kindCatalog,
+      {
+        familyCatalog,
+      }
+    );
+
+    expect(first).toEqual(second);
+    expect(first.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['soil'])
+    );
+    expect(['grass-a', 'grass-b']).toContain(first.entries[0]?.layerId);
   });
 });
 

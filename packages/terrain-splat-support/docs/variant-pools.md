@@ -23,6 +23,8 @@ Why this exists:
 - deterministic selection keeps the same world coordinates visually stable for
   the same seed
 - bounded pools support later material and texture-array reuse work
+- terrain-kind splat mappings can now reference shared family IDs instead of
+  embedding raw variant arrays in every mapping definition
 
 Current limits:
 
