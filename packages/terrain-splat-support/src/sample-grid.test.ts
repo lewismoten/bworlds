@@ -5,6 +5,7 @@ import {
   createTerrainKindSplatCatalog,
 } from './index.ts';
 import {
+  createAdaptiveTerrainSplatSampleGrid,
   createTerrainSplatChunkPreview,
   createTerrainSplatGridTileResolver,
   createTerrainSplatSampleGridLod,
@@ -447,6 +448,74 @@ describe('terrain splat sample grid', () => {
         (entry) => entry.layerId
       )
     ).toEqual(expect.arrayContaining(['snow']));
+  });
+
+  it('reports splat generation cost for one chunk build against a budget', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const nowMs = createMockNowMs([10, 12.75]);
+
+    const result = createAdaptiveTerrainSplatSampleGrid({
+      seed: 'generation-budget-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x + y >= 2 ? 'forest' : 'plains',
+        signals: {
+          moisture: normalizeSignal(x + y, 0.6),
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      budgetMs: 4,
+      nowMs,
+    });
+
+    expect(result.grid.width).toBe(3);
+    expect(result.metrics.elapsedMs).toBeCloseTo(2.75, 6);
+    expect(result.metrics.budgetMs).toBe(4);
+    expect(result.metrics.exceededBudget).toBe(false);
+    expect(result.metrics.quality).toBe('full');
+    expect(result.metrics.warning).toBeNull();
+  });
+
+  it('falls back to a coarser lod grid when splat generation exceeds the budget', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const nowMs = createMockNowMs([20, 26.5, 30, 31.25]);
+
+    const result = createAdaptiveTerrainSplatSampleGrid({
+      seed: 'generation-overload-seed',
+      bounds: {
+        minX: 0,
+        maxX: 6,
+        minY: 0,
+        maxY: 6,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x >= 4 ? 'forest' : y >= 4 ? 'snow' : 'plains',
+        signals: {
+          moisture: normalizeSignal(x + y, 0.58),
+          temperature: y >= 4 ? 0.2 : 0.7,
+          season: y >= 4 ? 'winter' : 'summer',
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      budgetMs: 3,
+      fallbackLodStepMultiplier: 2,
+      nowMs,
+    });
+
+    expect(result.grid.step).toBe(2);
+    expect(result.metrics.quality).toBe('reduced');
+    expect(result.metrics.elapsedMs).toBeCloseTo(1.25, 6);
+    expect(result.metrics.budgetMs).toBe(3);
+    expect(result.metrics.warning).toContain(
+      'fell back to LOD step multiplier 2'
+    );
   });
 
   it('preserves major terrain boundaries across adjacent lod chunk builds', () => {
@@ -1018,4 +1087,13 @@ function createGridCatalogs() {
 
 function normalizeSignal(value: number, bias = 0.5): number {
   return Math.max(0, Math.min(1, bias + value * 0.1));
+}
+
+function createMockNowMs(values: readonly number[]): () => number {
+  let index = 0;
+  return () => {
+    const value = values[index] ?? values[values.length - 1] ?? 0;
+    index += 1;
+    return value;
+  };
 }

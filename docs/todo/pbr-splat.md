@@ -187,10 +187,10 @@
 - [ ] Measure texture memory before and after splatting.
 - [ ] Measure shader program count after splatting.
 - [ ] Measure terrain frame time after splatting.
-- [ ] Measure splat generation cost per chunk.
-- [ ] Set a terrain splat generation time budget.
+- [x] Measure splat generation cost per chunk.
+- [x] Set a terrain splat generation time budget.
 - [x] Set a maximum active terrain layer count.
-- [ ] Add a lower-quality splat mode when overloaded.
+- [x] Add a lower-quality splat mode when overloaded.
 
 ## Debug View
 
@@ -327,6 +327,10 @@
   deterministic terrain boundary blending, bounded deterministic texture
   variants, and biome-driven splat weighting that are already covered by the
   current tests and package docs.
+- Added `createAdaptiveTerrainSplatSampleGrid(...)` in
+  `@bworlds/terrain-splat-support/sample-grid` so chunk generation can measure
+  splat build cost, compare it against a time budget, and retry with a coarser
+  deterministic LOD grid when overloaded.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.

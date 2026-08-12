@@ -18,6 +18,7 @@ Current API:
 
 - `createTerrainSplatSampleGrid(...)`
 - `createTerrainSplatSampleGridLod(...)`
+- `createAdaptiveTerrainSplatSampleGrid(...)`
 - `createTerrainSplatChunkPreview(...)`
 - `getTerrainSplatGridSample(...)`
 - `packTerrainSplatSampleGrid(...)`
@@ -73,6 +74,18 @@ LOD grids:
   boundaries instead of collapsing to one unrelated dominant layer
 - this gives the renderer a stable, deterministic coarse splat input before any
   mesh-decimation or crossfade logic exists
+
+Adaptive generation:
+
+- `createAdaptiveTerrainSplatSampleGrid(...)` measures chunk-generation cost
+  against an optional `budgetMs`
+- when a build exceeds the budget and `fallbackLodStepMultiplier` is larger
+  than the primary detail level, the helper retries with a coarser LOD grid
+- the result reports `elapsedMs`, `budgetMs`, `exceededBudget`, one `quality`
+  label, and an optional warning string
+- this gives worker or chunk-generation code one renderer-free way to track
+  terrain splat cost and degrade gracefully before full shared material support
+  exists
 
 Usage summaries:
 

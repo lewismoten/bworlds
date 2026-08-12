@@ -93,6 +93,21 @@ export type TerrainSplatChunkPreview = {
   dominantLayerId: TerrainMaterialLayerId | null;
 };
 
+export type TerrainSplatGridBuildQuality = 'full' | 'reduced';
+
+export type TerrainSplatGridBuildMetrics = {
+  elapsedMs: number;
+  budgetMs: number | null;
+  exceededBudget: boolean;
+  quality: TerrainSplatGridBuildQuality;
+  warning: string | null;
+};
+
+export type TerrainSplatAdaptiveSampleGrid = {
+  grid: TerrainSplatSampleGrid;
+  metrics: TerrainSplatGridBuildMetrics;
+};
+
 type ResolvedTerrainSplatGridCell = {
   tile: TerrainSplatGridTile;
   sample: TerrainSplatSample;
@@ -243,6 +258,103 @@ export function createTerrainSplatSampleGridLod(
     width: lodBounds.width,
     height: lodBounds.height,
     samples,
+  };
+}
+
+export function createAdaptiveTerrainSplatSampleGrid(
+  params: {
+    seed: Seed;
+    bounds: TerrainSplatGridBounds;
+    kindCatalog:
+      | ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>
+      | {
+          byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+        };
+    resolveTile: ResolveTerrainSplatGridTile;
+    fallbackKind?: Kind;
+    fallbackLayerId?: TerrainMaterialLayerId;
+    blendWidth?: number;
+    budgetMs?: number;
+    fallbackLodStepMultiplier?: number;
+    nowMs?: () => number;
+  } & Partial<TerrainSplatSampleGridLodOptions>
+): TerrainSplatAdaptiveSampleGrid {
+  const nowMs = params.nowMs ?? (() => Date.now());
+  const primaryLodStepMultiplier = normalizeTerrainSplatOptionalLodStepMultiplier(
+    params.lodStepMultiplier
+  );
+  const fallbackLodStepMultiplier = normalizeTerrainSplatOptionalLodStepMultiplier(
+    params.fallbackLodStepMultiplier
+  );
+  const buildGrid = (lodStepMultiplier: number): TerrainSplatSampleGrid => {
+    if (lodStepMultiplier > 1) {
+      return createTerrainSplatSampleGridLod({
+        seed: params.seed,
+        bounds: params.bounds,
+        kindCatalog: params.kindCatalog,
+        resolveTile: params.resolveTile,
+        fallbackKind: params.fallbackKind,
+        fallbackLayerId: params.fallbackLayerId,
+        blendWidth: params.blendWidth,
+        lodStepMultiplier,
+      });
+    }
+    return createTerrainSplatSampleGrid({
+      seed: params.seed,
+      bounds: params.bounds,
+      kindCatalog: params.kindCatalog,
+      resolveTile: params.resolveTile,
+      fallbackKind: params.fallbackKind,
+      fallbackLayerId: params.fallbackLayerId,
+      blendWidth: params.blendWidth,
+    });
+  };
+
+  const primaryStartMs = nowMs();
+  const primaryGrid = buildGrid(primaryLodStepMultiplier);
+  const primaryElapsedMs = Math.max(0, nowMs() - primaryStartMs);
+  const budgetMs =
+    typeof params.budgetMs === 'number' && Number.isFinite(params.budgetMs)
+      ? Math.max(0, params.budgetMs)
+      : null;
+  const primaryExceededBudget =
+    budgetMs !== null && primaryElapsedMs > budgetMs;
+
+  if (
+    primaryExceededBudget &&
+    fallbackLodStepMultiplier !== null &&
+    fallbackLodStepMultiplier > primaryLodStepMultiplier
+  ) {
+    const fallbackStartMs = nowMs();
+    const fallbackGrid = buildGrid(fallbackLodStepMultiplier);
+    const fallbackElapsedMs = Math.max(0, nowMs() - fallbackStartMs);
+
+    return {
+      grid: fallbackGrid,
+      metrics: {
+        elapsedMs: fallbackElapsedMs,
+        budgetMs,
+        exceededBudget: fallbackElapsedMs > budgetMs,
+        quality: 'reduced',
+        warning:
+          `Terrain splat grid build exceeded budget ${budgetMs.toFixed(2)} ms ` +
+          `at ${primaryElapsedMs.toFixed(2)} ms and fell back to LOD step multiplier ` +
+          `${fallbackLodStepMultiplier}.`,
+      },
+    };
+  }
+
+  return {
+    grid: primaryGrid,
+    metrics: {
+      elapsedMs: primaryElapsedMs,
+      budgetMs,
+      exceededBudget: primaryExceededBudget,
+      quality: 'full',
+      warning: primaryExceededBudget
+        ? `Terrain splat grid build exceeded budget ${budgetMs?.toFixed(2)} ms at ${primaryElapsedMs.toFixed(2)} ms.`
+        : null,
+    },
   };
 }
 
@@ -927,4 +1039,13 @@ function normalizeTerrainSplatLodStepMultiplier(value: unknown): number {
     );
   }
   return value;
+}
+
+function normalizeTerrainSplatOptionalLodStepMultiplier(
+  value: unknown
+): number | null {
+  if (value === undefined) {
+    return null;
+  }
+  return normalizeTerrainSplatLodStepMultiplier(value);
 }
