@@ -40,8 +40,13 @@
       notes keep slower attacks and longer releases while struck families such
       as piano and guitar tighten their envelope, and the variation tests now
       verify those attack/release differences plus unchanged percussion timing.
-- [ ] Add legato behavior for connected melodic notes.
-- [ ] Add staccato behavior for short detached notes.
+- [x] Add legato behavior for connected melodic notes.
+- [x] Add staccato behavior for short detached notes.
+      Progress: phrase-level lead-note shaping now softens the attack and
+      extends the release for connected melodic notes so they behave more
+      legato, while detached short notes are clipped into clearer staccato
+      gaps with faster attack/release envelopes, and the lead-phrase tests now
+      verify both cases.
 - [ ] Add accents for structurally important notes.
 - [ ] Add sustained-note swells for strings and pads.
 - [ ] Change filter brightness with note velocity.

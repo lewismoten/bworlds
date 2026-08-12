@@ -134,7 +134,56 @@ describe('procedural music lead phrase shaping', () => {
     expect(secondMeasure[0]!.releaseMs).toBeGreaterThan(
       secondMeasure[1]!.releaseMs
     );
-    expect(thirdMeasureNote?.releaseMs).toBe(70);
+    expect(thirdMeasureNote?.releaseMs).toBeLessThan(70);
+  });
+
+  it('uses a softer attack for lead notes that connect legato into the next note', () => {
+    const notes = shapeProceduralPhraseLeadNotes(
+      [
+        createLeadNote({ startMs: 1_260, durationMs: 90, releaseMs: 70 }),
+        createLeadNote({ startMs: 1_660, durationMs: 90, releaseMs: 70 }),
+      ],
+      {
+        phraseStartMs: 0,
+        phraseDurationMs: 8_000,
+        clusterX: 3,
+        clusterY: -2,
+      }
+    );
+
+    const firstNote = notes[0];
+    const secondNote = notes[1];
+
+    expect(firstNote).not.toBeUndefined();
+    expect(secondNote).not.toBeUndefined();
+    expect(firstNote!.attackMs).toBeLessThan(20);
+    expect(firstNote!.releaseMs).toBeGreaterThan(secondNote!.releaseMs);
+    expect(secondNote!.attackMs).toBeLessThanOrEqual(20);
+  });
+
+  it('shortens detached short notes into clearer staccato gaps', () => {
+    const notes = shapeProceduralPhraseLeadNotes(
+      [
+        createLeadNote({ startMs: 210, durationMs: 90, releaseMs: 70 }),
+        createLeadNote({ startMs: 1_360, durationMs: 90, releaseMs: 70 }),
+      ],
+      {
+        phraseStartMs: 0,
+        phraseDurationMs: 8_000,
+        clusterX: 3,
+        clusterY: -2,
+      }
+    );
+
+    const firstMeasureNote = notes.find((note) => note.startMs < 1_000);
+    const secondMeasureNote = notes.find((note) => note.startMs >= 1_000);
+
+    expect(firstMeasureNote).not.toBeUndefined();
+    expect(secondMeasureNote).not.toBeUndefined();
+    expect(firstMeasureNote!.durationMs).toBeLessThanOrEqual(58);
+    expect(firstMeasureNote!.attackMs).toBeLessThan(20);
+    expect(firstMeasureNote!.releaseMs).toBeLessThan(70);
+    expect(secondMeasureNote!.releaseMs).toBeLessThan(70);
   });
 
   it('keeps timing humanization deterministic for the same phrase inputs', () => {

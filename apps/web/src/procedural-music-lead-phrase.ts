@@ -283,12 +283,20 @@ function connectLeadMeasureDurations(
 ): void {
   const minimumGapMs = Math.max(24, Math.round(subdivisionDurationMs * 0.24));
   const connectedSentenceGapMs = Math.max(
-    12,
-    Math.round(subdivisionDurationMs * 0.12)
+    6,
+    Math.round(subdivisionDurationMs * 0.08)
   );
   const minimumDurationMs = Math.max(
     48,
     Math.round(subdivisionDurationMs * 1.35)
+  );
+  const staccatoDurationMs = Math.max(
+    42,
+    Math.round(subdivisionDurationMs * 0.92)
+  );
+  const detachedSentenceGapThresholdMs = Math.max(
+    minimumGapMs * 2,
+    Math.round(subdivisionDurationMs * 5.8)
   );
 
   for (
@@ -314,6 +322,11 @@ function connectLeadMeasureDurations(
     const connectsIntoSentence =
       nextNote !== null &&
       nextNote.startMs - note.startMs <= subdivisionDurationMs * 6;
+    const detachedShortNote =
+      !phraseEndingMeasure &&
+      note.durationMs <= Math.round(subdivisionDurationMs * 2.1) &&
+      (nextNote === null ||
+        nextNote.startMs - note.startMs >= detachedSentenceGapThresholdMs);
     const measureCapMs =
       nextNote === null
         ? phraseRestEndMs
@@ -333,17 +346,27 @@ function connectLeadMeasureDurations(
         phraseEndingSustainMs
       )
     );
-    const resolvedEndMs = Math.max(
+    let resolvedEndMs = Math.max(
       note.startMs + minimumDurationMs,
       Math.min(measureEndMs, measureCapMs, desiredEndMs)
     );
+    if (detachedShortNote) {
+      resolvedEndMs = Math.max(
+        note.startMs + Math.min(minimumDurationMs, staccatoDurationMs),
+        Math.min(resolvedEndMs, note.startMs + staccatoDurationMs)
+      );
+    }
 
     note.durationMs = resolvedEndMs - note.startMs;
     if (connectsIntoSentence) {
+      note.attackMs = Math.max(4, Math.round(note.attackMs * 0.84));
       note.releaseMs = Math.max(
         note.releaseMs,
         Math.round(note.releaseMs * 1.75)
       );
+    } else if (detachedShortNote) {
+      note.attackMs = Math.max(4, Math.round(note.attackMs * 0.78));
+      note.releaseMs = Math.max(18, Math.round(note.releaseMs * 0.7));
     }
   }
 }
