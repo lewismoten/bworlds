@@ -527,7 +527,7 @@ worker-backed generation. The worker runtime notes live in
 - [x] Represent simple roads as terrain splat layers.
 - [x] Represent trails as terrain splat layers.
 - [x] Represent worn paths as terrain splat layers.
-- [x] Remove separate road meshes where splatting is sufficient.
+- [ ] Remove separate road meshes where splatting is sufficient.
 - [x] Keep road gameplay data separate from road rendering.
 - [x] Project road splat weights onto the terrain height field.
 - [x] Generate road width from route metadata.
@@ -564,7 +564,7 @@ worker-backed generation. The worker runtime notes live in
 - [x] Detect when a route requires real geometry.
 - [x] Fall back to road geometry for unsupported cases.
 - [x] Show route splat weights in terrain debug mode.
-- [x] Add a toggle for road and path splat layers.
+- [ ] Add a toggle for road and path splat layers.
 - [x] Compare splat roads against mesh road draw calls.
 - [x] Test roads follow terrain height without gaps.
 - [x] Test roads remain continuous across chunk borders.
@@ -589,3 +589,17 @@ worker-backed generation. The worker runtime notes live in
   edge-grass, wetness, mud, and partial snow-cover signals from shared route
   traffic and weather inputs before any renderer-specific shader or mesh path
   consumes them.
+
+## Live Renderer Status
+
+The support package covers deterministic splat planning, data packing, debug
+payloads, and shader/material planning, but the live app renderer has not
+adopted that path yet.
+
+- `packages/tile-route/src/index.ts` still builds explicit road ribbon meshes
+  with `MeshStandardMaterial` instances for `roadMaterial` and
+  `shoulderMaterial`.
+- `apps/web` and `packages/render3d` do not currently consume packed terrain
+  splat chunk data for live terrain rendering.
+- Until that renderer integration lands, roads and field-like ground visuals
+  continue to come from plugin mesh geometry rather than shared splat terrain.
