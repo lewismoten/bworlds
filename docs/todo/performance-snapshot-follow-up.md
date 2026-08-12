@@ -99,8 +99,15 @@
 - [x] Add a normal low-cost plains model instead of a wall box.
 - [ ] Cache the plains fallback geometry for reuse.
 - [ ] Avoid rebuilding identical plains fallback models.
-- [ ] Count fallback models by plugin in the snapshot.
-- [ ] Warn when one plugin dominates fallback model usage.
+- [x] Count fallback models by plugin in the snapshot.
+      Progress: the live debug snapshot and exported snapshot already carry
+      `fallbackBoxSummary` / `lod.fallbackSummary`, so fallback-box rates are
+      preserved as per-plugin counts instead of only a single total.
+- [x] Warn when one plugin dominates fallback model usage.
+      Progress: the debug panel now parses `fallbackBoxSummary` and adds a
+      resource warning when one plugin accounts for at least 60% of the current
+      fallback-model rate, so repeated plains or forest fallback churn is
+      visible immediately during `errors.md` triage.
 
 ## Quality Reduction
 

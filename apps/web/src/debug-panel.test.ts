@@ -3,6 +3,7 @@ import {
   buildDebugMarkup,
   getHeapGrowthWarning,
   getIdleAllocationWarning,
+  getFallbackModelWarnings,
   formatPerformanceTierLabel,
   getMaterialGrowthWarning,
   getPerformanceWarnings,
@@ -826,6 +827,26 @@ describe('debug panel', () => {
       getRenderBudgetViolationWarnings({
         tileModelBudgetViolationsPerSecond: 0,
         tileModelBudgetViolationTopPluginLabel: 'tile-forest',
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when one plugin dominates fallback-model usage', () => {
+    expect(
+      getFallbackModelWarnings({
+        fallbackBoxesPerSecond: 5,
+        fallbackBoxTopPluginLabel: 'tile-plains',
+        fallbackBoxSummary: 'tile-plains:4, tile-route:1',
+      })
+    ).toEqual([
+      'Fallback models are dominated by one plugin (tile-plains accounts for 80% of 5.0/s).',
+    ]);
+
+    expect(
+      getFallbackModelWarnings({
+        fallbackBoxesPerSecond: 5,
+        fallbackBoxTopPluginLabel: 'tile-plains',
+        fallbackBoxSummary: 'tile-plains:2.9, tile-route:2.1',
       })
     ).toEqual([]);
   });

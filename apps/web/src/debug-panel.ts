@@ -932,6 +932,52 @@ export function getRenderBudgetViolationWarnings(
   ];
 }
 
+export function getFallbackModelWarnings(
+  snapshot: Pick<
+    DebugSnapshot,
+    | 'fallbackBoxesPerSecond'
+    | 'fallbackBoxTopPluginLabel'
+    | 'fallbackBoxSummary'
+  >,
+  {
+    minimumFallbacksPerSecond = 1,
+    dominantShareThreshold = 0.6,
+  }: {
+    minimumFallbacksPerSecond?: number;
+    dominantShareThreshold?: number;
+  } = {}
+): string[] {
+  const fallbackBoxesPerSecond = snapshot.fallbackBoxesPerSecond ?? 0;
+  if (fallbackBoxesPerSecond < minimumFallbacksPerSecond) {
+    return [];
+  }
+
+  const summaryEntries = parsePluginRateSummary(snapshot.fallbackBoxSummary);
+  if (summaryEntries.length === 0) {
+    return [];
+  }
+
+  const totalFallbackRate = summaryEntries.reduce(
+    (sum, entry) => sum + entry.rate,
+    0
+  );
+  if (totalFallbackRate <= 0) {
+    return [];
+  }
+
+  const topEntry = summaryEntries[0]!;
+  const topPlugin =
+    snapshot.fallbackBoxTopPluginLabel?.trim() || topEntry.plugin;
+  const dominantShare = topEntry.rate / totalFallbackRate;
+  if (dominantShare < dominantShareThreshold) {
+    return [];
+  }
+
+  return [
+    `Fallback models are dominated by one plugin (${topPlugin} accounts for ${(dominantShare * 100).toFixed(0)}% of ${totalFallbackRate.toFixed(1)}/s).`,
+  ];
+}
+
 export function getUnloadedRegionWarnings(
   snapshot: Pick<
     DebugSnapshot,
@@ -987,6 +1033,33 @@ export function getUnloadedRegionWarnings(
   }
 
   return warnings;
+}
+
+function parsePluginRateSummary(
+  summary: string | undefined
+): Array<{ plugin: string; rate: number }> {
+  if (!summary) {
+    return [];
+  }
+
+  return summary
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .map((entry) => {
+      const separatorIndex = entry.lastIndexOf(':');
+      if (separatorIndex <= 0 || separatorIndex >= entry.length - 1) {
+        return null;
+      }
+      const plugin = entry.slice(0, separatorIndex).trim();
+      const rate = Number(entry.slice(separatorIndex + 1).trim());
+      if (!plugin || !Number.isFinite(rate)) {
+        return null;
+      }
+      return { plugin, rate };
+    })
+    .filter((entry): entry is { plugin: string; rate: number } => entry !== null)
+    .sort((left, right) => right.rate - left.rate);
 }
 
 export function getHeapGrowthWarning(
