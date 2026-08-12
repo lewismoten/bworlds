@@ -6467,7 +6467,7 @@ function syncStarField(
   });
 }
 
-function syncConstellationSky(
+export function syncConstellationSky(
   root: THREE.Group,
   cycle: DaylightCycleState
 ): void {
@@ -6487,6 +6487,19 @@ function syncConstellationSky(
   const startPoint = new THREE.Vector3();
   const endPoint = new THREE.Vector3();
   const starPoint = new THREE.Vector3();
+  const sharedLineMaterial = new THREE.LineBasicMaterial({
+    color: '#b9d4ff',
+    transparent: true,
+    opacity: 0.18 + cycle.starsOpacity * 0.34,
+    depthTest: true,
+  });
+  const sharedSpriteMaterial = new THREE.SpriteMaterial({
+    color: '#f5fbff',
+    transparent: true,
+    opacity: 0.28 + cycle.starsOpacity * 0.56,
+    depthWrite: false,
+    depthTest: true,
+  });
 
   focusIndices.forEach((constellationIndex, slotIndex) => {
     const constellation = constellations[constellationIndex];
@@ -6522,40 +6535,31 @@ function syncConstellationSky(
       );
       const line = new THREE.Line(
         geometry,
-        new THREE.LineBasicMaterial({
-          color: '#b9d4ff',
-          transparent: true,
-          opacity: 0.18 + cycle.starsOpacity * 0.34,
-          depthTest: true,
-        })
+        sharedLineMaterial
       );
       const horizonFade = smoothstep(
         -1.6,
         5.8,
         Math.min(startPoint.y, endPoint.y)
       );
-      line.material.opacity *= horizonFade;
-      line.visible = line.material.opacity > 0.015;
+      line.visible = horizonFade * sharedLineMaterial.opacity > 0.015;
       root.add(line);
     });
 
     constellation.stars.forEach((star) => {
       writeConstellationPoint(starPoint, anchor, star);
       const horizonFade = smoothstep(-1.6, 5.8, starPoint.y);
-      const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          color: '#f5fbff',
-          transparent: true,
-          opacity:
-            (0.28 + star.brightness * cycle.starsOpacity * 0.56) * horizonFade,
-          depthWrite: false,
-          depthTest: true,
-        })
-      );
+      const sprite = new THREE.Sprite(sharedSpriteMaterial);
       sprite.position.copy(starPoint);
-      const scale = 0.34 + star.brightness * 0.34;
+      const scale =
+        (0.34 + star.brightness * 0.34) *
+        (0.64 + cycle.starsOpacity * 0.38) *
+        Math.max(0.42, horizonFade);
       sprite.scale.set(scale, scale, 1);
-      sprite.visible = sprite.material.opacity > 0.015;
+      sprite.visible =
+        horizonFade *
+          (0.28 + star.brightness * cycle.starsOpacity * 0.56) >
+        0.015;
       root.add(sprite);
     });
   });
@@ -6610,7 +6614,7 @@ function createCachedSkyPose(cycle: DaylightCycleState): CachedSkyPose {
   };
 }
 
-function syncCelestialEvents(
+export function syncCelestialEvents(
   root: THREE.Group,
   cycle: DaylightCycleState
 ): void {
@@ -6619,6 +6623,8 @@ function syncCelestialEvents(
   const position = new THREE.Vector3();
   const trailStart = new THREE.Vector3();
   const trailEnd = new THREE.Vector3();
+  const lineMaterialCache = new Map<string, THREE.LineBasicMaterial>();
+  const spriteMaterialCache = new Map<string, THREE.SpriteMaterial>();
   events.forEach((event, index) => {
     writeSkyAltitudePosition(
       position,
@@ -6628,8 +6634,26 @@ function syncCelestialEvents(
     );
     const horizonFade = smoothstep(-1.4, 6, position.y);
 
+    const lineOpacity =
+      (0.24 + event.intensity * 0.4) * event.visibility * horizonFade;
+    const spriteOpacity =
+      (0.26 + event.intensity * 0.42) * event.visibility * horizonFade;
+    const tailOpacity =
+      (0.16 + event.intensity * 0.28) * event.visibility * horizonFade;
+
     if (event.type === 'meteor-shower') {
       const streakCount = Math.max(4, Math.round(4 + event.intensity * 6));
+      const material = getOrCreateMapValue(
+        lineMaterialCache,
+        `${event.color}|${lineOpacity.toFixed(3)}`,
+        () =>
+          new THREE.LineBasicMaterial({
+            color: event.color,
+            transparent: true,
+            opacity: lineOpacity,
+            depthTest: true,
+          })
+      );
       for (let streak = 0; streak < streakCount; streak += 1) {
         const lateralDrift = ((streak % 5) - 2) * 0.18;
         const verticalDrift = (streak % 3) * 0.08;
@@ -6660,29 +6684,27 @@ function syncCelestialEvents(
         );
         const line = new THREE.Line(
           geometry,
-          new THREE.LineBasicMaterial({
-            color: event.color,
-            transparent: true,
-            opacity:
-              (0.24 + event.intensity * 0.4) * event.visibility * horizonFade,
-            depthTest: true,
-          })
+          material
         );
-        line.visible = line.material.opacity > 0.015;
+        line.visible = material.opacity > 0.015;
         root.add(line);
       }
       return;
     }
 
     const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        color: event.color,
-        transparent: true,
-        opacity:
-          (0.26 + event.intensity * 0.42) * event.visibility * horizonFade,
-        depthWrite: false,
-        depthTest: true,
-      })
+      getOrCreateMapValue(
+        spriteMaterialCache,
+        `${event.color}|${spriteOpacity.toFixed(3)}`,
+        () =>
+          new THREE.SpriteMaterial({
+            color: event.color,
+            transparent: true,
+            opacity: spriteOpacity,
+            depthWrite: false,
+            depthTest: true,
+          })
+      )
     );
     sprite.position.copy(position);
     const scale = event.size * (event.type === 'planet' ? 1 : 0.92);
@@ -6714,13 +6736,17 @@ function syncCelestialEvents(
       );
       const line = new THREE.Line(
         tail,
-        new THREE.LineBasicMaterial({
-          color: event.color,
-          transparent: true,
-          opacity:
-            (0.16 + event.intensity * 0.28) * event.visibility * horizonFade,
-          depthTest: true,
-        })
+        getOrCreateMapValue(
+          lineMaterialCache,
+          `${event.color}|${tailOpacity.toFixed(3)}|tail`,
+          () =>
+            new THREE.LineBasicMaterial({
+              color: event.color,
+              transparent: true,
+              opacity: tailOpacity,
+              depthTest: true,
+            })
+        )
       );
       line.visible = line.material.opacity > 0.015;
       root.add(line);
@@ -6813,12 +6839,17 @@ function syncMilkyWayBelt(root: THREE.Group, cycle: DaylightCycleState): void {
   );
 }
 
-function syncAuroraBands(root: THREE.Group, cycle: DaylightCycleState): void {
+export function syncAuroraBands(
+  root: THREE.Group,
+  cycle: DaylightCycleState
+): void {
   root.clear();
   const bands = cycle.auroraBands ?? [];
   const lowerScratch = new THREE.Vector3();
   const upperScratch = new THREE.Vector3();
   const crestScratch = new THREE.Vector3();
+  const meshMaterialCache = new Map<string, THREE.MeshBasicMaterial>();
+  const lineMaterialCache = new Map<string, THREE.LineBasicMaterial>();
   bands.forEach((band) => {
     const samples = 30;
     const start = band.azimuthCenter - band.span * 0.5;
@@ -6884,15 +6915,20 @@ function syncAuroraBands(root: THREE.Group, cycle: DaylightCycleState): void {
     root.add(
       new THREE.Mesh(
         geometry,
-        new THREE.MeshBasicMaterial({
-          color: band.colorA,
-          transparent: true,
-          opacity: band.intensity * 0.24,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-          depthTest: true,
-          blending: THREE.AdditiveBlending,
-        })
+        getOrCreateMapValue(
+          meshMaterialCache,
+          `${band.colorA}|${(band.intensity * 0.24).toFixed(3)}|outer`,
+          () =>
+            new THREE.MeshBasicMaterial({
+              color: band.colorA,
+              transparent: true,
+              opacity: band.intensity * 0.24,
+              side: THREE.DoubleSide,
+              depthWrite: false,
+              depthTest: true,
+              blending: THREE.AdditiveBlending,
+            })
+        )
       )
     );
 
@@ -6946,15 +6982,20 @@ function syncAuroraBands(root: THREE.Group, cycle: DaylightCycleState): void {
     root.add(
       new THREE.Mesh(
         innerRibbonGeometry,
-        new THREE.MeshBasicMaterial({
-          color: band.colorB,
-          transparent: true,
-          opacity: band.intensity * 0.18,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-          depthTest: true,
-          blending: THREE.AdditiveBlending,
-        })
+        getOrCreateMapValue(
+          meshMaterialCache,
+          `${band.colorB}|${(band.intensity * 0.18).toFixed(3)}|inner`,
+          () =>
+            new THREE.MeshBasicMaterial({
+              color: band.colorB,
+              transparent: true,
+              opacity: band.intensity * 0.18,
+              side: THREE.DoubleSide,
+              depthWrite: false,
+              depthTest: true,
+              blending: THREE.AdditiveBlending,
+            })
+        )
       )
     );
 
@@ -6963,12 +7004,17 @@ function syncAuroraBands(root: THREE.Group, cycle: DaylightCycleState): void {
         'position',
         new THREE.Float32BufferAttribute(crestPositions, 3)
       ),
-      new THREE.LineBasicMaterial({
-        color: band.colorB,
-        transparent: true,
-        opacity: band.intensity * 0.4,
-        depthTest: true,
-      })
+      getOrCreateMapValue(
+        lineMaterialCache,
+        `${band.colorB}|${(band.intensity * 0.4).toFixed(3)}|crest`,
+        () =>
+          new THREE.LineBasicMaterial({
+            color: band.colorB,
+            transparent: true,
+            opacity: band.intensity * 0.4,
+            depthTest: true,
+          })
+      )
     );
     crest.visible = crest.material.opacity > 0.015;
     root.add(crest);
@@ -7010,12 +7056,17 @@ function syncAuroraBands(root: THREE.Group, cycle: DaylightCycleState): void {
       );
       const rib = new THREE.Line(
         ribGeometry,
-        new THREE.LineBasicMaterial({
-          color: ribIndex % 2 === 0 ? band.colorA : band.colorB,
-          transparent: true,
-          opacity: band.intensity * 0.14,
-          depthTest: true,
-        })
+        getOrCreateMapValue(
+          lineMaterialCache,
+          `${ribIndex % 2 === 0 ? band.colorA : band.colorB}|${(band.intensity * 0.14).toFixed(3)}|rib`,
+          () =>
+            new THREE.LineBasicMaterial({
+              color: ribIndex % 2 === 0 ? band.colorA : band.colorB,
+              transparent: true,
+              opacity: band.intensity * 0.14,
+              depthTest: true,
+            })
+        )
       );
       rib.visible = rib.material.opacity > 0.015;
       root.add(rib);

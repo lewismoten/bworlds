@@ -50,7 +50,11 @@
       `SpriteMaterial` across the full 360-star field instead of allocating a
       unique material per star. That removes roughly 359 avoidable scene-unique
       material references from the persistent sky layer while keeping the
-      per-star brightness variation through sprite scale.
+      per-star brightness variation through sprite scale, and the
+      constellation, aurora, and celestial-event sky layers now also reuse
+      shared line, sprite, and additive-ribbon materials by compatible
+      color/opacity buckets instead of allocating a fresh material per visible
+      star, connection, ribbon, rib, or comet tail.
 - [ ] Report material cache hit and miss counts.
 - [ ] Fail tests when material counts regress sharply.
 
