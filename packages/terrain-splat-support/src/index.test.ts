@@ -889,6 +889,8 @@ describe('terrain splat support', () => {
         signals: {
           moisture: 0.85,
           elevation: 0.33,
+          temperature: 0.22,
+          season: 'winter',
         },
       },
       kindCatalog
@@ -902,6 +904,8 @@ describe('terrain splat support', () => {
         signals: {
           moisture: 0.85,
           elevation: 0.33,
+          temperature: 0.22,
+          season: 'winter',
         },
       },
       kindCatalog
@@ -1141,6 +1145,62 @@ describe('terrain splat support', () => {
       },
       kindCatalog
     );
+    const winterForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 10,
+        y: 11,
+        kind: 'forest',
+        signals: {
+          moisture: 0.8,
+          temperature: 0.18,
+          season: 'winter',
+        },
+      },
+      kindCatalog
+    );
+    const summerForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 10,
+        y: 11,
+        kind: 'forest',
+        signals: {
+          moisture: 0.8,
+          temperature: 0.18,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const warmWinterPlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 12,
+        y: 13,
+        kind: 'plains',
+        signals: {
+          moisture: 0.76,
+          temperature: 0.6,
+          season: 'winter',
+        },
+      },
+      kindCatalog
+    );
+    const coldWinterPlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 12,
+        y: 13,
+        kind: 'plains',
+        signals: {
+          moisture: 0.76,
+          temperature: 0.2,
+          season: 'winter',
+        },
+      },
+      kindCatalog
+    );
 
     expect(snowyLowland.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['snow', 'soil'])
@@ -1156,6 +1216,18 @@ describe('terrain splat support', () => {
     );
     expect(dirtPath.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['dirt', 'gravel', 'soil'])
+    );
+    expect(winterForest.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['snow'])
+    );
+    expect(summerForest.entries.map((entry) => entry.layerId)).not.toEqual(
+      expect.arrayContaining(['snow'])
+    );
+    expect(coldWinterPlains.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['snow'])
+    );
+    expect(warmWinterPlains.entries.map((entry) => entry.layerId)).not.toEqual(
+      expect.arrayContaining(['snow'])
     );
   });
 
@@ -1333,6 +1405,45 @@ describe('terrain splat support', () => {
       expect.arrayContaining([
         'Terrain splat kind "plains" references unknown base layer "soil".',
         'Terrain splat kind "plains" references unknown blend layer "leaf".',
+      ])
+    );
+  });
+
+  it('rejects invalid temperature and season conditions on terrain kinds', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    expect(
+      validateTerrainKindSplatDefinition(
+        {
+          kind: 'plains',
+          baseLayerIds: ['grass'],
+          blends: [
+            {
+              layerId: 'grass',
+              weight: 0.2,
+              when: {
+                minTemperature: 1.2,
+                seasons: ['monsoon' as 'winter'],
+              },
+            },
+          ],
+        },
+        layerCatalog
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        'Terrain splat kind "plains" must keep minTemperature within 0..1.',
+        'Terrain splat kind "plains" seasons must only contain spring, summer, autumn, or winter.',
       ])
     );
   });

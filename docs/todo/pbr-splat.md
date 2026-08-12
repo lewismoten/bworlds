@@ -90,12 +90,12 @@
 
 - [ ] Allow biome to influence splat material weights.
 - [x] Allow moisture to influence splat material weights.
-- [ ] Allow temperature to influence splat material weights.
-- [ ] Allow season to influence splat material weights.
+- [x] Allow temperature to influence splat material weights.
+- [x] Allow season to influence splat material weights.
 - [x] Allow roads to override local splat weights.
 - [ ] Allow POIs to influence nearby ground appearance.
 - [ ] Allow settlement footprints to alter ground layers.
-- [ ] Keep world influences deterministic.
+- [x] Keep world influences deterministic.
 
 ## Texture Variation
 
@@ -342,7 +342,10 @@ stability, chunk layer-usage analysis, bounded family variant selection,
 neighborhood shared-layer planning, stable terrain family resolution for the
 same seed, texture-array plan validation for aligned dimensions, formats, and
 memory estimates, plus deterministic UV rotation, mirroring, and tint
-variation resolution, plus world-space UV scale and seam continuity.
+variation resolution, plus world-space UV scale and seam continuity, plus
+deterministic temperature- and season-aware blend conditions so the shared
+overworld splat mapping can add cold winter snow cover to plains and forest
+ground without coupling climate-sensitive terrain blending to renderer code.
 
 # Roads and Paths as Terrain Splats
 

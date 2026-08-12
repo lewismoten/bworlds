@@ -78,15 +78,20 @@ export type PackedTerrainSplatSample = {
   weights: Uint8Array;
 };
 
+export type TerrainSplatSeason = 'spring' | 'summer' | 'autumn' | 'winter';
+
 export type TerrainKindSplatCondition = {
   minElevation?: number;
   maxElevation?: number;
   minMoisture?: number;
   maxMoisture?: number;
+  minTemperature?: number;
+  maxTemperature?: number;
   minRiverSignal?: number;
   maxRiverSignal?: number;
   minRoadSignal?: number;
   maxRoadSignal?: number;
+  seasons?: readonly TerrainSplatSeason[];
 };
 
 export type TerrainKindSplatBlendDefinition = {
@@ -112,7 +117,15 @@ export type ResolveTerrainKindSplatSampleInput = {
   x: number;
   y: number;
   kind: Kind;
-  signals?: Partial<OverworldSignals>;
+  signals?: Partial<OverworldSignals> & {
+    temperature?: number;
+    season?: TerrainSplatSeason;
+  };
+};
+
+type ResolvedTerrainKindSignals = OverworldSignals & {
+  temperature: number;
+  season: TerrainSplatSeason;
 };
 
 export type OverworldTerrainSplatLayerSet = {
@@ -711,6 +724,14 @@ export function createOverworldTerrainSplatDefinitions(
             minMoisture: 0.72,
           },
         },
+        {
+          layerId: layers.snowLayerId,
+          weight: 0.2,
+          when: {
+            maxTemperature: 0.35,
+            seasons: ['winter'],
+          },
+        },
       ],
     },
     {
@@ -730,6 +751,14 @@ export function createOverworldTerrainSplatDefinitions(
           weight: 0.08,
           when: {
             minMoisture: 0.62,
+          },
+        },
+        {
+          layerId: layers.snowLayerId,
+          weight: 0.16,
+          when: {
+            maxTemperature: 0.3,
+            seasons: ['winter'],
           },
         },
       ],
@@ -1345,6 +1374,8 @@ function validateTerrainKindSplatCondition(
     ['maxElevation', condition.maxElevation],
     ['minMoisture', condition.minMoisture],
     ['maxMoisture', condition.maxMoisture],
+    ['minTemperature', condition.minTemperature],
+    ['maxTemperature', condition.maxTemperature],
     ['minRiverSignal', condition.minRiverSignal],
     ['maxRiverSignal', condition.maxRiverSignal],
     ['minRoadSignal', condition.minRoadSignal],
@@ -1362,12 +1393,24 @@ function validateTerrainKindSplatCondition(
     }
   }
 
+  if (condition.seasons !== undefined) {
+    if (!Array.isArray(condition.seasons) || condition.seasons.length === 0) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(kind)} must omit seasons or define a non-empty array of valid seasons.`
+      );
+    } else if (condition.seasons.some((season) => !isTerrainSplatSeason(season))) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(kind)} seasons must only contain spring, summer, autumn, or winter.`
+      );
+    }
+  }
+
   return errors;
 }
 
 function matchesTerrainKindSplatCondition(
   condition: TerrainKindSplatCondition | undefined,
-  signals: OverworldSignals
+  signals: ResolvedTerrainKindSignals
 ): boolean {
   if (!condition) {
     return true;
@@ -1378,22 +1421,32 @@ function matchesTerrainKindSplatCondition(
     matchesMaximum(condition.maxElevation, signals.elevation) &&
     matchesMinimum(condition.minMoisture, signals.moisture) &&
     matchesMaximum(condition.maxMoisture, signals.moisture) &&
+    matchesMinimum(condition.minTemperature, signals.temperature) &&
+    matchesMaximum(condition.maxTemperature, signals.temperature) &&
     matchesMinimum(condition.minRiverSignal, signals.riverSignal) &&
     matchesMaximum(condition.maxRiverSignal, signals.riverSignal) &&
     matchesMinimum(condition.minRoadSignal, signals.roadSignal) &&
-    matchesMaximum(condition.maxRoadSignal, signals.roadSignal)
+    matchesMaximum(condition.maxRoadSignal, signals.roadSignal) &&
+    matchesSeason(condition.seasons, signals.season)
   );
 }
 
 function resolveTerrainKindSignals(
-  signals: Partial<OverworldSignals> | undefined
-): OverworldSignals {
+  signals:
+    | (Partial<OverworldSignals> & {
+        temperature?: number;
+        season?: TerrainSplatSeason;
+      })
+    | undefined
+): ResolvedTerrainKindSignals {
   return {
     continent: clampWeight(signals?.continent ?? 0),
     elevation: clampWeight(signals?.elevation ?? 0),
     moisture: clampWeight(signals?.moisture ?? 0),
+    temperature: clampWeight(signals?.temperature ?? 0.5),
     riverSignal: clampWeight(signals?.riverSignal ?? 0),
     roadSignal: clampWeight(signals?.roadSignal ?? 0),
+    season: isTerrainSplatSeason(signals?.season) ? signals.season : 'summer',
   };
 }
 
@@ -1403,6 +1456,22 @@ function matchesMinimum(minimum: number | undefined, value: number): boolean {
 
 function matchesMaximum(maximum: number | undefined, value: number): boolean {
   return maximum === undefined || value <= maximum;
+}
+
+function matchesSeason(
+  seasons: readonly TerrainSplatSeason[] | undefined,
+  season: TerrainSplatSeason
+): boolean {
+  return seasons === undefined || seasons.includes(season);
+}
+
+function isTerrainSplatSeason(value: unknown): value is TerrainSplatSeason {
+  return (
+    value === 'spring' ||
+    value === 'summer' ||
+    value === 'autumn' ||
+    value === 'winter'
+  );
 }
 
 function hashString(value: string): number {
