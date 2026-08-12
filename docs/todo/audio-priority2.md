@@ -47,7 +47,11 @@
       legato, while detached short notes are clipped into clearer staccato
       gaps with faster attack/release envelopes, and the lead-phrase tests now
       verify both cases.
-- [ ] Add accents for structurally important notes.
+- [x] Add accents for structurally important notes.
+      Progress: section-level note shaping now boosts velocity for structural
+      lead, bass, and harmony notes in cadence measures and around the
+      variation climax, and the variation tests now verify those notes land
+      louder than neutral interior notes.
 - [ ] Add sustained-note swells for strings and pads.
 - [ ] Change filter brightness with note velocity.
 - [ ] Change filter brightness across a phrase.

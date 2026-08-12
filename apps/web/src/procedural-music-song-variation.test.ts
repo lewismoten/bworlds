@@ -76,6 +76,64 @@ describe('procedural music song variation', () => {
     expect(transformed?.durationMs).toBeGreaterThan(BASE_NOTE.durationMs);
   });
 
+  it('accents lead notes near the variation climax more than early variation notes', () => {
+    const earlyVariation = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        family: 'flute',
+        startMs: 750,
+      },
+      createSection('variation'),
+      2,
+      0
+    );
+    const climaxVariation = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        family: 'flute',
+        startMs: 12_000,
+      },
+      createSection('variation'),
+      2,
+      0
+    );
+
+    expect(earlyVariation).not.toBeNull();
+    expect(climaxVariation).not.toBeNull();
+    expect(climaxVariation?.velocity ?? 0).toBeGreaterThan(
+      earlyVariation?.velocity ?? 0
+    );
+  });
+
+  it('accents cadence-position lead notes more than neutral interior notes', () => {
+    const neutralLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        family: 'vocals',
+        startMs: 2_500,
+      },
+      createSection('return'),
+      3,
+      0
+    );
+    const cadenceLead = transformSongSectionNote(
+      {
+        ...BASE_NOTE_WITH_VELOCITY,
+        family: 'vocals',
+        startMs: 22_500,
+      },
+      createSection('return'),
+      7,
+      0
+    );
+
+    expect(neutralLead).not.toBeNull();
+    expect(cadenceLead).not.toBeNull();
+    expect(cadenceLead?.velocity ?? 0).toBeGreaterThan(
+      neutralLead?.velocity ?? 0
+    );
+  });
+
   it('shortens variation lead notes as the section builds toward its climax', () => {
     const earlyVariation = transformSongSectionNote(
       { ...BASE_NOTE, startMs: 750 },
@@ -688,10 +746,10 @@ describe('procedural music song variation', () => {
     expect(secondLead).not.toBeNull();
     expect(firstHarmony).not.toBeNull();
     expect(secondHarmony).not.toBeNull();
-    expect(firstLead?.velocity).toBe(83);
-    expect(secondLead?.velocity).toBe(78);
-    expect(firstHarmony?.velocity).toBe(79);
-    expect(secondHarmony?.velocity).toBe(82);
+    expect(firstLead?.velocity ?? 0).toBeGreaterThan(secondLead?.velocity ?? 0);
+    expect(firstHarmony?.velocity ?? 0).toBeLessThan(
+      secondHarmony?.velocity ?? 0
+    );
   });
 
   it('assigns deterministic lead rhythm identities to each named song section', () => {

@@ -111,6 +111,15 @@ export function transformSongSectionNote(
     phrasePosition: sectionContext.phrasePosition,
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
+  const structuralAccentVelocityMultiplier =
+    resolveStructuralAccentVelocityMultiplier({
+      role: note.role,
+      sectionId: section.id,
+      measureIndex: sectionContext.measureIndex,
+      measureCount: sectionContext.measureCount,
+      phrasePosition: sectionContext.phrasePosition,
+      preserveRepairPitch: sectionContext.isGeneratedRepairNote,
+    });
   const phraseBoundaryArticulation = resolvePhraseBoundaryArticulation({
     role: note.role,
     phrasePosition: sectionContext.phrasePosition,
@@ -128,7 +137,9 @@ export function transformSongSectionNote(
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
         velocityMultiplier:
-          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
+          layerTreatment.velocityMultiplier *
+          roleVelocityMultiplier *
+          structuralAccentVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -148,6 +159,8 @@ export function transformSongSectionNote(
     case 'a-prime':
       return transformAprimeSectionNote(
         note,
+        sectionContext.measureIndex,
+        sectionContext.measureCount,
         sectionContext.phrasePosition,
         sectionContext.isGeneratedRepairNote,
         layerTreatment,
@@ -158,7 +171,9 @@ export function transformSongSectionNote(
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
         velocityMultiplier:
-          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
+          layerTreatment.velocityMultiplier *
+          roleVelocityMultiplier *
+          structuralAccentVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -189,7 +204,9 @@ export function transformSongSectionNote(
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
         velocityMultiplier:
-          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
+          layerTreatment.velocityMultiplier *
+          roleVelocityMultiplier *
+          structuralAccentVelocityMultiplier,
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
@@ -208,7 +225,9 @@ export function transformSongSectionNote(
       return scaleSongNote(note, {
         volumeMultiplier: layerTreatment.volumeMultiplier,
         velocityMultiplier:
-          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
+          layerTreatment.velocityMultiplier *
+          roleVelocityMultiplier *
+          structuralAccentVelocityMultiplier,
         durationMultiplier:
           layerTreatment.durationMultiplier *
           harmonySustainMultiplier *
@@ -229,7 +248,9 @@ export function transformSongSectionNote(
     default:
       return scaleSongNote(note, {
         velocityMultiplier:
-          layerTreatment.velocityMultiplier * roleVelocityMultiplier,
+          layerTreatment.velocityMultiplier *
+          roleVelocityMultiplier *
+          structuralAccentVelocityMultiplier,
         durationMultiplier:
           harmonySustainMultiplier *
           (leadRhythmOptions?.durationMultiplier ?? 1),
@@ -249,6 +270,8 @@ export function transformSongSectionNote(
 
 function transformAprimeSectionNote(
   note: ProceduralMusicNote,
+  measureIndex: number,
+  measureCount: number,
   phrasePosition: number,
   preserveRepairPitch: boolean,
   layerTreatment: ReturnType<typeof resolveSongSectionLayerTreatment>,
@@ -279,6 +302,14 @@ function transformAprimeSectionNote(
       resolveRoleVelocityMultiplier({
         role: note.role,
         sectionId: 'a-prime',
+        phrasePosition,
+        preserveRepairPitch,
+      }) *
+      resolveStructuralAccentVelocityMultiplier({
+        role: note.role,
+        sectionId: 'a-prime',
+        measureIndex,
+        measureCount,
         phrasePosition,
         preserveRepairPitch,
       }),
@@ -354,6 +385,14 @@ function transformVariationSectionNote(
       resolveRoleVelocityMultiplier({
         role: note.role,
         sectionId: 'variation',
+        phrasePosition,
+        preserveRepairPitch,
+      }) *
+      resolveStructuralAccentVelocityMultiplier({
+        role: note.role,
+        sectionId: 'variation',
+        measureIndex,
+        measureCount,
         phrasePosition,
         preserveRepairPitch,
       }),
@@ -524,6 +563,55 @@ function resolveRoleVelocityMultiplier(options: {
   ).velocityMultiplier;
   const patternIndex = options.phrasePosition % pattern.length;
   return (pattern[patternIndex] ?? 1) * (sectionPattern[patternIndex] ?? 1);
+}
+
+function resolveStructuralAccentVelocityMultiplier(options: {
+  role: ProceduralMusicNote['role'];
+  sectionId: ProceduralMusicSongSection['id'];
+  measureIndex: number;
+  measureCount: number;
+  phrasePosition: number;
+  preserveRepairPitch: boolean;
+}): number {
+  if (options.role === 'percussion') {
+    return 1;
+  }
+  if (options.preserveRepairPitch && options.role === 'lead') {
+    return 1;
+  }
+
+  const lastMeasureIndex = Math.max(0, options.measureCount - 1);
+  const midpointMeasureIndex = Math.floor(lastMeasureIndex * 0.5);
+  const cadenceMeasure =
+    options.measureIndex === midpointMeasureIndex ||
+    options.measureIndex === lastMeasureIndex;
+  const phraseAccent =
+    options.phrasePosition === 0 || options.phrasePosition === 7;
+  const variationClimaxMeasure =
+    options.sectionId === 'variation' &&
+    Math.abs(options.measureIndex - midpointMeasureIndex) <= 1;
+
+  if (options.role === 'lead') {
+    if (variationClimaxMeasure) {
+      return 1.12;
+    }
+    if (cadenceMeasure && phraseAccent) {
+      return 1.1;
+    }
+    if (cadenceMeasure) {
+      return 1.06;
+    }
+    if (phraseAccent) {
+      return 1.04;
+    }
+    return 1;
+  }
+
+  if (options.role === 'bass') {
+    return cadenceMeasure ? 1.06 : phraseAccent ? 1.03 : 1;
+  }
+
+  return cadenceMeasure ? 1.04 : phraseAccent ? 1.02 : 1;
 }
 
 function resolveSectionRoleIdentity(
