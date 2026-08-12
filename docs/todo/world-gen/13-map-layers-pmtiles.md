@@ -26,7 +26,7 @@ Current support:
 
 ## PMTiles
 
-- [ ] Create a PMTiles export plugin.
+- [x] Create a PMTiles export plugin.
 - [ ] Generate vector features from world data on demand.
 - [ ] Use coarse features at low zoom levels.
 - [ ] Reveal finer features as zoom increases.
@@ -34,6 +34,16 @@ Current support:
 - [ ] Keep major rivers visible at low zoom.
 - [ ] Reveal local roads and small rivers at higher zoom.
 - [ ] Cache generated tiles by world revision.
+
+- `@bworlds/map-support` now exposes a shared `PmtilesExportPlugin`
+  contract plus `createPmtilesExportPlugin(...)`, so later map export work
+  can normalize plugin ids and per-tile vector feature requests before
+  adding any storage- or renderer-specific PMTiles logic.
+- `createPmtilesExportRequest(...)` and `createPmtilesTileCoordinate(...)`
+  now give that export path one validated request shape around
+  `worldRevision`, `zoom/x/y`, and optional `layerIds`, so later on-demand
+  feature generation and tile caching can build on one deterministic
+  request model.
 
 ## Physical Layers
 

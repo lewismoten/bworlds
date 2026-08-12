@@ -14,6 +14,7 @@ import type {
 } from '@bworlds/plugin-api';
 export type * from './map-projections.ts';
 export type * from './map-features.ts';
+export type * from './map-pmtiles.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
 export {
@@ -24,6 +25,11 @@ export {
   DEFAULT_MAP_FEATURE_MIN_ZOOM,
   isMapFeatureVisibleAtZoom,
 } from './map-features.ts';
+export {
+  createPmtilesExportPlugin,
+  createPmtilesExportRequest,
+  createPmtilesTileCoordinate,
+} from './map-pmtiles.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,
   AZIMUTHAL_CENTER_LONGITUDE,
