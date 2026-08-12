@@ -110,11 +110,11 @@
 
 ## UV Mapping
 
-- [ ] Use world-space UVs where practical.
-- [ ] Keep UV scale consistent across chunk boundaries.
-- [ ] Prevent texture seams at chunk borders.
+- [x] Use world-space UVs where practical.
+- [x] Keep UV scale consistent across chunk boundaries.
+- [x] Prevent texture seams at chunk borders.
 - [ ] Avoid visible repetition at logical tile boundaries.
-- [ ] Support per-layer texture scale.
+- [x] Support per-layer texture scale.
 - [x] Support per-layer UV rotation.
 - [x] Keep UV transforms deterministic.
 
@@ -281,6 +281,10 @@
   rotation and axis mirroring without duplicating textures. The support
   package now validates those options and resolves one stable transform from
   seed, world position, and layer ID for later shared-material integration.
+- Added world-space UV sampling support in
+  `@bworlds/terrain-splat-support` so layer texture scale, rotation, and
+  mirroring can project border-safe repeated UV samples directly from world
+  coordinates before renderer integration.
 - Added deterministic tint-variation support in
   `@bworlds/terrain-splat-support` so terrain layers can resolve small color
   drift from seed, world position, layer ID, and terrain kind without adding
@@ -331,7 +335,7 @@ stability, chunk layer-usage analysis, bounded family variant selection,
 neighborhood shared-layer planning, stable terrain family resolution for the
 same seed, texture-array plan validation for aligned dimensions, formats, and
 memory estimates, plus deterministic UV rotation, mirroring, and tint
-variation resolution.
+variation resolution, plus world-space UV scale and seam continuity.
 
 # Roads and Paths as Terrain Splats
 

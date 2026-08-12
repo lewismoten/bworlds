@@ -40,6 +40,12 @@ export type TerrainMaterialLayerUvTransform = {
   mirrorV: boolean;
 };
 
+export type TerrainMaterialLayerWorldUvSample =
+  TerrainMaterialLayerUvTransform & {
+    u: number;
+    v: number;
+  };
+
 export type TerrainMaterialLayerTintTransform = {
   defaultTint: string;
   resolvedTint: string;
@@ -1050,6 +1056,40 @@ export function resolveTerrainMaterialLayerUvTransform(
   };
 }
 
+export function resolveTerrainMaterialLayerWorldUvSample(
+  layer: TerrainMaterialLayerDefinition,
+  input: Pick<ResolveTerrainKindSplatSampleInput, 'seed' | 'x' | 'y' | 'kind'>
+): TerrainMaterialLayerWorldUvSample {
+  const transform = resolveTerrainMaterialLayerUvTransform(layer, input);
+  let u = wrapUnitCoordinate(input.x / transform.textureScale);
+  let v = wrapUnitCoordinate(input.y / transform.textureScale);
+
+  if (transform.mirrorU) {
+    u = wrapUnitCoordinate(1 - u);
+  }
+  if (transform.mirrorV) {
+    v = wrapUnitCoordinate(1 - v);
+  }
+
+  switch (transform.rotationQuarterTurns) {
+    case 1:
+      [u, v] = [wrapUnitCoordinate(v), wrapUnitCoordinate(1 - u)];
+      break;
+    case 2:
+      [u, v] = [wrapUnitCoordinate(1 - u), wrapUnitCoordinate(1 - v)];
+      break;
+    case 3:
+      [u, v] = [wrapUnitCoordinate(1 - v), wrapUnitCoordinate(u)];
+      break;
+  }
+
+  return {
+    ...transform,
+    u,
+    v,
+  };
+}
+
 export function resolveTerrainMaterialLayerTintTransform(
   layer: TerrainMaterialLayerDefinition,
   input: Pick<ResolveTerrainKindSplatSampleInput, 'seed' | 'x' | 'y' | 'kind'>
@@ -1256,6 +1296,11 @@ function formatHexColor(rgb: {
 
 function clampColorChannel(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function wrapUnitCoordinate(value: number): number {
+  const wrapped = value - Math.floor(value);
+  return wrapped >= 1 ? 0 : wrapped;
 }
 
 function quantizeTintVariationCoordinate(

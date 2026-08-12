@@ -28,6 +28,8 @@ Current responsibilities:
 - resolve deterministic per-layer tint variation metadata without new materials
 - support low-frequency tint fields so nearby terrain can share broader color
   drift without new materials
+- project deterministic world-space UV samples so future terrain chunks can
+  share border-safe sampling rules without renderer coupling
 
 Why this comes first:
 

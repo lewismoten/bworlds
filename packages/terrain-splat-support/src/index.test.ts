@@ -8,6 +8,7 @@ import {
   packTerrainSplatSample,
   PACKED_TERRAIN_SPLAT_WEIGHT_MAX,
   resolveTerrainMaterialLayerTintTransform,
+  resolveTerrainMaterialLayerWorldUvSample,
   resolveTerrainMaterialLayerUvTransform,
   resolveTerrainKindSplatSample,
   unpackTerrainSplatSample,
@@ -278,6 +279,98 @@ describe('terrain splat support', () => {
       mirrorU: false,
       mirrorV: false,
     });
+  });
+
+  it('projects deterministic world-space UV samples using per-layer texture scale', () => {
+    const sample = resolveTerrainMaterialLayerWorldUvSample(
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 4,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        seed: 'pbr-splat-seed',
+        x: 10,
+        y: 6,
+        kind: 'plains',
+      }
+    );
+
+    expect(sample.textureScale).toBe(4);
+    expect(sample.u).toBeCloseTo(0.5, 6);
+    expect(sample.v).toBeCloseTo(0.5, 6);
+  });
+
+  it('keeps world-space UV sampling continuous across repeated terrain boundaries', () => {
+    const layer = {
+      id: 'soil',
+      baseColorTextureId: 'soil/base',
+      normalTextureId: 'soil/normal',
+      roughnessTextureId: 'soil/roughness',
+      textureScale: 8,
+      defaultTint: '#7b5a3d',
+      defaultRoughness: 0.8,
+    };
+
+    const first = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: 2,
+      y: 14,
+      kind: 'dirt',
+    });
+    const repeated = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: 10,
+      y: 22,
+      kind: 'dirt',
+    });
+    const negative = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: -6,
+      y: 6,
+      kind: 'dirt',
+    });
+
+    expect(repeated.u).toBeCloseTo(first.u, 6);
+    expect(repeated.v).toBeCloseTo(first.v, 6);
+    expect(negative.u).toBeCloseTo(first.u, 6);
+    expect(negative.v).toBeCloseTo(first.v, 6);
+  });
+
+  it('applies deterministic rotation and mirroring to world-space UV samples', () => {
+    const layer = {
+      id: 'rock',
+      baseColorTextureId: 'rock/base',
+      normalTextureId: 'rock/normal',
+      roughnessTextureId: 'rock/roughness',
+      textureScale: 4,
+      defaultTint: '#7f7f7f',
+      defaultRoughness: 0.7,
+      uvRotationQuarterTurns: [1] as const,
+      allowMirrorU: true,
+      allowMirrorV: true,
+    };
+    const input = {
+      seed: 'pbr-splat-seed',
+      x: 5,
+      y: 10,
+      kind: 'rocky' as const,
+    };
+
+    const transform = resolveTerrainMaterialLayerUvTransform(layer, input);
+    const sample = resolveTerrainMaterialLayerWorldUvSample(layer, input);
+
+    expect(sample.rotationQuarterTurns).toBe(1);
+    expect(sample.mirrorU).toBe(transform.mirrorU);
+    expect(sample.mirrorV).toBe(transform.mirrorV);
+    expect(sample.u).toBeGreaterThanOrEqual(0);
+    expect(sample.u).toBeLessThan(1);
+    expect(sample.v).toBeGreaterThanOrEqual(0);
+    expect(sample.v).toBeLessThan(1);
   });
 
   it('normalizes, clamps, trims, and stabilizes terrain splat weights', () => {
