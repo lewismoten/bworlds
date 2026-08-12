@@ -68,8 +68,8 @@ export type RenderBudgetCaps = {
     maximum: number;
   };
   pendingBuildTiles: {
-    soft: number;
-    hard: number;
+    preferred: number;
+    minimum: number;
   };
   drawCalls: {
     soft: number;
@@ -628,12 +628,12 @@ export function getRenderBudgetCaps(
     pendingBuildTiles:
       state.targetFps === 30
         ? {
-            soft: 4,
-            hard: 2,
+            preferred: 4,
+            minimum: 2,
           }
         : {
-            soft: 8,
-            hard: 4,
+            preferred: 8,
+            minimum: 4,
           },
     drawCalls: {
       soft: SOFT_DRAW_CALL_LIMIT,
@@ -978,8 +978,8 @@ export function createRenderBudgetBuilder(): (
       budgetMs: undefined,
       maxTiles: undefined,
       tileLimits: {
-        soft: 8,
-        hard: 4,
+        preferred: 8,
+        minimum: 4,
       },
     },
   };
@@ -1014,8 +1014,8 @@ export function createRenderBudgetBuilder(): (
     budget.frame.limits.hard = caps.frameMs.hard;
     budget.pendingBuild.budgetMs = pendingBuildBudgetMs;
     budget.pendingBuild.maxTiles = maxPendingBuildTiles;
-    budget.pendingBuild.tileLimits.soft = caps.pendingBuildTiles.soft;
-    budget.pendingBuild.tileLimits.hard = caps.pendingBuildTiles.hard;
+    budget.pendingBuild.tileLimits.preferred = caps.pendingBuildTiles.preferred;
+    budget.pendingBuild.tileLimits.minimum = caps.pendingBuildTiles.minimum;
     return budget;
   };
 }

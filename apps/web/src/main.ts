@@ -2443,8 +2443,8 @@ function collectCurrentDebugSnapshot(
           ),
           getDecreasingLimitStatus(
             pendingWorldBuildBudget.maxPendingBuildTiles,
-            renderBudgetCaps.pendingBuildTiles.soft,
-            renderBudgetCaps.pendingBuildTiles.hard
+            renderBudgetCaps.pendingBuildTiles.preferred,
+            renderBudgetCaps.pendingBuildTiles.minimum
           ),
           getIncreasingLimitStatus(
             renderBudgetState.estimatedGpuMemoryBytes,

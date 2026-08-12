@@ -616,6 +616,11 @@ export interface RenderBudgetThreshold {
   hard: number;
 }
 
+export interface DecreasingRenderBudgetThreshold {
+  preferred: number;
+  minimum: number;
+}
+
 export interface RenderBudget {
   quality: RenderBudgetQualityLevel;
   detailLevel: RenderBudgetDetailLevel;
@@ -631,7 +636,7 @@ export interface RenderBudget {
   pendingBuild: {
     budgetMs?: number;
     maxTiles?: number;
-    tileLimits?: RenderBudgetThreshold;
+    tileLimits?: DecreasingRenderBudgetThreshold;
   };
 }
 

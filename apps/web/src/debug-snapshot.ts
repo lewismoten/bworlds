@@ -99,8 +99,8 @@ type DebugSnapshotExportOptions = {
         maximum: number;
       };
       pendingBuildTiles: {
-        soft: number;
-        hard: number;
+        preferred: number;
+        minimum: number;
       };
       drawCalls: {
         soft: number;
@@ -365,8 +365,8 @@ export type DebugSnapshotExport = {
       };
       pendingBuildTiles: {
         current: number;
-        soft: number;
-        hard: number;
+        preferred: number;
+        minimum: number;
         status: 'ok' | 'warning' | 'critical';
       };
       estimatedGpuMemoryBytes: {
@@ -786,8 +786,8 @@ function buildResourceBudgetSnapshot(
   );
   assertDecreasingMetricThresholdOrder(
     'pendingBuildTiles',
-    options.performanceBudget.caps.pendingBuildTiles.soft,
-    options.performanceBudget.caps.pendingBuildTiles.hard
+    options.performanceBudget.caps.pendingBuildTiles.preferred,
+    options.performanceBudget.caps.pendingBuildTiles.minimum
   );
   assertIncreasingMetricThresholdOrder(
     'estimatedGpuMemoryBytes',
@@ -822,8 +822,8 @@ function buildResourceBudgetSnapshot(
   const pendingBuildTilesCurrentUtilizationPct =
     getDecreasingMetricUtilizationPct(
       options.performanceBudget.maxPendingBuildTiles,
-      options.performanceBudget.caps.pendingBuildTiles.soft,
-      options.performanceBudget.caps.pendingBuildTiles.hard
+      options.performanceBudget.caps.pendingBuildTiles.preferred,
+      options.performanceBudget.caps.pendingBuildTiles.minimum
     );
   const currentUtilizationPct = Math.max(
     frameCurrentUtilizationPct,
@@ -895,12 +895,12 @@ function buildResourceBudgetSnapshot(
       },
       pendingBuildTiles: {
         current: options.performanceBudget.maxPendingBuildTiles,
-        soft: options.performanceBudget.caps.pendingBuildTiles.soft,
-        hard: options.performanceBudget.caps.pendingBuildTiles.hard,
+        preferred: options.performanceBudget.caps.pendingBuildTiles.preferred,
+        minimum: options.performanceBudget.caps.pendingBuildTiles.minimum,
         status: getDecreasingMetricStatus(
           options.performanceBudget.maxPendingBuildTiles,
-          options.performanceBudget.caps.pendingBuildTiles.soft,
-          options.performanceBudget.caps.pendingBuildTiles.hard
+          options.performanceBudget.caps.pendingBuildTiles.preferred,
+          options.performanceBudget.caps.pendingBuildTiles.minimum
         ),
       },
       estimatedGpuMemoryBytes: {

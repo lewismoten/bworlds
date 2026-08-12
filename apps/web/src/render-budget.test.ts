@@ -336,8 +336,8 @@ describe('render budget', () => {
         maximum: 3.5,
       },
       pendingBuildTiles: {
-        soft: 8,
-        hard: 4,
+        preferred: 8,
+        minimum: 4,
       },
       drawCalls: {
         soft: 900,
@@ -405,8 +405,8 @@ describe('render budget', () => {
         maximum: 2.25,
       },
       pendingBuildTiles: {
-        soft: 4,
-        hard: 2,
+        preferred: 4,
+        minimum: 2,
       },
       chunkObjects: {
         soft: 140,
@@ -1750,8 +1750,8 @@ describe('render budget', () => {
         budgetMs: 1.75,
         maxTiles: 3,
         tileLimits: {
-          soft: 4,
-          hard: 2,
+          preferred: 4,
+          minimum: 2,
         },
       },
     });
@@ -1812,8 +1812,8 @@ describe('render budget', () => {
         budgetMs: 2.2,
         maxTiles: 8,
         tileLimits: {
-          soft: 8,
-          hard: 4,
+          preferred: 8,
+          minimum: 4,
         },
       },
     });

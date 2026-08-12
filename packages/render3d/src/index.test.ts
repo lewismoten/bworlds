@@ -1710,8 +1710,8 @@ describe('render3d visibility helpers', () => {
             budgetMs: 1.75,
             maxTiles: 3,
             tileLimits: {
-              soft: 4,
-              hard: 2,
+              preferred: 4,
+              minimum: 2,
             },
           },
         },
@@ -1737,8 +1737,8 @@ describe('render3d visibility helpers', () => {
         budgetMs: 1.75,
         maxTiles: 3,
         tileLimits: {
-          soft: 4,
-          hard: 2,
+          preferred: 4,
+          minimum: 2,
         },
       },
     });

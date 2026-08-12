@@ -220,9 +220,22 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 
 ## Build Scheduler
 
-- [ ] Review the pending build tile hard limit of four.
-- [ ] Clarify why soft pending tiles is eight but hard is four.
-- [ ] Rename limits where lower values represent more pressure.
+- [x] Review the pending build tile hard limit of four.
+      Progress: the scheduler cap review confirmed that `4` is only the
+      minimum tile allowance for the healthy `60 FPS` path; the reduced
+      `30 FPS` path already tightens further to `2`, while healthy budgets keep
+      a preferred allowance of `8`.
+- [x] Clarify why soft pending tiles is eight but hard is four.
+      Progress: the pending-build tile caps now use decreasing-metric names
+      (`preferred` / `minimum`) instead of the misleading `soft` / `hard`
+      labels, which makes the `8 -> 4` and `4 -> 2` transitions explicit as
+      progressively tighter scheduler pressure states rather than ordinary
+      higher-is-worse caps.
+- [x] Rename limits where lower values represent more pressure.
+      Progress: the shared render-budget path now uses `preferred` /
+      `minimum` for pending-build tile caps in the plugin-facing render budget,
+      web debug snapshot/export payloads, and related tests, so lower
+      allowances no longer appear under inverted `soft` / `hard` names.
 - [x] Record peak pending tile count during the sample window.
       Progress: `render3d` already records recent pending-queue sizes and
       surfaces the sample-window peak through the live web debug snapshot and
