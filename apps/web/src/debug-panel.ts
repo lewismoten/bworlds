@@ -932,8 +932,7 @@ export function getSchedulerStarvationWarnings(
   }
 
   const label =
-    snapshot.schedulerStarvationTopPluginLabel?.trim() ||
-    'unknown tile plugin';
+    snapshot.schedulerStarvationTopPluginLabel?.trim() || 'unknown tile plugin';
   return [
     snapshot.schedulerStarvationSummary?.trim() ||
       `Pending world-build scheduler is starving queued work (${starvationEventsPerSecond.toFixed(1)}/s, top plugin ${label}).`,

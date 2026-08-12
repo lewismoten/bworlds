@@ -404,6 +404,63 @@ describe('runtime performance tracking', () => {
     expect(issue).toBeNull();
   });
 
+  it('skips runtime issue reports when reduced quality only reflects a near-threshold visibility radius', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        fps: 60,
+        averageFps: 60,
+        frameMs: 16,
+        worstRecentFrameMs: 16,
+        targetFps: 60,
+        performanceTier: 'healthy',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters:
+          'Visibility radius reduced to 13.852092950833658, Weather visibility reduced draw distance',
+        reducedQualityDurationSec: 4.2,
+        latestQualityChangeLimiter:
+          'Visibility radius reduced to 13.852092950833658',
+        latestQualityChangeSummary:
+          'Target FPS 60 -> 60, visibility radius 18.0 -> 13.9, quality Full -> Reduced, limiters: Visibility radius reduced to 13.852092950833658',
+        visibilityRadius: 13.852092950833658,
+        weatherVisibilityRadiusCap: 13.852092950833658,
+        drawCalls: 200,
+        object3dCount: 1200,
+        visibleObjectCount: 400,
+        maxChunkDrawCalls: 40,
+        maxChunkObjectCount: 40,
+        maxChunkMeshes: 20,
+        maxChunkTriangleCount: 5000,
+        materialCount: 12,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 60,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 8,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxSummary: undefined,
+        fallbackBoxTopPluginLabel: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [],
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
   it('posts runtime issue reports to the dedicated vite endpoint', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
     const issue = buildRuntimePerformanceIssueReport({

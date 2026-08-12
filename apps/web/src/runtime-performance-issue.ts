@@ -16,6 +16,7 @@ export const RUNTIME_PERFORMANCE_ISSUE_API_PATH =
   '/api/runtime-performance-issues';
 
 const DEFAULT_RUNTIME_PERFORMANCE_ISSUE_REPORT_INTERVAL_MS = 5_000;
+const ACTIONABLE_VISIBILITY_RADIUS_EPSILON = 0.5;
 
 export type RuntimePerformanceIssueReport = {
   schemaVersion: 1;
@@ -194,6 +195,12 @@ function collectRuntimePerformanceIssueReasons(
   performanceSnapshot: RuntimePerformanceSnapshot
 ): string[] {
   const reasons = [...performanceSnapshot.violations];
+  const limiterDetails =
+    describeRuntimePerformanceLimiterDetails(debugSnapshot);
+  const hasReportableReducedQualityState = hasReportableRenderQualityReduction(
+    debugSnapshot,
+    limiterDetails
+  );
 
   if (debugSnapshot.performanceTier !== 'healthy') {
     reasons.push(
@@ -201,8 +208,9 @@ function collectRuntimePerformanceIssueReasons(
     );
   }
 
-  const reducedQualityDurationDetail =
-    describeReducedQualityDuration(debugSnapshot);
+  const reducedQualityDurationDetail = hasReportableReducedQualityState
+    ? describeReducedQualityDuration(debugSnapshot)
+    : null;
   if (reducedQualityDurationDetail) {
     reasons.push(reducedQualityDurationDetail);
   }
@@ -210,17 +218,16 @@ function collectRuntimePerformanceIssueReasons(
   const limiters = splitRuntimePerformanceLimiters(
     debugSnapshot.renderQualityLimiters
   );
-  const limiterDetails =
-    describeRuntimePerformanceLimiterDetails(debugSnapshot);
-  if (limiters.length > 0) {
+  if (limiters.length > 0 && hasReportableReducedQualityState) {
     reasons.push(
       hasActionableLimiterDetails(limiterDetails)
         ? `Graphics quality is constrained by ${limiterDetails.join('; ')}.`
         : `Graphics quality is constrained by ${limiters.join(', ')}.`
     );
   }
-  const visibilityRadiusDetail =
-    describeVisibilityRadiusReduction(debugSnapshot);
+  const visibilityRadiusDetail = hasReportableReducedQualityState
+    ? describeVisibilityRadiusReduction(debugSnapshot)
+    : null;
   if (visibilityRadiusDetail) {
     reasons.push(visibilityRadiusDetail);
   }
@@ -385,6 +392,11 @@ function describeRuntimePerformanceLimiter(
     case 'Target FPS reduced to 30':
       return 'Target FPS reduced to 30 from 60';
     case 'Weather visibility reduced draw distance':
+      if (
+        !hasActionableVisibilityRadiusReduction(debugSnapshot.visibilityRadius)
+      ) {
+        return null;
+      }
       return `Weather visibility capped draw distance at ${debugSnapshot.visibilityRadius} (full ${DEFAULT_VISIBILITY_RADIUS}, weather cap ${Math.floor(debugSnapshot.weatherVisibilityRadiusCap ?? debugSnapshot.visibilityRadius)})`;
     case 'Optional effects minimized after sustained frame stalls':
       return `Optional effects minimized after sustained frame stalls (${debugSnapshot.worstRecentFrameMs.toFixed(1)} ms worst recent frame time)`;
@@ -590,6 +602,13 @@ function describeRuntimePerformanceLimiter(
       );
     default: {
       if (limiter.startsWith('Visibility radius reduced to ')) {
+        if (
+          !hasActionableVisibilityRadiusReduction(
+            debugSnapshot.visibilityRadius
+          )
+        ) {
+          return null;
+        }
         return `Visibility radius reduced to ${debugSnapshot.visibilityRadius} (full ${DEFAULT_VISIBILITY_RADIUS}, reduced ${REDUCED_VISIBILITY_RADIUS}, minimum ${MIN_VISIBILITY_RADIUS})`;
       }
       return limiter;
@@ -604,6 +623,9 @@ function describeVisibilityRadiusReduction(
     return null;
   }
   if (debugSnapshot.visibilityRadius >= DEFAULT_VISIBILITY_RADIUS) {
+    return null;
+  }
+  if (!hasActionableVisibilityRadiusReduction(debugSnapshot.visibilityRadius)) {
     return null;
   }
 
@@ -702,6 +724,31 @@ function hasActionableLimiterDetails(details: string[]): boolean {
 
 function isActionableLimiterDetail(detail: string): boolean {
   return /(exceeded|reduced|capped|minimized)/.test(detail);
+}
+
+function hasReportableRenderQualityReduction(
+  debugSnapshot: DebugSnapshot,
+  limiterDetails: string[]
+): boolean {
+  return (
+    hasActionableVisibilityRadiusReduction(debugSnapshot.visibilityRadius) ||
+    limiterDetails.some(
+      (detail) =>
+        !detail.startsWith('Visibility radius reduced to ') &&
+        !detail.startsWith('Weather visibility capped draw distance at ') &&
+        isActionableLimiterDetail(detail)
+    )
+  );
+}
+
+function hasActionableVisibilityRadiusReduction(
+  visibilityRadius: number
+): boolean {
+  return (
+    visibilityRadius <= MIN_VISIBILITY_RADIUS ||
+    visibilityRadius <=
+      REDUCED_VISIBILITY_RADIUS - ACTIONABLE_VISIBILITY_RADIUS_EPSILON
+  );
 }
 
 function createRuntimePerformanceIssueHash(value: string): string {

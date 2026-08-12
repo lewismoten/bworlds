@@ -2474,16 +2474,19 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     entry?: PendingWorldBuildEntry
   ) {
     recordRecentMetric(renderChurnMetrics.schedulerStarvations, nowMs);
-    recordRecentLabeledCountMetric(renderChurnMetrics.schedulerStarvationLabels, {
-      nowMs,
-      count: 1,
-      label: entry
-        ? getTilePluginOwnerLabel(
-            registry,
-            state.getCurrentTile(entry.x, entry.y).kind
-          )
-        : 'unknown',
-    });
+    recordRecentLabeledCountMetric(
+      renderChurnMetrics.schedulerStarvationLabels,
+      {
+        nowMs,
+        count: 1,
+        label: entry
+          ? getTilePluginOwnerLabel(
+              registry,
+              state.getCurrentTile(entry.x, entry.y).kind
+            )
+          : 'unknown',
+      }
+    );
   }
 
   function syncVisibleWorld(state, chunkRadius = CHUNK_RADIUS) {
