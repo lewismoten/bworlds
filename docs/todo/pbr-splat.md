@@ -153,7 +153,7 @@
 
 ## LOD Support
 
-- [ ] Reduce geometry density for distant terrain LODs.
+- [x] Reduce geometry density for distant terrain LODs.
 - [x] Keep terrain layer identities stable across LODs.
 - [x] Preserve chunk edge splat weights across LODs.
 - [x] Preserve major terrain boundaries across LODs.
@@ -321,6 +321,10 @@
   bindings can choose WebGL2 texture-array mode from runtime capability limits
   instead of a loose boolean, and fall back deterministically when array size,
   layer-depth, or texture-unit limits are too small.
+- Extended `@bworlds/terrain-splat-support/height-field` so terrain geometry
+  plans can raise `lodStepMultiplier` and emit coarser distant meshes from the
+  same shared height field while preserving chunk bounds and rejecting invalid
+  spans that would break edge alignment.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and

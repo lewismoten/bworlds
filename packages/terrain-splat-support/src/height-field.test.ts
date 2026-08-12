@@ -58,6 +58,7 @@ describe('terrain splat height field', () => {
     expect(getTerrainHeightFieldSample(heightField, 2, 1)).toBeCloseTo(0.4);
     expect(geometryPlan.vertexCount).toBe(9);
     expect(geometryPlan.triangleCount).toBe(8);
+    expect(geometryPlan.lodStepMultiplier).toBe(1);
     expect(geometryPlan.positions).toHaveLength(27);
     expect(geometryPlan.uvs).toHaveLength(18);
     expect(geometryPlan.indices).toHaveLength(24);
@@ -66,6 +67,104 @@ describe('terrain splat height field', () => {
     );
     expect(geometryPlan.positions[4]).toBeCloseTo(0.1);
     expect(geometryPlan.positions[7]).toBeCloseTo(0.2);
+  });
+
+  it('reduces terrain geometry density for distant lods while preserving chunk bounds', () => {
+    const { kindCatalog } = createCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'height-field-lod-seed',
+      bounds: {
+        minX: 0,
+        maxX: 4,
+        minY: 0,
+        maxY: 4,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x >= 2 ? 'forest' : y >= 2 ? 'road' : 'plains',
+        signals: {
+          moisture: 0.58,
+          roadSignal: y >= 2 ? 0.8 : 0,
+          season: 'summer',
+          temperature: 0.68,
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+    const heightField = createTerrainHeightField({
+      bounds: {
+        minX: 0,
+        maxX: 4,
+        minY: 0,
+        maxY: 4,
+      },
+      resolveHeight: ({ x, y }) => x * 0.1 + y * 0.2,
+    });
+
+    const coarseGeometryPlan = createTerrainSplatHeightGeometryPlan({
+      grid,
+      heightField,
+      lodStepMultiplier: 2,
+    });
+
+    expect(coarseGeometryPlan.width).toBe(3);
+    expect(coarseGeometryPlan.height).toBe(3);
+    expect(coarseGeometryPlan.step).toBe(2);
+    expect(coarseGeometryPlan.lodStepMultiplier).toBe(2);
+    expect(coarseGeometryPlan.vertexCount).toBe(9);
+    expect(coarseGeometryPlan.triangleCount).toBe(8);
+    expect(Array.from(coarseGeometryPlan.positions.slice(0, 9))).toEqual(
+      expect.arrayContaining([0, 0, 2, 4])
+    );
+    expect(coarseGeometryPlan.positions[4]).toBeCloseTo(0.2);
+    expect(coarseGeometryPlan.positions[7]).toBeCloseTo(0.4);
+    expect(coarseGeometryPlan.positions.at(-9)).toBeCloseTo(0);
+    expect(coarseGeometryPlan.positions.at(-8)).toBeCloseTo(0.8);
+    expect(coarseGeometryPlan.positions.at(-7)).toBeCloseTo(4);
+    expect(coarseGeometryPlan.positions.at(-6)).toBeCloseTo(2);
+    expect(coarseGeometryPlan.positions.at(-5)).toBeCloseTo(1);
+    expect(coarseGeometryPlan.positions.at(-4)).toBeCloseTo(4);
+    expect(coarseGeometryPlan.positions.at(-3)).toBeCloseTo(4);
+    expect(coarseGeometryPlan.positions.at(-2)).toBeCloseTo(1.2);
+    expect(coarseGeometryPlan.positions.at(-1)).toBeCloseTo(4);
+  });
+
+  it('rejects geometry lod multipliers that do not divide the chunk span cleanly', () => {
+    const { kindCatalog } = createCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'height-field-lod-invalid',
+      bounds: {
+        minX: 0,
+        maxX: 4,
+        minY: 0,
+        maxY: 4,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(() => ({
+        kind: 'plains',
+      })),
+      fallbackLayerId: 'grass-a',
+    });
+    const heightField = createTerrainHeightField({
+      bounds: {
+        minX: 0,
+        maxX: 4,
+        minY: 0,
+        maxY: 4,
+      },
+      resolveHeight: () => 0,
+    });
+
+    expect(() =>
+      createTerrainSplatHeightGeometryPlan({
+        grid,
+        heightField,
+        lodStepMultiplier: 3,
+      })
+    ).toThrow(
+      'Terrain splat height geometry lodStepMultiplier 3 must divide width span 4.'
+    );
   });
 
   it('keeps neighboring chunk border heights identical when they sample the same world corners', () => {

@@ -23,6 +23,8 @@ weight generation.
 - a compatible splat grid uses the same bounds and step as the height field
 - geometry plans emit positions, uvs, and indices from the height field without
   mutating splat sample weights
+- geometry plans can raise `lodStepMultiplier` to sample every nth corner for
+  distant terrain and reduce vertex/triangle density while preserving bounds
 
 ## Current limits
 

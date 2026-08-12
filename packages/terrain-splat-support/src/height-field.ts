@@ -15,6 +15,7 @@ export type TerrainSplatHeightGeometryPlan = {
   width: number;
   height: number;
   step: number;
+  lodStepMultiplier: number;
   vertexCount: number;
   triangleCount: number;
   positions: Float32Array;
@@ -73,10 +74,17 @@ export function getTerrainHeightFieldSample(
 export function createTerrainSplatHeightGeometryPlan(params: {
   grid: TerrainSplatSampleGrid;
   heightField: TerrainHeightField;
+  lodStepMultiplier?: number;
 }): TerrainSplatHeightGeometryPlan {
   assertCompatibleHeightField(params.grid, params.heightField);
-  const vertexWidth = params.grid.width;
-  const vertexHeight = params.grid.height;
+  const lodStepMultiplier = normalizeGeometryLodStepMultiplier(
+    params.lodStepMultiplier ?? 1
+  );
+  assertCompatibleGeometryLodStepMultiplier(params.heightField, lodStepMultiplier);
+  const vertexWidth =
+    Math.floor((params.grid.width - 1) / lodStepMultiplier) + 1;
+  const vertexHeight =
+    Math.floor((params.grid.height - 1) / lodStepMultiplier) + 1;
   const vertexCount = vertexWidth * vertexHeight;
   const triangleCount = Math.max(0, (vertexWidth - 1) * (vertexHeight - 1) * 2);
   const positions = new Float32Array(vertexCount * 3);
@@ -86,19 +94,21 @@ export function createTerrainSplatHeightGeometryPlan(params: {
   let vertexIndex = 0;
   for (let row = 0; row < vertexHeight; row += 1) {
     for (let column = 0; column < vertexWidth; column += 1) {
-      const x = params.heightField.minX + column * params.heightField.step;
-      const z = params.heightField.minY + row * params.heightField.step;
+      const sourceColumn = column * lodStepMultiplier;
+      const sourceRow = row * lodStepMultiplier;
+      const x =
+        params.heightField.minX + sourceColumn * params.heightField.step;
+      const z = params.heightField.minY + sourceRow * params.heightField.step;
       positions[vertexIndex * 3] = x;
       positions[vertexIndex * 3 + 1] = getTerrainHeightFieldSample(
         params.heightField,
-        column,
-        row
+        sourceColumn,
+        sourceRow
       );
       positions[vertexIndex * 3 + 2] = z;
-      uvs[vertexIndex * 2] =
-        params.grid.width > 1 ? column / (params.grid.width - 1) : 0;
+      uvs[vertexIndex * 2] = vertexWidth > 1 ? column / (vertexWidth - 1) : 0;
       uvs[vertexIndex * 2 + 1] =
-        params.grid.height > 1 ? 1 - row / (params.grid.height - 1) : 0;
+        vertexHeight > 1 ? 1 - row / (vertexHeight - 1) : 0;
       vertexIndex += 1;
     }
   }
@@ -121,9 +131,10 @@ export function createTerrainSplatHeightGeometryPlan(params: {
   }
 
   return {
-    width: params.grid.width,
-    height: params.grid.height,
-    step: params.grid.step,
+    width: vertexWidth,
+    height: vertexHeight,
+    step: params.grid.step * lodStepMultiplier,
+    lodStepMultiplier,
     vertexCount,
     triangleCount,
     positions,
@@ -158,6 +169,24 @@ function assertCompatibleHeightField(
   }
 }
 
+function assertCompatibleGeometryLodStepMultiplier(
+  heightField: TerrainHeightField,
+  lodStepMultiplier: number
+): void {
+  const columnSpan = heightField.width - 1;
+  const rowSpan = heightField.height - 1;
+  if (columnSpan % lodStepMultiplier !== 0) {
+    throw new Error(
+      `Terrain splat height geometry lodStepMultiplier ${lodStepMultiplier} must divide width span ${columnSpan}.`
+    );
+  }
+  if (rowSpan % lodStepMultiplier !== 0) {
+    throw new Error(
+      `Terrain splat height geometry lodStepMultiplier ${lodStepMultiplier} must divide height span ${rowSpan}.`
+    );
+  }
+}
+
 function normalizePositiveStep(step: number): number {
   if (!Number.isFinite(step) || step <= 0) {
     throw new Error(
@@ -165,6 +194,15 @@ function normalizePositiveStep(step: number): number {
     );
   }
   return step;
+}
+
+function normalizeGeometryLodStepMultiplier(value: number): number {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value <= 0) {
+    throw new Error(
+      'Terrain splat height geometry lodStepMultiplier must be a positive integer.'
+    );
+  }
+  return value;
 }
 
 function normalizeIntegralSpan(

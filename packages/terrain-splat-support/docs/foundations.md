@@ -20,6 +20,8 @@ Current responsibilities:
 - build chunk-like sample grids without coupling splat generation to meshes
 - capture renderer-free terrain-state snapshots before chunk build or render
   planning
+- reduce distant terrain geometry density through shared height-field LOD
+  planning before live mesh upload
 - flatten packed splat grids into transferable typed arrays
 - summarize chunk layer usage before renderer integration decides budgets
 - share deterministic terrain family variant pools across chunk generation paths

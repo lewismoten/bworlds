@@ -25,3 +25,5 @@ for cells that would otherwise pop during LOD swaps.
 
 - this module does not attach the crossfade plan to live renderer materials yet
 - it focuses on material identity changes, not geometry morphing
+- coarse terrain geometry density is handled separately by
+  `createTerrainSplatHeightGeometryPlan(...)` with `lodStepMultiplier`
