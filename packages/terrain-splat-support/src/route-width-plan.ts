@@ -1,10 +1,7 @@
 import type { Kind } from '@bworlds/plugin-api';
 
 export type TerrainRouteClass =
-  | 'trail'
-  | 'local-road'
-  | 'main-road'
-  | 'highway';
+  'trail' | 'local-road' | 'main-road' | 'highway';
 
 export type TerrainRouteWidthPlan = {
   routeClass: TerrainRouteClass | null;
@@ -37,7 +34,8 @@ export function createTerrainRouteWidthPlan(params: {
   }
 
   if (params.kind === 'road') {
-    const routeClass = params.routeClass ?? resolveRoadRouteClass(params.roadSignal);
+    const routeClass =
+      params.routeClass ?? resolveRoadRouteClass(params.roadSignal);
     const trafficIntensity = clamp01(
       params.trafficIntensity ?? params.roadSignal ?? 0.5
     );
@@ -45,7 +43,8 @@ export function createTerrainRouteWidthPlan(params: {
     const extraSurfaceWidth = resolveRoadExtraSurfaceWidth(routeClass);
     const baseShoulderWidth = resolveRoadBaseShoulderWidth(routeClass);
     const extraShoulderWidth = resolveRoadExtraShoulderWidth(routeClass);
-    const surfaceWidth = baseSurfaceWidth + extraSurfaceWidth * trafficIntensity;
+    const surfaceWidth =
+      baseSurfaceWidth + extraSurfaceWidth * trafficIntensity;
     const shoulderWidth =
       baseShoulderWidth + extraShoulderWidth * trafficIntensity;
     return {
@@ -53,7 +52,8 @@ export function createTerrainRouteWidthPlan(params: {
       surfaceWidth,
       shoulderWidth,
       totalWidth: surfaceWidth + shoulderWidth * 2,
-      reason: 'road width comes from route class metadata and traffic intensity',
+      reason:
+        'road width comes from route class metadata and traffic intensity',
     };
   }
 

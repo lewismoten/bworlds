@@ -30,7 +30,10 @@ export type TerrainSplatPluginCatalog = {
   };
   familyCatalog: {
     entries: readonly TerrainMaterialFamilyCatalogEntry[];
-    byId: ReadonlyMap<TerrainMaterialFamilyId, TerrainMaterialFamilyCatalogEntry>;
+    byId: ReadonlyMap<
+      TerrainMaterialFamilyId,
+      TerrainMaterialFamilyCatalogEntry
+    >;
   };
   kindCatalog: {
     entries: readonly TerrainKindSplatCatalogEntry[];
@@ -59,7 +62,9 @@ export function createTerrainSplatPluginCatalog(
   for (const contribution of contributions) {
     const pluginId = contribution.pluginId.trim();
     if (pluginId.length === 0) {
-      errors.push('Terrain splat plugin contribution must use a non-empty pluginId.');
+      errors.push(
+        'Terrain splat plugin contribution must use a non-empty pluginId.'
+      );
       continue;
     }
     if (pluginIds.has(pluginId)) {
@@ -112,9 +117,13 @@ export function createTerrainSplatPluginCatalog(
   }
 
   const layerCatalog = createTerrainMaterialLayerCatalog(layers);
-  const familyCatalog = createTerrainMaterialFamilyCatalog(families, layerCatalog, {
-    maxVariants: options.maxFamilyVariants,
-  });
+  const familyCatalog = createTerrainMaterialFamilyCatalog(
+    families,
+    layerCatalog,
+    {
+      maxVariants: options.maxFamilyVariants,
+    }
+  );
   const kindCatalog = createTerrainKindSplatCatalog(kinds, layerCatalog, {
     familyCatalog,
   });

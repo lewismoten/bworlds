@@ -64,7 +64,8 @@ export function createTerrainRouteOverlayMaterialPlan(params: {
     return null;
   }
 
-  const catalogById = 'byId' in params.catalog ? params.catalog.byId : params.catalog;
+  const catalogById =
+    'byId' in params.catalog ? params.catalog.byId : params.catalog;
   const layer = catalogById.get(params.surfacePlan.layerId);
 
   if (!layer) {
@@ -178,7 +179,9 @@ function createMaterialKey(
 function createShaderDefines(
   mapPurposes: readonly string[]
 ): readonly string[] {
-  return mapPurposes.map((purpose) => `TERRAIN_ROUTE_${toDefineName(purpose)}_MAP`);
+  return mapPurposes.map(
+    (purpose) => `TERRAIN_ROUTE_${toDefineName(purpose)}_MAP`
+  );
 }
 
 function resolveTextureUniforms(

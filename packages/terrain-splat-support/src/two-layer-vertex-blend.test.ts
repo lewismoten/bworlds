@@ -79,7 +79,9 @@ describe('terrain two-layer vertex blend', () => {
       )
     ).toBe(true);
     expect(
-      blendGrid.blends.some((blend) => blend.blendFactor > 0 && blend.blendFactor < 1)
+      blendGrid.blends.some(
+        (blend) => blend.blendFactor > 0 && blend.blendFactor < 1
+      )
     ).toBe(true);
   });
 

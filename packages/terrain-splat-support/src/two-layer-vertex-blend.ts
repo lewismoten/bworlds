@@ -64,7 +64,9 @@ export function createTerrainTwoLayerVertexBlendGrid(
 ): TerrainTwoLayerVertexBlendGrid {
   let catalogByIndex: ReadonlyMap<number, TerrainMaterialLayerCatalogEntry>;
   if (Array.isArray(catalog)) {
-    catalogByIndex = new Map(catalog.map((entry) => [entry.index, entry] as const));
+    catalogByIndex = new Map(
+      catalog.map((entry) => [entry.index, entry] as const)
+    );
   } else {
     catalogByIndex = catalog as ReadonlyMap<
       number,
@@ -104,7 +106,11 @@ function unpackTerrainTwoLayerBlendSample(
   for (let index = 0; index < 4; index += 1) {
     const layerIndex = grid.layerIndices[offset + index];
     const packedWeight = grid.weights[offset + index];
-    if (layerIndex === undefined || packedWeight === undefined || packedWeight <= 0) {
+    if (
+      layerIndex === undefined ||
+      packedWeight === undefined ||
+      packedWeight <= 0
+    ) {
       continue;
     }
     const layer = catalogByIndex.get(layerIndex);

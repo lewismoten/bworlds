@@ -46,15 +46,16 @@ export function createTerrainRouteSurfacePlan(params: {
   if (params.kind === 'path') {
     const useGravel = roadSignal >= 0.42;
     const fallbackLayerId = useGravel
-      ? params.gravelTrailLayerId ?? params.gravelRoadLayerId
-      : params.dirtTrailLayerId ?? params.dirtRoadLayerId;
+      ? (params.gravelTrailLayerId ?? params.gravelRoadLayerId)
+      : (params.dirtTrailLayerId ?? params.dirtRoadLayerId);
     return {
       mode: 'overlay',
       surfaceType: useGravel ? 'narrow-gravel-trail' : 'narrow-dirt-trail',
       layerId: fallbackLayerId,
       overlayWidth: 0.18,
       shoulderBlendWidth: 0.12,
-      reason: 'narrow trails render as overlays to avoid over-widening terrain splats',
+      reason:
+        'narrow trails render as overlays to avoid over-widening terrain splats',
     };
   }
 

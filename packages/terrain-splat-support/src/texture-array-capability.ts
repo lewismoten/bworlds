@@ -5,7 +5,6 @@ import type {
 import {
   createTerrainTextureArrayPlanSet,
   createTerrainTextureBindingPlanSet,
-  type TerrainTextureArrayPlan,
   type TerrainTextureArrayPlanSet,
   type TerrainTextureArrayPurpose,
   type TerrainTextureArraySource,
@@ -61,7 +60,9 @@ export function assessTerrainTextureArrayCapabilities(
     if (deepPlans.length > 0) {
       reasons.push(
         `Texture arrays exceed maxArrayTextureLayers ${maxArrayTextureLayers}: ${deepPlans
-          .map((plan) => `${formatPurposeLabel(plan.purpose)} depth ${plan.depth}`)
+          .map(
+            (plan) => `${formatPurposeLabel(plan.purpose)} depth ${plan.depth}`
+          )
           .join(', ')}.`
       );
     }
@@ -139,7 +140,9 @@ export function createTerrainTextureBindingPlanSetFromCapabilities(params: {
   };
 }
 
-function normalizePositiveFinite(value: number | null | undefined): number | null {
+function normalizePositiveFinite(
+  value: number | null | undefined
+): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
     return null;
   }

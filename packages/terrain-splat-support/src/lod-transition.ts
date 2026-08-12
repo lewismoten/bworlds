@@ -75,7 +75,8 @@ export function createTerrainSplatLodTransitionPlan(params: {
       const dominantLayerChanged =
         highDetailDominantLayerId !== lowDetailDominantLayerId;
       const activeLayerSetChanged =
-        highDetailActiveLayerIds.join('|') !== lowDetailActiveLayerIds.join('|');
+        highDetailActiveLayerIds.join('|') !==
+        lowDetailActiveLayerIds.join('|');
 
       cells.push({
         column,
@@ -93,7 +94,9 @@ export function createTerrainSplatLodTransitionPlan(params: {
     }
   }
 
-  const changedCellCount = cells.filter((cell) => cell.requiresCrossfade).length;
+  const changedCellCount = cells.filter(
+    (cell) => cell.requiresCrossfade
+  ).length;
 
   return {
     highDetailStep: params.highDetailGrid.step,

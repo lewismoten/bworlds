@@ -51,12 +51,12 @@ describe('terrain splat performance estimate', () => {
 
     expect(comparison.legacy.estimatedTextureMemoryBytes).toBeGreaterThan(0);
     expect(comparison.splat.estimatedTextureMemoryBytes).toBeGreaterThan(0);
-    expect(comparison.legacy.estimatedTextureMemoryBytes).toBeGreaterThanOrEqual(
-      comparison.splat.estimatedTextureMemoryBytes
-    );
-    expect(comparison.reductions.estimatedTextureMemoryBytes).toBeGreaterThanOrEqual(
-      0
-    );
+    expect(
+      comparison.legacy.estimatedTextureMemoryBytes
+    ).toBeGreaterThanOrEqual(comparison.splat.estimatedTextureMemoryBytes);
+    expect(
+      comparison.reductions.estimatedTextureMemoryBytes
+    ).toBeGreaterThanOrEqual(0);
     expect(
       comparison.reductionRatios.estimatedTextureMemoryBytes
     ).toBeGreaterThanOrEqual(0);

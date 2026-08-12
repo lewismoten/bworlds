@@ -80,7 +80,10 @@ export function createTerrainSplatHeightGeometryPlan(params: {
   const lodStepMultiplier = normalizeGeometryLodStepMultiplier(
     params.lodStepMultiplier ?? 1
   );
-  assertCompatibleGeometryLodStepMultiplier(params.heightField, lodStepMultiplier);
+  assertCompatibleGeometryLodStepMultiplier(
+    params.heightField,
+    lodStepMultiplier
+  );
   const vertexWidth =
     Math.floor((params.grid.width - 1) / lodStepMultiplier) + 1;
   const vertexHeight =

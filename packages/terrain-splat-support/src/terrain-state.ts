@@ -1,7 +1,5 @@
 import type { Kind, Seed } from '@bworlds/plugin-api';
-import type {
-  TerrainMaterialLayerId,
-} from './index.ts';
+import type { TerrainMaterialLayerId } from './index.ts';
 import type {
   ResolveTerrainSplatGridTile,
   TerrainSplatGridBounds,

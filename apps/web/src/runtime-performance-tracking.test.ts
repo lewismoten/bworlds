@@ -816,8 +816,7 @@ describe('runtime performance tracking', () => {
       source: 'game',
       route: '/',
       debugSnapshot: createDebugSnapshot({
-        lastLodFailureReason:
-          '15:-9 / tile-forest: Upgrade budget exhausted.',
+        lastLodFailureReason: '15:-9 / tile-forest: Upgrade budget exhausted.',
         lastFallbackReason:
           '15:-9 / tile-forest: tile plugin returned no model.',
         resourceWarnings: [],

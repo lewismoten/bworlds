@@ -97,7 +97,10 @@ export function createTerrainSplatViewerDebugModel(
       ? options.catalog.byId
       : options.catalog
     : null;
-  const availableTargetLayerIds = resolveAvailableTargetLayerIds(grid, catalogById);
+  const availableTargetLayerIds = resolveAvailableTargetLayerIds(
+    grid,
+    catalogById
+  );
   const requestedMode = options.mode ?? 'dominant-layer';
   const selectedMode = resolveSelectedMode(requestedMode, catalogById);
   const selectedTargetLayerId =
@@ -161,7 +164,9 @@ function resolveAvailableTargetLayerIds(
   return layerIds.sort((left, right) => {
     const leftIndex = catalogById.get(left)?.index ?? Number.MAX_SAFE_INTEGER;
     const rightIndex = catalogById.get(right)?.index ?? Number.MAX_SAFE_INTEGER;
-    return leftIndex === rightIndex ? left.localeCompare(right) : leftIndex - rightIndex;
+    return leftIndex === rightIndex
+      ? left.localeCompare(right)
+      : leftIndex - rightIndex;
   });
 }
 
@@ -169,10 +174,7 @@ function resolveTargetLayerId(
   targetLayerId: TerrainMaterialLayerId | undefined,
   availableTargetLayerIds: readonly TerrainMaterialLayerId[]
 ): TerrainMaterialLayerId | null {
-  if (
-    targetLayerId &&
-    availableTargetLayerIds.includes(targetLayerId)
-  ) {
+  if (targetLayerId && availableTargetLayerIds.includes(targetLayerId)) {
     return targetLayerId;
   }
   return availableTargetLayerIds[0] ?? null;

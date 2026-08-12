@@ -59,14 +59,16 @@ describe('terrain splat debug viewer', () => {
     });
 
     expect(model.selectedMode).toBe('dominant-layer');
-    expect(model.modeOptions.every((option) => option.requiresCatalog === false)).toBe(
-      true
-    );
+    expect(
+      model.modeOptions.every((option) => option.requiresCatalog === false)
+    ).toBe(true);
     expect(model.view.mode).toBe('dominant-layer');
   });
 });
 
-function createDebugGrid(kindCatalog: ReturnType<typeof createDebugCatalogs>['kindCatalog']) {
+function createDebugGrid(
+  kindCatalog: ReturnType<typeof createDebugCatalogs>['kindCatalog']
+) {
   return createTerrainSplatSampleGrid({
     seed: 'debug-viewer-seed',
     bounds: {
