@@ -70,6 +70,7 @@ and query helper for these layer plugins:
 - exposes upstream records to later layers through `queryRecords(...)`
 - exposes explicit chunk-scoped queries through `queryChunkRecords(...)`
 - normalizes plugin ownership onto emitted records
+- resolves selected records directly through `getRecordById(...)`
 - filters records by bounds, plugin id, record type, and zoom relevance
 - summarizes matching records by `pluginId` and `recordType`
 - exposes chunk-scoped summaries through `summarizeChunkRecords(...)`

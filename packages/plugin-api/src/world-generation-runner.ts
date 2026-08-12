@@ -42,6 +42,7 @@ export interface WorldGenerationRegionRunResult {
   readonly orderedPlugins: readonly WorldGenerationLayerPlugin[];
   readonly records: readonly WorldGenerationFeatureRecordLike[];
   readonly pluginTimings: readonly WorldGenerationPluginTiming[];
+  getRecordById(recordId: string): WorldGenerationFeatureRecordLike | null;
   queryRecords(
     query?: WorldGenerationRecordQuery
   ): readonly WorldGenerationFeatureRecordLike[];
@@ -123,6 +124,7 @@ function runWorldGenerationRegion(params: {
 }): WorldGenerationRegionRunResult {
   const dependencyIndex = new Map<string, WorldGenerationFeatureRecordLike[]>();
   const records: WorldGenerationFeatureRecordLike[] = [];
+  const recordsById = new Map<string, WorldGenerationFeatureRecordLike>();
   const pluginTimings: WorldGenerationPluginTiming[] = [];
   const queryCache = new Map<string, readonly WorldGenerationFeatureRecordLike[]>();
   const summaryCache = new Map<string, readonly WorldGenerationRecordSummary[]>();
@@ -153,6 +155,7 @@ function runWorldGenerationRegion(params: {
     for (const record of pluginRecords) {
       const normalizedRecord = normalizeFeatureRecord(plugin.id, record);
       records.push(normalizedRecord);
+      recordsById.set(normalizedRecord.id, normalizedRecord);
       const dependencyKey = createWorldGenerationDependencyKey({
         pluginId: normalizedRecord.pluginId,
         recordType: normalizedRecord.type,
@@ -173,6 +176,13 @@ function runWorldGenerationRegion(params: {
     orderedPlugins: Object.freeze(params.orderedPlugins.slice()),
     records: frozenRecords,
     pluginTimings: Object.freeze(pluginTimings.slice()),
+    getRecordById(recordId) {
+      const normalizedId = normalizeOptionalString(recordId);
+      if (!normalizedId) {
+        return null;
+      }
+      return recordsById.get(normalizedId) ?? null;
+    },
     queryRecords(query = {}) {
       const normalizedQuery = normalizeRecordQuery(query);
       const cacheKey = createRecordQueryCacheKey(normalizedQuery);

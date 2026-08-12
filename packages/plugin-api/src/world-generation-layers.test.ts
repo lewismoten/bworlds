@@ -374,6 +374,39 @@ describe('world generation layer plugins', () => {
     expect(
       result.pluginTimings.every((timing) => timing.durationMs >= 0)
     ).toBe(true);
+    expect(result.getRecordById('terrain:near')).toEqual({
+      id: 'terrain:near',
+      type: 'height-sample',
+      pluginId: 'terrain',
+      bounds: {
+        minX: 0,
+        maxX: 16,
+        minY: 0,
+        maxY: 16,
+      },
+      summary: {
+        averageHeight: 1200,
+      },
+    });
+    expect(result.getRecordById(' climate:temperate ')).toEqual({
+      id: 'climate:temperate',
+      type: 'biome-region',
+      pluginId: 'climate',
+      bounds: {
+        minX: 0,
+        maxX: 16,
+        minY: 0,
+        maxY: 16,
+      },
+      zoomRelevance: {
+        min: 3,
+        max: 8,
+      },
+      summary: {
+        biome: 'temperate-forest',
+      },
+    });
+    expect(result.getRecordById('missing-record')).toBeNull();
     expect(result.records).toEqual([
       {
         id: 'terrain:near',
@@ -613,6 +646,7 @@ describe('world generation layer plugins', () => {
 
     expect(first).toBe(second);
     expect(third).not.toBe(first);
+    expect(first.getRecordById('terrain:0')).toBe(second.getRecordById('terrain:0'));
     expect(first.pluginTimings).toBe(second.pluginTimings);
     expect(runCount).toBe(2);
   });
