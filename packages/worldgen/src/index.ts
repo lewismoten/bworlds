@@ -32,6 +32,7 @@ import {
   getOverworldPlacementChance,
   isNearOverworldLand,
 } from '@bworlds/overworld-support';
+import { resolveOverworldReliefHeight } from '@bworlds/runtime-overworld-relief';
 export {
   getTerrainChunkCellBounds,
   getTerrainChunkHeightSampleCoordinate,
@@ -82,6 +83,7 @@ export function createWorldGenerator({
   getMap(context: Context): WorldMapLike;
   sampleOverworld(x: number, y: number): SpawnTile;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
+  samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
 } {
   const seedHash = resolveHashSeedInput(seed);
@@ -91,6 +93,9 @@ export function createWorldGenerator({
     PREVIEW_TILE_CACHE_LIMIT
   );
   const previewKindCache = createBoundedCache<string, SpawnTile['kind']>(
+    PREVIEW_TILE_CACHE_LIMIT
+  );
+  const previewSurfaceHeightCache = createBoundedCache<string, number>(
     PREVIEW_TILE_CACHE_LIMIT
   );
   const getPreviewKey = (x: number, y: number) => makeKey('preview', x, y);
@@ -169,10 +174,26 @@ export function createWorldGenerator({
       return getMap(OVERWORLD_CONTEXT).getTile(x, y) as SpawnTile;
     },
     samplePreviewSurfaceKind,
+    samplePreviewSurfaceHeight(x: number, y: number) {
+      const key = getPreviewKey(x, y);
+      return previewSurfaceHeightCache.getOrCreate(key, () => {
+        const kind = samplePreviewSurfaceKind(x, y);
+        return resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
+          kind,
+        });
+      });
+    },
     samplePreviewOverworld(x: number, y: number) {
       const key = getPreviewKey(x, y);
       return previewTileCache.getOrCreate(key, () => {
-        return { kind: samplePreviewSurfaceKind(x, y) } as SpawnTile;
+        const kind = samplePreviewSurfaceKind(x, y);
+        return {
+          kind,
+          surfaceHeight: resolveOverworldReliefHeight(
+            terrainSignals(x, y).elevation,
+            { kind }
+          ),
+        } as SpawnTile;
       });
     },
   };

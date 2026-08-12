@@ -49,3 +49,12 @@
 - [ ] Test deterministic height sampling.
 - [ ] Test exact chunk border height equality.
 - [ ] Test player height against rendered terrain height.
+
+Current support:
+
+- `@bworlds/worldgen` now exposes deterministic preview surface-height
+  sampling through `createWorldGenerator().samplePreviewSurfaceHeight(x, y)`.
+- The preview height sampler uses the same overworld terrain signals and relief
+  curve as the current runtime relief decorator, so map previews and future
+  shared terrain callers can query one reusable world-space surface height
+  entry point before the full authoritative layered height pipeline lands.

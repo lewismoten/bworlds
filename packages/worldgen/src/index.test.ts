@@ -421,6 +421,9 @@ describe('world generator', () => {
     expect(generator.samplePreviewSurfaceKind(10, 20)).toBe(
       generator.samplePreviewOverworld(10, 20).kind
     );
+    expect(generator.samplePreviewSurfaceHeight(10, 20)).toBe(
+      generator.samplePreviewOverworld(10, 20).surfaceHeight
+    );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(
       generator.samplePreviewOverworld(10, 20)
     );
@@ -432,6 +435,7 @@ describe('world generator', () => {
   it('keeps preview sampling deterministic after bounded cache eviction churn', () => {
     const generator = createGenerator();
     const baselinePreviewKind = generator.samplePreviewSurfaceKind(10, 20);
+    const baselinePreviewHeight = generator.samplePreviewSurfaceHeight(10, 20);
     const baselinePreview = generator.samplePreviewOverworld(10, 20);
     const baselineOverworld = generator.sampleOverworld(3, 2);
 
@@ -439,11 +443,15 @@ describe('world generator', () => {
       const x = (index % 150) - 75;
       const y = Math.floor(index / 150) - 30;
       generator.samplePreviewSurfaceKind(x, y);
+      generator.samplePreviewSurfaceHeight(x, y);
       generator.samplePreviewOverworld(x, y);
     }
 
     expect(generator.samplePreviewSurfaceKind(10, 20)).toBe(
       baselinePreviewKind
+    );
+    expect(generator.samplePreviewSurfaceHeight(10, 20)).toBe(
+      baselinePreviewHeight
     );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
