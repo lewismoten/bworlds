@@ -19,6 +19,7 @@ export type TerrainSplatHeightGeometryPlan = {
   vertexCount: number;
   triangleCount: number;
   positions: Float32Array;
+  normals: Float32Array;
   uvs: Float32Array;
   indices: Uint32Array;
 };
@@ -91,6 +92,7 @@ export function createTerrainSplatHeightGeometryPlan(params: {
   const vertexCount = vertexWidth * vertexHeight;
   const triangleCount = Math.max(0, (vertexWidth - 1) * (vertexHeight - 1) * 2);
   const positions = new Float32Array(vertexCount * 3);
+  const normals = new Float32Array(vertexCount * 3);
   const uvs = new Float32Array(vertexCount * 2);
   const indices = new Uint32Array(triangleCount * 3);
 
@@ -109,6 +111,15 @@ export function createTerrainSplatHeightGeometryPlan(params: {
         sourceRow
       );
       positions[vertexIndex * 3 + 2] = z;
+      const normal = resolveTerrainHeightFieldNormal(
+        params.heightField,
+        sourceColumn,
+        sourceRow,
+        lodStepMultiplier
+      );
+      normals[vertexIndex * 3] = normal.x;
+      normals[vertexIndex * 3 + 1] = normal.y;
+      normals[vertexIndex * 3 + 2] = normal.z;
       uvs[vertexIndex * 2] = vertexWidth > 1 ? column / (vertexWidth - 1) : 0;
       uvs[vertexIndex * 2 + 1] =
         vertexHeight > 1 ? 1 - row / (vertexHeight - 1) : 0;
@@ -117,8 +128,8 @@ export function createTerrainSplatHeightGeometryPlan(params: {
   }
 
   let indexOffset = 0;
-  for (let row = 0; row < params.grid.height - 1; row += 1) {
-    for (let column = 0; column < params.grid.width - 1; column += 1) {
+  for (let row = 0; row < vertexHeight - 1; row += 1) {
+    for (let column = 0; column < vertexWidth - 1; column += 1) {
       const topLeft = row * vertexWidth + column;
       const topRight = topLeft + 1;
       const bottomLeft = topLeft + vertexWidth;
@@ -141,8 +152,53 @@ export function createTerrainSplatHeightGeometryPlan(params: {
     vertexCount,
     triangleCount,
     positions,
+    normals,
     uvs,
     indices,
+  };
+}
+
+function resolveTerrainHeightFieldNormal(
+  field: TerrainHeightField,
+  column: number,
+  row: number,
+  lodStepMultiplier: number
+): { x: number; y: number; z: number } {
+  const leftColumn = clampHeightFieldCoordinate(
+    column - lodStepMultiplier,
+    field.width
+  );
+  const rightColumn = clampHeightFieldCoordinate(
+    column + lodStepMultiplier,
+    field.width
+  );
+  const downRow = clampHeightFieldCoordinate(
+    row - lodStepMultiplier,
+    field.height
+  );
+  const upRow = clampHeightFieldCoordinate(
+    row + lodStepMultiplier,
+    field.height
+  );
+  const leftHeight = getTerrainHeightFieldSample(field, leftColumn, row);
+  const rightHeight = getTerrainHeightFieldSample(field, rightColumn, row);
+  const downHeight = getTerrainHeightFieldSample(field, column, downRow);
+  const upHeight = getTerrainHeightFieldSample(field, column, upRow);
+  const deltaX = (rightColumn - leftColumn) * field.step;
+  const deltaZ = (upRow - downRow) * field.step;
+  const crossX = -(rightHeight - leftHeight) * deltaZ;
+  const crossY = deltaX * deltaZ;
+  const crossZ = -(upHeight - downHeight) * deltaX;
+  const length = Math.hypot(crossX, crossY, crossZ);
+
+  if (length <= 0 || !Number.isFinite(length)) {
+    return { x: 0, y: 1, z: 0 };
+  }
+
+  return {
+    x: crossX / length,
+    y: crossY / length,
+    z: crossZ / length,
   };
 }
 
@@ -238,4 +294,14 @@ function assertInBounds(
       `Terrain height field sample coordinates ${column}:${row} are outside ${width}x${height}.`
     );
   }
+}
+
+function clampHeightFieldCoordinate(value: number, size: number): number {
+  if (value < 0) {
+    return 0;
+  }
+  if (value >= size) {
+    return size - 1;
+  }
+  return value;
 }

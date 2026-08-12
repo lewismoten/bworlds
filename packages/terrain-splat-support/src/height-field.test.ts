@@ -60,6 +60,7 @@ describe('terrain splat height field', () => {
     expect(geometryPlan.triangleCount).toBe(8);
     expect(geometryPlan.lodStepMultiplier).toBe(1);
     expect(geometryPlan.positions).toHaveLength(27);
+    expect(geometryPlan.normals).toHaveLength(27);
     expect(geometryPlan.uvs).toHaveLength(18);
     expect(geometryPlan.indices).toHaveLength(24);
     expect(Array.from(geometryPlan.positions.slice(0, 9))).toEqual(
@@ -67,6 +68,7 @@ describe('terrain splat height field', () => {
     );
     expect(geometryPlan.positions[4]).toBeCloseTo(0.1);
     expect(geometryPlan.positions[7]).toBeCloseTo(0.2);
+    expect(geometryPlan.normals[1]).toBeGreaterThan(0.95);
   });
 
   it('reduces terrain geometry density for distant lods while preserving chunk bounds', () => {
@@ -114,6 +116,9 @@ describe('terrain splat height field', () => {
     expect(coarseGeometryPlan.lodStepMultiplier).toBe(2);
     expect(coarseGeometryPlan.vertexCount).toBe(9);
     expect(coarseGeometryPlan.triangleCount).toBe(8);
+    expect(Math.max(...coarseGeometryPlan.indices)).toBeLessThan(
+      coarseGeometryPlan.vertexCount
+    );
     expect(Array.from(coarseGeometryPlan.positions.slice(0, 9))).toEqual(
       expect.arrayContaining([0, 0, 2, 4])
     );
@@ -198,6 +203,85 @@ describe('terrain splat height field', () => {
     expect(getTerrainHeightFieldSample(left, 2, 2)).toBeCloseTo(
       getTerrainHeightFieldSample(right, 0, 2)
     );
+  });
+
+  it('keeps neighboring chunk border normals identical for planar heights sampled on both sides of a seam', () => {
+    const resolveHeight = ({ x, y }: { x: number; y: number }) =>
+      x * 0.15 + y * 0.05;
+    const leftHeightField = createTerrainHeightField({
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      resolveHeight,
+    });
+    const rightHeightField = createTerrainHeightField({
+      bounds: {
+        minX: 2,
+        maxX: 4,
+        minY: 0,
+        maxY: 2,
+      },
+      resolveHeight,
+    });
+    const { kindCatalog } = createCatalogs();
+    const leftGrid = createTerrainSplatSampleGrid({
+      seed: 'neighbor-normal-left',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(() => ({
+        kind: 'plains',
+      })),
+      fallbackLayerId: 'grass-a',
+    });
+    const rightGrid = createTerrainSplatSampleGrid({
+      seed: 'neighbor-normal-right',
+      bounds: {
+        minX: 2,
+        maxX: 4,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(() => ({
+        kind: 'plains',
+      })),
+      fallbackLayerId: 'grass-a',
+    });
+
+    const leftGeometryPlan = createTerrainSplatHeightGeometryPlan({
+      grid: leftGrid,
+      heightField: leftHeightField,
+    });
+    const rightGeometryPlan = createTerrainSplatHeightGeometryPlan({
+      grid: rightGrid,
+      heightField: rightHeightField,
+    });
+
+    for (let row = 0; row < leftGeometryPlan.height; row += 1) {
+      const leftOffset =
+        (row * leftGeometryPlan.width + (leftGeometryPlan.width - 1)) * 3;
+      const rightOffset = row * rightGeometryPlan.width * 3;
+      expect(leftGeometryPlan.normals[leftOffset]).toBeCloseTo(
+        rightGeometryPlan.normals[rightOffset],
+        6
+      );
+      expect(leftGeometryPlan.normals[leftOffset + 1]).toBeCloseTo(
+        rightGeometryPlan.normals[rightOffset + 1],
+        6
+      );
+      expect(leftGeometryPlan.normals[leftOffset + 2]).toBeCloseTo(
+        rightGeometryPlan.normals[rightOffset + 2],
+        6
+      );
+    }
   });
 
   it('keeps splat weights independent from the selected terrain height field', () => {

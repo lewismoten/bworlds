@@ -21,10 +21,18 @@ weight generation.
 
 - the height field samples one value per chunk corner
 - a compatible splat grid uses the same bounds and step as the height field
-- geometry plans emit positions, uvs, and indices from the height field without
-  mutating splat sample weights
+- geometry plans emit positions, seam-safe normals, uvs, and indices from the
+  height field without mutating splat sample weights
 - geometry plans can raise `lodStepMultiplier` to sample every nth corner for
   distant terrain and reduce vertex/triangle density while preserving bounds
+
+## Current normal behavior
+
+- normals are derived from the same shared corner samples that drive positions
+- chunk borders therefore agree on planar seams where both sides observe the
+  same slope
+- exact curved-seam border normals still need one extra sample ring beyond the
+  local chunk bounds, which this module does not yet request
 
 ## Current limits
 
