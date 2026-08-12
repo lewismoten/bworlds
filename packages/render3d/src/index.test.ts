@@ -5244,6 +5244,8 @@ describe('render3d visibility helpers', () => {
         nowMs: 100,
         type: 'lod-changed' as const,
         tileKey: '1:1',
+        plugin: 'tile-forest',
+        summary: 'full -> low',
         fromDetailLevel: 'full' as const,
         toDetailLevel: 'low' as const,
       },
@@ -5319,13 +5321,27 @@ describe('render3d visibility helpers', () => {
     const bounded: Array<{
       nowMs: number;
       type: 'lod-changed';
+      plugin?: string;
+      summary?: string;
     }> = [];
-    recordRenderDebugEvent(bounded, { nowMs: 1, type: 'lod-changed' }, 2);
-    recordRenderDebugEvent(bounded, { nowMs: 2, type: 'lod-changed' }, 2);
-    recordRenderDebugEvent(bounded, { nowMs: 3, type: 'lod-changed' }, 2);
+    recordRenderDebugEvent(
+      bounded,
+      { nowMs: 1, type: 'lod-changed', plugin: 'tile-forest' },
+      2
+    );
+    recordRenderDebugEvent(
+      bounded,
+      { nowMs: 2, type: 'lod-changed', plugin: 'tile-town' },
+      2
+    );
+    recordRenderDebugEvent(
+      bounded,
+      { nowMs: 3, type: 'lod-changed', plugin: 'tile-water' },
+      2
+    );
     expect(bounded).toEqual([
-      { nowMs: 2, type: 'lod-changed' },
-      { nowMs: 3, type: 'lod-changed' },
+      { nowMs: 2, type: 'lod-changed', plugin: 'tile-town' },
+      { nowMs: 3, type: 'lod-changed', plugin: 'tile-water' },
     ]);
   });
 

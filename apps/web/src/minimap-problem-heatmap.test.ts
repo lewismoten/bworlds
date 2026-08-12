@@ -123,9 +123,17 @@ describe('minimap problem heatmap', () => {
         recentEvents: [
           {
             nowMs: 10,
+            plugin: 'tile-forest',
             type: 'model-rejected',
             tileKey: '11:-4',
             summary: 'lod rebuild exceeded hard cap',
+          } satisfies DebugSnapshotRecentEvent,
+          {
+            nowMs: 11,
+            type: 'lod-changed',
+            tileKey: '11:-4',
+            plugin: 'tile-forest',
+            summary: 'full -> low',
           } satisfies DebugSnapshotRecentEvent,
         ],
         latestSnapshot: createSnapshot({
@@ -159,9 +167,13 @@ describe('minimap problem heatmap', () => {
       expect.objectContaining({
         tileKind: 'forest',
         severity: 'critical',
-        issueCount: 1,
+        issueCount: 2,
       })
     );
+    expect(neighborTile?.issues.map((issue) => issue.summary)).toEqual([
+      'lod rebuild exceeded hard cap',
+      'full -> low',
+    ]);
   });
 
   it('does not attach scene-wide quality and budget warnings to the current tile', () => {

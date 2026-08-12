@@ -122,7 +122,12 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 ## LOD Stability
 
 - [ ] Investigate why LOD swaps occur 24 times per second.
-- [ ] Report LOD swaps by tile and plugin.
+- [x] Report LOD swaps by tile and plugin.
+      Progress: `render3d` now records each `lod-changed` recent debug event
+      with the tile key, owning plugin, and a concise `from -> to` summary, so
+      the existing merged recent-event stream, exported debug snapshots, and
+      minimap heatmap can attribute swap churn to specific tiles instead of
+      only the aggregate top-plugin rate summary.
 - [x] Add a maximum acceptable LOD swap rate.
       Progress: the live debug snapshot now emits a resource warning when
       `lodReplacementsPerSecond` rises above the acceptable churn threshold,

@@ -3486,6 +3486,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         nowMs,
         type: 'lod-changed',
         tileKey: key,
+        plugin: nextEntry.tilePluginOwnerLabel || entry.tilePluginOwnerLabel,
+        summary: `${entry.detailLevel ?? 'full'} -> ${resolvedDetailLevel}`,
         fromDetailLevel: entry.detailLevel ?? 'full',
         toDetailLevel: resolvedDetailLevel,
       });
