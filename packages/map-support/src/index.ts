@@ -18,6 +18,7 @@ export type * from './map-feature-policies.ts';
 export type * from './map-features.ts';
 export type * from './map-pmtiles.ts';
 export type * from './map-network-lines.ts';
+export type * from './map-regional-records.ts';
 export type * from './map-terrain-surface.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
@@ -78,6 +79,15 @@ export {
   DEFAULT_MAP_RIVER_NETWORK_LAYER_ID,
   DEFAULT_MAP_ROAD_NETWORK_LAYER_ID,
 } from './map-network-lines.ts';
+export {
+  createBorderMapFeatureRecord,
+  createBorderRecordMapFeatureGeneratorPlugin,
+  createSettlementAnchorMapFeatureGeneratorPlugin,
+  createSettlementMapFeatureRecord,
+  createSettlementRecordSampleFromAnchor,
+  DEFAULT_MAP_BORDER_LAYER_ID,
+  DEFAULT_MAP_SETTLEMENT_LAYER_ID,
+} from './map-regional-records.ts';
 export {
   createMapTerrainSurfaceCellBounds,
   createMapTerrainSurfaceFeatureRecord,

@@ -148,7 +148,7 @@ Current support:
 
 - [x] Derive 2D terrain from the same world data as 3D.
 - [x] Derive roads and rivers from the same graphs as 3D.
-- [ ] Derive settlements and borders from shared records.
+- [x] Derive settlements and borders from shared records.
 - [ ] Keep 2D tile symbols representative of 3D state.
 - [ ] Avoid separate hand-authored map-only world state.
 
@@ -169,3 +169,11 @@ Current support:
   river map products can convert shared world-space route and river path points
   into canonical `road-network` and `river-network` line features instead of
   tracing a separate 2D-only network.
+- `@bworlds/map-support` now also exposes
+  `createSettlementMapFeatureRecord(...)`,
+  `createBorderMapFeatureRecord(...)`,
+  `createSettlementAnchorMapFeatureGeneratorPlugin(...)`, and
+  `createBorderRecordMapFeatureGeneratorPlugin(...)`, so later 2D settlement
+  and border map products can convert shared overworld anchors and shared
+  region-border records into canonical `settlement-record` and `border-record`
+  features instead of inventing separate 2D-only regional models.
