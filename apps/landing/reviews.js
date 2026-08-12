@@ -39,7 +39,7 @@ const renderReviews = (reviews, reviewers) => {
 const loadReviews = async () => {
   try {
     const [reviewsResponse, reviewersResponse] = await Promise.all([
-      fetch("reviews.json"),
+      fetch("reviews.json?1"),
       fetch("reviewers.json"),
     ]);
 
