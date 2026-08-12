@@ -1,4 +1,10 @@
-import type { MapFeatureRecord } from './map-features.ts';
+import {
+  isMapFeatureVisibleAtZoom,
+  type MapFeatureLineRecord,
+  type MapFeaturePolygonRecord,
+  type MapFeatureRecord,
+  type MapFeatureWorldCoordinate,
+} from './map-features.ts';
 
 export type PmtilesTileCoordinate = {
   zoom: number;
@@ -24,6 +30,9 @@ export interface MapFeatureGeneratorPlugin {
   layerId: string;
   getFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
 }
+
+export const DEFAULT_PMTILES_FULL_DETAIL_ZOOM = 12;
+export const DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE = 16;
 
 export function createPmtilesExportPlugin(params: {
   id: string;
@@ -109,6 +118,91 @@ export function generatePmtilesTileFeatures(options: {
   });
 }
 
+export function generatePmtilesTileFeaturesAtZoomDetail(options: {
+  request: PmtilesExportRequest;
+  generators: readonly MapFeatureGeneratorPlugin[];
+  fullDetailZoom?: number;
+  maximumGeometryStride?: number;
+}): readonly MapFeatureRecord[] {
+  const normalizedRequest = normalizePmtilesExportRequest(options.request);
+  return selectPmtilesTileFeaturesForZoom(
+    generatePmtilesTileFeatures({
+      request: normalizedRequest,
+      generators: options.generators,
+    }),
+    {
+      zoom: normalizedRequest.tile.zoom,
+      fullDetailZoom: options.fullDetailZoom,
+      maximumGeometryStride: options.maximumGeometryStride,
+    }
+  );
+}
+
+export function selectPmtilesTileFeaturesForZoom(
+  features: readonly MapFeatureRecord[],
+  options: {
+    zoom: number;
+    fullDetailZoom?: number;
+    maximumGeometryStride?: number;
+  }
+): readonly MapFeatureRecord[] {
+  const zoom = normalizeNonNegativeInteger(options.zoom, 'PMTiles detail zoom');
+  return features
+    .filter((feature) => isMapFeatureVisibleAtZoom(feature, zoom))
+    .map((feature) =>
+      simplifyPmtilesFeatureGeometry(feature, {
+        zoom,
+        fullDetailZoom: options.fullDetailZoom,
+        maximumGeometryStride: options.maximumGeometryStride,
+      })
+    );
+}
+
+export function simplifyPmtilesFeatureGeometry(
+  feature: MapFeatureRecord,
+  options: {
+    zoom: number;
+    fullDetailZoom?: number;
+    maximumGeometryStride?: number;
+  }
+): MapFeatureRecord {
+  const zoom = normalizeNonNegativeInteger(options.zoom, 'PMTiles detail zoom');
+  const fullDetailZoom = normalizeNonNegativeInteger(
+    options.fullDetailZoom ?? DEFAULT_PMTILES_FULL_DETAIL_ZOOM,
+    'PMTiles detail fullDetailZoom'
+  );
+  const maximumGeometryStride = normalizeNonNegativeInteger(
+    options.maximumGeometryStride ?? DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE,
+    'PMTiles detail maximumGeometryStride'
+  );
+  const stride = resolvePmtilesGeometryStride({
+    zoom,
+    fullDetailZoom,
+    maximumGeometryStride,
+  });
+  switch (feature.kind) {
+    case 'point':
+      return feature;
+    case 'line':
+      return {
+        ...feature,
+        coordinates: simplifyFeatureCoordinateSequence(
+          feature.coordinates,
+          stride
+        ),
+      } satisfies MapFeatureLineRecord;
+    case 'polygon':
+      return {
+        ...feature,
+        rings: feature.rings.map((ring) =>
+          closeFeatureCoordinateRing(simplifyFeatureCoordinateSequence(ring, stride))
+        ),
+      } satisfies MapFeaturePolygonRecord;
+    default:
+      return feature;
+  }
+}
+
 function normalizePmtilesExportRequest(
   request: PmtilesExportRequest
 ): PmtilesExportRequest {
@@ -170,6 +264,52 @@ function normalizeMapFeatureRecord(feature: MapFeatureRecord): MapFeatureRecord 
         `PMTiles export feature kind ${JSON.stringify((feature as { kind?: unknown }).kind)} is not supported.`
       );
   }
+}
+
+function resolvePmtilesGeometryStride(options: {
+  zoom: number;
+  fullDetailZoom: number;
+  maximumGeometryStride: number;
+}): number {
+  const zoomDelta = Math.max(0, options.fullDetailZoom - options.zoom);
+  return Math.min(options.maximumGeometryStride, 2 ** zoomDelta);
+}
+
+function simplifyFeatureCoordinateSequence(
+  coordinates: readonly MapFeatureWorldCoordinate[],
+  stride: number
+): readonly MapFeatureWorldCoordinate[] {
+  if (stride <= 1 || coordinates.length <= 2) {
+    return coordinates;
+  }
+  const simplified = coordinates.filter(
+    (_coordinate, index) =>
+      index === 0 ||
+      index === coordinates.length - 1 ||
+      index % stride === 0
+  );
+  return simplified.length >= 2
+    ? simplified
+    : [coordinates[0], coordinates.at(-1)].filter(
+        (coordinate): coordinate is MapFeatureWorldCoordinate => coordinate != null
+      );
+}
+
+function closeFeatureCoordinateRing(
+  ring: readonly MapFeatureWorldCoordinate[]
+): readonly MapFeatureWorldCoordinate[] {
+  const firstCoordinate = ring[0];
+  const lastCoordinate = ring.at(-1);
+  if (!firstCoordinate || !lastCoordinate) {
+    return ring;
+  }
+  if (
+    firstCoordinate.worldX === lastCoordinate.worldX &&
+    firstCoordinate.worldY === lastCoordinate.worldY
+  ) {
+    return ring;
+  }
+  return [...ring, firstCoordinate];
 }
 
 function normalizeNonEmptyString(value: string, label: string): string {

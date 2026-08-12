@@ -5,8 +5,17 @@ import {
   createPmtilesExportPlugin,
   createPmtilesExportRequest,
   createPmtilesTileCoordinate,
+  DEFAULT_PMTILES_FULL_DETAIL_ZOOM,
+  DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE,
   generatePmtilesTileFeatures,
+  generatePmtilesTileFeaturesAtZoomDetail,
+  selectPmtilesTileFeaturesForZoom,
+  simplifyPmtilesFeatureGeometry,
 } from './map-pmtiles.ts';
+import {
+  createMapFeatureLineRecord,
+  createMapFeaturePolygonRecord,
+} from './map-features.ts';
 
 describe('map pmtiles', () => {
   it('creates normalized PMTiles export plugins that generate tile features on demand', () => {
@@ -153,6 +162,153 @@ describe('map pmtiles', () => {
         },
         properties: {},
       },
+    ]);
+  });
+
+  it('uses coarse geometry at low zoom and reveals finer geometry as zoom increases', () => {
+    const detailedLine = createMapFeatureLineRecord({
+      sourceWorldObjectId: 'river:main',
+      layerId: 'hydrology',
+      coordinates: [
+        { worldX: 0, worldY: 0 },
+        { worldX: 1, worldY: 1 },
+        { worldX: 2, worldY: 0 },
+        { worldX: 3, worldY: 1 },
+        { worldX: 4, worldY: 0 },
+      ],
+    });
+
+    const lowZoom = simplifyPmtilesFeatureGeometry(detailedLine, {
+      zoom: 2,
+      fullDetailZoom: 4,
+      maximumGeometryStride: 4,
+    });
+    const highZoom = simplifyPmtilesFeatureGeometry(detailedLine, {
+      zoom: 4,
+      fullDetailZoom: 4,
+      maximumGeometryStride: 4,
+    });
+
+    expect(lowZoom.kind).toBe('line');
+    expect(lowZoom.kind === 'line' ? lowZoom.coordinates : []).toEqual([
+      { worldX: 0, worldY: 0 },
+      { worldX: 4, worldY: 0 },
+    ]);
+    expect(highZoom.kind === 'line' ? highZoom.coordinates : []).toEqual(
+      detailedLine.coordinates
+    );
+    expect(DEFAULT_PMTILES_FULL_DETAIL_ZOOM).toBe(12);
+    expect(DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE).toBe(16);
+  });
+
+  it('simplifies polygon rings by zoom while keeping them closed', () => {
+    const polygon = createMapFeaturePolygonRecord({
+      sourceWorldObjectId: 'region:delta',
+      layerId: 'political',
+      rings: [
+        [
+          { worldX: 0, worldY: 0 },
+          { worldX: 1, worldY: 0 },
+          { worldX: 2, worldY: 0 },
+          { worldX: 2, worldY: 2 },
+          { worldX: 1, worldY: 2 },
+          { worldX: 0, worldY: 2 },
+          { worldX: 0, worldY: 0 },
+        ],
+      ],
+    });
+
+    const simplified = simplifyPmtilesFeatureGeometry(polygon, {
+      zoom: 1,
+      fullDetailZoom: 3,
+      maximumGeometryStride: 4,
+    });
+
+    expect(simplified.kind).toBe('polygon');
+    expect(simplified.kind === 'polygon' ? simplified.rings[0] : []).toEqual([
+      { worldX: 0, worldY: 0 },
+      { worldX: 1, worldY: 2 },
+      { worldX: 0, worldY: 0 },
+    ]);
+  });
+
+  it('filters PMTiles features by zoom visibility before simplifying geometry', () => {
+    const visible = createMapFeaturePointRecord({
+      sourceWorldObjectId: 'settlement:capital',
+      layerId: 'human',
+      zoomRange: {
+        minZoom: 0,
+        maxZoom: 4,
+      },
+      coordinate: {
+        worldX: 3,
+        worldY: 4,
+      },
+    });
+    const hidden = createMapFeaturePointRecord({
+      sourceWorldObjectId: 'road:lane',
+      layerId: 'transport',
+      zoomRange: {
+        minZoom: 5,
+      },
+      coordinate: {
+        worldX: 8,
+        worldY: 9,
+      },
+    });
+
+    expect(
+      selectPmtilesTileFeaturesForZoom([visible, hidden], {
+        zoom: 4,
+      })
+    ).toEqual([visible]);
+  });
+
+  it('applies on-demand zoom detail selection after generator fan-out', () => {
+    const generator = createMapFeatureGeneratorPlugin({
+      id: 'roads',
+      layerId: 'transport',
+      getFeatures() {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: 'road:spine',
+            layerId: 'transport',
+            zoomRange: {
+              minZoom: 0,
+            },
+            coordinates: [
+              { worldX: 0, worldY: 0 },
+              { worldX: 1, worldY: 1 },
+              { worldX: 2, worldY: 0 },
+              { worldX: 3, worldY: 1 },
+              { worldX: 4, worldY: 0 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    const features = generatePmtilesTileFeaturesAtZoomDetail({
+      request: {
+        worldRevision: 'rev-2',
+        tile: {
+          zoom: 2,
+          x: 0,
+          y: 0,
+        },
+      },
+      generators: [generator],
+      fullDetailZoom: 4,
+      maximumGeometryStride: 4,
+    });
+
+    expect(features[0]).toMatchObject({
+      kind: 'line',
+      layerId: 'transport',
+    });
+    expect(features[0]?.kind === 'line' ? features[0].coordinates : []).toEqual([
+      { worldX: 0, worldY: 0 },
+      { worldX: 4, worldY: 0 },
     ]);
   });
 

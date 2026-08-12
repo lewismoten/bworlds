@@ -27,10 +27,15 @@ export {
 } from './map-features.ts';
 export {
   createMapFeatureGeneratorPlugin,
+  DEFAULT_PMTILES_FULL_DETAIL_ZOOM,
+  DEFAULT_PMTILES_MAX_GEOMETRY_STRIDE,
   createPmtilesExportPlugin,
   createPmtilesExportRequest,
   createPmtilesTileCoordinate,
   generatePmtilesTileFeatures,
+  generatePmtilesTileFeaturesAtZoomDetail,
+  selectPmtilesTileFeaturesForZoom,
+  simplifyPmtilesFeatureGeometry,
 } from './map-pmtiles.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,

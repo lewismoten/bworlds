@@ -2,10 +2,13 @@
 for future vector-tile generation:
 
 - `createMapFeatureGeneratorPlugin(...)`
+- `selectPmtilesTileFeaturesForZoom(...)`
+- `simplifyPmtilesFeatureGeometry(...)`
 - `createPmtilesExportPlugin(...)`
 - `createPmtilesExportRequest(...)`
 - `createPmtilesTileCoordinate(...)`
 - `generatePmtilesTileFeatures(...)`
+- `generatePmtilesTileFeaturesAtZoomDetail(...)`
 
 ## Purpose
 
@@ -61,6 +64,27 @@ That keeps later PMTiles export code free to:
 - generate tile features only when a tile is requested
 - filter generators by requested `layerIds`
 - keep layer ownership explicit on returned features
+
+## Zoom Detail
+
+`selectPmtilesTileFeaturesForZoom(...)` applies canonical feature
+`zoomRange` visibility to a feature set for one tile zoom.
+
+`simplifyPmtilesFeatureGeometry(...)` reduces line and polygon geometry detail
+at lower zoom levels by increasing the kept-vertex stride, while leaving point
+features unchanged.
+
+`generatePmtilesTileFeaturesAtZoomDetail(...)` composes:
+
+- on-demand generator fan-out
+- zoom visibility filtering
+- zoom-based geometry simplification
+
+That gives later PMTiles export code one shared path for:
+
+- coarse features at low zoom
+- finer features at higher zoom
+- zoom-dependent line and polygon simplification
 
 ## Validation
 

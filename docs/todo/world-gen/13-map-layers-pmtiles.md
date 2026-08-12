@@ -28,9 +28,9 @@ Current support:
 
 - [x] Create a PMTiles export plugin.
 - [x] Generate vector features from world data on demand.
-- [ ] Use coarse features at low zoom levels.
-- [ ] Reveal finer features as zoom increases.
-- [ ] Simplify lines and polygons by zoom level.
+- [x] Use coarse features at low zoom levels.
+- [x] Reveal finer features as zoom increases.
+- [x] Simplify lines and polygons by zoom level.
 - [ ] Keep major rivers visible at low zoom.
 - [ ] Reveal local roads and small rivers at higher zoom.
 - [ ] Cache generated tiles by world revision.
@@ -49,6 +49,12 @@ Current support:
   layer-scoped, on-demand feature generation model, so tile export can ask
   only the relevant generators for a requested `zoom/x/y` tile instead of
   materializing whole-world feature sets first.
+- `selectPmtilesTileFeaturesForZoom(...)`,
+  `simplifyPmtilesFeatureGeometry(...)`, and
+  `generatePmtilesTileFeaturesAtZoomDetail(...)` now give that PMTiles path
+  one shared zoom-detail pass for coarse low-zoom geometry, finer high-zoom
+  geometry, and zoom-dependent line/polygon simplification without changing
+  the underlying canonical world-space feature records.
 
 ## Physical Layers
 
