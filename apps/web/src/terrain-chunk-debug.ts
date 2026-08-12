@@ -70,6 +70,13 @@ export type TerrainChunkDebugSeamSummary = {
   }[];
 };
 
+export type TerrainChunkDebugVerificationCheck = {
+  id: 'seams' | 'parity';
+  label: string;
+  status: 'pass' | 'attention';
+  summary: string;
+};
+
 export type TerrainChunkDebugSnapshot = {
   options: TerrainChunkDebugOptions;
   chunkBounds: TerrainChunkCellBounds;
@@ -88,6 +95,8 @@ export type TerrainChunkDebugSnapshot = {
     min: number;
     max: number;
   };
+  verificationStatus: 'passing' | 'attention';
+  verificationChecks: readonly TerrainChunkDebugVerificationCheck[];
   wireframe: TerrainChunkWireframeDebugView;
   seamSummaries: readonly TerrainChunkDebugSeamSummary[];
   geometry: {
@@ -243,6 +252,10 @@ export function createTerrainChunkDebugSnapshot(
     }),
   ];
   const heights = [...currentHeightField.heights];
+  const verificationChecks = resolveVerificationChecks({
+    seamSummaries,
+    parityMismatchCount: parityMismatchPreview.length,
+  });
 
   return {
     options,
@@ -264,6 +277,12 @@ export function createTerrainChunkDebugSnapshot(
       min: Math.min(...heights),
       max: Math.max(...heights),
     },
+    verificationStatus: verificationChecks.some(
+      (check) => check.status === 'attention'
+    )
+      ? 'attention'
+      : 'passing',
+    verificationChecks,
     wireframe,
     seamSummaries,
     geometry: {
@@ -407,6 +426,7 @@ export function buildTerrainChunkDebugMarkup(
             <div><dt>Height Range</dt><dd>${formatNumber(snapshot.heightRange.min)}..${formatNumber(snapshot.heightRange.max)}</dd></div>
             <div><dt>Dominant Layer</dt><dd>${escapeHtml(snapshot.dominantLayerId ?? 'none')}</dd></div>
             <div><dt>Logical Tiles</dt><dd>${snapshot.logicalTileCellCount}</dd></div>
+            <div><dt>Verification</dt><dd>${snapshot.verificationStatus === 'passing' ? 'Passing current checks' : 'Needs attention'}</dd></div>
             <div><dt>Parity Status</dt><dd>${snapshot.parityStatus === 'aligned' ? 'Aligned' : 'Drift detected'}</dd></div>
             <div><dt>Parity Matches</dt><dd>${snapshot.parityMatchCount}</dd></div>
             <div><dt>Parity Mismatches</dt><dd>${snapshot.parityMismatchCount}</dd></div>
@@ -414,6 +434,27 @@ export function buildTerrainChunkDebugMarkup(
           <p class="terrain-chunk-debug-note">
             Active layers: ${escapeHtml(snapshot.activeLayerIds.join(', ') || 'none')}
           </p>
+        </article>
+        <article class="terrain-chunk-debug-card">
+          <h2>Verification Summary</h2>
+          <dl class="terrain-chunk-debug-metrics">
+            ${snapshot.verificationChecks
+              .map(
+                (check) => `
+                  <div><dt>${escapeHtml(check.label)}</dt><dd>${escapeHtml(check.status === 'pass' ? 'Pass' : 'Attention')}</dd></div>
+                `
+              )
+              .join('')}
+          </dl>
+          <ul class="terrain-chunk-debug-list">
+            ${snapshot.verificationChecks
+              .map(
+                (check) => `
+                  <li>${escapeHtml(check.label)}: ${escapeHtml(check.summary)}</li>
+                `
+              )
+              .join('')}
+          </ul>
         </article>
         <article class="terrain-chunk-debug-card">
           <h2>Dominant Splat Grid</h2>
@@ -549,6 +590,47 @@ function resolveSeamHeightMaxDelta(
     }
   }
   return Math.max(0, ...deltas);
+}
+
+function resolveVerificationChecks(params: {
+  seamSummaries: readonly TerrainChunkDebugSeamSummary[];
+  parityMismatchCount: number;
+}): TerrainChunkDebugVerificationCheck[] {
+  const seamMismatchCount = params.seamSummaries.reduce(
+    (total, seam) => total + seam.mismatchCount,
+    0
+  );
+  const seamHeightDelta = Math.max(
+    0,
+    ...params.seamSummaries.map((seam) => seam.heightMaxDelta)
+  );
+  const seamsPassing =
+    seamMismatchCount === 0 &&
+    params.seamSummaries.every((seam) => seam.matchesExactly);
+  const parityPassing = params.parityMismatchCount === 0;
+
+  return [
+    {
+      id: 'seams',
+      label: 'Chunk Seams',
+      status: seamsPassing ? 'pass' : 'attention',
+      summary: seamsPassing
+        ? 'East and south seam samples match exactly with zero height delta.'
+        : `${seamMismatchCount} seam mismatch${
+            seamMismatchCount === 1 ? '' : 'es'
+          } detected; max sampled height delta ${formatNumber(seamHeightDelta)}.`,
+    },
+    {
+      id: 'parity',
+      label: 'Tile Parity',
+      status: parityPassing ? 'pass' : 'attention',
+      summary: parityPassing
+        ? 'Logical tile categories stay aligned with the current dominant terrain layers.'
+        : `${params.parityMismatchCount} logical tile parity mismatch${
+            params.parityMismatchCount === 1 ? '' : 'es'
+          } need review.`,
+    },
+  ];
 }
 
 function resolveDominantGridLayerId(

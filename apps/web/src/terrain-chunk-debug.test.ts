@@ -49,6 +49,16 @@ describe('terrain chunk debug', () => {
     expect(first.parityMismatchPreview).toHaveLength(
       Math.min(first.parityMismatchCount, 8)
     );
+    expect(first.verificationChecks).toHaveLength(2);
+    expect(first.verificationChecks.map((check) => check.id)).toEqual([
+      'seams',
+      'parity',
+    ]);
+    expect(first.verificationStatus).toBe(
+      first.verificationChecks.some((check) => check.status === 'attention')
+        ? 'attention'
+        : 'passing'
+    );
     expect(first.wireframe.vertexCount).toBeGreaterThan(0);
     expect(first.wireframe.segmentCount).toBeGreaterThan(
       first.wireframe.borderSegmentCount
@@ -73,6 +83,9 @@ describe('terrain chunk debug', () => {
     expect(markup).toContain('<h1>Terrain Chunk Debug</h1>');
     expect(markup).toContain('id="terrain-chunk-debug-form"');
     expect(markup).toContain('Dominant Splat Grid');
+    expect(markup).toContain('Verification Summary');
+    expect(markup).toContain('Chunk Seams');
+    expect(markup).toContain('Tile Parity');
     expect(markup).toContain('Logical Tile Parity');
     expect(markup).toContain('Parity Status');
     expect(markup).toContain('Parity Matches');
