@@ -609,5 +609,9 @@ adopted that path yet.
   path and suppress the route ribbon mesh in `terrainSurfaceMode:
 'shared-splat'`, but that path is still atlas-backed shared flooring rather
   than the final packed PBR terrain splat shader.
-- Field-like ground visuals still come from plugin mesh geometry rather than
-  shared splat terrain.
+- `packages/render3d` now paints one interim neighborhood-aware terrain surface
+  blend on eligible floor tiles so roads, plains, and field-like ground can
+  show visible shoulder/edge blending in the live app before chunk-level packed
+  splat materials land.
+- Field-like ground visuals still do not use the final shared packed terrain
+  splat chunk material or texture-array shader path.

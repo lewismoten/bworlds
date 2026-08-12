@@ -107,6 +107,10 @@ import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
 import { resolveTileTerrainSurfaceSelection } from './terrain-surface-mode.ts';
 import {
+  createTerrainSurfaceBlendMaterial,
+  createTerrainSurfaceBlendSignature,
+} from './terrain-surface-blend.ts';
+import {
   createSortedCountSummaryScratch,
   summarizeSortedCountMap,
   summarizeSortedCountMapWithTopLabel,
@@ -1240,6 +1244,7 @@ type SharedVisibleFloorInstance = {
   surfaceHeight: number;
   thickness: number;
   tilePluginOwnerLabel: string;
+  surfaceBlendSignature?: string | null;
 };
 
 type SharedWallFallbackInstance = {
@@ -1933,6 +1938,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     THREE.BufferGeometry,
     Map<string, THREE.BufferGeometry>
   >();
+  const terrainSurfaceMaterialCache = new Map<string, THREE.Material>();
   const tileAtlasGeometryCacheAccessStats = createCacheAccessStats();
   const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
@@ -3839,9 +3845,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     };
   }
 
-  function getTileMaterial(kind, variant) {
+  function getTileMaterial(kind, variant, surfaceBlendSignature = null) {
     void kind;
     void variant;
+    if (surfaceBlendSignature) {
+      const cached = terrainSurfaceMaterialCache.get(surfaceBlendSignature);
+      if (cached) {
+        return cached;
+      }
+      const material = createTerrainSurfaceBlendMaterial({
+        three: THREE,
+        signature: surfaceBlendSignature,
+      }) as THREE.Material;
+      terrainSurfaceMaterialCache.set(surfaceBlendSignature, material);
+      return material;
+    }
     return sharedTileAtlasMaterial;
   }
 
@@ -3914,7 +3932,18 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         ? tile.kind
         : resolvedFloorKind;
     const floorVariant = getTileVariantIndex(floorKind, tileX, tileY);
-    const material = getTileMaterial(floorKind, floorVariant);
+    const surfaceBlendSignature = createTerrainSurfaceBlendSignature({
+      centerKind: floorKind,
+      northKind: buildCache.getTile(tileX, tileY - 1).kind,
+      eastKind: buildCache.getTile(tileX + 1, tileY).kind,
+      southKind: buildCache.getTile(tileX, tileY + 1).kind,
+      westKind: buildCache.getTile(tileX - 1, tileY).kind,
+    });
+    const material = getTileMaterial(
+      floorKind,
+      floorVariant,
+      surfaceBlendSignature
+    );
     const surfaceHeight = surfaceProfile.surfaceHeight;
     const riverNeighbors = getAdjacentBoundaryNeighbors(
       state,
@@ -3954,6 +3983,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
             surfaceHeight,
             thickness: FLOOR_THICKNESS,
             tilePluginOwnerLabel,
+            surfaceBlendSignature,
           },
         };
       }
@@ -3961,11 +3991,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         ? WATER_FLOOR_THICKNESS
         : FLOOR_THICKNESS;
       const floorMesh = new THREE.Mesh(
-        getTileAtlasGeometry(
-          getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
-          floorKind,
-          floorVariant
-        ),
+        surfaceBlendSignature
+          ? getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE)
+          : getTileAtlasGeometry(
+              getSharedBoxGeometry(TILE_SIZE, floorThickness, TILE_SIZE),
+              floorKind,
+              floorVariant
+            ),
         material
       );
       floorMesh.position.set(
@@ -5104,6 +5136,7 @@ export function collectSharedVisibleFloorBatches(
   variant: number;
   thickness: number;
   tilePluginOwnerLabel: string;
+  surfaceBlendSignature?: string | null;
   instances: Array<{
     tileX: number;
     tileY: number;
@@ -5117,6 +5150,7 @@ export function collectSharedVisibleFloorBatches(
       variant: number;
       thickness: number;
       tilePluginOwnerLabel: string;
+      surfaceBlendSignature?: string | null;
       instances: Array<{
         tileX: number;
         tileY: number;
@@ -5130,7 +5164,7 @@ export function collectSharedVisibleFloorBatches(
     if (!sharedFloorInstance) {
       continue;
     }
-    const key = `${sharedFloorInstance.kind}:${sharedFloorInstance.variant}:${sharedFloorInstance.thickness}`;
+    const key = `${sharedFloorInstance.kind}:${sharedFloorInstance.variant}:${sharedFloorInstance.thickness}:${sharedFloorInstance.surfaceBlendSignature ?? ''}`;
     let batch = batches.get(key);
     if (!batch) {
       batch = {
@@ -5138,6 +5172,7 @@ export function collectSharedVisibleFloorBatches(
         variant: sharedFloorInstance.variant,
         thickness: sharedFloorInstance.thickness,
         tilePluginOwnerLabel: sharedFloorInstance.tilePluginOwnerLabel,
+        surfaceBlendSignature: sharedFloorInstance.surfaceBlendSignature,
         instances: [],
       };
       batches.set(key, batch);
@@ -5227,7 +5262,11 @@ function syncSharedVisibleFloorMeshes(
   entries: Iterable<Pick<DynamicTileNode, 'sharedFloorInstance'>>,
   state: Pick<Render3DState, 'player'>,
   deps: {
-    getTileMaterial(kind: Kind, variant: number): THREE.Material;
+    getTileMaterial(
+      kind: Kind,
+      variant: number,
+      surfaceBlendSignature?: string | null
+    ): THREE.Material;
     getTileAtlasGeometry(
       baseGeometry: THREE.BufferGeometry,
       kind: Kind,
@@ -5247,12 +5286,18 @@ function syncSharedVisibleFloorMeshes(
   const batches = collectSharedVisibleFloorBatches(entries, state);
   for (const batch of batches) {
     const mesh = new THREE.InstancedMesh(
-      deps.getTileAtlasGeometry(
-        deps.getSharedBoxGeometry(TILE_SIZE, batch.thickness, TILE_SIZE),
+      batch.surfaceBlendSignature
+        ? deps.getSharedBoxGeometry(TILE_SIZE, batch.thickness, TILE_SIZE)
+        : deps.getTileAtlasGeometry(
+            deps.getSharedBoxGeometry(TILE_SIZE, batch.thickness, TILE_SIZE),
+            batch.kind,
+            batch.variant
+          ),
+      deps.getTileMaterial(
         batch.kind,
-        batch.variant
+        batch.variant,
+        batch.surfaceBlendSignature
       ),
-      deps.getTileMaterial(batch.kind, batch.variant),
       batch.instances.length
     );
     mesh.userData = {
@@ -5261,6 +5306,7 @@ function syncSharedVisibleFloorMeshes(
       tilePluginOwnerLabel: batch.tilePluginOwnerLabel,
       tileKind: batch.kind,
       tileVariant: batch.variant,
+      surfaceBlendSignature: batch.surfaceBlendSignature ?? null,
     };
     mesh.receiveShadow = true;
     const matrix = new THREE.Matrix4();

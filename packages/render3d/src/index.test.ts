@@ -6719,7 +6719,7 @@ describe('render3d visibility helpers', () => {
     expect(getWorldCurvatureOffset(24)).toBeCloseTo(-1.2, 6);
   });
 
-  it('batches shared plains and road floors by kind, variant, and curvature-adjusted height', () => {
+  it('batches shared plains and road floors by kind, surface signature, variant, and curvature-adjusted height', () => {
     expect(
       collectSharedVisibleFloorBatches(
         [
@@ -6732,6 +6732,7 @@ describe('render3d visibility helpers', () => {
               surfaceHeight: 0.2,
               thickness: 0.03,
               tilePluginOwnerLabel: 'tile-plains',
+              surfaceBlendSignature: 'plains:plains:road:plains:plains',
             },
           },
           {
@@ -6743,6 +6744,7 @@ describe('render3d visibility helpers', () => {
               surfaceHeight: 0.2,
               thickness: 0.03,
               tilePluginOwnerLabel: 'tile-plains',
+              surfaceBlendSignature: 'plains:plains:road:plains:plains',
             },
           },
           {
@@ -6754,6 +6756,7 @@ describe('render3d visibility helpers', () => {
               surfaceHeight: 0.25,
               thickness: 0.03,
               tilePluginOwnerLabel: 'tile-route',
+              surfaceBlendSignature: 'road:plains:plains:plains:plains',
             },
           },
           {
@@ -6765,6 +6768,7 @@ describe('render3d visibility helpers', () => {
               surfaceHeight: 0.4,
               thickness: 0.03,
               tilePluginOwnerLabel: 'tile-plains',
+              surfaceBlendSignature: 'plains:forest:plains:plains:plains',
             },
           },
           {
@@ -6781,6 +6785,7 @@ describe('render3d visibility helpers', () => {
         variant: 0,
         thickness: 0.03,
         tilePluginOwnerLabel: 'tile-plains',
+        surfaceBlendSignature: 'plains:plains:road:plains:plains',
         instances: [
           {
             tileX: 0,
@@ -6799,6 +6804,7 @@ describe('render3d visibility helpers', () => {
         variant: 0,
         thickness: 0.03,
         tilePluginOwnerLabel: 'tile-route',
+        surfaceBlendSignature: 'road:plains:plains:plains:plains',
         instances: [
           {
             tileX: 2,
@@ -6812,6 +6818,7 @@ describe('render3d visibility helpers', () => {
         variant: 1,
         thickness: 0.03,
         tilePluginOwnerLabel: 'tile-plains',
+        surfaceBlendSignature: 'plains:forest:plains:plains:plains',
         instances: [
           {
             tileX: 1,
