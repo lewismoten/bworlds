@@ -27,6 +27,7 @@ export type DebugSnapshot = {
   peakPendingTileCount?: number;
   averagePendingFlushTiles: number;
   maxPendingFlushTiles: number;
+  peakPendingFlushDurationMs?: number;
   averageTileBuildMs: number;
   maxTileBuildMs: number;
   averageFullTileBuildMs?: number;
@@ -459,6 +460,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Peak Pending Tiles</dt><dd>${snapshot.peakPendingTileCount ?? 0}</dd></div>
     <div><dt>Avg Flush Tiles</dt><dd>${snapshot.averagePendingFlushTiles.toFixed(2)}</dd></div>
     <div><dt>Max Flush Tiles</dt><dd>${snapshot.maxPendingFlushTiles}</dd></div>
+    <div><dt>Peak Flush Time</dt><dd>${(snapshot.peakPendingFlushDurationMs ?? 0).toFixed(2)} ms</dd></div>
     <div><dt>Avg Tile Build</dt><dd>${snapshot.averageTileBuildMs.toFixed(2)} ms</dd></div>
     <div><dt>Max Tile Build</dt><dd>${snapshot.maxTileBuildMs.toFixed(2)} ms</dd></div>
     <div><dt>Avg Full Tile Build</dt><dd>${(snapshot.averageFullTileBuildMs ?? 0).toFixed(2)} ms</dd></div>

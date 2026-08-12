@@ -326,6 +326,7 @@ type Render3DController = {
     peakPendingTileCount: number;
     averagePendingFlushTiles: number;
     maxPendingFlushTiles: number;
+    peakPendingFlushDurationMs: number;
     averageTileBuildMs: number;
     maxTileBuildMs: number;
     averageFullTileBuildMs: number;
@@ -1555,6 +1556,7 @@ type RenderChurnMetrics = {
   fallbackBoxes: number[];
   fallbackBoxLabels: RecentLabeledCountSample[];
   pendingFlushCounts: RecentCountSample[];
+  pendingFlushDurations: RecentDurationSample[];
   tileBuildDurations: RecentDurationSample[];
   tileBuildDurationsByDetail: RecentLabeledDurationSample[];
   tilePluginBuildDurations: RecentLabeledDurationSample[];
@@ -1799,6 +1801,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     fallbackBoxes: [] as number[],
     fallbackBoxLabels: [] as RecentLabeledCountSample[],
     pendingFlushCounts: [] as RecentCountSample[],
+    pendingFlushDurations: [] as RecentDurationSample[],
     tileBuildDurations: [] as RecentDurationSample[],
     tileBuildDurationsByDetail: [] as RecentLabeledDurationSample[],
     tilePluginBuildDurations: [] as RecentLabeledDurationSample[],
@@ -2661,6 +2664,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
     const registry = getActivePluginRegistry();
     const flushStartMs = performance.now();
+    let didFlushPendingBuildWork = false;
     const remainingFrameBudgetMs = frameBudget
       ? getRemainingFrameTimeBudgetMs(frameBudget, flushStartMs)
       : Number.POSITIVE_INFINITY;
@@ -2702,6 +2706,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     let processedEntryCount = 0;
 
     if (activePendingTileBuild) {
+      didFlushPendingBuildWork = true;
       const resumeStartMs = performance.now();
       const resumed = resumeProgressiveTileModelBuildWithinBudget(
         activePendingTileBuild.progressiveBuild,
@@ -2767,6 +2772,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
             label: activePendingTileBuild.shell.tilePluginOwnerLabel,
           }
         );
+        recordRecentDurationMetric(renderChurnMetrics.pendingFlushDurations, {
+          nowMs,
+          durationMs: performance.now() - flushStartMs,
+        });
         return;
       }
     }
@@ -2782,6 +2791,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         0
       )
     ) {
+      didFlushPendingBuildWork = true;
       const entry = pendingWorldBuild.queue[processedEntryCount];
       processedEntryCount += 1;
       if (!entry) {
@@ -2873,6 +2883,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         state,
         pendingWorldBuild.queue[processedEntryCount]
       );
+    }
+
+    if (didFlushPendingBuildWork) {
+      recordRecentDurationMetric(renderChurnMetrics.pendingFlushDurations, {
+        nowMs,
+        durationMs: performance.now() - flushStartMs,
+      });
     }
   }
 
@@ -3090,6 +3107,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.pendingFlushCounts,
       nowMs
     );
+    const recentPendingFlushDurationStats = getRecentDurationStats(
+      renderChurnMetrics.pendingFlushDurations,
+      nowMs
+    );
     const recentPendingTileStats = getRecentCountStats(
       renderChurnMetrics.pendingTileCounts,
       nowMs
@@ -3165,6 +3186,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       peakPendingTileCount: recentPendingTileStats.maxCount,
       averagePendingFlushTiles: recentPendingFlushStats.averageCount,
       maxPendingFlushTiles: recentPendingFlushStats.maxCount,
+      peakPendingFlushDurationMs: recentPendingFlushDurationStats.maxMs,
       averageTileBuildMs: recentTileBuildStats.averageMs,
       maxTileBuildMs: recentTileBuildStats.maxMs,
       averageFullTileBuildMs: recentFullTileBuildStats.averageMs,

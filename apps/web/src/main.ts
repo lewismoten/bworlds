@@ -2481,6 +2481,7 @@ function collectCurrentDebugSnapshot(
     peakPendingTileCount: rendererStats.peakPendingTileCount,
     averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,
     maxPendingFlushTiles: rendererStats.maxPendingFlushTiles,
+    peakPendingFlushDurationMs: rendererStats.peakPendingFlushDurationMs,
     averageTileBuildMs: rendererStats.averageTileBuildMs,
     maxTileBuildMs: rendererStats.maxTileBuildMs,
     averageFullTileBuildMs: rendererStats.averageFullTileBuildMs,

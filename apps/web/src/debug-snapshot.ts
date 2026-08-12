@@ -284,6 +284,7 @@ export type DebugSnapshotExport = {
     loadedTileCount: number;
     pendingTileBuildCount: number;
     peakPendingTileBuildCount: number;
+    peakPendingBuildFlushMs: number;
     tileBuildsPerSecond: number;
     averageTileBuildMs: number;
     worstTileBuildMs: number;
@@ -672,6 +673,7 @@ export function buildDebugSnapshotExport(
       loadedTileCount: options.snapshot.loadedChunkCount,
       pendingTileBuildCount: options.snapshot.pendingTileCount,
       peakPendingTileBuildCount: options.snapshot.peakPendingTileCount ?? 0,
+      peakPendingBuildFlushMs: options.snapshot.peakPendingFlushDurationMs ?? 0,
       tileBuildsPerSecond: options.snapshot.tileBuildsPerSecond,
       averageTileBuildMs: options.snapshot.averageTileBuildMs,
       worstTileBuildMs: options.snapshot.maxTileBuildMs,

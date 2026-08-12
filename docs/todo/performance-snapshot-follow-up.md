@@ -224,7 +224,11 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 - [ ] Clarify why soft pending tiles is eight but hard is four.
 - [ ] Rename limits where lower values represent more pressure.
 - [ ] Record peak pending tile count during the sample window.
-- [ ] Record peak pending build time during the sample window.
+- [x] Record peak pending build time during the sample window.
+      Progress: `render3d` now tracks recent pending-build flush durations and
+      surfaces the peak flush time through the web debug snapshot/export path,
+      so sample captures show how long the scheduler spent flushing queued tile
+      work instead of only how many tiles it processed.
 - [ ] Report scheduler starvation events.
       Progress: `render3d` now records per-plugin pending-build scheduler
       starvation rates when queued tile work cannot advance within the shared

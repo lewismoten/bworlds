@@ -64,6 +64,7 @@ describe('debug panel', () => {
       peakPendingTileCount: 9,
       averagePendingFlushTiles: 3.5,
       maxPendingFlushTiles: 5,
+      peakPendingFlushDurationMs: 2.25,
       averageTileBuildMs: 2.45,
       maxTileBuildMs: 6.75,
       averageFullTileBuildMs: 3.4,

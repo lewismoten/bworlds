@@ -1525,6 +1525,7 @@ describe('render3d visibility helpers', () => {
           fallbackBoxes: [100, 900],
           fallbackBoxLabels: [],
           pendingFlushCounts: [],
+          pendingFlushDurations: [],
           tileBuildDurations: [],
           tileBuildDurationsByDetail: [],
           tilePluginBuildDurations: [],
@@ -1559,6 +1560,7 @@ describe('render3d visibility helpers', () => {
           fallbackBoxes: [100, 900],
           fallbackBoxLabels: [],
           pendingFlushCounts: [],
+          pendingFlushDurations: [],
           tileBuildDurations: [],
           tileBuildDurationsByDetail: [],
           tilePluginBuildDurations: [],
@@ -1659,6 +1661,23 @@ describe('render3d visibility helpers', () => {
       averageCount: 3,
       maxCount: 3,
     });
+  });
+
+  it('tracks recent pending flush durations with a rolling peak', () => {
+    const samples = [
+      { nowMs: 100, durationMs: 0.8 },
+      { nowMs: 450, durationMs: 1.6 },
+    ];
+
+    recordRecentDurationMetric(samples, { nowMs: 900, durationMs: 2.4 });
+    const recentStats = getRecentDurationStats(samples, 950);
+    expect(recentStats.averageMs).toBeCloseTo(1.6, 6);
+    expect(recentStats.maxMs).toBeCloseTo(2.4, 6);
+
+    recordRecentDurationMetric(samples, { nowMs: 2405, durationMs: 3.2 });
+    const prunedStats = getRecentDurationStats(samples, 2600);
+    expect(prunedStats.averageMs).toBeCloseTo(3.2, 6);
+    expect(prunedStats.maxMs).toBeCloseTo(3.2, 6);
   });
 
   it('tracks shared frame generation budgets and reports when they are exhausted', () => {
