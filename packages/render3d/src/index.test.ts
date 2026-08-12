@@ -3471,14 +3471,24 @@ describe('render3d visibility helpers', () => {
     expect(
       getTileModelMaterialGroupWarning(
         {
-          maxGeometryGroupCount: 3,
-          triangleCount: 48,
+          maxGeometryGroupCount: 4,
+          triangleCount: 64,
         },
         'low'
       )
     ).toBe(
-      'maxGeometryGroupCount 3 for triangleCount 48 (16.0 triangles/group)'
+      'maxGeometryGroupCount 4 for triangleCount 64 (16.0 triangles/group)'
     );
+
+    expect(
+      getTileModelMaterialGroupWarning(
+        {
+          maxGeometryGroupCount: 3,
+          triangleCount: 84,
+        },
+        'low'
+      )
+    ).toBeNull();
 
     expect(
       getTileModelMaterialGroupWarning(
