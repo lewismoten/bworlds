@@ -4,9 +4,9 @@
 
 - [ ] Create one PBR splat terrain material.
 - [ ] Keep splat rendering separate from tile gameplay state.
-- [ ] Define a terrain material layer interface.
-- [ ] Define a terrain splat weight interface.
-- [ ] Keep layer IDs stable across chunks.
+- [x] Define a terrain material layer interface.
+- [x] Define a terrain splat weight interface.
+- [x] Keep layer IDs stable across chunks.
 - [ ] Keep splat data deterministic from the world seed.
 - [ ] Share the same splat system across terrain plugins.
 
@@ -20,7 +20,7 @@
 - [ ] Store texture scale per terrain layer.
 - [ ] Store default tint per terrain layer.
 - [ ] Store roughness defaults per terrain layer.
-- [ ] Validate all PBR layer definitions.
+- [x] Validate all PBR layer definitions.
 
 ## Texture Arrays
 
@@ -46,10 +46,10 @@
 ## Splat Weights
 
 - [ ] Store terrain blend weights per vertex or sample.
-- [ ] Keep splat weights normalized to a total of one.
-- [ ] Clamp invalid splat weights.
-- [ ] Allow up to four active layers per splat sample.
-- [ ] Drop very small layer weights when possible.
+- [x] Keep splat weights normalized to a total of one.
+- [x] Clamp invalid splat weights.
+- [x] Allow up to four active layers per splat sample.
+- [x] Drop very small layer weights when possible.
 - [ ] Pack splat weights into compact vertex attributes.
 - [ ] Pack layer indices into compact vertex attributes.
 - [ ] Keep weight data stable across terrain LOD changes.
@@ -207,8 +207,8 @@
 
 ## Validation
 
-- [ ] Reject splat weights containing NaN values.
-- [ ] Reject splat weights outside zero to one.
+- [x] Reject splat weights containing NaN values.
+- [x] Reject splat weights outside zero to one.
 - [ ] Reject samples whose weights do not sum near one.
 - [ ] Reject invalid terrain layer indices.
 - [ ] Reject texture arrays with mismatched dimensions.
@@ -218,7 +218,7 @@
 
 ## Tests
 
-- [ ] Test splat weights always normalize to one.
+- [x] Test splat weights always normalize to one.
 - [ ] Test adjacent chunks share border splat weights.
 - [ ] Test terrain layers stay stable for one seed.
 - [ ] Test mixed terrain renders in one chunk.
@@ -261,6 +261,14 @@
 - [ ] Add seasonal terrain tinting.
 - [ ] Add worker-based splat generation.
 - [ ] Add performance limits and regression tests.
+
+Progress: `@bworlds/terrain-splat-support` now provides the first shared PBR
+splat foundation package with validated `TerrainMaterialLayerDefinition`
+entries, stable catalog indexing by layer ID, bounded `TerrainSplatSample` /
+`TerrainSplatWeight` normalization, a four-layer active sample cap, tiny-weight
+dropping, and validation for NaN or out-of-range weights. The architecture note
+lives in `packages/terrain-splat-support/docs/foundations.md`, and focused
+tests cover stable layer indices plus sample normalization and validation.
 
 # Roads and Paths as Terrain Splats
 
