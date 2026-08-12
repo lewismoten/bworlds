@@ -1085,27 +1085,30 @@ function* createRoadGroupProgressive({
         label: 'stub-shoulder',
       };
     }
-    group.add(
-      createRoadRibbonMesh(
-        three,
-        [
-          new three.Vector3(-0.14, ROAD_CORE_HEIGHT, 0),
-          new three.Vector3(0, ROAD_CORE_HEIGHT, 0),
-          new three.Vector3(0.14, ROAD_CORE_HEIGHT, 0),
-        ],
-        0.12,
-        style.roadMaterial,
-        appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
-        0.028
-      )
+    const stubRoad = createRoadRibbonMesh(
+      three,
+      [
+        new three.Vector3(-0.14, ROAD_CORE_HEIGHT, 0),
+        new three.Vector3(0, ROAD_CORE_HEIGHT, 0),
+        new three.Vector3(0.14, ROAD_CORE_HEIGHT, 0),
+      ],
+      0.12,
+      style.roadMaterial,
+      appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
+      0.028
     );
+    if (includeShoulders) {
+      group.add(stubRoad);
+    } else {
+      stubRoad.position.set(tileX, 0, tileY);
+    }
     completedSteps += 1;
     yield {
       completedSteps,
       totalSteps,
       label: 'stub-road',
     };
-    return group;
+    return includeShoulders ? group : stubRoad;
   }
 
   const totalSteps =

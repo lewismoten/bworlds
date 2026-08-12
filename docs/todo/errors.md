@@ -122,7 +122,9 @@ Always run tests to make sure all tests pass
       now place their hull, prow, cabin, sail, and ramp pieces directly
       under the dock root instead of a dedicated boat subgroup, and forest log
       bridges now collapse their repeated support posts into one shared
-      `InstancedMesh`, and standard bridge railings and covered bridge spans now collapse their repeated rails and posts into shared
+      `InstancedMesh`, isolated low-detail road tiles now return their single
+      stub ribbon mesh directly instead of wrapping it in a one-child group,
+      and standard bridge railings and covered bridge spans now collapse their repeated rails and posts into shared
       `InstancedMesh` sets, and stone bridges now collapse their repeated
       parapets into one shared `InstancedMesh`, and
       drawbridges now collapse their repeated tower frames into one shared
