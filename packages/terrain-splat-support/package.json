@@ -10,6 +10,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./attribute-plan": "./src/attribute-plan.ts",
+    "./chunk-seam-debug": "./src/chunk-seam-debug.ts",
     "./chunk-build": "./src/chunk-build.ts",
     "./chunk-cache": "./src/chunk-cache.ts",
     "./debug-view": "./src/debug-view.ts",

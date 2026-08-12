@@ -51,6 +51,10 @@ Current support:
   UV samples and verifies they stay continuous across repeated terrain
   boundaries, while sample-grid tests verify border-identical splat weights for
   adjacent chunk builds.
+- `@bworlds/terrain-splat-support/chunk-seam-debug` now provides a renderer-free
+  seam analysis payload for adjacent chunk borders, so future inspectors can
+  surface exact layer and weight mismatches before the live chunk debug overlay
+  lands.
 
 ## Sextant Panel
 
