@@ -43,5 +43,10 @@ materials through a host-level cache keyed by effective color/roughness/
 metalness values. Region-specific bridge textures still vary where needed, but
 equivalent solid accent materials no longer duplicate per bridge appearance.
 
+Forest-log bridges now use the fallen trunk mesh itself as the tile root and
+attach the repeated support posts beneath it. That removes one static wrapper
+`Group` from each visible forest-log bridge while preserving the same support
+placement and traversal marker metadata.
+
 The synchronous `create3DModel()` path still exhausts the same generator so the
 progressive and eager dock builds stay structurally aligned.

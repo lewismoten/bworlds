@@ -1694,8 +1694,6 @@ function* createForestLogBridgeGroupProgressive(
   tileY: number,
   axis: 'ew' | 'ns'
 ): Generator<Create3DModelProgress, unknown, void> {
-  const group = new three.Group();
-  group.position.set(tileX, 0, tileY);
   const { trunkMaterial, supportMaterial } = getForestLogBridgeMaterials(three);
   const totalSteps = 2;
 
@@ -1703,7 +1701,7 @@ function* createForestLogBridgeGroupProgressive(
     new three.CylinderGeometry(0.08, 0.1, 1.08, 7),
     trunkMaterial
   );
-  trunk.position.y = -0.02;
+  trunk.position.set(tileX, -0.02, tileY);
   trunk.rotation.z = Math.PI * 0.5;
   if (axis === 'ns') {
     trunk.rotation.x = Math.PI * 0.5;
@@ -1713,7 +1711,6 @@ function* createForestLogBridgeGroupProgressive(
     ...(trunk.userData ?? {}),
     [FOREST_LOG_BRIDGE_KEY]: axis,
   };
-  group.add(trunk);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -1750,14 +1747,14 @@ function* createForestLogBridgeGroupProgressive(
       )
     );
   }
-  group.add(supportInstances);
+  trunk.add(supportInstances);
   yield {
     completedSteps: 2,
     totalSteps,
     label: 'supports',
   };
 
-  return group;
+  return trunk;
 }
 
 function getForestLogBridgeMaterials(three: ThreeHostLike) {

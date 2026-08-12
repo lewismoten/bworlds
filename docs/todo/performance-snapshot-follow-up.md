@@ -346,7 +346,12 @@ low` visible recovery, and full-detail `tile-sign` tiles now use their post
       rivers and the primary ribbon mesh as the root for stub rivers, attaching
       the remaining water and highlight ribbons beneath that first mesh instead
       of wrapping each river tile in a dedicated `Group`, which removes one
-      static `Object3D` from each river tile without changing the river shape.
+      static `Object3D` from each river tile without changing the river shape,
+      and forest-log bridges now use their fallen trunk mesh as the tile root
+      and attach the repeated support-post `InstancedMesh` beneath it instead
+      of wrapping both parts in a dedicated `Group`, which removes one static
+      `Object3D` from each forest-log bridge tile without changing its support
+      placement or traversal-axis metadata.
 
 ## LOD Stability
 

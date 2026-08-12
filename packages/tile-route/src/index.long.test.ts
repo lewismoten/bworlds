@@ -1016,6 +1016,25 @@ describe('tile route', () => {
     expect(supportInstances[0]?.matrices).toHaveLength(2);
   });
 
+  it('uses the trunk mesh as the forest-log bridge root', () => {
+    const state = createForestLogBridgeState();
+    const model = bridgeTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'bridge' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeNode | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.userData?.forestLogBridge).toBe('ns');
+    expect(model?.children).toHaveLength(1);
+    expect(model?.children[0]).toBeInstanceOf(FakeInstancedMesh);
+    expect(model?.children[0]?.userData?.routeInstancedPart).toBe(
+      'forest-log-support'
+    );
+  });
+
   it('builds forest-log bridges progressively before returning the final model', () => {
     const state = createForestLogBridgeState();
     const build = bridgeTile?.create3DModelProgressive?.({
