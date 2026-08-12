@@ -1895,22 +1895,28 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   scene.add(moonTarget);
   moonLight.target = moonTarget;
 
-  const skyRoot = new THREE.Group();
+  const skyRoot = markRenderSemanticGroup(new THREE.Group(), 'sky-root');
   scene.add(skyRoot);
 
   const stars = createStarField();
   skyRoot.add(stars);
 
-  const constellationRoot = new THREE.Group();
+  const constellationRoot = markRenderSemanticGroup(
+    new THREE.Group(),
+    'constellation-root'
+  );
   skyRoot.add(constellationRoot);
 
-  const eventRoot = new THREE.Group();
+  const eventRoot = markRenderSemanticGroup(new THREE.Group(), 'event-root');
   skyRoot.add(eventRoot);
 
-  const milkyWayRoot = new THREE.Group();
+  const milkyWayRoot = markRenderSemanticGroup(
+    new THREE.Group(),
+    'milky-way-root'
+  );
   skyRoot.add(milkyWayRoot);
 
-  const auroraRoot = new THREE.Group();
+  const auroraRoot = markRenderSemanticGroup(new THREE.Group(), 'aurora-root');
   skyRoot.add(auroraRoot);
 
   const sunSprite = createSunSprite();
@@ -1919,10 +1925,16 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const moonSprite = createMoonSprite();
   skyRoot.add(moonSprite);
 
-  const worldRoot = new THREE.Group();
+  const worldRoot = markRenderSemanticGroup(new THREE.Group(), 'world-root');
   scene.add(worldRoot);
-  const sharedVisibleFloorRoot = new THREE.Group();
-  const sharedWallFallbackRoot = new THREE.Group();
+  const sharedVisibleFloorRoot = markRenderSemanticGroup(
+    new THREE.Group(),
+    'shared-visible-floor-root'
+  );
+  const sharedWallFallbackRoot = markRenderSemanticGroup(
+    new THREE.Group(),
+    'shared-wall-fallback-root'
+  );
   worldRoot.add(sharedVisibleFloorRoot);
   worldRoot.add(sharedWallFallbackRoot);
 
@@ -2041,7 +2053,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     renderBudget?: RenderBudget
   ): TileNodeBuildShell {
     recordRecentMetric(renderChurnMetrics.tileNodeBuilds, performance.now());
-    const tileNode = new THREE.Group();
+    const tileNode = markRenderSemanticGroup(
+      new THREE.Group(),
+      'visible-tile-node'
+    );
     freezeStaticObjectTransforms(tileNode);
     const buildCache = createTileBuildCache(state);
     const tile = buildCache.getTile(x, y);
@@ -7286,6 +7301,16 @@ function applyShadowSettings(
       child.receiveShadow = options.receiveShadow;
     }
   });
+}
+
+export function markRenderSemanticGroup<
+  TGroup extends { userData?: Record<string, unknown> | undefined },
+>(group: TGroup, label: string): TGroup {
+  group.userData = {
+    ...(group.userData ?? {}),
+    renderSceneSemanticGroup: label,
+  };
+  return group;
 }
 
 export function createStarField(): THREE.Group {

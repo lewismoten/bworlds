@@ -135,6 +135,7 @@ import {
   countRecentMetricEvents,
   countEquivalentShareableMaterials,
   createStarField,
+  markRenderSemanticGroup,
   syncAuroraBands,
   syncCelestialEvents,
   syncConstellationSky,
@@ -1481,6 +1482,26 @@ describe('render3d visibility helpers', () => {
       treeMeshCount: 0,
       treeMaterialRefCount: 0,
     });
+  });
+
+  it('treats tagged render semantic groups as tagged one-child groups instead of plain wrappers', () => {
+    const mesh = createMockObject3D(
+      createMockMaterial(),
+      [],
+      createMockStatGeometry('semantic-geometry', 4)
+    );
+    const semanticRoot = markRenderSemanticGroup(
+      createMockObject3D(undefined, [mesh]),
+      'visible-tile-node'
+    );
+    const root = createMockObject3D(undefined, [semanticRoot]);
+
+    const stats = collectSceneResourceStats(root as never);
+
+    expect(stats.oneChildGroupCount).toBe(2);
+    expect(stats.oneChildGroupPlainWrapperCount).toBe(1);
+    expect(stats.oneChildGroupTaggedCount).toBe(1);
+    expect(stats.oneChildGroupTransformCount).toBe(0);
   });
 
   it('counts static objects that keep matrixAutoUpdate enabled separately from tagged dynamic responders', () => {

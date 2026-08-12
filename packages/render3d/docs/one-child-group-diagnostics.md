@@ -22,3 +22,8 @@ These categories are exposed through the renderer debug stats and the web debug
 snapshot/panel so scene-graph cleanup can target likely removable wrappers
 first instead of collapsing semantic pivots such as observatory domes or other
 animated anchors.
+
+Renderer-owned semantic container groups now also mark themselves through
+`userData.renderSceneSemanticGroup`, so visible-tile shells and persistent sky /
+world layer roots do not inflate the plain-wrapper bucket when they temporarily
+hold only one child.
