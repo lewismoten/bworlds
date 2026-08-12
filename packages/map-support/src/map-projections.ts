@@ -100,6 +100,10 @@ export const STEREOGRAPHIC_MAX_PROJECTED_RADIUS =
 export const ORTHOGRAPHIC_CENTER_LONGITUDE = 0;
 export const ORTHOGRAPHIC_CENTER_LATITUDE = 0;
 export const ORTHOGRAPHIC_MAX_PROJECTED_RADIUS = 1;
+export const SINUSOIDAL_MAX_WORLD_LONGITUDE = 180;
+export const SINUSOIDAL_MAX_WORLD_LATITUDE = 90;
+export const SINUSOIDAL_MAX_PROJECTED_X = Math.PI;
+export const SINUSOIDAL_MAX_PROJECTED_Y = Math.PI / 2;
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -930,6 +934,61 @@ export function createOrthographicMapProjectionPlugin(
         );
       return {
         worldX: normalizeLongitudeDegrees(radiansToDegrees(longitudeRadians)),
+        worldY: radiansToDegrees(latitudeRadians),
+      };
+    },
+  });
+}
+
+export function createSinusoidalMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'sinusoidal',
+    label: 'Sinusoidal',
+    distortion: 'equal-area',
+    bounds: {
+      minWorldX: -SINUSOIDAL_MAX_WORLD_LONGITUDE,
+      maxWorldX: SINUSOIDAL_MAX_WORLD_LONGITUDE,
+      minWorldY: -SINUSOIDAL_MAX_WORLD_LATITUDE,
+      maxWorldY: SINUSOIDAL_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLongitude = clamp(
+        worldX,
+        -SINUSOIDAL_MAX_WORLD_LONGITUDE,
+        SINUSOIDAL_MAX_WORLD_LONGITUDE
+      );
+      const clampedLatitude = clamp(
+        worldY,
+        -SINUSOIDAL_MAX_WORLD_LATITUDE,
+        SINUSOIDAL_MAX_WORLD_LATITUDE
+      );
+      const longitudeRadians = degreesToRadians(clampedLongitude);
+      const latitudeRadians = degreesToRadians(clampedLatitude);
+      return {
+        mapX: snapNearZero(
+          (longitudeRadians * Math.cos(latitudeRadians)) /
+            SINUSOIDAL_MAX_PROJECTED_X
+        ),
+        mapY: snapNearZero(latitudeRadians / SINUSOIDAL_MAX_PROJECTED_Y),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const latitudeRadians = mapY * SINUSOIDAL_MAX_PROJECTED_Y;
+      const cosineLatitude = Math.cos(latitudeRadians);
+      const longitudeRadians =
+        Math.abs(cosineLatitude) <= 1e-12
+          ? 0
+          : (mapX * SINUSOIDAL_MAX_PROJECTED_X) / cosineLatitude;
+      return {
+        worldX: radiansToDegrees(longitudeRadians),
         worldY: radiansToDegrees(latitudeRadians),
       };
     },

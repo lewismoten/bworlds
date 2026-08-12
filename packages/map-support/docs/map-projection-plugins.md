@@ -22,6 +22,7 @@ Current built-in support:
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
 - `createOrthographicMapProjectionPlugin()`
+- `createSinusoidalMapProjectionPlugin()`
 - `createStereographicMapProjectionPlugin()`
 - `createTransverseMercatorMapProjectionPlugin()`
 
@@ -231,6 +232,27 @@ maps to `mapX/mapY` within `-1..1`.
 
 This gives later map UIs one globe-like azimuthal option that preserves the
 shared plugin contract while making the visible-hemisphere limit explicit.
+
+## Sinusoidal
+
+`createSinusoidalMapProjectionPlugin()` provides a global sinusoidal
+equal-area projection with a straightforward inverse.
+
+It currently:
+
+- uses `id: 'sinusoidal'`
+- declares `distortion: 'equal-area'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- supports the full `±180` longitude and `±90` latitude range
+
+The projected range is normalized from raw sinusoidal coordinates:
+
+- `mapX` within `-1..1` from `longitudeRadians * cos(latitudeRadians)`
+- `mapY` within `-1..1` from latitude
+
+This gives later map UIs one simple equal-area world projection that covers
+the full globe without requiring sampled extents or clipped azimuthal bounds.
 
 ## Miller Cylindrical
 

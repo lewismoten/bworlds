@@ -20,6 +20,7 @@ import {
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
   createOrthographicMapProjectionPlugin,
+  createSinusoidalMapProjectionPlugin,
   createStereographicMapProjectionPlugin,
   createTransverseMercatorMapProjectionPlugin,
   GENERIC_CONIC_CENTRAL_MERIDIAN,
@@ -34,6 +35,10 @@ import {
   ORTHOGRAPHIC_CENTER_LATITUDE,
   ORTHOGRAPHIC_CENTER_LONGITUDE,
   ORTHOGRAPHIC_MAX_PROJECTED_RADIUS,
+  SINUSOIDAL_MAX_PROJECTED_X,
+  SINUSOIDAL_MAX_PROJECTED_Y,
+  SINUSOIDAL_MAX_WORLD_LATITUDE,
+  SINUSOIDAL_MAX_WORLD_LONGITUDE,
   STEREOGRAPHIC_CENTER_LATITUDE,
   STEREOGRAPHIC_CENTER_LONGITUDE,
   STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES,
@@ -593,5 +598,33 @@ describe('map projections', () => {
     const inverted = projection.invert?.(forward);
     expect(inverted?.worldX).toBeCloseTo(25, 10);
     expect(inverted?.worldY).toBeCloseTo(40, 10);
+  });
+
+  it('projects and inverts sinusoidal coordinates across the full latitude range', () => {
+    const projection = createSinusoidalMapProjectionPlugin();
+
+    expect(projection.id).toBe('sinusoidal');
+    expect(projection.label).toBe('Sinusoidal');
+    expect(projection.distortion).toBe('equal-area');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 45,
+      worldY: 30,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(45, 10);
+    expect(inverted?.worldY).toBeCloseTo(30, 10);
+    expect(SINUSOIDAL_MAX_WORLD_LONGITUDE).toBe(180);
+    expect(SINUSOIDAL_MAX_WORLD_LATITUDE).toBe(90);
+    expect(SINUSOIDAL_MAX_PROJECTED_X).toBeCloseTo(Math.PI, 10);
+    expect(SINUSOIDAL_MAX_PROJECTED_Y).toBeCloseTo(Math.PI / 2, 10);
   });
 });
