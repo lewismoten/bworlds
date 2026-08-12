@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createWorldGenerationDependencyKey,
   createWorldGenerationLayerPlugin,
+  createWorldGenerationRegionRunner,
   sortWorldGenerationLayerPlugins,
 } from './index.ts';
 
@@ -209,5 +210,322 @@ describe('world generation layer plugins', () => {
         recordType: 'river-segment',
       })
     ).toBe('hydrology:river-segment');
+  });
+
+  it('runs generation layers in deterministic order and exposes filtered regional queries', () => {
+    const runner = createWorldGenerationRegionRunner({
+      plugins: [
+        createWorldGenerationLayerPlugin({
+          id: 'climate',
+          order: {
+            priority: 20,
+            after: ['terrain'],
+          },
+          inputDependencies: [
+            {
+              pluginId: 'terrain',
+              recordType: 'height-sample',
+            },
+          ],
+          outputRecords: [{ recordType: 'biome-region' }],
+          run(context) {
+            expect(
+              context.queryRecords({
+                pluginId: 'terrain',
+                recordType: 'height-sample',
+              })
+            ).toEqual([
+              {
+                id: 'terrain:near',
+                type: 'height-sample',
+                pluginId: 'terrain',
+                bounds: {
+                  minX: 0,
+                  maxX: 16,
+                  minY: 0,
+                  maxY: 16,
+                },
+                summary: {
+                  averageHeight: 1200,
+                },
+              },
+            ]);
+            return [
+              {
+                id: 'climate:temperate',
+                type: 'biome-region',
+                pluginId: 'ignored-by-normalizer',
+                bounds: {
+                  minX: 0,
+                  maxX: 16,
+                  minY: 0,
+                  maxY: 16,
+                },
+                zoomRelevance: {
+                  min: 3,
+                  max: 8,
+                },
+                summary: {
+                  biome: 'temperate-forest',
+                },
+              },
+            ];
+          },
+        }),
+        createWorldGenerationLayerPlugin({
+          id: 'terrain',
+          order: {
+            priority: 10,
+          },
+          outputRecords: [{ recordType: 'height-sample' }],
+          run() {
+            return [
+              {
+                id: 'terrain:near',
+                type: 'height-sample',
+                pluginId: 'ignored-by-normalizer',
+                bounds: {
+                  minX: 0,
+                  maxX: 16,
+                  minY: 0,
+                  maxY: 16,
+                },
+                summary: {
+                  averageHeight: 1200,
+                },
+              },
+              {
+                id: 'terrain:far',
+                type: 'height-sample',
+                pluginId: 'ignored-by-normalizer',
+                bounds: {
+                  minX: 64,
+                  maxX: 80,
+                  minY: 64,
+                  maxY: 80,
+                },
+                summary: {
+                  averageHeight: 50,
+                },
+              },
+            ];
+          },
+        }),
+      ],
+    });
+
+    const result = runner.runRegion({
+      seed: 'spec',
+      worldRevision: 'rev-a',
+      bounds: {
+        minX: 0,
+        maxX: 16,
+        minY: 0,
+        maxY: 16,
+      },
+    });
+
+    expect(result.orderedPlugins.map((plugin) => plugin.id)).toEqual([
+      'terrain',
+      'climate',
+    ]);
+    expect(result.records).toEqual([
+      {
+        id: 'terrain:near',
+        type: 'height-sample',
+        pluginId: 'terrain',
+        bounds: {
+          minX: 0,
+          maxX: 16,
+          minY: 0,
+          maxY: 16,
+        },
+        summary: {
+          averageHeight: 1200,
+        },
+      },
+      {
+        id: 'terrain:far',
+        type: 'height-sample',
+        pluginId: 'terrain',
+        bounds: {
+          minX: 64,
+          maxX: 80,
+          minY: 64,
+          maxY: 80,
+        },
+        summary: {
+          averageHeight: 50,
+        },
+      },
+      {
+        id: 'climate:temperate',
+        type: 'biome-region',
+        pluginId: 'climate',
+        bounds: {
+          minX: 0,
+          maxX: 16,
+          minY: 0,
+          maxY: 16,
+        },
+        zoomRelevance: {
+          min: 3,
+          max: 8,
+        },
+        summary: {
+          biome: 'temperate-forest',
+        },
+      },
+    ]);
+    expect(
+      result.queryRecords({
+        bounds: {
+          minX: 8,
+          maxX: 24,
+          minY: 8,
+          maxY: 24,
+        },
+      })
+    ).toEqual([
+      {
+        id: 'terrain:near',
+        type: 'height-sample',
+        pluginId: 'terrain',
+        bounds: {
+          minX: 0,
+          maxX: 16,
+          minY: 0,
+          maxY: 16,
+        },
+        summary: {
+          averageHeight: 1200,
+        },
+      },
+      {
+        id: 'climate:temperate',
+        type: 'biome-region',
+        pluginId: 'climate',
+        bounds: {
+          minX: 0,
+          maxX: 16,
+          minY: 0,
+          maxY: 16,
+        },
+        zoomRelevance: {
+          min: 3,
+          max: 8,
+        },
+        summary: {
+          biome: 'temperate-forest',
+        },
+      },
+    ]);
+    expect(
+      result.queryRecords({
+        pluginId: 'climate',
+        recordType: 'biome-region',
+        zoomLevel: 4,
+      })
+    ).toEqual([
+      {
+        id: 'climate:temperate',
+        type: 'biome-region',
+        pluginId: 'climate',
+        bounds: {
+          minX: 0,
+          maxX: 16,
+          minY: 0,
+          maxY: 16,
+        },
+        zoomRelevance: {
+          min: 3,
+          max: 8,
+        },
+        summary: {
+          biome: 'temperate-forest',
+        },
+      },
+    ]);
+    expect(
+      result.queryRecords({
+        pluginId: 'climate',
+        zoomLevel: 2,
+      })
+    ).toEqual([]);
+    expect(result.summarizeRecords()).toEqual([
+      {
+        pluginId: 'climate',
+        recordType: 'biome-region',
+        count: 1,
+      },
+      {
+        pluginId: 'terrain',
+        recordType: 'height-sample',
+        count: 2,
+      },
+    ]);
+  });
+
+  it('reuses cached region runs for the same revision and bounds', () => {
+    let runCount = 0;
+    const runner = createWorldGenerationRegionRunner({
+      plugins: [
+        createWorldGenerationLayerPlugin({
+          id: 'terrain',
+          outputRecords: [{ recordType: 'height-sample' }],
+          run() {
+            runCount += 1;
+            return [
+              {
+                id: 'terrain:0',
+                type: 'height-sample',
+                pluginId: 'terrain',
+                bounds: {
+                  minX: 0,
+                  maxX: 16,
+                  minY: 0,
+                  maxY: 16,
+                },
+              },
+            ];
+          },
+        }),
+      ],
+    });
+
+    const first = runner.runRegion({
+      seed: 'spec',
+      worldRevision: 'rev-a',
+      bounds: {
+        minX: 0,
+        maxX: 16,
+        minY: 0,
+        maxY: 16,
+      },
+    });
+    const second = runner.runRegion({
+      seed: 'spec',
+      worldRevision: 'rev-a',
+      bounds: {
+        minX: 0,
+        maxX: 16,
+        minY: 0,
+        maxY: 16,
+      },
+    });
+    const third = runner.runRegion({
+      seed: 'spec',
+      worldRevision: 'rev-b',
+      bounds: {
+        minX: 0,
+        maxX: 16,
+        minY: 0,
+        maxY: 16,
+      },
+    });
+
+    expect(first).toBe(second);
+    expect(third).not.toBe(first);
+    expect(runCount).toBe(2);
   });
 });

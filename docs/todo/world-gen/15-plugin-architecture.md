@@ -59,6 +59,14 @@ Current support:
 - `createWorldGenerationDependencyKey(...)` now gives future regional summary
   caches and debug tooling one stable `pluginId:recordType` key shape for
   querying upstream records by type and plugin owner.
+- `createWorldGenerationRegionRunner(...)` now gives those layer plugins one
+  concrete deterministic execution path with revision-keyed regional caching,
+  upstream dependency queries, and post-run record filtering by bounds, plugin
+  owner, record type, and zoom relevance.
+- That same runner now also summarizes matching regional records by
+  `pluginId` and `recordType`, which gives future chunk-bounds and world-bounds
+  debug panels one shared count-oriented query path without pulling renderer
+  logic into the generation layer contracts.
 - See `packages/plugin-api/docs/world-generation-layer-plugins.md` for the
   intended contract and why it is kept separate from the runtime content
   plugin registry.

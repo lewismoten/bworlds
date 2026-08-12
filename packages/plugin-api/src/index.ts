@@ -110,6 +110,13 @@ export {
   createWorldGenerationLayerPlugin,
   sortWorldGenerationLayerPlugins,
 } from './world-generation-layers';
+export {
+  createWorldGenerationRegionRunner,
+  type WorldGenerationRecordQuery,
+  type WorldGenerationRecordSummary,
+  type WorldGenerationRegionRunResult,
+  type WorldGenerationRegionRunner,
+} from './world-generation-runner';
 
 export class PluginRegistry implements PluginRegistryLike {
   plugins: RuntimePlugin[];

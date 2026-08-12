@@ -11,6 +11,7 @@ generation layers:
 - `createWorldGenerationLayerPlugin(...)`
 - `sortWorldGenerationLayerPlugins(...)`
 - `createWorldGenerationDependencyKey(...)`
+- `createWorldGenerationRegionRunner(...)`
 
 This contract is separate from the runtime tile and map plugin registry. It is
 intended for frozen world-data passes such as:
@@ -60,6 +61,22 @@ This keeps renderer and UI code out of generation plugins while still giving
 later pipelines one explicit way to ask for upstream data by plugin id and
 record type.
 
+## Region Runner
+
+`createWorldGenerationRegionRunner(...)` now provides one reusable execution
+and query helper for these layer plugins:
+
+- runs layers in deterministic sorted order
+- exposes upstream records to later layers through `queryRecords(...)`
+- normalizes plugin ownership onto emitted records
+- filters records by bounds, plugin id, record type, and zoom relevance
+- summarizes matching records by `pluginId` and `recordType`
+- caches repeated region runs by seed, world revision, bounds, and plugin set
+
+This gives worldgen packages one concrete regional-query path before the
+higher-level continent, hydrology, climate, settlement, and naming pipelines
+exist.
+
 ## Regional Queries
 
 `createWorldGenerationDependencyKey(...)` gives future caches and summaries one
@@ -70,6 +87,10 @@ shape for:
 - world-bounds summaries
 - zoom-relevant feature subsets
 - per-plugin debug filtering
+
+The region runner uses those same dependency keys internally when wiring
+upstream records into later layers, so query behavior stays aligned with the
+declared dependency contract.
 
 ## Ordering
 
