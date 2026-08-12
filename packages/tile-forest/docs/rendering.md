@@ -10,7 +10,8 @@ Progressive loading:
   work across multiple frames.
 - Current progressive phases split the heaviest tree build into two batches
   before continuing with `hollows-and-markings`,
-  `understory-and-wildlife`, `landmarks-and-floor`, and `close-effects`.
+  `understory-and-wildlife`, `landmarks-and-trails`, `floor-props`, and
+  `close-effects`.
 - The low-detail forest path remains synchronous because it is already a small
   instanced pass.
 - In reduced and minimal quality, some distant background forest tiles now

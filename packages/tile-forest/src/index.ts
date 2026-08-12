@@ -1490,7 +1490,7 @@ function* createForestModelProgressive({
   const trunkSegments: ForestTrunkSegmentInstance[] = [];
   const branchInstances: ForestBranchInstance[] = [];
   const foliageInstances: ForestFoliageInstance[] = [];
-  const totalSteps = secondaryTreeDescriptors.length > 0 ? 6 : 5;
+  const totalSteps = secondaryTreeDescriptors.length > 0 ? 7 : 6;
 
   for (const descriptor of primaryTreeDescriptors) {
     addForestFullDetailTree(
@@ -1896,6 +1896,13 @@ function* createForestModelProgressive({
       getForestBushes(tileX, tileY)
     );
   }
+
+  yield {
+    completedSteps: postTreeBaseStep + 3,
+    totalSteps,
+    label: 'landmarks-and-trails',
+  };
+
   const floorDetails = renderFullQualityAccessories
     ? getForestFloorDetails(tileX, tileY)
     : [];
@@ -1962,9 +1969,9 @@ function* createForestModelProgressive({
   }
 
   yield {
-    completedSteps: postTreeBaseStep + 3,
+    completedSteps: postTreeBaseStep + 4,
     totalSteps,
-    label: 'landmarks-and-floor',
+    label: 'floor-props',
   };
 
   if (shouldRenderForestFireflies(renderCloseDetails, renderQuality)) {
@@ -1974,7 +1981,7 @@ function* createForestModelProgressive({
   }
 
   yield {
-    completedSteps: postTreeBaseStep + 4,
+    completedSteps: postTreeBaseStep + 5,
     totalSteps,
     label: 'close-effects',
   };
