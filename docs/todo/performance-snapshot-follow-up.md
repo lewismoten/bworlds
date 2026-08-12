@@ -178,7 +178,9 @@
       trim, dome, and telescope materials cannot quietly grow between passes,
       and `tile-station` now keeps repeated station builds on one host within
       one shared four-material palette so floor, roof, trim, and lamp
-      materials cannot quietly grow between passes.
+      materials cannot quietly grow between passes, and `tile-water` now keeps
+      repeated river builds on one host within one shared two-material palette
+      so body and highlight materials cannot quietly grow between passes.
 
 ## Instancing
 

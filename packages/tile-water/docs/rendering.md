@@ -22,3 +22,10 @@ River tiles now also use the center pool mesh as the root for connected rivers
 and the primary ribbon mesh as the root for stub rivers, attaching the
 remaining water/highlight ribbons beneath that first mesh so each river tile
 avoids one otherwise empty wrapper `Group` without changing the river shape.
+
+Material reuse:
+
+- repeated river builds on one Three host are expected to stay within one
+  shared two-material palette for the main water body and highlight ribbons
+- the regression test locks that budget so repeated nearby river builds cannot
+  quietly start allocating extra equivalent water materials on the same host

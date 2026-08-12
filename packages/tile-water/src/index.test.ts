@@ -265,6 +265,42 @@ describe('tile water', () => {
     ).toBe(false);
   });
 
+  it('keeps repeated river builds on one host within the shared material budget', () => {
+    const plugin = createWaterTilePlugin();
+    const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
+    const state = createRiverState();
+    const sharedHost = createFakeThree();
+    const repeatedModels: FakeNode[] = [];
+
+    for (const [tileX, tileY] of [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [3, 0],
+    ]) {
+      const model = riverTile?.create3DModel?.({
+        tile: { kind: 'river' } as never,
+        three: sharedHost as never,
+        state: state as never,
+        tileX,
+        tileY,
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(2);
+  });
+
   it('uses the center pool mesh as the connected-river root instead of a wrapper group', () => {
     const plugin = createWaterTilePlugin();
     const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
