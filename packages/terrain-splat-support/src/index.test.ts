@@ -71,6 +71,8 @@ describe('terrain splat support', () => {
         uvRotationQuarterTurns: [0, 0.5 as 0 | 1 | 2 | 3, 0],
         allowMirrorU: 'yes' as unknown as boolean,
         allowMirrorV: 'no' as unknown as boolean,
+        uvMacroVariationCellSize: 0,
+        uvMacroVariationStrength: 1.5,
       })
     ).toEqual(
       expect.arrayContaining([
@@ -88,6 +90,8 @@ describe('terrain splat support', () => {
         'Terrain material layer "" must not repeat uvRotationQuarterTurns entries.',
         'Terrain material layer "" must omit allowMirrorU or define a boolean.',
         'Terrain material layer "" must omit allowMirrorV or define a boolean.',
+        'Terrain material layer "" must omit uvMacroVariationCellSize or define a positive finite value.',
+        'Terrain material layer "" must omit uvMacroVariationStrength or define it within 0..1.',
       ])
     );
   });
@@ -479,6 +483,43 @@ describe('terrain splat support', () => {
     expect(sample.v).toBeCloseTo(0.5, 6);
   });
 
+  it('uses a deterministic macro UV variation field to break repeated world-space phases', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 4,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      uvMacroVariationCellSize: 12,
+      uvMacroVariationStrength: 0.2,
+    };
+
+    const first = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: 2,
+      y: 2,
+      kind: 'plains',
+    });
+    const repeatedPhase = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: 18,
+      y: 18,
+      kind: 'plains',
+    });
+    const repeatedFirst = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: 2,
+      y: 2,
+      kind: 'plains',
+    });
+
+    expect(repeatedFirst).toEqual(first);
+    expect(first.u).not.toBeCloseTo(repeatedPhase.u, 6);
+    expect(first.v).not.toBeCloseTo(repeatedPhase.v, 6);
+  });
+
   it('keeps world-space UV sampling continuous across repeated terrain boundaries', () => {
     const layer = {
       id: 'soil',
@@ -513,6 +554,36 @@ describe('terrain splat support', () => {
     expect(repeated.v).toBeCloseTo(first.v, 6);
     expect(negative.u).toBeCloseTo(first.u, 6);
     expect(negative.v).toBeCloseTo(first.v, 6);
+  });
+
+  it('keeps macro UV variation continuous across nearby logical tile boundaries', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 4,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      uvMacroVariationCellSize: 10,
+      uvMacroVariationStrength: 0.18,
+    };
+
+    const left = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: 7.95,
+      y: 12.1,
+      kind: 'plains',
+    });
+    const right = resolveTerrainMaterialLayerWorldUvSample(layer, {
+      seed: 'pbr-splat-seed',
+      x: 8.05,
+      y: 12.1,
+      kind: 'plains',
+    });
+
+    expect(Math.abs(right.u - left.u)).toBeLessThan(0.08);
+    expect(Math.abs(right.v - left.v)).toBeLessThan(0.08);
   });
 
   it('applies deterministic rotation and mirroring to world-space UV samples', () => {

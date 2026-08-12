@@ -113,7 +113,7 @@
 - [x] Use world-space UVs where practical.
 - [x] Keep UV scale consistent across chunk boundaries.
 - [x] Prevent texture seams at chunk borders.
-- [ ] Avoid visible repetition at logical tile boundaries.
+- [x] Avoid visible repetition at logical tile boundaries.
 - [x] Support per-layer texture scale.
 - [x] Support per-layer UV rotation.
 - [x] Keep UV transforms deterministic.
@@ -314,6 +314,10 @@
   `@bworlds/terrain-splat-support` so shared layer tint metadata can apply
   deterministic spring, summer, autumn, or winter color shifts on top of the
   existing tint-variation path without introducing season-specific materials.
+- Added low-frequency `uvMacroVariationCellSize` /
+  `uvMacroVariationStrength` support in `@bworlds/terrain-splat-support` so
+  world-space UV sampling can decorrelate repeated wrapped phases across broad
+  terrain regions without reintroducing seams at logical tile boundaries.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -357,31 +361,32 @@ cover normalization, packing, validation, deterministic mapping, chunk border
 stability, chunk layer-usage analysis, bounded family variant selection,
 neighborhood shared-layer planning, stable terrain family resolution for the
 same seed, texture-array plan validation for aligned dimensions, formats, and
-memory estimates, plus deterministic UV rotation, mirroring, tint variation,
-and seasonal tint resolution, plus world-space UV scale and seam continuity,
-plus deterministic temperature- and season-aware blend conditions so the shared
-overworld splat mapping can add cold winter snow cover to plains and forest
-ground without coupling climate-sensitive terrain blending to renderer code,
-plus deterministic biome-aware blend conditions so the same shared mapping can
-shift plains and forest ground toward coastal or wetland mixes without
-inventing plugin-specific splat rules, plus deterministic slope-aware blend
-conditions so the shared overworld splat mapping can favor gentler soil mixes
-or steeper exposed rock without coupling slope rules to renderer code, plus
-deterministic POI and settlement influence conditions so nearby landmarks and
-settlement footprints can bias dirt, gravel, or clearing layers without
-embedding plugin-specific ground rules into renderer code, plus deterministic
-sample-grid blend zones driven by neighboring world samples so forest-floor and
-snow transitions can taper across chunk boundaries without depending on
-renderer-only smoothing, plus deterministic coarse sample-grid LOD aggregation
-so distant terrain can reduce splat density while preserving major terrain
-identities and matching chunk-edge weights from the same world-space inputs,
-plus road-aware sample-grid shoulder weighting so broad road tiles can bleed
-deterministic dirt/gravel edge material into adjacent terrain without needing
-renderer-only overlays, plus deterministic weather overlays so rain, snow
-accumulation, melting, and sustained wetness can adjust terrain splat weights
-and wetness metadata without changing the shared base sample identity, plus
-deterministic seasonal tint overlays so spring, summer, autumn, and winter can
-shift shared layer color metadata without changing material identity.
+memory estimates, plus deterministic UV rotation, mirroring, macro phase
+variation, tint variation, and seasonal tint resolution, plus world-space UV
+scale and seam continuity, plus deterministic temperature- and season-aware
+blend conditions so the shared overworld splat mapping can add cold winter
+snow cover to plains and forest ground without coupling climate-sensitive
+terrain blending to renderer code, plus deterministic biome-aware blend
+conditions so the same shared mapping can shift plains and forest ground toward
+coastal or wetland mixes without inventing plugin-specific splat rules, plus
+deterministic slope-aware blend conditions so the shared overworld splat
+mapping can favor gentler soil mixes or steeper exposed rock without coupling
+slope rules to renderer code, plus deterministic POI and settlement influence
+conditions so nearby landmarks and settlement footprints can bias dirt,
+gravel, or clearing layers without embedding plugin-specific ground rules into
+renderer code, plus deterministic sample-grid blend zones driven by
+neighboring world samples so forest-floor and snow transitions can taper
+across chunk boundaries without depending on renderer-only smoothing, plus
+deterministic coarse sample-grid LOD aggregation so distant terrain can reduce
+splat density while preserving major terrain identities and matching
+chunk-edge weights from the same world-space inputs, plus road-aware
+sample-grid shoulder weighting so broad road tiles can bleed deterministic
+dirt/gravel edge material into adjacent terrain without needing renderer-only
+overlays, plus deterministic weather overlays so rain, snow accumulation,
+melting, and sustained wetness can adjust terrain splat weights and wetness
+metadata without changing the shared base sample identity, plus deterministic
+seasonal tint overlays so spring, summer, autumn, and winter can shift shared
+layer color metadata without changing material identity.
 
 # Roads and Paths as Terrain Splats
 

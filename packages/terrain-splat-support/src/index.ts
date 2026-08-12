@@ -34,6 +34,8 @@ export type TerrainMaterialLayerDefinition = {
   uvRotationQuarterTurns?: readonly TerrainUvRotationQuarterTurn[];
   allowMirrorU?: boolean;
   allowMirrorV?: boolean;
+  uvMacroVariationCellSize?: number;
+  uvMacroVariationStrength?: number;
 };
 
 export type TerrainUvRotationQuarterTurn = 0 | 1 | 2 | 3;
@@ -211,6 +213,12 @@ const TERRAIN_SPLAT_UV_MIRROR_U_LABEL = registerHashLabel(
 const TERRAIN_SPLAT_UV_MIRROR_V_LABEL = registerHashLabel(
   'terrain-splat-uv-mirror-v'
 );
+const TERRAIN_SPLAT_UV_MACRO_VARIATION_U_LABEL = registerHashLabel(
+  'terrain-splat-uv-macro-variation-u'
+);
+const TERRAIN_SPLAT_UV_MACRO_VARIATION_V_LABEL = registerHashLabel(
+  'terrain-splat-uv-macro-variation-v'
+);
 const TERRAIN_SPLAT_TINT_VARIATION_LABEL = registerHashLabel(
   'terrain-splat-tint-variation'
 );
@@ -357,6 +365,26 @@ export function validateTerrainMaterialLayerDefinition(
   ) {
     errors.push(
       `Terrain material layer ${formatLayerLabel(layer.id)} must omit allowMirrorV or define a boolean.`
+    );
+  }
+  if (
+    layer.uvMacroVariationCellSize !== undefined &&
+    !(
+      typeof layer.uvMacroVariationCellSize === 'number' &&
+      Number.isFinite(layer.uvMacroVariationCellSize) &&
+      layer.uvMacroVariationCellSize > 0
+    )
+  ) {
+    errors.push(
+      `Terrain material layer ${formatLayerLabel(layer.id)} must omit uvMacroVariationCellSize or define a positive finite value.`
+    );
+  }
+  if (
+    layer.uvMacroVariationStrength !== undefined &&
+    !isNormalizedScalar(layer.uvMacroVariationStrength)
+  ) {
+    errors.push(
+      `Terrain material layer ${formatLayerLabel(layer.id)} must omit uvMacroVariationStrength or define it within 0..1.`
     );
   }
 
@@ -1316,8 +1344,12 @@ export function resolveTerrainMaterialLayerWorldUvSample(
   input: Pick<ResolveTerrainKindSplatSampleInput, 'seed' | 'x' | 'y' | 'kind'>
 ): TerrainMaterialLayerWorldUvSample {
   const transform = resolveTerrainMaterialLayerUvTransform(layer, input);
-  let u = wrapUnitCoordinate(input.x / transform.textureScale);
-  let v = wrapUnitCoordinate(input.y / transform.textureScale);
+  const macroVariation = resolveTerrainMaterialLayerUvMacroVariation(
+    layer,
+    input
+  );
+  let u = wrapUnitCoordinate(input.x / transform.textureScale + macroVariation.u);
+  let v = wrapUnitCoordinate(input.y / transform.textureScale + macroVariation.v);
 
   if (transform.mirrorU) {
     u = wrapUnitCoordinate(1 - u);
@@ -1548,6 +1580,118 @@ function normalizeHexColor(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function resolveTerrainMaterialLayerUvMacroVariation(
+  layer: TerrainMaterialLayerDefinition,
+  input: Pick<ResolveTerrainKindSplatSampleInput, 'seed' | 'x' | 'y'>
+): {
+  u: number;
+  v: number;
+} {
+  const strength = clampWeight(layer.uvMacroVariationStrength ?? 0);
+  const cellSize = layer.uvMacroVariationCellSize ?? 0;
+  if (!(strength > 0) || !(cellSize > 0)) {
+    return { u: 0, v: 0 };
+  }
+
+  return {
+    u: resolveTerrainMaterialLayerUvMacroVariationAxis({
+      seed: input.seed,
+      x: input.x,
+      y: input.y,
+      layerId: layer.id,
+      cellSize,
+      strength,
+      label: TERRAIN_SPLAT_UV_MACRO_VARIATION_U_LABEL,
+    }),
+    v: resolveTerrainMaterialLayerUvMacroVariationAxis({
+      seed: input.seed,
+      x: input.x,
+      y: input.y,
+      layerId: layer.id,
+      cellSize,
+      strength,
+      label: TERRAIN_SPLAT_UV_MACRO_VARIATION_V_LABEL,
+    }),
+  };
+}
+
+function resolveTerrainMaterialLayerUvMacroVariationAxis(options: {
+  seed: Seed;
+  x: number;
+  y: number;
+  layerId: string;
+  cellSize: number;
+  strength: number;
+  label: number;
+}): number {
+  const seedHash = appendHashSeedLabel(
+    resolveHashSeedInput(options.seed),
+    options.label
+  );
+  const scaledX = options.x / options.cellSize;
+  const scaledY = options.y / options.cellSize;
+  const cellX = Math.floor(scaledX);
+  const cellY = Math.floor(scaledY);
+  const localX = scaledX - cellX;
+  const localY = scaledY - cellY;
+  const topLeft = sampleTerrainMaterialLayerUvMacroVariationCorner(
+    seedHash,
+    options.layerId,
+    cellX,
+    cellY
+  );
+  const topRight = sampleTerrainMaterialLayerUvMacroVariationCorner(
+    seedHash,
+    options.layerId,
+    cellX + 1,
+    cellY
+  );
+  const bottomLeft = sampleTerrainMaterialLayerUvMacroVariationCorner(
+    seedHash,
+    options.layerId,
+    cellX,
+    cellY + 1
+  );
+  const bottomRight = sampleTerrainMaterialLayerUvMacroVariationCorner(
+    seedHash,
+    options.layerId,
+    cellX + 1,
+    cellY + 1
+  );
+  const top = interpolateScalar(
+    topLeft,
+    topRight,
+    smoothstepUnitCoordinate(localX)
+  );
+  const bottom = interpolateScalar(
+    bottomLeft,
+    bottomRight,
+    smoothstepUnitCoordinate(localX)
+  );
+
+  return (
+    interpolateScalar(top, bottom, smoothstepUnitCoordinate(localY)) *
+    options.strength
+  );
+}
+
+function sampleTerrainMaterialLayerUvMacroVariationCorner(
+  seedHash: number,
+  layerId: string,
+  cellX: number,
+  cellY: number
+): number {
+  return (
+    hash2DWithSeed(
+      seedHash,
+      cellX + hashString(layerId),
+      cellY + hashString(layerId)
+    ) *
+      2 -
+    1
+  );
+}
+
 function blendHexColors(
   fromHexColor: string,
   toHexColor: string,
@@ -1606,6 +1750,15 @@ function formatHexColor(rgb: {
 
 function clampColorChannel(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function interpolateScalar(start: number, end: number, amount: number): number {
+  return start + (end - start) * amount;
+}
+
+function smoothstepUnitCoordinate(value: number): number {
+  const normalized = clampWeight(value);
+  return normalized * normalized * (3 - 2 * normalized);
 }
 
 function resolveTerrainSeasonalTintProfile(season: TerrainSplatSeason): {

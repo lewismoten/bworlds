@@ -9,18 +9,24 @@ Current responsibilities:
 
 - allow each layer to advertise supported `uvRotationQuarterTurns`
 - allow each layer to opt into deterministic `U` and `V` mirroring
+- optionally let each layer define low-frequency `uvMacroVariationCellSize` and
+  `uvMacroVariationStrength` metadata for non-repeating phase drift
 - resolve one stable UV transform from `seed`, world position, and layer ID
 - keep `textureScale` attached to the resolved transform so shader and mesh
   code can use one shared shape later
 - project deterministic world-space UV samples from shared layer metadata
 - keep repeated world-space spans aligned so chunk edges can reuse the same UV
   sampling rules
+- break identical wrapped UV phases across broader world regions without
+  resetting at logical tile boundaries
 - validate that configured quarter turns stay within `0..3` and do not repeat
 
 Current limits:
 
 - rotation is limited to `0`, `90`, `180`, and `270` degree turns
 - mirroring is a boolean per axis rather than an arbitrary transform matrix
+- macro variation is a deterministic low-frequency offset field rather than a
+  full procedural UV warp
 - the package does not apply UV transforms in shaders yet; it resolves
   deterministic metadata and world-space sample coordinates for later renderer
   integration
