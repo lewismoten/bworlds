@@ -10,7 +10,7 @@
 
 ## Projection Plugins
 
-- [ ] Add a Mercator projection plugin.
+- [x] Add a Mercator projection plugin.
 - [ ] Add a Transverse Mercator plugin.
 - [ ] Add a Miller cylindrical plugin.
 - [ ] Add a generic conic projection plugin.
@@ -41,6 +41,10 @@ Current support:
   declare stable projection ids, explicit world-space bounds, projected
   map-space bounds, wrapping metadata, distortion families, and optional
   inverse projection support without repeating validation logic.
+- `@bworlds/map-support` now also exposes
+  `createMercatorMapProjectionPlugin()`, which gives the map stack one
+  concrete conformal projection with longitude wrapping, latitude clamping,
+  and inverse projection support.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

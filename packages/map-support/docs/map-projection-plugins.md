@@ -13,6 +13,10 @@ The contract is intentionally narrow so later 2D and 3D map products can
 share one projection vocabulary before concrete Mercator, conic, azimuthal,
 or globe plugins land.
 
+Current built-in support:
+
+- `createMercatorMapProjectionPlugin()`
+
 ## Coordinate Contract
 
 Projection plugins accept canonical world coordinates through:
@@ -69,3 +73,24 @@ projection modes are not practical to invert everywhere.
 
 That keeps later projection implementations focused on math instead of
 repeating declaration validation.
+
+## Mercator
+
+`createMercatorMapProjectionPlugin()` provides the first concrete projection
+implementation on top of the shared contract.
+
+It currently:
+
+- uses `id: 'mercator'`
+- declares `distortion: 'conformal'`
+- wraps world X but not world Y
+- clamps latitude to `±85.0511287798066`
+- supports inverse projection back to `worldX/worldY`
+
+The projected range is normalized to:
+
+- `mapX` within `-1..1` for `worldX` within `-180..180`
+- `mapY` within roughly `-1..1` for clamped Mercator latitude
+
+This gives later map UIs one stable starting projection before the rest of the
+projection catalog is implemented.
