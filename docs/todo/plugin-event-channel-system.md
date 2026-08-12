@@ -59,7 +59,7 @@
 - [x] Preserve stack traces when available.
 - [x] Preserve error names when available.
 - [x] Include plugin context in error details when useful.
-- [ ] Avoid swallowing the original plugin error.
+- [x] Avoid swallowing the original plugin error.
 
 ## Performance Snapshot Integration
 
@@ -189,6 +189,10 @@
 - Added exported debug snapshot coverage for `plugin-error` recent events so
   source, severity, timestamp, and serialized details stay visible in the
   saved snapshot payload instead of only being validated at the tracker layer.
+- Added a small web-app listener-error bridge so broken plugin-event
+  subscribers log through `console.error` with the event context and original
+  thrown error, which keeps those failures visible to both developers and the
+  existing client error snapshot pipeline.
 - Added plugin error forwarding to `apps/web/src/client-error-snapshot.ts` so
   shared plugin `error` events reuse the existing client error snapshot
   endpoint, message-hash dedupe, tracking gate, and console-loop protections.

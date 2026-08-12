@@ -25,3 +25,8 @@ plugins. It currently provides:
 The package does not yet integrate with runtime performance snapshots or the
 debug UI. That follow-up work can now depend on one stable event shape instead
 of inventing plugin-specific error payloads.
+
+In the web app, consumers now also provide an `onListenerError(...)` bridge so
+broken plugin-event subscribers surface through `console.error` with the
+original thrown error instead of failing silently inside the channel dispatch
+loop.

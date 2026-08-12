@@ -154,6 +154,7 @@ import {
   createRuntimePerformancePluginEventTracker,
   installRuntimePerformancePluginErrorTracking,
 } from './runtime-performance-plugin-events.ts';
+import { createPluginEventChannelListenerErrorHandler } from './plugin-event-channel-listener-errors.ts';
 import {
   DEFAULT_RUNTIME_PERFORMANCE_LIMITS,
   shouldDeferRuntimePerformanceSnapshot,
@@ -1557,7 +1558,9 @@ const DEBUG_RECENT_EVENT_WINDOW_MS = 30_000;
 const debugRecentEventsState = {
   events: [] as DebugSnapshotRecentEvent[],
 };
-const runtimePluginEventChannel = createPluginEventChannel();
+const runtimePluginEventChannel = createPluginEventChannel({
+  onListenerError: createPluginEventChannelListenerErrorHandler(),
+});
 const runtimePerformancePluginEventTracker =
   createRuntimePerformancePluginEventTracker();
 const debugResourceTrendState = {
