@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { createPlainsTilePlugin } from './index.ts';
 
+class FakeGroup {
+  visible = true;
+  userData?: Record<string, unknown>;
+}
+
 function getPlainsTile() {
   const tile = createPlainsTilePlugin().tiles?.find(
     (entry) => entry.kind === 'plains'
@@ -32,12 +37,12 @@ function createState() {
 }
 
 describe('tile plains', () => {
-  it('uses the shared renderer floor instead of emitting a duplicate plugin mesh', () => {
+  it('uses a hidden sentinel group so the renderer keeps the shared floor without a duplicate plains mesh', () => {
     const tile = getPlainsTile();
     const state = createState();
 
     const fullModel = tile.create3DModel?.({
-      three: {} as never,
+      three: { Group: FakeGroup } as never,
       state,
       tile: { kind: 'plains' },
       tileX: 4,
@@ -45,7 +50,7 @@ describe('tile plains', () => {
       detailLevel: 'full',
     });
     const lowModel = tile.create3DModel?.({
-      three: {} as never,
+      three: { Group: FakeGroup } as never,
       state,
       tile: { kind: 'plains' },
       tileX: 4,
@@ -53,7 +58,15 @@ describe('tile plains', () => {
       detailLevel: 'low',
     });
 
-    expect(fullModel).toBeNull();
-    expect(lowModel).toBeNull();
+    expect(fullModel).toBeInstanceOf(FakeGroup);
+    expect(lowModel).toBeInstanceOf(FakeGroup);
+    expect(fullModel).toMatchObject({
+      visible: false,
+      userData: { plainsUsesSharedFloorMesh: true },
+    });
+    expect(lowModel).toMatchObject({
+      visible: false,
+      userData: { plainsUsesSharedFloorMesh: true },
+    });
   });
 });

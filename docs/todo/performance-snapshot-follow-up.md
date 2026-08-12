@@ -97,7 +97,9 @@
       low-detail trunk container for each form present in the tile, and
       `tile-plains` now defers to the renderer's shared visible floor mesh
       instead of stacking a second plugin-owned plains plane on top of every
-      visible plains tile.
+      visible plains tile, while a hidden empty group keeps visible-LOD
+      recovery from treating shared-floor plains tiles as plugin build
+      failures.
 
 ## LOD Stability
 
