@@ -235,7 +235,11 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       generation/frame budget, and the web debug snapshot/runtime issue path
       now surfaces that summary so long-running pending queues can be tied to
       the dominant tile plugin instead of only showing aggregate backlog.
-- [ ] Report model downgrade reasons separately from failures.
+- [x] Report model downgrade reasons separately from failures.
+      Progress: the debug snapshot/export path now records the most recent
+      successful `full -> low` LOD downgrade reason separately from the latest
+      `model-rejected` failure, so successful low-detail recoveries stop being
+      conflated with outright visible LOD recovery failures during triage.
 
 ## Snapshot Diagnostics
 

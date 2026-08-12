@@ -50,6 +50,7 @@ export type DebugSnapshot = {
   lodReplacementTopPluginLabel?: string;
   lodReplacementSummary?: string;
   lowerLodRecoveriesPerSecond?: number;
+  lastLodDowngradeReason?: string;
   fallbackBoxesPerSecond?: number;
   fallbackBoxTopPluginLabel?: string;
   fallbackBoxSummary?: string;
@@ -297,6 +298,7 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.oneChildGroupTopPluginLabel ?? '',
     snapshot.oneChildGroupSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
+    snapshot.lastLodDowngradeReason ?? '',
     snapshot.lastFallbackReason ?? '',
     snapshot.currentTilePlugin ?? '',
     snapshot.currentTileRequestedDetailLevel ?? '',
@@ -480,6 +482,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>LOD Swap Plugin</dt><dd>${snapshot.lodReplacementTopPluginLabel || 'None'}</dd></div>
     <div><dt>LOD Swap Summary</dt><dd>${snapshot.lodReplacementSummary || 'None'}</dd></div>
     <div><dt>LOD Recoveries/s</dt><dd>${snapshot.lowerLodRecoveriesPerSecond ?? 0}</dd></div>
+    <div><dt>Last LOD Downgrade</dt><dd>${snapshot.lastLodDowngradeReason || 'None'}</dd></div>
     <div><dt>Fallback Boxes/s</dt><dd>${snapshot.fallbackBoxesPerSecond ?? 0}</dd></div>
     <div><dt>Fallback Plugin</dt><dd>${snapshot.fallbackBoxTopPluginLabel || 'None'}</dd></div>
     <div><dt>Fallback Summary</dt><dd>${snapshot.fallbackBoxSummary || 'None'}</dd></div>

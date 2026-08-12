@@ -3509,7 +3509,11 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         type: 'lod-changed',
         tileKey: key,
         plugin: nextEntry.tilePluginOwnerLabel || entry.tilePluginOwnerLabel,
-        summary: `${entry.detailLevel ?? 'full'} -> ${resolvedDetailLevel}`,
+        summary: summarizeVisibleTileDowngradeReason(
+          entry.detailLevel ?? 'full',
+          resolvedDetailLevel,
+          attemptedEntries
+        ),
         fromDetailLevel: entry.detailLevel ?? 'full',
         toDetailLevel: resolvedDetailLevel,
       });
@@ -4697,6 +4701,24 @@ export function summarizeVisibleTileRecoveryAttempt(
         : detailLevel
     )
     .join(' -> ');
+}
+
+export function summarizeVisibleTileDowngradeReason(
+  fromDetailLevel: RenderBudgetDetailLevel,
+  toDetailLevel: RenderBudgetDetailLevel,
+  attemptedEntries: ReadonlyArray<{
+    detailLevel: RenderBudgetDetailLevel;
+    fallbackReason?: string;
+  }>
+): string {
+  const transition = `${fromDetailLevel} -> ${toDetailLevel}`;
+  if (fromDetailLevel !== 'full' || toDetailLevel !== 'low') {
+    return transition;
+  }
+  const recoveryChain = summarizeVisibleTileRecoveryAttempt(attemptedEntries);
+  return recoveryChain === transition
+    ? transition
+    : `recovered at low after ${recoveryChain}`;
 }
 
 export function getFallbackBoxReason(

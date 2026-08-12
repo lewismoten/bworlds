@@ -2643,6 +2643,14 @@ function collectCurrentDebugSnapshot(
     rendererStats.recentEvents,
     'model-rejected'
   );
+  const lastLodDowngradeEvent = [...rendererStats.recentEvents]
+    .reverse()
+    .find(
+      (event) =>
+        event.type === 'lod-changed' &&
+        event.fromDetailLevel === 'full' &&
+        event.toDetailLevel === 'low'
+    );
   const lastFallbackEvent = getMostRecentDebugEventByType(
     rendererStats.recentEvents,
     'fallback-box'
@@ -2659,6 +2667,9 @@ function collectCurrentDebugSnapshot(
     );
   debugSnapshot.lastLodFailureReason = lastLodFailureEvent
     ? (formatRecentDebugEventReason(lastLodFailureEvent) ?? undefined)
+    : undefined;
+  debugSnapshot.lastLodDowngradeReason = lastLodDowngradeEvent
+    ? (formatRecentDebugEventReason(lastLodDowngradeEvent) ?? undefined)
     : undefined;
   debugSnapshot.lastFallbackReason = lastFallbackEvent
     ? (formatRecentDebugEventReason(lastFallbackEvent) ?? undefined)

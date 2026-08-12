@@ -108,6 +108,8 @@ describe('debug panel', () => {
       oneChildGroupSummary: 'tile-forest:11, tile-town:7',
       lastLodFailureReason:
         '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
+      lastLodDowngradeReason:
+        '14:-9 / tile-forest: recovered at low after full (full failed) -> low',
       lastFallbackReason: '15:-9 / tile-forest: low failed',
       currentTilePlugin: 'tile-forest',
       currentTileRequestedDetailLevel: 'full',

@@ -300,6 +300,7 @@ export type DebugSnapshotExport = {
     topSwappedPlugin: string | null;
     swapSummary: string;
     lowerDetailRecoveriesPerSecond: number;
+    lastDowngradeReason: string | null;
     fallbackBoxesPerSecond: number;
     topFallbackPlugin: string | null;
     fallbackSummary: string;
@@ -691,6 +692,8 @@ export function buildDebugSnapshotExport(
       swapSummary: options.snapshot.lodReplacementSummary ?? '',
       lowerDetailRecoveriesPerSecond:
         options.snapshot.lowerLodRecoveriesPerSecond ?? 0,
+      lastDowngradeReason:
+        options.snapshot.lastLodDowngradeReason?.trim() || null,
       fallbackBoxesPerSecond: options.snapshot.fallbackBoxesPerSecond ?? 0,
       topFallbackPlugin:
         options.snapshot.fallbackBoxTopPluginLabel?.trim() || null,

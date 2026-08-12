@@ -206,6 +206,7 @@ import {
   getFallbackBoxReason,
   getPreferredVisibleTileBuildDetailLevel,
   shouldRebuildVisibleTileModelDetailEntry,
+  summarizeVisibleTileDowngradeReason,
   summarizeVisibleTileRecoveryAttempt,
   pickCornerBoundaryProfile,
   prepareObjectForDistanceFade,
@@ -6214,6 +6215,22 @@ describe('render3d visibility helpers', () => {
         { detailLevel: 'low', fallbackReason: 'final low failed' },
       ])
     ).toBe('low (cached low failed) -> full -> low (final low failed)');
+  });
+
+  it('summarizes successful low-detail recoveries separately from outright failures', () => {
+    expect(
+      summarizeVisibleTileDowngradeReason('full', 'low', [
+        { detailLevel: 'full', fallbackReason: 'full failed' },
+        { detailLevel: 'low' },
+      ])
+    ).toBe('recovered at low after full (full failed) -> low');
+
+    expect(
+      summarizeVisibleTileDowngradeReason('low', 'full', [
+        { detailLevel: 'low' },
+        { detailLevel: 'full' },
+      ])
+    ).toBe('low -> full');
   });
 
   it('prefers the last rejected summary when reporting a fallback box reason', () => {
