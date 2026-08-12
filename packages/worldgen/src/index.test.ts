@@ -27,7 +27,9 @@ import {
   TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE,
   validateTerrainHeightValue,
   WORLD_FEET_PER_TILE,
+  WORLD_TERRAIN_COARSE_QUERY_STEP,
   WORLD_TERRAIN_FLAT_GRADE_EPSILON,
+  WORLD_TERRAIN_FINE_QUERY_STEP,
   WORLD_TERRAIN_MAX_HEIGHT,
   WORLD_METERS_PER_TILE,
   WORLD_TERRAIN_MIN_HEIGHT,
@@ -85,6 +87,8 @@ describe('world generator', () => {
     expect(WORLD_METERS_PER_TILE).toBe(250);
     expect(WORLD_FEET_PER_TILE).toBeCloseTo(820.21, 2);
     expect(WORLD_TERRAIN_SEA_LEVEL).toBe(0);
+    expect(WORLD_TERRAIN_COARSE_QUERY_STEP).toBe(1);
+    expect(WORLD_TERRAIN_FINE_QUERY_STEP).toBe(0.25);
     expect(convertFeetToWorldHeightUnits(WORLD_FEET_PER_TILE)).toBeCloseTo(
       1,
       6
@@ -635,6 +639,7 @@ describe('world generator', () => {
       maxX: 12,
       minY: 20,
       maxY: 21,
+      resolution: 'coarse',
       sampleStep: 1,
       sampleCount: 6,
       minHeight: Math.min(...heights),
@@ -673,6 +678,7 @@ describe('world generator', () => {
     ];
 
     expect(sample.sampleStep).toBe(2);
+    expect(sample.resolution).toBe('coarse');
     expect(sample.sampleCount).toBe(9);
     expect(sample.minHeight).toBe(Math.min(...heights));
     expect(sample.maxHeight).toBe(Math.max(...heights));
@@ -684,6 +690,22 @@ describe('world generator', () => {
         maxY: 1,
       })
     ).toThrow('Terrain height range bounds minX 2 must be <= maxX 1.');
+  });
+
+  it('supports fine-resolution terrain height-range queries', () => {
+    const generator = createGenerator();
+    const sample = generator.sampleTerrainHeightRange({
+      minX: 10.25,
+      maxX: 10.75,
+      minY: 20.25,
+      maxY: 20.75,
+      sampleStep: 0.25,
+      resolution: 'fine',
+    });
+
+    expect(sample.resolution).toBe('fine');
+    expect(sample.sampleStep).toBe(0.25);
+    expect(sample.sampleCount).toBe(9);
   });
 
   it('samples terrain sea depth explicitly from the shared surface metadata', () => {
@@ -715,6 +737,90 @@ describe('world generator', () => {
     expect(generator.sampleTerrainHeight(-48, 73)).toBe(
       generator.sampleTerrainHeight(-48, 73)
     );
+  });
+
+  it('supports coarse and fine terrain height queries from the same sampler', () => {
+    const generator = createGenerator();
+    const queryX = 10.25;
+    const queryY = 20.5;
+    const coarseHeight = generator.sampleTerrainHeight(queryX, queryY);
+    const explicitCoarseHeight = generator.sampleTerrainHeight(queryX, queryY, {
+      resolution: 'coarse',
+    });
+    const fineHeight = generator.sampleTerrainHeight(queryX, queryY, {
+      resolution: 'fine',
+    });
+
+    expect(coarseHeight).toBe(
+      generator.sampleTerrainHeight(10, 21, {
+        resolution: 'coarse',
+      })
+    );
+    expect(explicitCoarseHeight).toBe(coarseHeight);
+    expect(fineHeight).toBe(
+      generator.sampleTerrainHeight(10.25, 20.5, {
+        resolution: 'fine',
+      })
+    );
+    expect(generator.terrainHeightSampler.sampleHeight(queryX, queryY)).toBe(
+      coarseHeight
+    );
+    expect(
+      generator.terrainHeightSampler.sampleHeight(queryX, queryY, {
+        resolution: 'fine',
+      })
+    ).toBe(fineHeight);
+  });
+
+  it('uses fine-resolution sub-cell sampling for terrain derivatives when requested', () => {
+    const generator = createGenerator();
+    const coarseSlope = generator.sampleTerrainSlope(10.25, 20.5);
+    const fineSlope = generator.sampleTerrainSlope(10.25, 20.5, {
+      resolution: 'fine',
+      sampleStep: 0.5,
+    });
+    const expectedFineSlopeX =
+      (generator.sampleTerrainHeight(10.75, 20.5, {
+        resolution: 'fine',
+      }) -
+        generator.sampleTerrainHeight(9.75, 20.5, {
+          resolution: 'fine',
+        })) /
+      1;
+    const expectedFineSlopeY =
+      (generator.sampleTerrainHeight(10.25, 21, {
+        resolution: 'fine',
+      }) -
+        generator.sampleTerrainHeight(10.25, 20, {
+          resolution: 'fine',
+        })) /
+      1;
+
+    expect(fineSlope.sampleStep).toBe(0.5);
+    expect(fineSlope.slopeX).toBe(expectedFineSlopeX);
+    expect(fineSlope.slopeY).toBe(expectedFineSlopeY);
+    expect(fineSlope.grade).toBe(
+      Math.hypot(expectedFineSlopeX, expectedFineSlopeY)
+    );
+    expect(
+      generator.terrainHeightSampler.sampleSlope(10.25, 20.5, 0.5)
+    ).toEqual(generator.sampleTerrainSlope(10.25, 20.5, 0.5));
+    expect(coarseSlope).not.toEqual(fineSlope);
+  });
+
+  it('rejects invalid terrain query coordinates and resolutions', () => {
+    const generator = createGenerator();
+
+    expect(() =>
+      generator.sampleTerrainHeight(Number.NaN, 0, {
+        resolution: 'coarse',
+      })
+    ).toThrow('Terrain query coordinates must be finite numbers.');
+    expect(() =>
+      generator.sampleTerrainHeight(0, 0, {
+        resolution: 'detail' as 'coarse',
+      })
+    ).toThrow('Terrain query resolution "detail" must be "coarse" or "fine".');
   });
 
   it('keeps adjacent chunk border terrain heights exactly equal on shared sample coordinates', () => {

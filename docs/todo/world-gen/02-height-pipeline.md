@@ -7,7 +7,7 @@
 - [x] Return height in one canonical world unit.
 - [x] Add feet to world-unit conversion helpers.
 - [x] Keep sea level at one stable reference.
-- [ ] Support coarse and fine height queries.
+- [x] Support coarse and fine height queries.
 - [ ] Cache expensive regional height inputs.
 
 ## Layer Composition
@@ -62,6 +62,10 @@ Current support:
   sampling through `createWorldGenerator().sampleTerrainHeight(x, y)`, while
   `samplePreviewSurfaceHeight(x, y)` remains as the compatibility alias for
   older callers that still use the preview-specific name.
+- That same height sampler now also accepts `{ resolution: 'coarse' | 'fine' }`
+  so callers can choose snapped whole-cell sampling or snapped quarter-cell
+  sub-sampling without forking the terrain source; slope, curvature, range, and
+  sea-depth queries accept the same resolution-aware path too.
 - `apps/web` now routes the sextant terrain-height readout through that shared
   `sampleTerrainHeight(x, y)` path whenever the deferred terrain preview module
   is loaded, while keeping the decorated runtime tile height as the temporary

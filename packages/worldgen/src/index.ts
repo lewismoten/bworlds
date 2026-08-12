@@ -57,6 +57,27 @@ export const WORLD_TERRAIN_SEA_LEVEL = 0;
 export const WORLD_TERRAIN_FLAT_GRADE_EPSILON = 0.0001;
 export const WORLD_TERRAIN_MIN_HEIGHT = -64;
 export const WORLD_TERRAIN_MAX_HEIGHT = 64;
+export const WORLD_TERRAIN_COARSE_QUERY_STEP = 1;
+export const WORLD_TERRAIN_FINE_QUERY_STEP = 0.25;
+
+export type WorldTerrainQueryResolution = 'coarse' | 'fine';
+
+export type WorldTerrainHeightQueryOptions = {
+  resolution?: WorldTerrainQueryResolution;
+};
+
+export type WorldTerrainDerivativeQueryOptions =
+  WorldTerrainHeightQueryOptions & {
+    sampleStep?: number;
+  };
+
+export type WorldTerrainHeightRangeQueryOptions =
+  WorldTerrainDerivativeQueryOptions & {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+  };
 
 export type WorldTerrainHeightSample = {
   worldX: number;
@@ -101,6 +122,7 @@ export type WorldTerrainHeightRangeSample = {
   maxX: number;
   minY: number;
   maxY: number;
+  resolution: WorldTerrainQueryResolution;
   sampleStep: number;
   sampleCount: number;
   minHeight: number;
@@ -146,31 +168,39 @@ export function clampTerrainHeightValue(
 }
 
 export type WorldTerrainHeightSampler = {
-  sampleHeight(worldX: number, worldY: number): number;
-  sampleSurface(worldX: number, worldY: number): WorldTerrainHeightSample;
+  sampleHeight(
+    worldX: number,
+    worldY: number,
+    options?: WorldTerrainHeightQueryOptions
+  ): number;
+  sampleSurface(
+    worldX: number,
+    worldY: number,
+    options?: WorldTerrainHeightQueryOptions
+  ): WorldTerrainHeightSample;
   sampleSlope(
     worldX: number,
     worldY: number,
-    sampleStep?: number
+    options?: number | WorldTerrainDerivativeQueryOptions
   ): WorldTerrainSlopeSample;
   sampleAspect(
     worldX: number,
     worldY: number,
-    sampleStep?: number
+    options?: number | WorldTerrainDerivativeQueryOptions
   ): WorldTerrainAspectSample;
   sampleCurvature(
     worldX: number,
     worldY: number,
-    sampleStep?: number
+    options?: number | WorldTerrainDerivativeQueryOptions
   ): WorldTerrainCurvatureSample;
-  sampleHeightRange(bounds: {
-    minX: number;
-    maxX: number;
-    minY: number;
-    maxY: number;
-    sampleStep?: number;
-  }): WorldTerrainHeightRangeSample;
-  sampleSeaDepth(worldX: number, worldY: number): WorldTerrainSeaDepthSample;
+  sampleHeightRange(
+    bounds: WorldTerrainHeightRangeQueryOptions
+  ): WorldTerrainHeightRangeSample;
+  sampleSeaDepth(
+    worldX: number,
+    worldY: number,
+    options?: WorldTerrainHeightQueryOptions
+  ): WorldTerrainSeaDepthSample;
 };
 
 export function convertFeetToWorldHeightUnits(feet: number): number {
@@ -214,31 +244,39 @@ export function createWorldGenerator({
   getMap(context: Context): WorldMapLike;
   sampleOverworld(x: number, y: number): SpawnTile;
   terrainHeightSampler: WorldTerrainHeightSampler;
-  sampleTerrainHeight(x: number, y: number): number;
-  sampleTerrainSurface(x: number, y: number): WorldTerrainHeightSample;
+  sampleTerrainHeight(
+    x: number,
+    y: number,
+    options?: WorldTerrainHeightQueryOptions
+  ): number;
+  sampleTerrainSurface(
+    x: number,
+    y: number,
+    options?: WorldTerrainHeightQueryOptions
+  ): WorldTerrainHeightSample;
   sampleTerrainSlope(
     x: number,
     y: number,
-    sampleStep?: number
+    options?: number | WorldTerrainDerivativeQueryOptions
   ): WorldTerrainSlopeSample;
   sampleTerrainAspect(
     x: number,
     y: number,
-    sampleStep?: number
+    options?: number | WorldTerrainDerivativeQueryOptions
   ): WorldTerrainAspectSample;
   sampleTerrainCurvature(
     x: number,
     y: number,
-    sampleStep?: number
+    options?: number | WorldTerrainDerivativeQueryOptions
   ): WorldTerrainCurvatureSample;
-  sampleTerrainHeightRange(bounds: {
-    minX: number;
-    maxX: number;
-    minY: number;
-    maxY: number;
-    sampleStep?: number;
-  }): WorldTerrainHeightRangeSample;
-  sampleTerrainSeaDepth(x: number, y: number): WorldTerrainSeaDepthSample;
+  sampleTerrainHeightRange(
+    bounds: WorldTerrainHeightRangeQueryOptions
+  ): WorldTerrainHeightRangeSample;
+  sampleTerrainSeaDepth(
+    x: number,
+    y: number,
+    options?: WorldTerrainHeightQueryOptions
+  ): WorldTerrainSeaDepthSample;
   samplePreviewSurfaceKind(x: number, y: number): SpawnTile['kind'];
   samplePreviewSurfaceHeight(x: number, y: number): number;
   samplePreviewOverworld(x: number, y: number): SpawnTile;
@@ -324,25 +362,43 @@ export function createWorldGenerator({
       return map;
     });
   };
-  const sampleTerrainHeight = (x: number, y: number) => {
-    const key = getPreviewKey(x, y);
+  const sampleTerrainHeight = (
+    x: number,
+    y: number,
+    options: WorldTerrainHeightQueryOptions = {}
+  ) => {
+    const normalizedQuery = resolveTerrainQueryCoordinates(x, y, options);
+    const key = makeKey(
+      'preview',
+      normalizedQuery.resolution,
+      normalizedQuery.worldX,
+      normalizedQuery.worldY
+    );
     return previewSurfaceHeightCache.getOrCreate(key, () => {
-      const kind = samplePreviewSurfaceKind(x, y);
+      const kind = samplePreviewSurfaceKind(
+        normalizedQuery.worldX,
+        normalizedQuery.worldY
+      );
       return validateTerrainHeightValue(
         clampTerrainHeightValue(
-          resolveOverworldReliefHeight(terrainSignals(x, y).elevation, {
-            kind,
-          })
+          resolveOverworldReliefHeight(
+            terrainSignals(normalizedQuery.worldX, normalizedQuery.worldY)
+              .elevation,
+            {
+              kind,
+            }
+          )
         ),
-        `Terrain height at ${x}:${y}`
+        `Terrain height at ${normalizedQuery.worldX}:${normalizedQuery.worldY}`
       );
     });
   };
   const sampleTerrainSurface = (
     x: number,
-    y: number
+    y: number,
+    options: WorldTerrainHeightQueryOptions = {}
   ): WorldTerrainHeightSample => {
-    const height = sampleTerrainHeight(x, y);
+    const height = sampleTerrainHeight(x, y, options);
     return {
       worldX: x,
       worldY: y,
@@ -354,20 +410,37 @@ export function createWorldGenerator({
   const sampleTerrainSlope = (
     x: number,
     y: number,
-    sampleStep = 1
+    options: number | WorldTerrainDerivativeQueryOptions = 1
   ): WorldTerrainSlopeSample => {
-    const normalizedSampleStep = normalizeTerrainSampleStep(sampleStep);
-    const leftHeight = sampleTerrainHeight(x - normalizedSampleStep, y);
-    const rightHeight = sampleTerrainHeight(x + normalizedSampleStep, y);
-    const downHeight = sampleTerrainHeight(x, y - normalizedSampleStep);
-    const upHeight = sampleTerrainHeight(x, y + normalizedSampleStep);
-    const slopeX = (rightHeight - leftHeight) / (normalizedSampleStep * 2);
-    const slopeY = (upHeight - downHeight) / (normalizedSampleStep * 2);
+    const normalizedOptions = normalizeTerrainDerivativeQueryOptions(options);
+    const leftHeight = sampleTerrainHeight(
+      x - normalizedOptions.sampleStep,
+      y,
+      normalizedOptions
+    );
+    const rightHeight = sampleTerrainHeight(
+      x + normalizedOptions.sampleStep,
+      y,
+      normalizedOptions
+    );
+    const downHeight = sampleTerrainHeight(
+      x,
+      y - normalizedOptions.sampleStep,
+      normalizedOptions
+    );
+    const upHeight = sampleTerrainHeight(
+      x,
+      y + normalizedOptions.sampleStep,
+      normalizedOptions
+    );
+    const slopeX =
+      (rightHeight - leftHeight) / (normalizedOptions.sampleStep * 2);
+    const slopeY = (upHeight - downHeight) / (normalizedOptions.sampleStep * 2);
     return {
       worldX: x,
       worldY: y,
-      sampleStep: normalizedSampleStep,
-      height: sampleTerrainHeight(x, y),
+      sampleStep: normalizedOptions.sampleStep,
+      height: sampleTerrainHeight(x, y, normalizedOptions),
       slopeX,
       slopeY,
       grade: Math.hypot(slopeX, slopeY),
@@ -376,9 +449,9 @@ export function createWorldGenerator({
   const sampleTerrainAspect = (
     x: number,
     y: number,
-    sampleStep = 1
+    options: number | WorldTerrainDerivativeQueryOptions = 1
   ): WorldTerrainAspectSample => {
-    const slope = sampleTerrainSlope(x, y, sampleStep);
+    const slope = sampleTerrainSlope(x, y, options);
     const aspectRadians =
       slope.grade <= WORLD_TERRAIN_FLAT_GRADE_EPSILON
         ? null
@@ -396,35 +469,48 @@ export function createWorldGenerator({
   const sampleTerrainCurvature = (
     x: number,
     y: number,
-    sampleStep = 1
+    options: number | WorldTerrainDerivativeQueryOptions = 1
   ): WorldTerrainCurvatureSample => {
-    const normalizedSampleStep = normalizeTerrainSampleStep(sampleStep);
-    const centerHeight = sampleTerrainHeight(x, y);
-    const leftHeight = sampleTerrainHeight(x - normalizedSampleStep, y);
-    const rightHeight = sampleTerrainHeight(x + normalizedSampleStep, y);
-    const downHeight = sampleTerrainHeight(x, y - normalizedSampleStep);
-    const upHeight = sampleTerrainHeight(x, y + normalizedSampleStep);
-    const denominator = normalizedSampleStep * normalizedSampleStep;
+    const normalizedOptions = normalizeTerrainDerivativeQueryOptions(options);
+    const centerHeight = sampleTerrainHeight(x, y, normalizedOptions);
+    const leftHeight = sampleTerrainHeight(
+      x - normalizedOptions.sampleStep,
+      y,
+      normalizedOptions
+    );
+    const rightHeight = sampleTerrainHeight(
+      x + normalizedOptions.sampleStep,
+      y,
+      normalizedOptions
+    );
+    const downHeight = sampleTerrainHeight(
+      x,
+      y - normalizedOptions.sampleStep,
+      normalizedOptions
+    );
+    const upHeight = sampleTerrainHeight(
+      x,
+      y + normalizedOptions.sampleStep,
+      normalizedOptions
+    );
+    const denominator =
+      normalizedOptions.sampleStep * normalizedOptions.sampleStep;
     const curvatureX =
       (leftHeight - 2 * centerHeight + rightHeight) / denominator;
     const curvatureY = (downHeight - 2 * centerHeight + upHeight) / denominator;
     return {
       worldX: x,
       worldY: y,
-      sampleStep: normalizedSampleStep,
+      sampleStep: normalizedOptions.sampleStep,
       height: centerHeight,
       curvatureX,
       curvatureY,
       curvatureMagnitude: Math.hypot(curvatureX, curvatureY),
     };
   };
-  const sampleTerrainHeightRange = (bounds: {
-    minX: number;
-    maxX: number;
-    minY: number;
-    maxY: number;
-    sampleStep?: number;
-  }): WorldTerrainHeightRangeSample => {
+  const sampleTerrainHeightRange = (
+    bounds: WorldTerrainHeightRangeQueryOptions
+  ): WorldTerrainHeightRangeSample => {
     const normalizedBounds = normalizeTerrainHeightRangeBounds(bounds);
     let minHeight = Number.POSITIVE_INFINITY;
     let maxHeight = Number.NEGATIVE_INFINITY;
@@ -440,7 +526,7 @@ export function createWorldGenerator({
         sampleX <= normalizedBounds.maxX;
         sampleX += normalizedBounds.sampleStep
       ) {
-        const height = sampleTerrainHeight(sampleX, sampleY);
+        const height = sampleTerrainHeight(sampleX, sampleY, normalizedBounds);
         minHeight = Math.min(minHeight, height);
         maxHeight = Math.max(maxHeight, height);
         sampleCount += 1;
@@ -466,9 +552,10 @@ export function createWorldGenerator({
   };
   const sampleTerrainSeaDepth = (
     x: number,
-    y: number
+    y: number,
+    options: WorldTerrainHeightQueryOptions = {}
   ): WorldTerrainSeaDepthSample => {
-    const surface = sampleTerrainSurface(x, y);
+    const surface = sampleTerrainSurface(x, y, options);
     return {
       worldX: x,
       worldY: y,
@@ -525,18 +612,69 @@ function normalizeTerrainSampleStep(sampleStep: number): number {
   return sampleStep;
 }
 
-function normalizeTerrainHeightRangeBounds(bounds: {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-  sampleStep?: number;
-}): {
+function normalizeTerrainQueryResolution(
+  options: WorldTerrainHeightQueryOptions = {}
+): {
+  resolution: WorldTerrainQueryResolution;
+} {
+  const resolution = options.resolution ?? 'coarse';
+  if (resolution !== 'coarse' && resolution !== 'fine') {
+    throw new Error(
+      `Terrain query resolution "${String(resolution)}" must be "coarse" or "fine".`
+    );
+  }
+  return { resolution };
+}
+
+function resolveTerrainQueryCoordinates(
+  worldX: number,
+  worldY: number,
+  options: WorldTerrainHeightQueryOptions = {}
+): {
+  resolution: WorldTerrainQueryResolution;
+  worldX: number;
+  worldY: number;
+} {
+  if (!Number.isFinite(worldX) || !Number.isFinite(worldY)) {
+    throw new Error('Terrain query coordinates must be finite numbers.');
+  }
+  const normalizedResolution = normalizeTerrainQueryResolution(options);
+  const queryStep =
+    normalizedResolution.resolution === 'fine'
+      ? WORLD_TERRAIN_FINE_QUERY_STEP
+      : WORLD_TERRAIN_COARSE_QUERY_STEP;
+  return {
+    resolution: normalizedResolution.resolution,
+    worldX: Math.round(worldX / queryStep) * queryStep,
+    worldY: Math.round(worldY / queryStep) * queryStep,
+  };
+}
+
+function normalizeTerrainDerivativeQueryOptions(
+  options: number | WorldTerrainDerivativeQueryOptions = 1
+): Required<WorldTerrainDerivativeQueryOptions> {
+  if (typeof options === 'number') {
+    return {
+      resolution: 'coarse',
+      sampleStep: normalizeTerrainSampleStep(options),
+    };
+  }
+  const resolution = normalizeTerrainQueryResolution(options).resolution;
+  return {
+    resolution,
+    sampleStep: normalizeTerrainSampleStep(options.sampleStep ?? 1),
+  };
+}
+
+function normalizeTerrainHeightRangeBounds(
+  bounds: WorldTerrainHeightRangeQueryOptions
+): {
   minX: number;
   maxX: number;
   minY: number;
   maxY: number;
   sampleStep: number;
+  resolution: WorldTerrainQueryResolution;
 } {
   if (!Number.isFinite(bounds.minX) || !Number.isFinite(bounds.maxX)) {
     throw new Error(
@@ -564,6 +702,7 @@ function normalizeTerrainHeightRangeBounds(bounds: {
     minY: bounds.minY,
     maxY: bounds.maxY,
     sampleStep: normalizeTerrainSampleStep(bounds.sampleStep ?? 1),
+    resolution: normalizeTerrainQueryResolution(bounds).resolution,
   };
 }
 
