@@ -26,8 +26,11 @@ Current layout:
   geometry objects on every tile model creation.
 - Full-detail trees now collapse each tree's repeated branches into one
   `InstancedMesh` and each tree's repeated foliage clumps into one
-  `InstancedMesh`, while keeping the trunk segments and special-case detail
-  nodes as ordinary children.
+  `InstancedMesh`.
+- Full-detail trunk segments now also batch at the tile level into shared
+  `InstancedMesh` groups keyed by taper geometry and material, so dense forest
+  tiles do not pay two standalone trunk draw calls per tree before close-detail
+  props are added.
 - Full-detail forest birds now collapse into three animated `InstancedMesh`
   sets per tile for left wings, right wings, and bodies instead of emitting
   one `Group` with three child meshes per bird.

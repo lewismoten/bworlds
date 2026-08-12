@@ -431,6 +431,41 @@ describe('tile forest', () => {
     expect(foliageInstances.every((mesh) => mesh.count > 0)).toBe(true);
   });
 
+  it('batches full-detail tree trunk segments into instanced meshes', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    const model = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const trunkInstances: FakeInstancedMesh[] = [];
+    const trunkMeshes: FakeMesh[] = [];
+    model.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        typeof node.userData?.forestTreeTrunkInstancedSegment === 'string'
+      ) {
+        trunkInstances.push(node);
+      }
+      if (
+        node instanceof FakeMesh &&
+        typeof node.userData?.forestTreeTrunkSegment === 'string'
+      ) {
+        trunkMeshes.push(node);
+      }
+    });
+
+    expect(trunkInstances.length).toBeGreaterThan(0);
+    expect(trunkInstances.every((mesh) => mesh.count > 0)).toBe(true);
+    expect(trunkMeshes).toHaveLength(0);
+  });
+
   it('renders meadow grass only in full-detail forest models', () => {
     const tile = getForestTile();
     const state = createForestTestState();

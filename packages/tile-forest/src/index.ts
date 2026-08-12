@@ -1434,10 +1434,19 @@ function* createForestModelProgressive({
   const firstTreeBatchCount = Math.ceil(descriptors.length / 2);
   const primaryTreeDescriptors = descriptors.slice(0, firstTreeBatchCount);
   const secondaryTreeDescriptors = descriptors.slice(firstTreeBatchCount);
+  const trunkSegments: ForestTrunkSegmentInstance[] = [];
   const totalSteps = secondaryTreeDescriptors.length > 0 ? 6 : 5;
 
   for (const descriptor of primaryTreeDescriptors) {
-    addForestFullDetailTree(group, three, geometry, tileX, tileY, descriptor);
+    addForestFullDetailTree(
+      group,
+      three,
+      geometry,
+      tileX,
+      tileY,
+      descriptor,
+      trunkSegments
+    );
   }
 
   yield {
@@ -1447,8 +1456,18 @@ function* createForestModelProgressive({
   };
 
   for (const descriptor of secondaryTreeDescriptors) {
-    addForestFullDetailTree(group, three, geometry, tileX, tileY, descriptor);
+    addForestFullDetailTree(
+      group,
+      three,
+      geometry,
+      tileX,
+      tileY,
+      descriptor,
+      trunkSegments
+    );
   }
+
+  addForestFullDetailTrunkInstances(group, three, trunkSegments);
 
   if (secondaryTreeDescriptors.length > 0) {
     yield {
@@ -1898,7 +1917,8 @@ function addForestFullDetailTree(
   geometry: TreeGeometry,
   tileX: number,
   tileY: number,
-  descriptor: ForestTreeDescriptor
+  descriptor: ForestTreeDescriptor,
+  trunkSegments: ForestTrunkSegmentInstance[]
 ): void {
   const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
   const structure = getTreeStructuralState(descriptor);
@@ -1931,9 +1951,11 @@ function addForestFullDetailTree(
   };
 
   addForestFullDetailTrunk(
+    trunkSegments,
     three,
-    tree,
     style.trunkMaterial,
+    tileX,
+    tileY,
     descriptor,
     structure
   );
@@ -2122,9 +2144,11 @@ function getForestTrunkMidRadius(
 }
 
 function addForestFullDetailTrunk(
+  target: ForestTrunkSegmentInstance[],
   three: ThreeHostLike,
-  tree: ThreeObject3DLike,
   material: ThreeMaterialLike,
+  tileX: number,
+  tileY: number,
   descriptor: Pick<
     ForestTreeDescriptor,
     'form' | 'x' | 'y' | 'variety' | 'scale'
@@ -2138,40 +2162,148 @@ function addForestFullDetailTrunk(
   const midRadiusScale = midRadius / 0.1;
   const lowerCurveX = structure.trunkCurveX * 0.18;
   const lowerCurveZ = structure.trunkCurveZ * 0.18;
+  const treeRotationX = Math.atan2(
+    structure.trunkLeanZ,
+    Math.max(0.001, structure.trunkHeight)
+  );
+  const treeRotationZ = -Math.atan2(
+    structure.trunkLeanX,
+    Math.max(0.001, structure.trunkHeight)
+  );
+  const treeScale = structure.scale;
+  const treePositionX = tileX + descriptor.x;
+  const treePositionZ = tileY + descriptor.y;
 
-  const lowerTrunk = new three.Mesh(
-    getForestTrunkGeometry(
+  target.push({
+    geometry: getForestTrunkGeometry(
       three,
       midRadius / Math.max(0.0001, structure.radius)
     ),
-    material
-  );
-  lowerTrunk.position.set(lowerCurveX, lowerHeight * 0.5, lowerCurveZ);
-  lowerTrunk.scale.set(bottomRadiusScale, lowerHeight, bottomRadiusScale);
-  lowerTrunk.userData = {
-    ...(lowerTrunk.userData ?? {}),
-    forestTreeTrunkSegment: 'lower',
-  };
-  tree.add(lowerTrunk);
-
-  const upperTrunk = new three.Mesh(
-    getForestTrunkGeometry(
+    material,
+    segment: 'lower',
+    positionX: treePositionX,
+    positionY: 0,
+    positionZ: treePositionZ,
+    rotationX: treeRotationX,
+    rotationZ: treeRotationZ,
+    localX: lowerCurveX,
+    localY: lowerHeight * 0.5,
+    localZ: lowerCurveZ,
+    scaleX: bottomRadiusScale * treeScale,
+    scaleY: lowerHeight * treeScale,
+    scaleZ: bottomRadiusScale * treeScale,
+    parentScale: treeScale,
+  });
+  target.push({
+    geometry: getForestTrunkGeometry(
       three,
       structure.trunkTopRadius / Math.max(0.0001, midRadius)
     ),
-    material
+    material,
+    segment: 'upper',
+    positionX: treePositionX,
+    positionY: 0,
+    positionZ: treePositionZ,
+    rotationX: treeRotationX,
+    rotationZ: treeRotationZ,
+    localX: structure.trunkCurveX,
+    localY: lowerHeight + upperHeight * 0.5,
+    localZ: structure.trunkCurveZ,
+    scaleX: midRadiusScale * treeScale,
+    scaleY: upperHeight * treeScale,
+    scaleZ: midRadiusScale * treeScale,
+    parentScale: treeScale,
+  });
+}
+
+function addForestFullDetailTrunkInstances(
+  group: ThreeObject3DLike,
+  three: ThreeHostLike,
+  segments: readonly ForestTrunkSegmentInstance[]
+): void {
+  const batches: ForestTrunkSegmentBatch[] = [];
+  for (const segment of segments) {
+    const batch = batches.find(
+      (entry) =>
+        entry.geometry === segment.geometry &&
+        entry.material === segment.material
+    );
+    if (batch) {
+      batch.instances.push(segment);
+      continue;
+    }
+    batches.push({
+      geometry: segment.geometry,
+      material: segment.material,
+      instances: [segment],
+    });
+  }
+
+  for (const batch of batches) {
+    const instances = new three.InstancedMesh(
+      batch.geometry,
+      batch.material,
+      batch.instances.length
+    );
+    instances.userData = {
+      ...(instances.userData ?? {}),
+      [RENDER_STATS_CATEGORY_KEY]: 'tree',
+      forestTreeTrunkInstanced: true,
+      forestTreeTrunkInstancedSegment: batch.instances.every(
+        (segment) => segment.segment === 'lower'
+      )
+        ? 'lower'
+        : batch.instances.every((segment) => segment.segment === 'upper')
+          ? 'upper'
+          : 'mixed',
+    };
+    const matrixScratch = new three.Matrix4();
+    batch.instances.forEach((segment, index) => {
+      instances.setMatrixAt(
+        index,
+        writeForestTrunkInstancedMatrix(matrixScratch, segment)
+      );
+    });
+    group.add(instances);
+  }
+}
+
+function writeForestTrunkInstancedMatrix(
+  target: ThreeMatrix4Like,
+  segment: ForestTrunkSegmentInstance
+) {
+  const cosX = Math.cos(segment.rotationX);
+  const sinX = Math.sin(segment.rotationX);
+  const cosZ = Math.cos(segment.rotationZ);
+  const sinZ = Math.sin(segment.rotationZ);
+  const localX = segment.localX * segment.parentScale;
+  const localY = segment.localY * segment.parentScale;
+  const localZ = segment.localZ * segment.parentScale;
+
+  const rotatedLocalX =
+    cosZ * localX + -sinZ * cosX * localY + sinZ * sinX * localZ;
+  const rotatedLocalY =
+    sinZ * localX + cosZ * cosX * localY + -cosZ * sinX * localZ;
+  const rotatedLocalZ = sinX * localY + cosX * localZ;
+
+  return target.set(
+    cosZ * segment.scaleX,
+    -sinZ * cosX * segment.scaleY,
+    sinZ * sinX * segment.scaleZ,
+    segment.positionX + rotatedLocalX,
+    sinZ * segment.scaleX,
+    cosZ * cosX * segment.scaleY,
+    -cosZ * sinX * segment.scaleZ,
+    segment.positionY + rotatedLocalY,
+    0,
+    sinX * segment.scaleY,
+    cosX * segment.scaleZ,
+    segment.positionZ + rotatedLocalZ,
+    0,
+    0,
+    0,
+    1
   );
-  upperTrunk.position.set(
-    structure.trunkCurveX,
-    lowerHeight + upperHeight * 0.5,
-    structure.trunkCurveZ
-  );
-  upperTrunk.scale.set(midRadiusScale, upperHeight, midRadiusScale);
-  upperTrunk.userData = {
-    ...(upperTrunk.userData ?? {}),
-    forestTreeTrunkSegment: 'upper',
-  };
-  tree.add(upperTrunk);
 }
 
 function writeForestBranchInstancedMatrix(
@@ -6087,6 +6219,30 @@ interface ForestTreeStyle {
   meadowFlowerYellowMaterial: ThreeMaterialLike;
   breadcrumbMaterial: ThreeMaterialLike;
   birdMaterial: ThreeMaterialLike;
+}
+
+interface ForestTrunkSegmentInstance {
+  geometry: ThreeGeometryLike;
+  material: ThreeMaterialLike;
+  segment: 'lower' | 'upper';
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationZ: number;
+  localX: number;
+  localY: number;
+  localZ: number;
+  scaleX: number;
+  scaleY: number;
+  scaleZ: number;
+  parentScale: number;
+}
+
+interface ForestTrunkSegmentBatch {
+  geometry: ThreeGeometryLike;
+  material: ThreeMaterialLike;
+  instances: ForestTrunkSegmentInstance[];
 }
 
 type ForestBranchDescriptor = TreeBranchState;
