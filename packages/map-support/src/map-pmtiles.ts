@@ -18,6 +18,13 @@ export interface PmtilesExportPlugin {
   getTileFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
 }
 
+export interface MapFeatureGeneratorPlugin {
+  id: string;
+  label?: string;
+  layerId: string;
+  getFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
+}
+
 export function createPmtilesExportPlugin(params: {
   id: string;
   label?: string;
@@ -50,6 +57,56 @@ export function createPmtilesExportRequest(
   request: PmtilesExportRequest
 ): PmtilesExportRequest {
   return normalizePmtilesExportRequest(request);
+}
+
+export function createMapFeatureGeneratorPlugin(params: {
+  id: string;
+  label?: string;
+  layerId: string;
+  getFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  const normalizedLayerId = normalizeNonEmptyString(
+    params.layerId,
+    'Map feature generator layerId'
+  );
+  return {
+    id: normalizeNonEmptyString(params.id, 'Map feature generator id'),
+    label:
+      typeof params.label === 'string' && params.label.trim().length > 0
+        ? params.label.trim()
+        : undefined,
+    layerId: normalizedLayerId,
+    getFeatures(request) {
+      const normalizedRequest = normalizePmtilesExportRequest(request);
+      return params.getFeatures(normalizedRequest).map((feature) => {
+        const normalizedFeature = normalizeMapFeatureRecord(feature);
+        if (normalizedFeature.layerId !== normalizedLayerId) {
+          throw new Error(
+            `Map feature generator layerId ${JSON.stringify(normalizedLayerId)} must match returned feature layerId ${JSON.stringify(normalizedFeature.layerId)}.`
+          );
+        }
+        return normalizedFeature;
+      });
+    },
+  };
+}
+
+export function generatePmtilesTileFeatures(options: {
+  request: PmtilesExportRequest;
+  generators: readonly MapFeatureGeneratorPlugin[];
+}): readonly MapFeatureRecord[] {
+  const normalizedRequest = normalizePmtilesExportRequest(options.request);
+  const requestedLayerIds = new Set(normalizedRequest.layerIds ?? []);
+  return options.generators.flatMap((generator) => {
+    const normalizedGenerator = createMapFeatureGeneratorPlugin(generator);
+    if (
+      requestedLayerIds.size > 0 &&
+      !requestedLayerIds.has(normalizedGenerator.layerId)
+    ) {
+      return [];
+    }
+    return normalizedGenerator.getFeatures(normalizedRequest);
+  });
 }
 
 function normalizePmtilesExportRequest(

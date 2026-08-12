@@ -26,9 +26,11 @@ export {
   isMapFeatureVisibleAtZoom,
 } from './map-features.ts';
 export {
+  createMapFeatureGeneratorPlugin,
   createPmtilesExportPlugin,
   createPmtilesExportRequest,
   createPmtilesTileCoordinate,
+  generatePmtilesTileFeatures,
 } from './map-pmtiles.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,

@@ -27,7 +27,7 @@ Current support:
 ## PMTiles
 
 - [x] Create a PMTiles export plugin.
-- [ ] Generate vector features from world data on demand.
+- [x] Generate vector features from world data on demand.
 - [ ] Use coarse features at low zoom levels.
 - [ ] Reveal finer features as zoom increases.
 - [ ] Simplify lines and polygons by zoom level.
@@ -44,6 +44,11 @@ Current support:
   `worldRevision`, `zoom/x/y`, and optional `layerIds`, so later on-demand
   feature generation and tile caching can build on one deterministic
   request model.
+- `createMapFeatureGeneratorPlugin(...)` and
+  `generatePmtilesTileFeatures(...)` now give that PMTiles path one shared
+  layer-scoped, on-demand feature generation model, so tile export can ask
+  only the relevant generators for a requested `zoom/x/y` tile instead of
+  materializing whole-world feature sets first.
 
 ## Physical Layers
 

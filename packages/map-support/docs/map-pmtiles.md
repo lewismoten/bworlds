@@ -1,9 +1,11 @@
 `@bworlds/map-support` now exposes one small shared PMTiles export contract
 for future vector-tile generation:
 
+- `createMapFeatureGeneratorPlugin(...)`
 - `createPmtilesExportPlugin(...)`
 - `createPmtilesExportRequest(...)`
 - `createPmtilesTileCoordinate(...)`
+- `generatePmtilesTileFeatures(...)`
 
 ## Purpose
 
@@ -44,6 +46,21 @@ with:
 `getTileFeatures(...)` runs per request, which gives later export code one
 on-demand generation path for vector features instead of forcing the whole
 world to be materialized up front.
+
+## On-Demand Feature Generation
+
+`createMapFeatureGeneratorPlugin(...)` defines one layer-scoped generator that
+returns canonical world-space map features for a single normalized tile
+request.
+
+`generatePmtilesTileFeatures(...)` fans one normalized PMTiles request out to
+the relevant generators and concatenates their results.
+
+That keeps later PMTiles export code free to:
+
+- generate tile features only when a tile is requested
+- filter generators by requested `layerIds`
+- keep layer ownership explicit on returned features
 
 ## Validation
 
