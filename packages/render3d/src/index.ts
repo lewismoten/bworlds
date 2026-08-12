@@ -34,6 +34,7 @@ import {
   type Model3DResourceCostEstimate,
   type RenderBudget,
   type RenderBudgetDetailLevel,
+  type TerrainSurfaceRenderMode,
   type TileLike,
   type TilePlugin,
   type ViewMode,
@@ -1175,6 +1176,7 @@ type TileNodeBuildShell = {
     tileY: number;
     detailLevel: RenderBudgetDetailLevel;
     renderBudget: RenderBudget | undefined;
+    terrainSurfaceMode: TerrainSurfaceRenderMode;
   };
 };
 type TilePluginBuildMetadata = {
@@ -2057,7 +2059,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         tileY: y,
         detailLevel,
         renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
-        terrainSurfaceMode: 'legacy-mesh',
+        terrainSurfaceMode: resolveTileTerrainSurfaceMode(tile),
       },
     };
   }
@@ -4480,6 +4482,13 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     render,
     resize,
   };
+}
+
+export function resolveTileTerrainSurfaceMode(
+  tile: Pick<TileLike, 'kind'>
+): TerrainSurfaceRenderMode {
+  void tile;
+  return 'legacy-mesh';
 }
 
 function applyPixelArtTextureSampling<

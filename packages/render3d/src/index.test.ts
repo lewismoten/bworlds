@@ -220,6 +220,7 @@ import {
   recordRecentMetric,
   recordRecentDurationMetric,
   recordRecentLabeledDurationMetric,
+  resolveTileTerrainSurfaceMode,
   resetOwnedMaterialLifecycleMetrics,
   trackOwnedObject3DMaterials,
   isFrameTimeBudgetExhausted,
@@ -2053,6 +2054,42 @@ describe('render3d visibility helpers', () => {
       generator: expect.any(Object),
       lastProgress: null,
     });
+  });
+
+  it('preserves the terrain surface mode when starting progressive plugin model builds', () => {
+    const create3DModelProgressive = vi.fn(function* () {
+      yield { completedSteps: 1, totalSteps: 1, label: 'road' };
+      return { type: 'Mesh' };
+    });
+
+    createTilePluginModelFromCostEstimate(
+      {
+        create3DModelProgressive,
+      },
+      {
+        three: {} as never,
+        tile: { kind: 'road' },
+        state: {} as never,
+        tileX: 12,
+        tileY: 8,
+        detailLevel: 'low',
+        terrainSurfaceMode: 'shared-splat',
+      } as never,
+      getTileModelCostEstimateLimits('low')
+    );
+
+    expect(create3DModelProgressive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        terrainSurfaceMode: 'shared-splat',
+      })
+    );
+  });
+
+  it('keeps road tiles on the legacy terrain surface path until shared splat rendering exists', () => {
+    expect(resolveTileTerrainSurfaceMode({ kind: 'road' })).toBe('legacy-mesh');
+    expect(resolveTileTerrainSurfaceMode({ kind: 'plains' })).toBe(
+      'legacy-mesh'
+    );
   });
 
   it('resumes progressive plugin model builds one yield at a time until complete', () => {
