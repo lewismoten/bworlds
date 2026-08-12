@@ -321,7 +321,9 @@ describe('tile forest', () => {
     expect(broadleafFoliageMaterials.size).toBe(1);
     expect(pineTrunkMaterials.size).toBe(1);
     expect(pineFoliageMaterials.size).toBe(1);
-    expect([...broadleafTrunkMaterials][0]).not.toBe([...pineTrunkMaterials][0]);
+    expect([...broadleafTrunkMaterials][0]).not.toBe(
+      [...pineTrunkMaterials][0]
+    );
     expect([...broadleafFoliageMaterials][0]).not.toBe(
       [...pineFoliageMaterials][0]
     );

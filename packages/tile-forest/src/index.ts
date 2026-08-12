@@ -5733,9 +5733,7 @@ function syncForestBirds(root: ThreeObject3DLike, timeMs: number) {
   root.traverse?.((node) => {
     const part = node.userData?.[BIRD_INSTANCED_PART_KEY];
     const birds = node.userData?.[BIRD_KEY] as
-      | ForestBirdDescriptor[]
-      | ForestBirdDescriptor
-      | undefined;
+      ForestBirdDescriptor[] | ForestBirdDescriptor | undefined;
     if (
       typeof part === 'string' &&
       Array.isArray(birds) &&
@@ -5747,8 +5745,7 @@ function syncForestBirds(root: ThreeObject3DLike, timeMs: number) {
         instanceMatrix?: { needsUpdate?: boolean };
       };
       const matrixScratch = node.userData?.forestBirdMatrixScratch as
-        | ThreeMatrix4Like
-        | undefined;
+        ThreeMatrix4Like | undefined;
       if (!matrixScratch) {
         return;
       }

@@ -490,13 +490,9 @@ describe('render3d visibility helpers', () => {
       getTileAtlasUvBounds('plains', 0, atlasWidth, atlasHeight)
     ).not.toEqual(getTileAtlasUvBounds('forest', 1, atlasWidth, atlasHeight));
     expect(
-      Array.from(
-        plainsGeometry.getAttribute('uv').array as ArrayLike<number>
-      )
+      Array.from(plainsGeometry.getAttribute('uv').array as ArrayLike<number>)
     ).not.toEqual(
-      Array.from(
-        forestGeometry.getAttribute('uv').array as ArrayLike<number>
-      )
+      Array.from(forestGeometry.getAttribute('uv').array as ArrayLike<number>)
     );
   });
 
