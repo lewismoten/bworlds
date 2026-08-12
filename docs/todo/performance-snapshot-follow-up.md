@@ -249,7 +249,11 @@
       avoidable one-child wrapper per banner without changing banner motion,
       and low-detail straight `tile-route` roads now use the road ribbon mesh
       itself as the tile root and attach the center patch beneath it instead
-      of returning a wrapper group for that two-connection case.
+      of returning a wrapper group for that two-connection case, and
+      full-detail `tile-dungeon` now uses its base keep mesh as the root and
+      attaches the central keep, instanced towers, gate pieces, banner
+      hardware, banner cloth, and beacon content beneath it instead of
+      returning a dedicated wrapper group.
 - [x] Investigate the 656 static objects using matrix auto-update.
       Progress: renderer diagnostics now count static `matrixAutoUpdate`
       owners separately by plugin, and the renderer regression tests cover

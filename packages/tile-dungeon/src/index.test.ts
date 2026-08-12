@@ -480,6 +480,26 @@ describe('tile dungeon', () => {
     expect(lowModel?.position.y ?? 0).toBeGreaterThan(0);
   });
 
+  it('uses the full-detail dungeon base mesh as the root instead of a wrapper group', () => {
+    const plugin = createDungeonTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');
+    const state = createDungeonState();
+
+    const fullModel = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'dungeon' },
+      tileX: 5,
+      tileY: 4,
+      detailLevel: 'full',
+    }) as FakeNode | undefined;
+
+    expect(fullModel).toBeInstanceOf(FakeMesh);
+    expect(fullModel?.position.x).toBe(5);
+    expect(fullModel?.position.z).toBe(4);
+    expect(fullModel?.position.y ?? 0).toBeGreaterThan(0);
+  });
+
   it('instances repeated tower bodies and caps in full-detail dungeon models', () => {
     const plugin = createDungeonTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'dungeon');

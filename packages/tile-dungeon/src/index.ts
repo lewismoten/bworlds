@@ -155,22 +155,21 @@ function* createDungeonModelProgressive({
     });
   }
 
-  const group = new three.Group();
   const totalSteps = 6;
+  const rootY = baseHeight * 0.5;
 
   const base = new three.Mesh(
     new three.BoxGeometry(baseWidth, baseHeight, baseDepth),
     style.wallMaterial
   );
-  base.position.set(tileX, baseHeight * 0.5, tileY);
-  group.add(base);
+  base.position.set(tileX, rootY, tileY);
 
   const keep = new three.Mesh(
     new three.BoxGeometry(baseWidth * 0.62, baseHeight * 0.8, baseDepth * 0.62),
     style.wallMaterial
   );
-  keep.position.set(tileX, baseHeight * 0.9, tileY);
-  group.add(keep);
+  keep.position.set(0, baseHeight * 0.4, 0);
+  base.add(keep);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -205,9 +204,9 @@ function* createDungeonModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         towerMatrixScratch,
-        tileX + tower.x,
-        tower.height * 0.5,
-        tileY + tower.z,
+        tower.x,
+        tower.height * 0.5 - rootY,
+        tower.z,
         tower.radius,
         tower.height,
         tower.radius
@@ -217,25 +216,25 @@ function* createDungeonModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         capMatrixScratch,
-        tileX + tower.x,
-        tower.height + tower.capHeight * 0.5 - 0.02,
-        tileY + tower.z,
+        tower.x,
+        tower.height + tower.capHeight * 0.5 - 0.02 - rootY,
+        tower.z,
         tower.radius,
         tower.capHeight,
         tower.radius
       )
     );
   }
-  group.add(towerInstances);
-  group.add(towerCaps);
+  base.add(towerInstances);
+  base.add(towerCaps);
   yield {
     completedSteps: 2,
     totalSteps,
     label: 'towers',
   };
 
-  const gateOriginX = tileX + entrance.dx * (baseDepth * 0.42);
-  const gateOriginZ = tileY + entrance.dy * (baseDepth * 0.42);
+  const gateOriginX = entrance.dx * (baseDepth * 0.42);
+  const gateOriginZ = entrance.dy * (baseDepth * 0.42);
 
   const arch = new three.Mesh(
     new three.TorusGeometry(0.18, 0.04, 6, 12, Math.PI),
@@ -244,12 +243,12 @@ function* createDungeonModelProgressive({
   const archOffset = rotateDungeonLocalOffset(0, 0.03, entrance.rotationY);
   arch.position.set(
     gateOriginX + archOffset.x,
-    0.33,
+    0.33 - rootY,
     gateOriginZ + archOffset.z
   );
   arch.rotation.y = entrance.rotationY;
   arch.rotation.z = Math.PI;
-  group.add(arch);
+  base.add(arch);
 
   const gatePostInstances = new three.InstancedMesh(
     new three.BoxGeometry(0.08, 0.34, 0.08),
@@ -266,7 +265,7 @@ function* createDungeonModelProgressive({
     writeRotatedInstancedScalePositionMatrix(
       gatePostMatrixScratch,
       gateOriginX + rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).x,
-      0.17,
+      0.17 - rootY,
       gateOriginZ + rotateDungeonLocalOffset(-0.16, 0.03, entrance.rotationY).z,
       1,
       1,
@@ -279,7 +278,7 @@ function* createDungeonModelProgressive({
     writeRotatedInstancedScalePositionMatrix(
       gatePostMatrixScratch,
       gateOriginX + rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).x,
-      0.17,
+      0.17 - rootY,
       gateOriginZ + rotateDungeonLocalOffset(0.16, 0.03, entrance.rotationY).z,
       1,
       1,
@@ -287,7 +286,7 @@ function* createDungeonModelProgressive({
       entrance.rotationY
     )
   );
-  group.add(gatePostInstances);
+  base.add(gatePostInstances);
 
   const portcullis = new three.Mesh(
     new three.PlaneGeometry(0.24, 0.28),
@@ -300,11 +299,11 @@ function* createDungeonModelProgressive({
   );
   portcullis.position.set(
     gateOriginX + portcullisOffset.x,
-    0.17,
+    0.17 - rootY,
     gateOriginZ + portcullisOffset.z
   );
   portcullis.rotation.y = entrance.rotationY;
-  group.add(portcullis);
+  base.add(portcullis);
 
   const bars = new three.Mesh(
     new three.BoxGeometry(0.22, 0.26, 0.02),
@@ -313,11 +312,11 @@ function* createDungeonModelProgressive({
   const barsOffset = rotateDungeonLocalOffset(0, 0.02, entrance.rotationY);
   bars.position.set(
     gateOriginX + barsOffset.x,
-    0.17,
+    0.17 - rootY,
     gateOriginZ + barsOffset.z
   );
   bars.rotation.y = entrance.rotationY;
-  group.add(bars);
+  base.add(bars);
 
   const darkness = new three.Mesh(
     new three.CircleGeometry(0.12, 18),
@@ -326,11 +325,11 @@ function* createDungeonModelProgressive({
   const darknessOffset = rotateDungeonLocalOffset(0, -0.1, entrance.rotationY);
   darkness.position.set(
     gateOriginX + darknessOffset.x,
-    0.15,
+    0.15 - rootY,
     gateOriginZ + darknessOffset.z
   );
   darkness.rotation.y = entrance.rotationY;
-  group.add(darkness);
+  base.add(darkness);
   yield {
     completedSteps: 3,
     totalSteps,
@@ -339,13 +338,13 @@ function* createDungeonModelProgressive({
 
   createDungeonBeacon(
     three,
-    group,
+    base,
     {
       x: gateOriginX,
-      y: 0.42,
+      y: 0.42 - rootY,
       z: gateOriginZ + rotateDungeonLocalOffset(0, 0.06, entrance.rotationY).z,
       glowScale: 0.04,
-      pointLightY: 0.4,
+      pointLightY: 0.4 - rootY,
       pointLightZ:
         gateOriginZ + rotateDungeonLocalOffset(0, 0.03, entrance.rotationY).z,
       glowDayIntensity: 0.02,
@@ -380,21 +379,29 @@ function* createDungeonModelProgressive({
   };
   const towerBeaconBrazierMatrixScratch = new three.Matrix4();
   towerBeacons.forEach((beacon, index) => {
+    const localBeacon = {
+      ...beacon,
+      x: beacon.x - tileX,
+      y: beacon.y - rootY,
+      z: beacon.z - tileY,
+      pointLightY: beacon.pointLightY - rootY,
+      pointLightZ: beacon.pointLightZ - tileY,
+    };
     towerBeaconBraziers.setMatrixAt(
       index,
       writeInstancedScalePositionMatrix(
         towerBeaconBrazierMatrixScratch,
-        beacon.x,
-        beacon.y - 0.02,
-        beacon.z,
+        localBeacon.x,
+        localBeacon.y - 0.02,
+        localBeacon.z,
         1,
         1,
         1
       )
     );
-    createDungeonBeacon(three, group, beacon, style, false);
+    createDungeonBeacon(three, base, localBeacon, style, false);
   });
-  group.add(towerBeaconBraziers);
+  base.add(towerBeaconBraziers);
   yield {
     completedSteps: 5,
     totalSteps,
@@ -428,13 +435,19 @@ function* createDungeonModelProgressive({
   const bannerPoleMatrixScratch = new three.Matrix4();
   const bannerCrossbarMatrixScratch = new three.Matrix4();
   banners.forEach((banner, index) => {
+    const localBanner = {
+      ...banner,
+      x: banner.x - tileX,
+      y: banner.y - rootY,
+      z: banner.z - tileY,
+    };
     bannerPoleInstances.setMatrixAt(
       index,
       writeInstancedScalePositionMatrix(
         bannerPoleMatrixScratch,
-        banner.x,
-        banner.height * 0.5,
-        banner.z,
+        localBanner.x,
+        localBanner.y + banner.height * 0.5,
+        localBanner.z,
         1,
         banner.height,
         1
@@ -444,27 +457,27 @@ function* createDungeonModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         bannerCrossbarMatrixScratch,
-        banner.x + banner.width * 0.46,
-        banner.height - 0.03,
-        banner.z,
+        localBanner.x + banner.width * 0.46,
+        localBanner.y + banner.height - 0.03,
+        localBanner.z,
         banner.width * 0.88,
         0.028,
         0.028
       )
     );
-    group.add(
-      createDungeonBanner(three, banner, style, tileX, tileY, index, false)
+    base.add(
+      createDungeonBanner(three, localBanner, style, tileX, tileY, index, false)
     );
   });
-  group.add(bannerPoleInstances);
-  group.add(bannerCrossbarInstances);
+  base.add(bannerPoleInstances);
+  base.add(bannerCrossbarInstances);
   yield {
     completedSteps: 6,
     totalSteps,
     label: 'banners',
   };
 
-  return group;
+  return base;
 }
 
 function runDungeonModelBuildToCompletion(
