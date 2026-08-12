@@ -4496,6 +4496,7 @@ export function buildRecoverableVisibleTileModelDetailEntry<
   Entry extends {
     modelRoot?: THREE.Object3D | null;
     fallbackReason?: string;
+    supportsModel?: boolean;
   },
 >(
   requestedDetailLevel: RenderBudgetDetailLevel,
@@ -4524,13 +4525,15 @@ export function buildRecoverableVisibleTileModelDetailEntry<
     });
     return entry;
   };
+  const entryHasRenderableResult = (entry: Entry) =>
+    Boolean(entry.modelRoot) || entry.supportsModel === false;
   if (
     requestedDetailLevel === 'full' &&
     preferredRecoveryDetailLevel === 'low'
   ) {
     attemptedPreferredLowRecovery = true;
     const preferredEntry = buildTrackedEntry('low');
-    if (preferredEntry.modelRoot) {
+    if (entryHasRenderableResult(preferredEntry)) {
       return {
         entry: preferredEntry,
         resolvedDetailLevel: 'low',
@@ -4540,7 +4543,7 @@ export function buildRecoverableVisibleTileModelDetailEntry<
   }
 
   const requestedEntry = buildTrackedEntry(requestedDetailLevel);
-  if (requestedDetailLevel !== 'full' || requestedEntry.modelRoot) {
+  if (requestedDetailLevel !== 'full' || entryHasRenderableResult(requestedEntry)) {
     return {
       entry: requestedEntry,
       resolvedDetailLevel: requestedDetailLevel,

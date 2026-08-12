@@ -102,9 +102,10 @@
       low-detail trunk container for each form present in the tile, and
       `tile-plains` now defers to the renderer's shared visible floor mesh
       instead of stacking a second plugin-owned plains plane on top of every
-      visible plains tile, while a hidden empty group keeps visible-LOD
-      recovery from treating shared-floor plains tiles as plugin build
-      failures, and `render3d` now batches simple visible plains floors by
+      visible plains tile, and visible shared-floor plains tiles now also skip
+      the hidden plugin sentinel group because `render3d` treats those entries
+      as tiles that do not support plugin models instead of retrying `full ->
+      low` visible recovery, and `render3d` now batches simple visible plains floors by
       atlas variant into one shared instanced layer instead of one box mesh per
       visible plains tile, which dropped the live `tile-plains` draw-call
       ownership from `1053` to `15` in the August 12, 2026 runtime issue

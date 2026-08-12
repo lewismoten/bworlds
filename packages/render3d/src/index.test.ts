@@ -5853,6 +5853,28 @@ describe('render3d visibility helpers', () => {
     ).toBe(false);
   });
 
+  it('does not retry visible lod recovery levels for tiles that do not support plugin models', () => {
+    const buildEntry = vi.fn((detailLevel: 'full' | 'low') => ({
+      detailLevel,
+      modelRoot: null,
+      supportsModel: false,
+    }));
+
+    expect(
+      buildRecoverableVisibleTileModelDetailEntry('full', buildEntry)
+    ).toEqual({
+      entry: {
+        detailLevel: 'full',
+        modelRoot: null,
+        supportsModel: false,
+      },
+      resolvedDetailLevel: 'full',
+      attemptedEntries: [{ detailLevel: 'full' }],
+    });
+    expect(buildEntry).toHaveBeenCalledTimes(1);
+    expect(buildEntry).toHaveBeenCalledWith('full');
+  });
+
   it('skips visible lod rebuilds when a valid model already matches the requested detail level', () => {
     expect(
       shouldRebuildVisibleTileModelDetailEntry(

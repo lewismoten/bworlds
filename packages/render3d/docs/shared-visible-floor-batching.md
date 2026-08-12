@@ -19,6 +19,10 @@ top draw-call owner even when plains had no plugin model at all.
   correct tile UVs while sharing one atlas material.
 - World-curvature offset is baked into each shared floor instance position
   whenever visible-tile curvature sync runs.
+- Ordinary plains tiles no longer allocate a hidden plugin sentinel `Group`;
+  the visible LOD recovery path now treats shared-floor-only plains builds as
+  tiles that do not support plugin models, which avoids the extra per-tile
+  object and the redundant `full -> low` recovery retry.
 
 ## Effect
 
