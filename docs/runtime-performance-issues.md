@@ -12,6 +12,10 @@ play.
 Issue reports are throttled by stable issue hash for five seconds so repeated
 frame stalls or budget rejections do not thrash the local endpoint.
 
+Saved issue files are also keyed by `source + issueHash` instead of timestamp.
+When the same issue hash is reported again, the existing file is overwritten
+with the latest payload instead of creating another duplicate file on disk.
+
 Recent mitigation work:
 
 - `tile-route` bridge appearances now share textured material sets by bridge

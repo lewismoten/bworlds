@@ -95,7 +95,7 @@ describe('runtime performance snapshot store', () => {
         source: 'game',
         issueHash: 'deadbeef',
       })
-    ).toBe('2026-08-10T15-30-45-123Z-game-deadbeef.json');
+    ).toBe('game-deadbeef.json');
   });
 
   it('keeps the most recent issue reports on disk', () => {
@@ -198,6 +198,115 @@ describe('runtime performance snapshot store', () => {
         limit: 10,
       })
     ).toHaveLength(2);
+  });
+
+  it('overwrites repeated issue hashes instead of creating duplicate issue files', () => {
+    const snapshotDir = mkdtempSync(
+      path.join(os.tmpdir(), 'bworlds-runtime-issues-dedupe-')
+    );
+    tempDirs.push(snapshotDir);
+
+    const firstIssue = {
+      schemaVersion: 1 as const,
+      createdAt: '2026-08-12T02:40:46.593Z',
+      source: 'game' as const,
+      route: '/',
+      worldSeed: 'alpha',
+      context: null,
+      issueHash: 'repeat-hash',
+      summary: 'First summary.',
+      reasons: ['First summary.'],
+      performanceSnapshot: {
+        schemaVersion: 1 as const,
+        createdAt: '2026-08-12T02:40:46.593Z',
+        source: 'game' as const,
+        trigger: 'runtime-issue' as const,
+        route: '/',
+        worldSeed: 'alpha',
+        context: null,
+        limits: {
+          initialWorldGenerationMs: 4000,
+          visibleTileGenerationMs: 16,
+          maximumFrameMs: 50,
+          memoryAfterRegionChangeMb: 512,
+          activeThreeObjectCount: 2500,
+          drawCalls: 1200,
+          audioNodeCount: 16,
+          songGenerationMs: 750,
+          midiExportMs: 1500,
+          wavExportMs: 2000,
+        },
+        metrics: {
+          initialWorldGenerationMs: null,
+          visibleTileGeneration: null,
+          maximumFrameMs: 30,
+          memoryAfterRegionChangeMb: null,
+          activeThreeObjectCount: 1200,
+          drawCalls: 500,
+          audioNodeCount: 4,
+          songGenerationMs: null,
+          midiExportMs: null,
+          wavExportMs: null,
+        },
+        violations: [],
+      },
+      renderState: {
+        performanceTier: 'reduced',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters: ['Chunk draw calls exceeded the soft cap'],
+        targetFps: 60,
+        visibilityRadius: 13.8,
+        pendingTileCount: 4,
+      },
+      pluginHotspots: {
+        materials: 'tile-town',
+        drawCalls: 'tile-forest',
+        objects: 'tile-forest',
+        meshes: 'tile-forest',
+        lodSwaps: null,
+        fallbackBoxes: null,
+        rejectedModels: null,
+        staticMatrixUpdates: null,
+      },
+      currentTile: {
+        plugin: 'tile-route',
+        requestedDetailLevel: 'full',
+        renderedDetailLevel: 'full',
+        cachedDetailLevel: 'full',
+        fallbackReason: null,
+        hasVisibleModel: true,
+      },
+      resourceWarnings: [],
+    };
+    const updatedIssue = {
+      ...firstIssue,
+      createdAt: '2026-08-12T02:40:56.644Z',
+      summary: 'Updated summary.',
+      reasons: ['Updated summary.'],
+      performanceSnapshot: {
+        ...firstIssue.performanceSnapshot,
+        createdAt: '2026-08-12T02:40:56.644Z',
+      },
+    };
+
+    saveRuntimePerformanceIssue(firstIssue, {
+      snapshotDir,
+      maxSnapshots: 10,
+    });
+    saveRuntimePerformanceIssue(updatedIssue, {
+      snapshotDir,
+      maxSnapshots: 10,
+    });
+
+    expect(fs.readdirSync(snapshotDir).filter((entry) => entry.endsWith('.json'))).toEqual([
+      'game-repeat-hash.json',
+    ]);
+    expect(
+      readRecentRuntimePerformanceIssues({
+        snapshotDir,
+        limit: 10,
+      })
+    ).toEqual([expect.objectContaining({ summary: 'Updated summary.' })]);
   });
 
   it('skips runtime issue files that disappear between listing and reading', () => {

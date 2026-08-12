@@ -111,10 +111,9 @@ export function readRecentRuntimePerformanceSnapshots(options = {}) {
 }
 
 export function formatRuntimePerformanceIssueFileName(issue) {
-  const timestamp = issue.createdAt.replace(/[:.]/g, '-');
   const source = sanitizeSnapshotSegment(issue.source ?? 'runtime');
   const issueHash = sanitizeSnapshotSegment(issue.issueHash ?? 'issue');
-  return `${timestamp}-${source}-${issueHash}.json`;
+  return `${source}-${issueHash}.json`;
 }
 
 export function saveRuntimePerformanceIssue(issue, options = {}) {
