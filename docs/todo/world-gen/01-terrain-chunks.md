@@ -96,6 +96,10 @@ Current support:
   renderer-ready chunk payload. This gives the future live terrain renderer one
   cacheable integration target instead of rebuilding chunk geometry and splat
   attributes from separate ad hoc steps.
+- `@bworlds/render3d/visible-terrain-chunks` now groups visible shared-floor
+  terrain cells into authoritative worldgen chunk IDs and stable `16x16` cell
+  bounds, so the later live chunk renderer can start from chunk-grouped floor
+  visibility instead of rescanning raw visible tile coordinates every build.
 
 ## Sextant Panel
 

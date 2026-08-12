@@ -43,6 +43,12 @@ import {
   type TileDefinitionLike,
   type WorldStateLike,
 } from '@bworlds/plugin-api';
+export {
+  collectVisibleTerrainChunks,
+  type VisibleTerrainChunk,
+  type VisibleTerrainChunkCell,
+  type VisibleTerrainChunkFloorEntry,
+} from './visible-terrain-chunks.ts';
 import {
   countGeometriesExceedingBounds,
   countGeometryTriangles,

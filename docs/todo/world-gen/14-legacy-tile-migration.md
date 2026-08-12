@@ -22,10 +22,14 @@ Current support:
   `forest`, and `shore` floor tiles through shared visible floor batches, and
   `road` continues to use that path when temporary terrain surface selection
   switches it to `shared-splat`.
+- `packages/render3d/src/visible-terrain-chunks.ts` now groups visible
+  shared-floor terrain cells into authoritative `@bworlds/worldgen` chunk IDs
+  and `16x16` chunk bounds, which gives the future chunk floor renderer one
+  renderer-owned chunk selection input instead of a raw visible tile scan.
 
 ## Replace Floor Meshes
 
-- [ ] Group visible floor cells into terrain chunks.
+- [x] Group visible floor cells into terrain chunks.
 - [ ] Build chunk geometry from shared height samples.
 - [ ] Build chunk splat weights from shared terrain state.
 - [ ] Render one shared PBR material across chunks.

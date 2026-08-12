@@ -12,6 +12,7 @@
     "@bworlds/tile-lighthouse": "0.1.0",
     "@bworlds/tile-support": "0.1.0",
     "@bworlds/tile-town": "0.1.0",
+    "@bworlds/worldgen": "0.1.0",
     "three": "^0.179.1"
   },
   "exports": {
