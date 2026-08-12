@@ -191,8 +191,10 @@ import {
   getTileModelTinyMeshWarning,
   getWrappedBatchWindow,
   getTwilightSkyPalette,
+  getAdaptiveLodHysteresisDistance,
   getTileModelDetailLevel,
   getTileModelLowDetailDistance,
+  getTileModelLowDetailExitDistanceSquared,
   getTileModelDetailLevelFromSquaredDistance,
   getTileModelDetailLevelForFrameBudget,
   getTileModelDetailLevelWithHysteresis,
@@ -5801,6 +5803,8 @@ describe('render3d visibility helpers', () => {
       lowDetailEnterDistance: 6.5,
       lowDetailExitDistance: 6,
       hysteresisDistance: 0.5,
+      elevatedHysteresisDistance: 1,
+      elevatedHysteresisSwapRateThreshold: 4,
       pendingBuildFullDetailDistance: 3,
       syncMovementDistance: 0.18,
     });
@@ -5834,6 +5838,28 @@ describe('render3d visibility helpers', () => {
     expect(
       getTileModelDetailLevelWithHysteresis('low', 169.01, { kind: 'cave' })
     ).toBe('low');
+  });
+
+  it('widens the low-detail exit hysteresis when recent LOD swaps are already high', () => {
+    expect(getAdaptiveLodHysteresisDistance(3)).toBe(0.5);
+    expect(getAdaptiveLodHysteresisDistance(4)).toBe(1);
+    expect(getAdaptiveLodHysteresisDistance(7)).toBe(1);
+    expect(
+      getTileModelDetailLevelWithHysteresis('low', 31, undefined, {
+        lowDetailExitDistanceSquared: getTileModelLowDetailExitDistanceSquared(
+          undefined,
+          getAdaptiveLodHysteresisDistance(4)
+        ),
+      })
+    ).toBe('low');
+    expect(
+      getTileModelDetailLevelWithHysteresis('low', 30.24, undefined, {
+        lowDetailExitDistanceSquared: getTileModelLowDetailExitDistanceSquared(
+          undefined,
+          getAdaptiveLodHysteresisDistance(4)
+        ),
+      })
+    ).toBe('full');
   });
 
   it('skips obviously distant low-detail chunks during lod reevaluation', () => {
@@ -6304,10 +6330,7 @@ describe('render3d visibility helpers', () => {
           {
             tileX: 12,
             tileY: 0,
-            positionY: expect.closeTo(
-              0.185 + getWorldCurvatureOffset(12),
-              6
-            ),
+            positionY: expect.closeTo(0.185 + getWorldCurvatureOffset(12), 6),
           },
         ],
       },

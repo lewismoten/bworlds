@@ -94,3 +94,17 @@ The current implementation already covers these `docs/todo/tile-lod.md` items:
 - Measure generation time for every LOD.
 
 The existing renderer tests in `packages/render3d/src/index.test.ts` also cover the currently checked fallback-path test items from that checklist.
+
+## Adaptive Hysteresis
+
+Visible-tile LOD selection now widens its low-detail exit hysteresis when the
+renderer is already churning through repeated LOD swaps.
+
+The normal thresholds still enter low detail at `6.5` tiles and return to full
+detail at `6.0`. Once recent `lodReplacementsPerSecond` reaches `4` or more,
+the renderer temporarily expands the exit hysteresis to `1.0`, which keeps
+tiles in low detail until they move back inside `5.5` tiles.
+
+That adaptive exit threshold only affects tiles that are already in `low`
+detail, so it reduces repeated `full <-> low` boundary flapping without pushing
+farther tiles into low detail sooner than the normal threshold policy.

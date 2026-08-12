@@ -1523,6 +1523,8 @@ export type LodThresholdSummary = {
   lowDetailEnterDistance: number;
   lowDetailExitDistance: number;
   hysteresisDistance: number;
+  elevatedHysteresisDistance: number;
+  elevatedHysteresisSwapRateThreshold: number;
   pendingBuildFullDetailDistance: number;
   syncMovementDistance: number;
 };
@@ -1557,6 +1559,8 @@ const DEFAULT_PENDING_WORLD_BUILD_BUDGET_MS = 2.5;
 const LOW_DETAIL_MODEL_DISTANCE = 6.5;
 const LANDMARK_LOW_DETAIL_MODEL_DISTANCE = 13.5;
 const LOD_DETAIL_HYSTERESIS_DISTANCE = 0.5;
+const ELEVATED_LOD_DETAIL_HYSTERESIS_DISTANCE = 1;
+const ELEVATED_LOD_HYSTERESIS_SWAP_RATE_THRESHOLD = 4;
 const LOW_DETAIL_EXIT_DISTANCE =
   LOW_DETAIL_MODEL_DISTANCE - LOD_DETAIL_HYSTERESIS_DISTANCE;
 const PENDING_BUILD_FULL_DETAIL_DISTANCE = 3;
@@ -3362,10 +3366,20 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         continue;
       }
       recordRecentMetric(renderChurnMetrics.lodChecks, nowMs);
+      const hysteresisDistance = getAdaptiveLodHysteresisDistance(
+        countRecentMetricEvents(renderChurnMetrics.lodReplacements, nowMs)
+      );
       const desiredDetailLevel = getTileModelDetailLevelWithHysteresis(
         entry.detailLevel,
         distanceSquared,
-        entry.tile
+        entry.tile,
+        {
+          lowDetailExitDistanceSquared:
+            getTileModelLowDetailExitDistanceSquared(
+              entry.tile,
+              hysteresisDistance
+            ),
+        }
       );
       const requestedDetailLevel = getTileModelDetailLevelForFrameBudget(
         desiredDetailLevel,
@@ -4352,10 +4366,10 @@ export function getTileModelLowDetailDistanceSquared(
 }
 
 export function getTileModelLowDetailExitDistanceSquared(
-  tile?: Pick<TileLike, 'kind'>
+  tile?: Pick<TileLike, 'kind'>,
+  hysteresisDistance = LOD_DETAIL_HYSTERESIS_DISTANCE
 ): number {
-  const exitDistance =
-    getTileModelLowDetailDistance(tile) - LOD_DETAIL_HYSTERESIS_DISTANCE;
+  const exitDistance = getTileModelLowDetailDistance(tile) - hysteresisDistance;
   return exitDistance * exitDistance;
 }
 
@@ -4373,9 +4387,29 @@ export function getLodThresholdSummary(): LodThresholdSummary {
     lowDetailEnterDistance: LOW_DETAIL_MODEL_DISTANCE,
     lowDetailExitDistance: LOW_DETAIL_EXIT_DISTANCE,
     hysteresisDistance: LOD_DETAIL_HYSTERESIS_DISTANCE,
+    elevatedHysteresisDistance: ELEVATED_LOD_DETAIL_HYSTERESIS_DISTANCE,
+    elevatedHysteresisSwapRateThreshold:
+      ELEVATED_LOD_HYSTERESIS_SWAP_RATE_THRESHOLD,
     pendingBuildFullDetailDistance: PENDING_BUILD_FULL_DETAIL_DISTANCE,
     syncMovementDistance: LOD_SYNC_MOVEMENT_DISTANCE,
   };
+}
+
+export function getAdaptiveLodHysteresisDistance(
+  lodReplacementsPerSecond: number,
+  {
+    baseDistance = LOD_DETAIL_HYSTERESIS_DISTANCE,
+    elevatedDistance = ELEVATED_LOD_DETAIL_HYSTERESIS_DISTANCE,
+    elevatedSwapRateThreshold = ELEVATED_LOD_HYSTERESIS_SWAP_RATE_THRESHOLD,
+  }: {
+    baseDistance?: number;
+    elevatedDistance?: number;
+    elevatedSwapRateThreshold?: number;
+  } = {}
+): number {
+  return lodReplacementsPerSecond >= elevatedSwapRateThreshold
+    ? elevatedDistance
+    : baseDistance;
 }
 
 export function getTileModelDetailLevelFromSquaredDistance(
@@ -4545,7 +4579,10 @@ export function buildRecoverableVisibleTileModelDetailEntry<
   }
 
   const requestedEntry = buildTrackedEntry(requestedDetailLevel);
-  if (requestedDetailLevel !== 'full' || entryHasRenderableResult(requestedEntry)) {
+  if (
+    requestedDetailLevel !== 'full' ||
+    entryHasRenderableResult(requestedEntry)
+  ) {
     return {
       entry: requestedEntry,
       resolvedDetailLevel: requestedDetailLevel,
