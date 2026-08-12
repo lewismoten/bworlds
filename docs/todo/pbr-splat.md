@@ -172,13 +172,13 @@
 
 ## Weather Effects
 
-- [ ] Increase wetness during rain without new materials.
-- [ ] Reduce roughness when terrain becomes wet.
-- [ ] Darken wet terrain slightly.
-- [ ] Add snow weight from weather accumulation.
-- [ ] Reduce snow weight during melting.
-- [ ] Add mud weight after sustained rain.
-- [ ] Keep weather effects separate from base textures.
+- [x] Increase wetness during rain without new materials.
+- [x] Reduce roughness when terrain becomes wet.
+- [x] Darken wet terrain slightly.
+- [x] Add snow weight from weather accumulation.
+- [x] Reduce snow weight during melting.
+- [x] Add mud weight after sustained rain.
+- [x] Keep weather effects separate from base textures.
 
 ## Performance
 
@@ -227,7 +227,7 @@
 - [x] Test distant LOD keeps major terrain boundaries.
 - [x] Test roads blend with surrounding terrain.
 - [x] Test slope can increase rock material weight.
-- [ ] Test weather can alter wetness without new materials.
+- [x] Test weather can alter wetness without new materials.
 - [ ] Test splatting reduces terrain material count.
 - [ ] Test splatting reduces terrain draw calls.
 
@@ -305,6 +305,11 @@
   layer catalog can resolve either aligned WebGL2 array plans or per-layer
   texture fallback bindings with stable layer slots, warnings, and memory
   estimates when texture arrays are unavailable.
+- Added `applyTerrainSplatWeatherEffects(...)` in
+  `@bworlds/terrain-splat-support` so current weather, sustained wetness, snow
+  accumulation, and melting can overlay shared `mud` and `snow` layer weights
+  plus wetness-driven roughness/tint metadata without mutating the
+  deterministic base terrain sample.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -322,9 +327,9 @@
 
 ## Third Delivery
 
-- [ ] Add weather-driven wetness.
-- [ ] Add snow accumulation blending.
-- [ ] Add mud accumulation blending.
+- [x] Add weather-driven wetness.
+- [x] Add snow accumulation blending.
+- [x] Add mud accumulation blending.
 - [ ] Add seasonal terrain tinting.
 - [ ] Add worker-based splat generation.
 - [ ] Add performance limits and regression tests.
@@ -341,7 +346,8 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, plus
 `packages/terrain-splat-support/docs/texture-array-plans.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
-`packages/terrain-splat-support/docs/tint-variation.md`, and focused tests
+`packages/terrain-splat-support/docs/tint-variation.md`, plus
+`packages/terrain-splat-support/docs/weather-effects.md`, and focused tests
 cover normalization, packing, validation, deterministic mapping, chunk border
 stability, chunk layer-usage analysis, bounded family variant selection,
 neighborhood shared-layer planning, stable terrain family resolution for the
@@ -366,7 +372,9 @@ so distant terrain can reduce splat density while preserving major terrain
 identities and matching chunk-edge weights from the same world-space inputs,
 plus road-aware sample-grid shoulder weighting so broad road tiles can bleed
 deterministic dirt/gravel edge material into adjacent terrain without needing
-renderer-only overlays.
+renderer-only overlays, plus deterministic weather overlays so rain, snow
+accumulation, melting, and sustained wetness can adjust terrain splat weights
+and wetness metadata without changing the shared base sample identity.
 
 # Roads and Paths as Terrain Splats
 

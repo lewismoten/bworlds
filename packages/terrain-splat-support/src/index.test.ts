@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyTerrainSplatWeatherEffects,
   createOverworldTerrainSplatDefinitions,
   createTerrainMaterialLayerCatalog,
   createTerrainKindSplatCatalog,
@@ -1628,6 +1629,100 @@ describe('terrain splat support', () => {
         kindCatalog
       )
     ).toEqual({ entries: [] });
+  });
+
+  it('applies rainy wetness modifiers without mutating the base splat sample', () => {
+    const baseSample = normalizeTerrainSplatSample({
+      entries: [
+        { layerId: 'grass', weight: 0.84 },
+        { layerId: 'soil', weight: 0.16 },
+      ],
+    });
+
+    const dry = applyTerrainSplatWeatherEffects({
+      sample: baseSample,
+      weather: {
+        kind: 'clear',
+        intensity: 0.05,
+        precipitation: 0,
+        temperature: 67,
+      },
+      sustainedWetness: 0.08,
+      mudLayerId: 'mud',
+      snowLayerId: 'snow',
+      fallbackLayerId: 'grass',
+    });
+    const rainy = applyTerrainSplatWeatherEffects({
+      sample: baseSample,
+      weather: {
+        kind: 'heavy-rain',
+        intensity: 0.92,
+        precipitation: 0.88,
+        temperature: 61,
+      },
+      sustainedWetness: 0.74,
+      mudLayerId: 'mud',
+      snowLayerId: 'snow',
+      fallbackLayerId: 'grass',
+    });
+
+    expect(rainy.baseSample).toEqual(baseSample);
+    expect(dry.baseSample).toEqual(baseSample);
+    expect(rainy.sample.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['grass', 'soil', 'mud'])
+    );
+    expect(rainy.sample.entries.map((entry) => entry.layerId)).not.toEqual(
+      expect.arrayContaining(['snow'])
+    );
+    expect(rainy.wetness).toBeGreaterThan(dry.wetness);
+    expect(rainy.roughnessMultiplier).toBeLessThan(dry.roughnessMultiplier);
+    expect(rainy.tintDarkening).toBeGreaterThan(dry.tintDarkening);
+    expect(rainy.mudWeight).toBeGreaterThan(0);
+  });
+
+  it('adds snow cover from cold snowfall and reduces it during melting', () => {
+    const baseSample = normalizeTerrainSplatSample({
+      entries: [
+        { layerId: 'grass', weight: 0.78 },
+        { layerId: 'soil', weight: 0.22 },
+      ],
+    });
+
+    const snowfall = applyTerrainSplatWeatherEffects({
+      sample: baseSample,
+      weather: {
+        kind: 'snow',
+        intensity: 0.86,
+        precipitation: 0.82,
+        temperature: 24,
+      },
+      snowAccumulation: 0.34,
+      mudLayerId: 'mud',
+      snowLayerId: 'snow',
+      fallbackLayerId: 'grass',
+    });
+    const melting = applyTerrainSplatWeatherEffects({
+      sample: baseSample,
+      weather: {
+        kind: 'light-rain',
+        intensity: 0.42,
+        precipitation: 0.38,
+        temperature: 43,
+      },
+      snowAccumulation: 0.34,
+      snowMelt: 0.75,
+      sustainedWetness: 0.3,
+      mudLayerId: 'mud',
+      snowLayerId: 'snow',
+      fallbackLayerId: 'grass',
+    });
+
+    expect(snowfall.sample.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['snow'])
+    );
+    expect(snowfall.snowWeight).toBeGreaterThan(0);
+    expect(melting.snowWeight).toBeLessThan(snowfall.snowWeight);
+    expect(melting.mudWeight).toBeGreaterThan(0);
   });
 
   it('rejects terrain kind splat definitions that reference missing layers', () => {

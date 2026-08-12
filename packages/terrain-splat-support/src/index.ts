@@ -4,7 +4,12 @@ import {
   registerHashLabel,
   resolveHashSeedInput,
 } from '@bworlds/core/hash';
-import type { Kind, OverworldSignals, Seed } from '@bworlds/plugin-api';
+import type {
+  Kind,
+  OverworldSignals,
+  Seed,
+  WorldEnvironmentWeatherConditionLike,
+} from '@bworlds/plugin-api';
 import {
   resolveTerrainMaterialFamilyVariant,
   type TerrainMaterialFamilyCatalogEntry,
@@ -79,6 +84,31 @@ export type PackedTerrainSplatSample = {
 };
 
 export type TerrainSplatSeason = 'spring' | 'summer' | 'autumn' | 'winter';
+
+export type TerrainSplatWeatherEffectInput = {
+  sample: TerrainSplatSample;
+  weather?: Pick<
+    WorldEnvironmentWeatherConditionLike,
+    'kind' | 'intensity' | 'precipitation' | 'temperature'
+  >;
+  season?: TerrainSplatSeason;
+  sustainedWetness?: number;
+  snowAccumulation?: number;
+  snowMelt?: number;
+  mudLayerId: TerrainMaterialLayerId;
+  snowLayerId: TerrainMaterialLayerId;
+  fallbackLayerId?: TerrainMaterialLayerId;
+};
+
+export type TerrainSplatWeatherEffectResult = {
+  baseSample: TerrainSplatSample;
+  sample: TerrainSplatSample;
+  wetness: number;
+  roughnessMultiplier: number;
+  tintDarkening: number;
+  snowWeight: number;
+  mudWeight: number;
+};
 
 export type TerrainKindSplatCondition = {
   minElevation?: number;
@@ -727,6 +757,107 @@ export function resolveTerrainKindSplatSample(
   );
 }
 
+export function applyTerrainSplatWeatherEffects(
+  input: TerrainSplatWeatherEffectInput
+): TerrainSplatWeatherEffectResult {
+  const weatherIntensity = clampWeight(input.weather?.intensity ?? 0);
+  const precipitation = clampWeight(
+    input.weather?.precipitation ?? weatherIntensity
+  );
+  const sustainedWetness = clampWeight(input.sustainedWetness ?? 0);
+  const snowAccumulation = clampWeight(input.snowAccumulation ?? 0);
+  const freezeFactor = resolveTerrainWeatherFreezeFactor(
+    input.weather?.temperature
+  );
+  const rainSignal = isRainWeatherKind(input.weather?.kind)
+    ? Math.max(precipitation, weatherIntensity * 0.72)
+    : input.weather?.kind === 'hail'
+      ? precipitation * 0.3
+      : 0;
+  const snowfallSignal = isSnowWeatherKind(input.weather?.kind)
+    ? Math.max(precipitation, weatherIntensity * 0.78) *
+      Math.max(0.7, freezeFactor)
+    : input.weather?.kind === 'hail'
+      ? precipitation * freezeFactor * 0.12
+      : 0;
+  const snowMelt = clampWeight(
+    input.snowMelt ??
+      (1 - freezeFactor) *
+        Math.max(precipitation * 0.24, weatherIntensity * 0.16)
+  );
+  const wetness = clampWeight(
+    Math.max(
+      sustainedWetness,
+      rainSignal * 0.78 + precipitation * 0.18 + snowAccumulation * 0.1
+    )
+  );
+  const roughnessMultiplier = 1 - wetness * 0.28;
+  const tintDarkening = wetness * 0.18;
+  const retainedSnowCover = snowAccumulation * (1 - snowMelt);
+  const rawSnowWeight = clampWeight(retainedSnowCover + snowfallSignal * 0.58);
+  const rawMudWeight = clampWeight(
+    sustainedWetness * 0.42 +
+      rainSignal * 0.28 +
+      Math.max(0, 1 - freezeFactor) * precipitation * 0.16
+  );
+  const snowOverlay = rawSnowWeight * 0.42;
+  const mudOverlay = rawMudWeight * (1 - snowOverlay * 0.85) * 0.34;
+  const overlayTotal = Math.min(0.58, snowOverlay + mudOverlay);
+  const overlayWeightTotal = snowOverlay + mudOverlay;
+
+  if (!(overlayTotal > 0) || !(overlayWeightTotal > 0)) {
+    return {
+      baseSample: input.sample,
+      sample: normalizeTerrainSplatSample(input.sample, {
+        fallbackLayerId: input.fallbackLayerId,
+      }),
+      wetness,
+      roughnessMultiplier,
+      tintDarkening,
+      snowWeight: 0,
+      mudWeight: 0,
+    };
+  }
+
+  const baseScale = 1 - overlayTotal;
+  const entries: TerrainSplatWeight[] = input.sample.entries.map((entry) => ({
+    layerId: entry.layerId,
+    weight: entry.weight * baseScale,
+  }));
+
+  if (snowOverlay > 0) {
+    entries.push({
+      layerId: input.snowLayerId,
+      weight: (snowOverlay / overlayWeightTotal) * overlayTotal,
+    });
+  }
+  if (mudOverlay > 0) {
+    entries.push({
+      layerId: input.mudLayerId,
+      weight: (mudOverlay / overlayWeightTotal) * overlayTotal,
+    });
+  }
+
+  const sample = normalizeTerrainSplatSample(
+    {
+      entries,
+    },
+    {
+      fallbackLayerId: input.fallbackLayerId,
+    }
+  );
+
+  return {
+    baseSample: input.sample,
+    sample,
+    wetness,
+    roughnessMultiplier,
+    tintDarkening,
+    snowWeight: findTerrainSplatEntryWeight(sample, input.snowLayerId),
+    mudWeight: findTerrainSplatEntryWeight(sample, input.mudLayerId),
+  };
+}
+
 export function createOverworldTerrainSplatDefinitions(
   layers: OverworldTerrainSplatLayerSet
 ): TerrainKindSplatDefinition[] {
@@ -1273,6 +1404,13 @@ function collapseTerrainSplatWeights(
   }));
 }
 
+function findTerrainSplatEntryWeight(
+  sample: TerrainSplatSample,
+  layerId: TerrainMaterialLayerId
+): number {
+  return sample.entries.find((entry) => entry.layerId === layerId)?.weight ?? 0;
+}
+
 function clampWeight(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;
@@ -1639,6 +1777,33 @@ function normalizeTerrainBiomeLabel(value: unknown): string {
 
 function normalizeTerrainPoiLabel(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function isRainWeatherKind(
+  kind: WorldEnvironmentWeatherConditionLike['kind'] | undefined
+): boolean {
+  return kind === 'light-rain' || kind === 'heavy-rain';
+}
+
+function isSnowWeatherKind(
+  kind: WorldEnvironmentWeatherConditionLike['kind'] | undefined
+): boolean {
+  return kind === 'snow';
+}
+
+function resolveTerrainWeatherFreezeFactor(
+  temperatureF: number | undefined
+): number {
+  if (typeof temperatureF !== 'number' || !Number.isFinite(temperatureF)) {
+    return 0.5;
+  }
+  if (temperatureF <= 32) {
+    return 1;
+  }
+  if (temperatureF >= 40) {
+    return 0;
+  }
+  return (40 - temperatureF) / 8;
 }
 
 function isTerrainSplatSeason(value: unknown): value is TerrainSplatSeason {
