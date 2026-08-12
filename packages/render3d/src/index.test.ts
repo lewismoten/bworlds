@@ -3473,12 +3473,12 @@ describe('render3d visibility helpers', () => {
     expect(
       getTileModelDrawCallRatioWarning(
         {
-          drawCallCount: 24,
-          triangleCount: 96,
+          drawCallCount: 40,
+          triangleCount: 160,
         },
         'full'
       )
-    ).toBe('drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)');
+    ).toBe('drawCallCount 40 for triangleCount 160 (4.0 triangles/draw call)');
 
     expect(
       getTileModelDrawCallRatioWarning(
@@ -3493,7 +3493,17 @@ describe('render3d visibility helpers', () => {
     expect(
       getTileModelDrawCallRatioWarning(
         {
-          drawCallCount: 24,
+          drawCallCount: 38,
+          triangleCount: 224,
+        },
+        'full'
+      )
+    ).toBeNull();
+
+    expect(
+      getTileModelDrawCallRatioWarning(
+        {
+          drawCallCount: 40,
           triangleCount: 384,
         },
         'full'
@@ -3560,8 +3570,8 @@ describe('render3d visibility helpers', () => {
     expect(
       getTileModelPerformanceWarnings(
         {
-          drawCallCount: 24,
-          triangleCount: 96,
+          drawCallCount: 40,
+          triangleCount: 160,
           maxGeometryGroupCount: 6,
           meshCount: 6,
           instancedMeshCount: 0,
@@ -3575,8 +3585,8 @@ describe('render3d visibility helpers', () => {
         'full'
       )
     ).toEqual([
-      'drawCallCount 24 for triangleCount 96 (4.0 triangles/draw call)',
-      'maxGeometryGroupCount 6 for triangleCount 96 (16.0 triangles/group)',
+      'drawCallCount 40 for triangleCount 160 (4.0 triangles/draw call)',
+      'maxGeometryGroupCount 6 for triangleCount 160 (26.7 triangles/group)',
     ]);
 
     expect(
@@ -3680,15 +3690,15 @@ describe('render3d visibility helpers', () => {
     expect(
       getTileModelInstancingWarning(
         {
-          meshCount: 12,
+          meshCount: 18,
           instancedMeshCount: 0,
           renderedInstanceCount: 0,
-          sharedGeometryCount: 8,
+          sharedGeometryCount: 10,
         },
         'full'
       )
     ).toBe(
-      'meshCount 12 with sharedGeometryCount 8 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts'
+      'meshCount 18 with sharedGeometryCount 10 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts'
     );
 
     expect(
@@ -3708,10 +3718,22 @@ describe('render3d visibility helpers', () => {
     expect(
       getTileModelInstancingWarning(
         {
-          meshCount: 12,
+          meshCount: 16,
+          instancedMeshCount: 0,
+          renderedInstanceCount: 0,
+          sharedGeometryCount: 8,
+        },
+        'full'
+      )
+    ).toBeNull();
+
+    expect(
+      getTileModelInstancingWarning(
+        {
+          meshCount: 18,
           instancedMeshCount: 2,
           renderedInstanceCount: 12,
-          sharedGeometryCount: 8,
+          sharedGeometryCount: 10,
         },
         'full'
       )
@@ -3737,19 +3759,19 @@ describe('render3d visibility helpers', () => {
           drawCallCount: 10,
           triangleCount: 240,
           maxGeometryGroupCount: 2,
-          meshCount: 12,
+          meshCount: 18,
           instancedMeshCount: 0,
           renderedInstanceCount: 0,
           materialCount: 2,
-          sharedMaterialCount: 10,
+          sharedMaterialCount: 16,
           clonedMaterialCount: 0,
           colorVariantMaterialCount: 0,
-          sharedGeometryCount: 8,
+          sharedGeometryCount: 10,
         },
         'full'
       )
     ).toEqual([
-      'meshCount 12 with sharedGeometryCount 8 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts',
+      'meshCount 18 with sharedGeometryCount 10 and instancedMeshCount 0 (renderedInstanceCount 0) suggests instancing repeated parts',
     ]);
   });
 

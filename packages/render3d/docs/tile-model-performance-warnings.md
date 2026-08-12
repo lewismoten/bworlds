@@ -24,3 +24,18 @@ The warning still triggers once a low-detail model reaches `4+` groups and the
 triangle density stays low, which keeps the diagnostic focused on models that
 are more likely to benefit from collapsing material groups or merging tiny mesh
 parts.
+
+## Full-detail noise floor
+
+Full-detail models now need a larger absolute footprint before two of the
+generic warnings fire:
+
+- draw-call density warnings start at `40` draw calls
+- instancing warnings start at `18` meshes, `10` shared geometries, and `18`
+  total renderables
+
+That change keeps the tile heat map focused on models that are likely to create
+visible runtime pressure. Modest full-detail forest tiles can legitimately land
+around `38` draw calls or `16` repeated meshes while still being cheap in
+absolute scene cost, so treating those cases as warnings produced persistent
+false positives around the player.
