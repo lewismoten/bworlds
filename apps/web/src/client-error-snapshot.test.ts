@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createPluginEventChannel } from '@bworlds/plugin-event-channel';
 
 import {
   buildClientErrorSnapshot,
+  buildClientErrorSnapshotFromPluginEvent,
   CLIENT_ERROR_SNAPSHOT_API_PATH,
   createClientErrorSnapshotMessageHash,
   installClientErrorSnapshotReporter,
@@ -46,6 +48,41 @@ describe('client error snapshots', () => {
     expect(snapshot.stack).toBeNull();
   });
 
+  it('builds plugin error snapshots with the shared message hash and serialized details', () => {
+    const snapshot = buildClientErrorSnapshotFromPluginEvent({
+      event: {
+        message: 'Forest bark cache failed.',
+        source: 'tile-forest.materials',
+        timestamp: '2026-08-12T12:00:00.000Z',
+        details: {
+          error: {
+            name: 'Error',
+            message: 'Forest bark cache failed.',
+            stack: 'Error: Forest bark cache failed.\n    at forest.ts:1:1',
+          },
+          details: {
+            code: 'forest-bark-cache',
+          },
+        },
+      },
+      pageUrl: 'https://example.com/play',
+    });
+
+    expect(snapshot).toEqual(
+      expect.objectContaining({
+        createdAt: '2026-08-12T12:00:00.000Z',
+        message: 'Forest bark cache failed.',
+        source: 'tile-forest.materials',
+        pageUrl: 'https://example.com/play',
+        messageHash: createClientErrorSnapshotMessageHash(
+          'Forest bark cache failed.'
+        ),
+      })
+    );
+    expect(snapshot.stack).toContain('Forest bark cache failed.');
+    expect(snapshot.details).toContain('forest-bark-cache');
+  });
+
   it('posts snapshots to the vite endpoint when fetch is available', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
     const snapshot = buildClientErrorSnapshot({
@@ -82,6 +119,31 @@ describe('client error snapshots', () => {
       filename: '/src/main.ts',
       lineno: 10,
       colno: 20,
+    });
+    await flushMicrotasks();
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    cleanup();
+  });
+
+  it('skips reporting plugin error events when runtime tracking is disabled', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
+    const pluginEventChannel = createPluginEventChannel();
+    const cleanup = installClientErrorSnapshotReporter({
+      tracking: false,
+      fetchImpl,
+      getPageUrl: () => 'https://example.com/play',
+      consoleRef: { error: vi.fn() },
+      pluginEventChannel,
+    });
+
+    pluginEventChannel.publishError({
+      source: 'tile-forest.materials',
+      message: 'Forest bark cache failed.',
+      details: {
+        code: 'forest-bark-cache',
+      },
+      timestamp: '2026-08-12T12:30:00.000Z',
     });
     await flushMicrotasks();
 
@@ -245,6 +307,49 @@ describe('client error snapshots', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(consoleError).toHaveBeenCalledTimes(2);
+
+    cleanup();
+  });
+
+  it('reports plugin error events through the existing snapshot endpoint', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
+    const pluginEventChannel = createPluginEventChannel();
+    const cleanup = installClientErrorSnapshotReporter({
+      tracking: true,
+      fetchImpl,
+      getPageUrl: () => 'https://example.com/play',
+      consoleRef: { error: vi.fn() },
+      pluginEventChannel,
+    });
+
+    pluginEventChannel.publishError({
+      source: 'tile-forest.materials',
+      message: 'Forest bark cache failed.',
+      details: {
+        code: 'forest-bark-cache',
+      },
+      timestamp: '2026-08-12T12:45:00.000Z',
+    });
+    await flushMicrotasks();
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const firstCall = fetchImpl.mock.calls[0] as unknown[] | undefined;
+    const requestInit = firstCall?.[1];
+    const payload =
+      requestInit && typeof requestInit === 'object' && 'body' in requestInit
+        ? JSON.parse(String(requestInit.body))
+        : null;
+    expect(payload).toEqual(
+      expect.objectContaining({
+        createdAt: '2026-08-12T12:45:00.000Z',
+        message: 'Forest bark cache failed.',
+        source: 'tile-forest.materials',
+        pageUrl: 'https://example.com/play',
+        messageHash: createClientErrorSnapshotMessageHash(
+          'Forest bark cache failed.'
+        ),
+      })
+    );
 
     cleanup();
   });

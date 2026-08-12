@@ -2,6 +2,10 @@ import {
   normalizeRuntimePerformanceTrackingPreferences,
   type RuntimePerformanceTrackingPreferences,
 } from './runtime-performance-tracking.ts';
+import type {
+  PluginEvent,
+  PluginEventChannel,
+} from '@bworlds/plugin-event-channel';
 
 export const CLIENT_ERROR_SNAPSHOT_API_PATH = '/api/client-error-snapshots';
 
@@ -49,6 +53,7 @@ type ClientErrorSnapshotReporterOptions = {
   getPageUrl?: () => string;
   abortSignal?: AbortSignal | null;
   scheduleRethrow?: (value: unknown) => void;
+  pluginEventChannel?: Pick<PluginEventChannel, 'subscribeByType'> | null;
 };
 
 type NormalizedClientErrorValue = {
@@ -70,6 +75,23 @@ export function buildClientErrorSnapshot(
     pageUrl: options.pageUrl,
     details: normalized.details,
     messageHash: createClientErrorSnapshotMessageHash(normalized.message),
+  };
+}
+
+export function buildClientErrorSnapshotFromPluginEvent(options: {
+  event: Pick<PluginEvent, 'message' | 'source' | 'details' | 'timestamp'>;
+  pageUrl: string;
+}): ClientErrorSnapshot {
+  const normalized = normalizePluginEventSnapshotValue(options.event.details);
+  return {
+    schemaVersion: 1,
+    createdAt: normalizeSnapshotCreatedAt(options.event.timestamp),
+    message: options.event.message,
+    stack: normalized.stack,
+    source: options.event.source,
+    pageUrl: options.pageUrl,
+    details: normalized.details,
+    messageHash: createClientErrorSnapshotMessageHash(options.event.message),
   };
 }
 
@@ -233,6 +255,34 @@ export function installClientErrorSnapshotReporter(
     await queued;
   };
 
+  const reportSnapshot = async (
+    snapshot: ClientErrorSnapshot
+  ): Promise<void> => {
+    if (cleanedUp || !resolveTracking().enabled) {
+      return;
+    }
+
+    const run = async (): Promise<void> => {
+      if (cleanedUp || reporting || !resolveTracking().enabled) {
+        return;
+      }
+
+      reporting = true;
+      try {
+        await postClientErrorSnapshot(snapshot, {
+          endpoint: options.endpoint,
+          fetchImpl: options.fetchImpl,
+        });
+      } finally {
+        reporting = false;
+      }
+    };
+
+    const queued = reportQueue.then(run, run);
+    reportQueue = queued.catch(() => {});
+    await queued;
+  };
+
   const isSuppressibleRethrowValue = (
     value: unknown
   ): value is object | ((...args: never[]) => unknown) =>
@@ -319,6 +369,19 @@ export function installClientErrorSnapshotReporter(
     );
   };
 
+  const removePluginEventTracking =
+    options.pluginEventChannel?.subscribeByType('error', (event) => {
+      if (cleanedUp || !resolveTracking().enabled) {
+        return;
+      }
+      void reportSnapshot(
+        buildClientErrorSnapshotFromPluginEvent({
+          event,
+          pageUrl: getPageUrl(),
+        })
+      );
+    }) ?? null;
+
   consoleRef.error = ((...args: unknown[]) => {
     originalConsoleError(...args);
     if (cleanedUp || reporting) {
@@ -351,6 +414,7 @@ export function installClientErrorSnapshotReporter(
       return;
     }
     cleanedUp = true;
+    removePluginEventTracking?.();
     consoleRef.error = originalConsoleError as typeof consoleRef.error;
     if (!options.abortSignal && eventTarget?.removeEventListener) {
       eventTarget.removeEventListener('error', handleErrorEvent);
@@ -363,6 +427,47 @@ export function installClientErrorSnapshotReporter(
 
   options.abortSignal?.addEventListener('abort', cleanup, { once: true });
   return cleanup;
+}
+
+function normalizePluginEventSnapshotValue(details: unknown): {
+  stack: string | null;
+  details: string | null;
+} {
+  const stack = extractSerializedPluginErrorStack(details);
+  const serializedDetails =
+    typeof details === 'undefined'
+      ? null
+      : safeSerializeClientErrorValue(details);
+  return {
+    stack,
+    details: serializedDetails,
+  };
+}
+
+function extractSerializedPluginErrorStack(details: unknown): string | null {
+  if (!details || typeof details !== 'object') {
+    return null;
+  }
+
+  const record = details as {
+    error?: {
+      stack?: unknown;
+    };
+  };
+  return typeof record.error?.stack === 'string' &&
+    record.error.stack.length > 0
+    ? record.error.stack
+    : null;
+}
+
+function normalizeSnapshotCreatedAt(timestamp: string | undefined): string {
+  if (typeof timestamp === 'string' && timestamp.trim().length > 0) {
+    const parsed = new Date(timestamp);
+    if (Number.isFinite(parsed.valueOf())) {
+      return parsed.toISOString();
+    }
+  }
+  return new Date().toISOString();
 }
 
 function safeSerializeClientErrorValue(value: unknown): string {

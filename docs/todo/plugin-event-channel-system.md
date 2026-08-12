@@ -76,13 +76,13 @@
 
 ## Runtime Error Reporting
 
-- [ ] Forward plugin error events to the error snapshot system.
-- [ ] Only persist errors when performance tracking is enabled.
-- [ ] Reuse the existing error message hashing rules.
-- [ ] Keep one stored snapshot per unique error message.
-- [ ] Update stored errors when the same message repeats.
-- [ ] Avoid reporting the reporter's own failures.
-- [ ] Keep console error output visible after reporting.
+- [x] Forward plugin error events to the error snapshot system.
+- [x] Only persist errors when performance tracking is enabled.
+- [x] Reuse the existing error message hashing rules.
+- [x] Keep one stored snapshot per unique error message.
+- [x] Update stored errors when the same message repeats.
+- [x] Avoid reporting the reporter's own failures.
+- [x] Keep console error output visible after reporting.
 
 ## Event Details
 
@@ -163,7 +163,7 @@
 - [x] Test circular details serialize safely.
 - [x] Test history never exceeds its configured limit.
 - [ ] Test error events appear in debug snapshots.
-- [ ] Test disabled tracking does not persist errors.
+- [x] Test disabled tracking does not persist errors.
 - [ ] Test recursive event loops are prevented.
 
 ## Progress Notes
@@ -183,3 +183,6 @@
   recent-event stream as `plugin-error`, and attach bounded recent event
   history plus per-type and per-source counts to runtime performance snapshot
   payloads.
+- Added plugin error forwarding to `apps/web/src/client-error-snapshot.ts` so
+  shared plugin `error` events reuse the existing client error snapshot
+  endpoint, message-hash dedupe, tracking gate, and console-loop protections.
