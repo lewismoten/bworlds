@@ -245,6 +245,7 @@ import {
   getTimekeeperMiniSignature,
   getViewportHudSignature,
 } from './ui-signatures.ts';
+import { resolveTerrainPreviewReadout } from './terrain-preview-readout.ts';
 import {
   buildMinimapProblemDialogMarkup,
   getMinimapProblemCanvasPoint,
@@ -4397,6 +4398,12 @@ function render(): FrameLoopActivityLike {
       terrainTileDebugInfo?.cachedDetailLevel ??
       terrainTileDebugInfo?.requestedDetailLevel ??
       null;
+    const terrainPreviewReadout = resolveTerrainPreviewReadout({
+      seed: currentWorldSeed,
+      x: gridX,
+      y: gridY,
+      kind: spatial.tile.kind,
+    });
     const sextantSignature = getSextantSignature({
       latitude: gps.latitude,
       longitude: gps.longitude,
@@ -4407,6 +4414,8 @@ function render(): FrameLoopActivityLike {
       localX: terrainChunkCoordinates.localX,
       localY: terrainChunkCoordinates.localY,
       terrainHeight,
+      terrainDominantLayerId: terrainPreviewReadout.dominantLayerId,
+      biomeId: terrainPreviewReadout.biomeId,
       terrainLod,
     });
     if (sextantSignature !== uiRenderState.lastSextantSignature) {
@@ -4420,6 +4429,8 @@ function render(): FrameLoopActivityLike {
         localX: terrainChunkCoordinates.localX,
         localY: terrainChunkCoordinates.localY,
         terrainHeight,
+        terrainDominantLayerId: terrainPreviewReadout.dominantLayerId,
+        biomeId: terrainPreviewReadout.biomeId,
         terrainLod,
       });
       uiRenderState.lastSextantSignature = sextantSignature;

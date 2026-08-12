@@ -1,12 +1,7 @@
-import { resolveHashSeedInput } from '@bworlds/core/hash';
-import { createOverworldTerrainSignalSampler } from '@bworlds/overworld-support';
 import {
   analyzeTerrainSplatChunkSeam,
-  createOverworldTerrainSplatDefinitions,
   createTerrainChunkWireframeDebugView,
   createTerrainHeightField,
-  createTerrainKindSplatCatalog,
-  createTerrainMaterialLayerCatalog,
   createTerrainSplatHeightGeometryPlan,
   createTerrainSplatSampleGrid,
   createTerrainSplatViewerDebugModel,
@@ -23,6 +18,13 @@ import {
   type TerrainChunkCellBounds,
   type TerrainChunkHeightSampleBounds,
 } from '@bworlds/worldgen';
+import {
+  getTerrainPreviewSignalSampler,
+  resolveTerrainPreviewBiomeId,
+  TERRAIN_PREVIEW_KIND_CATALOG,
+  TERRAIN_PREVIEW_LAYER_CATALOG,
+  TERRAIN_PREVIEW_ROUTE_LAYER_IDS,
+} from './terrain-preview-readout.ts';
 
 export type TerrainChunkDebugOptions = {
   seed: string;
@@ -90,198 +92,9 @@ const builtinPackCatalog = createBuiltinContentPackCatalog();
 const pluginRegistry = builtinPackCatalog.createRegistry(
   builtinPackCatalog.defaultPackIds
 );
-const terrainMaterialLayers = createTerrainMaterialLayerCatalog([
-  {
-    id: 'grass-a',
-    baseColorTextureId: 'grass-a/base',
-    normalTextureId: 'grass-a/normal',
-    roughnessTextureId: 'grass-a/roughness',
-    textureScale: 3,
-    defaultTint: '#88aa55',
-    defaultRoughness: 0.9,
-  },
-  {
-    id: 'grass-b',
-    baseColorTextureId: 'grass-b/base',
-    normalTextureId: 'grass-b/normal',
-    roughnessTextureId: 'grass-b/roughness',
-    textureScale: 3,
-    defaultTint: '#7ea24a',
-    defaultRoughness: 0.88,
-  },
-  {
-    id: 'soil',
-    baseColorTextureId: 'soil/base',
-    normalTextureId: 'soil/normal',
-    roughnessTextureId: 'soil/roughness',
-    textureScale: 2,
-    defaultTint: '#7b5a3d',
-    defaultRoughness: 0.8,
-  },
-  {
-    id: 'leaf',
-    baseColorTextureId: 'leaf/base',
-    normalTextureId: 'leaf/normal',
-    roughnessTextureId: 'leaf/roughness',
-    textureScale: 2,
-    defaultTint: '#5f6f31',
-    defaultRoughness: 0.92,
-  },
-  {
-    id: 'rock',
-    baseColorTextureId: 'rock/base',
-    normalTextureId: 'rock/normal',
-    roughnessTextureId: 'rock/roughness',
-    textureScale: 4,
-    defaultTint: '#7f7f7f',
-    defaultRoughness: 0.7,
-  },
-  {
-    id: 'sand',
-    baseColorTextureId: 'sand/base',
-    normalTextureId: 'sand/normal',
-    roughnessTextureId: 'sand/roughness',
-    textureScale: 4,
-    defaultTint: '#c9bb82',
-    defaultRoughness: 0.65,
-  },
-  {
-    id: 'dirt',
-    baseColorTextureId: 'dirt/base',
-    normalTextureId: 'dirt/normal',
-    roughnessTextureId: 'dirt/roughness',
-    textureScale: 3,
-    defaultTint: '#876748',
-    defaultRoughness: 0.82,
-  },
-  {
-    id: 'gravel',
-    baseColorTextureId: 'gravel/base',
-    normalTextureId: 'gravel/normal',
-    roughnessTextureId: 'gravel/roughness',
-    textureScale: 3,
-    defaultTint: '#8f8a80',
-    defaultRoughness: 0.76,
-  },
-  {
-    id: 'mud',
-    baseColorTextureId: 'mud/base',
-    normalTextureId: 'mud/normal',
-    roughnessTextureId: 'mud/roughness',
-    textureScale: 2,
-    defaultTint: '#5e4c38',
-    defaultRoughness: 0.94,
-  },
-  {
-    id: 'snow',
-    baseColorTextureId: 'snow/base',
-    normalTextureId: 'snow/normal',
-    roughnessTextureId: 'snow/roughness',
-    textureScale: 5,
-    defaultTint: '#f1f4fb',
-    defaultRoughness: 0.42,
-  },
-  {
-    id: 'road-dirt',
-    baseColorTextureId: 'road-dirt/base',
-    normalTextureId: 'road-dirt/normal',
-    roughnessTextureId: 'road-dirt/roughness',
-    textureScale: 3,
-    defaultTint: '#9c7a50',
-    defaultRoughness: 0.9,
-  },
-  {
-    id: 'road-gravel',
-    baseColorTextureId: 'road-gravel/base',
-    normalTextureId: 'road-gravel/normal',
-    roughnessTextureId: 'road-gravel/roughness',
-    textureScale: 3,
-    defaultTint: '#979186',
-    defaultRoughness: 0.82,
-  },
-  {
-    id: 'road-stone',
-    baseColorTextureId: 'road-stone/base',
-    normalTextureId: 'road-stone/normal',
-    roughnessTextureId: 'road-stone/roughness',
-    textureScale: 3,
-    defaultTint: '#8d8578',
-    defaultRoughness: 0.74,
-  },
-  {
-    id: 'road-mud',
-    baseColorTextureId: 'road-mud/base',
-    normalTextureId: 'road-mud/normal',
-    roughnessTextureId: 'road-mud/roughness',
-    textureScale: 2,
-    defaultTint: '#6b553d',
-    defaultRoughness: 0.95,
-  },
-  {
-    id: 'trail-dirt',
-    baseColorTextureId: 'trail-dirt/base',
-    normalTextureId: 'trail-dirt/normal',
-    roughnessTextureId: 'trail-dirt/roughness',
-    textureScale: 3,
-    defaultTint: '#8e7149',
-    defaultRoughness: 0.9,
-  },
-  {
-    id: 'trail-gravel',
-    baseColorTextureId: 'trail-gravel/base',
-    normalTextureId: 'trail-gravel/normal',
-    roughnessTextureId: 'trail-gravel/roughness',
-    textureScale: 3,
-    defaultTint: '#8d877d',
-    defaultRoughness: 0.82,
-  },
-  {
-    id: 'trail-grass',
-    baseColorTextureId: 'trail-grass/base',
-    normalTextureId: 'trail-grass/normal',
-    roughnessTextureId: 'trail-grass/roughness',
-    textureScale: 3,
-    defaultTint: '#72934a',
-    defaultRoughness: 0.88,
-  },
-]);
-const terrainKindCatalog = createTerrainKindSplatCatalog(
-  createOverworldTerrainSplatDefinitions({
-    grassLayerIds: ['grass-a', 'grass-b'],
-    soilLayerId: 'soil',
-    leafLayerId: 'leaf',
-    rockLayerId: 'rock',
-    sandLayerId: 'sand',
-    dirtLayerId: 'dirt',
-    gravelLayerId: 'gravel',
-    mudLayerId: 'mud',
-    snowLayerId: 'snow',
-    dirtRoadLayerId: 'road-dirt',
-    gravelRoadLayerId: 'road-gravel',
-    stoneRoadLayerId: 'road-stone',
-    muddyRoadLayerId: 'road-mud',
-    dirtTrailLayerId: 'trail-dirt',
-    gravelTrailLayerId: 'trail-gravel',
-    grassTrailLayerId: 'trail-grass',
-  }),
-  terrainMaterialLayers
-);
-const routeLayerIds = [
-  'road-dirt',
-  'road-gravel',
-  'road-stone',
-  'road-mud',
-  'trail-dirt',
-  'trail-gravel',
-  'trail-grass',
-] as const satisfies readonly TerrainMaterialLayerId[];
 const generatorCache = new Map<
   string,
   ReturnType<typeof createWorldGenerator>
->();
-const terrainSignalSamplerCache = new Map<
-  string,
-  ReturnType<typeof createOverworldTerrainSignalSampler>
 >();
 
 export function normalizeTerrainChunkDebugOptions(
@@ -305,7 +118,7 @@ export function createTerrainChunkDebugSnapshot(
 ): TerrainChunkDebugSnapshot {
   const options = normalizeTerrainChunkDebugOptions(rawOptions);
   const generator = getWorldGenerator(options.seed);
-  const terrainSignals = getTerrainSignalSampler(options.seed);
+  const terrainSignals = getTerrainPreviewSignalSampler(options.seed);
   const currentBounds = getTerrainChunkHeightSampleBounds(
     options.chunkX,
     options.chunkY
@@ -350,8 +163,8 @@ export function createTerrainChunkDebugSnapshot(
   });
   const gridDebug = createTerrainSplatViewerDebugModel(currentGrid, {
     mode: 'dominant-layer',
-    catalog: terrainMaterialLayers,
-    routeLayerIds,
+    catalog: TERRAIN_PREVIEW_LAYER_CATALOG,
+    routeLayerIds: TERRAIN_PREVIEW_ROUTE_LAYER_IDS,
   });
   const chunkCells = gridDebug.view.cells.map((cell) => ({
     column: cell.column,
@@ -532,24 +345,29 @@ export function buildTerrainChunkDebugMarkup(
 
 function createPreviewChunkGrid(
   generator: ReturnType<typeof createWorldGenerator>,
-  terrainSignals: ReturnType<typeof createOverworldTerrainSignalSampler>,
+  terrainSignals: ReturnType<typeof getTerrainPreviewSignalSampler>,
   seed: string,
   bounds: TerrainChunkHeightSampleBounds
 ): TerrainSplatSampleGrid {
   return createTerrainSplatSampleGrid({
     seed,
     bounds,
-    kindCatalog: terrainKindCatalog,
+    kindCatalog: TERRAIN_PREVIEW_KIND_CATALOG,
     fallbackKind: 'plains',
     fallbackLayerId: 'grass-a',
     blendWidth: 1,
-    resolveTile: ({ x, y }) => ({
-      kind: generator.samplePreviewSurfaceKind(x, y),
-      signals: {
-        ...terrainSignals(x, y),
-        season: 'summer',
-      },
-    }),
+    resolveTile: ({ x, y }) => {
+      const kind = generator.samplePreviewSurfaceKind(x, y);
+      const signalsAtTile = terrainSignals(x, y);
+      return {
+        kind,
+        signals: {
+          ...signalsAtTile,
+          biome: resolveTerrainPreviewBiomeId(kind, signalsAtTile),
+          season: 'summer',
+        },
+      };
+    },
   });
 }
 
@@ -735,18 +553,6 @@ function getWorldGenerator(seed: string) {
   return generator;
 }
 
-function getTerrainSignalSampler(seed: string) {
-  const cached = terrainSignalSamplerCache.get(seed);
-  if (cached) {
-    return cached;
-  }
-  const sampler = createOverworldTerrainSignalSampler(
-    resolveHashSeedInput(seed)
-  );
-  terrainSignalSamplerCache.set(seed, sampler);
-  return sampler;
-}
-
 function normalizeSeed(value: string | undefined): string {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0
@@ -784,11 +590,12 @@ export function resolveTerrainChunkDebugLayerTint(
   layerId: TerrainMaterialLayerId | null
 ): string {
   return (
-    (layerId ? terrainMaterialLayers.byId.get(layerId)?.defaultTint : null) ??
-    '#6b7280'
+    (layerId
+      ? TERRAIN_PREVIEW_LAYER_CATALOG.byId.get(layerId)?.defaultTint
+      : null) ?? '#6b7280'
   );
 }
 
 export function listTerrainChunkDebugLayers(): readonly TerrainMaterialLayerCatalogEntry[] {
-  return terrainMaterialLayers.entries;
+  return TERRAIN_PREVIEW_LAYER_CATALOG.entries;
 }
