@@ -544,12 +544,12 @@ worker-backed generation. The worker runtime notes live in
 - [x] Keep road width continuous across chunk boundaries.
 - [ ] Keep route intersections continuous across chunks.
 - [ ] Blend junctions without overlapping road meshes.
-- [ ] Generate crossroads from combined splat weights.
-- [ ] Generate curved roads from route distance fields.
-- [ ] Avoid forcing roads to follow square tile edges.
-- [ ] Allow roads to curve inside logical terrain cells.
-- [ ] Use world-space route data to generate splat weights.
-- [ ] Keep route splats deterministic from world data.
+- [x] Generate crossroads from combined splat weights.
+- [x] Generate curved roads from route distance fields.
+- [x] Avoid forcing roads to follow square tile edges.
+- [x] Allow roads to curve inside logical terrain cells.
+- [x] Use world-space route data to generate splat weights.
+- [x] Keep route splats deterministic from world data.
 - [x] Add wheel rut variation to dirt roads.
 - [x] Add worn centers to heavily traveled paths.
 - [x] Add edge grass where roads receive little traffic.
@@ -569,6 +569,12 @@ worker-backed generation. The worker runtime notes live in
 - [ ] Test roads follow terrain height without gaps.
 - [x] Test roads remain continuous across chunk borders.
 - [ ] Test intersections blend without visible seams.
+
+- Added `@bworlds/terrain-splat-support/route-distance-field` so route
+  splatting can sample deterministic world-space road and trail polylines,
+  derive curved in-cell route influence from shared width plans, and combine
+  multiple corridor weights into crossroads-ready samples before any renderer
+  or mesh fallback is involved.
 
 - Added `@bworlds/terrain-splat-support/route-appearance-plan` so route
   splatting can resolve deterministic wear, wheel-rut, worn-center,

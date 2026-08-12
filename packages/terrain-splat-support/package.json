@@ -23,6 +23,7 @@
     "./route-overlay-projection": "./src/route-overlay-projection.ts",
     "./route-edge-blend": "./src/route-edge-blend.ts",
     "./route-appearance-plan": "./src/route-appearance-plan.ts",
+    "./route-distance-field": "./src/route-distance-field.ts",
     "./route-shoulder-weight": "./src/route-shoulder-weight.ts",
     "./route-splat-projection": "./src/route-splat-projection.ts",
     "./route-surface-plan": "./src/route-surface-plan.ts",
