@@ -206,3 +206,37 @@ export function createWindMapFeatureGeneratorPlugin(options: {
     },
   });
 }
+
+export function createOceanCurrentMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getOceanCurrentFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'ocean-current-map-layer',
+    label: options.label ?? 'Ocean Current Layer',
+    layerId: 'ocean-current',
+    getFeatures(request) {
+      return options.getOceanCurrentFeatures(request);
+    },
+  });
+}
+
+export function createRiverFlowMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getRiverFlowFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'river-flow-map-layer',
+    label: options.label ?? 'River Flow Layer',
+    layerId: 'river-flow',
+    getFeatures(request) {
+      return options.getRiverFlowFeatures(request);
+    },
+  });
+}

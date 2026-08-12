@@ -13,6 +13,8 @@ for physical map products built on canonical map features:
 - `createPressureMapFeatureGeneratorPlugin(...)`
 - `createWeatherMapFeatureGeneratorPlugin(...)`
 - `createWindMapFeatureGeneratorPlugin(...)`
+- `createOceanCurrentMapFeatureGeneratorPlugin(...)`
+- `createRiverFlowMapFeatureGeneratorPlugin(...)`
 
 ## Purpose
 
@@ -42,6 +44,8 @@ The helpers currently reserve these layer ids:
 - `pressure`
 - `weather`
 - `wind`
+- `ocean-current`
+- `river-flow`
 
 That gives later PMTiles export, map styling, and viewer code one stable layer
 vocabulary instead of forcing each feature generator to invent its own names.
@@ -164,3 +168,26 @@ and:
 These wrappers intentionally accept canonical `MapFeatureRecord` values so
 later moisture fields, isobars, forecast overlays, and flow-vector products
 can share one layer contract before the climate simulation details land.
+
+## Ocean Current And River Flow Layers
+
+`createOceanCurrentMapFeatureGeneratorPlugin(...)` and
+`createRiverFlowMapFeatureGeneratorPlugin(...)` follow the same PMTiles
+generator contract with conventional layer ids:
+
+- `layerId: 'ocean-current'`
+- `layerId: 'river-flow'`
+
+They default to:
+
+- `id: 'ocean-current-map-layer'`
+- `id: 'river-flow-map-layer'`
+
+and:
+
+- `label: 'Ocean Current Layer'`
+- `label: 'River Flow Layer'`
+
+These wrappers intentionally accept canonical `MapFeatureRecord` values so
+later ocean circulation and watershed flow products can share one layer
+contract before the concrete current and runoff models exist.

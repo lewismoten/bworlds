@@ -92,7 +92,7 @@ Current support:
 
 - [x] Add climate and temperature zone plugins.
 - [x] Add humidity, pressure, weather, and wind plugins.
-- [ ] Add ocean current and river flow plugins.
+- [x] Add ocean current and river flow plugins.
 
 Current support:
 
@@ -109,6 +109,12 @@ Current support:
   products can share conventional `humidity`, `pressure`, `weather`, and
   `wind` PMTiles generator wrappers without inventing another parallel layer
   naming scheme.
+- `@bworlds/map-support` also now exposes
+  `createOceanCurrentMapFeatureGeneratorPlugin(...)` and
+  `createRiverFlowMapFeatureGeneratorPlugin(...)`, so later ocean circulation
+  and watershed flow map products can share conventional `ocean-current` and
+  `river-flow` PMTiles generator wrappers instead of creating more one-off
+  climate layer ids.
 
 ## Human Layers
 

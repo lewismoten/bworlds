@@ -12,9 +12,11 @@ import {
   createPhysicalMapFeatureGeneratorPlugin,
   createPressureMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
+  createRiverFlowMapFeatureGeneratorPlugin,
   createSlopeMapFeatureGeneratorPlugin,
   createTemperatureZoneMapFeatureGeneratorPlugin,
   createTopographicMapFeatureGeneratorPlugin,
+  createOceanCurrentMapFeatureGeneratorPlugin,
   createWeatherMapFeatureGeneratorPlugin,
   createWindMapFeatureGeneratorPlugin,
 } from './map-layer-generators.ts';
@@ -474,6 +476,79 @@ describe('map layer generators', () => {
       {
         kind: 'line',
         layerId: 'wind',
+      },
+    ]);
+  });
+
+  it('creates ocean current layer generators with conventional ocean current layer ids', () => {
+    const plugin = createOceanCurrentMapFeatureGeneratorPlugin({
+      getOceanCurrentFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `current:${request.tile.x}:${request.tile.y}`,
+            layerId: 'ocean-current',
+            coordinates: [
+              { worldX: request.tile.x, worldY: request.tile.y },
+              { worldX: request.tile.x + 4, worldY: request.tile.y + 2 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('ocean-current-map-layer');
+    expect(plugin.layerId).toBe('ocean-current');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-13',
+        tile: {
+          zoom: 4,
+          x: 6,
+          y: 8,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'ocean-current',
+      },
+    ]);
+  });
+
+  it('creates river flow layer generators with conventional river flow layer ids', () => {
+    const plugin = createRiverFlowMapFeatureGeneratorPlugin({
+      id: 'watershed-flow',
+      label: 'Watershed Flow',
+      getRiverFlowFeatures(request) {
+        return [
+          createMapFeatureLineRecord({
+            sourceWorldObjectId: `river-flow:${request.tile.zoom}`,
+            layerId: 'river-flow',
+            coordinates: [
+              { worldX: 0, worldY: request.tile.zoom },
+              { worldX: 3, worldY: request.tile.zoom + 2 },
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(plugin.id).toBe('watershed-flow');
+    expect(plugin.label).toBe('Watershed Flow');
+    expect(plugin.layerId).toBe('river-flow');
+    expect(
+      plugin.getFeatures({
+        worldRevision: 'rev-14',
+        tile: {
+          zoom: 5,
+          x: 7,
+          y: 4,
+        },
+      })
+    ).toMatchObject([
+      {
+        kind: 'line',
+        layerId: 'river-flow',
       },
     ]);
   });
