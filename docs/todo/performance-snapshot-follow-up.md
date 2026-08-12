@@ -10,7 +10,11 @@
       Progress: `tile-forest` now resolves full-detail broadleaf materials
       through one shared host-level family bundle, so oak and birch nearby on
       the same renderer reuse the same trunk, foliage, and close-detail
-      materials instead of maintaining separate species-level bundles.
+      materials instead of maintaining separate species-level bundles, and
+      forest landmark, wildlife, meadow, breadcrumb, and bird accessory
+      materials now resolve through one host-level shared bundle instead of
+      maintaining separate broadleaf-versus-conifer duplicates for those
+      non-structural props.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First

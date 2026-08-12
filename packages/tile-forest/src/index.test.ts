@@ -231,13 +231,24 @@ describe('tile forest', () => {
     const state = createForestTestState();
     const markerToMaterials = new Map<string, Set<unknown>>();
     const expectedMarkers = new Set([
+      'forestLandmark:stone-ring',
+      'forestLandmark:mushroom-ring-stem',
+      'forestLandmark:mushroom-ring-cap',
       'forestHollowInstanced',
+      'forestOwlBodyInstanced',
       'forestOwlEye',
+      'forestSpider:body',
+      'forestSpider:legs',
       'forestCarvingInstanced',
       'forestWeb',
+      'forestMeadow:grass',
       'forestMeadow:flower-stem',
       'forestMeadow:white',
       'forestMeadow:yellow',
+      'forestTrail:breadcrumb',
+      'forestBird:left-wing',
+      'forestBird:right-wing',
+      'forestBird:body',
     ]);
 
     outer: for (let tileY = 0; tileY < 24; tileY += 1) {
@@ -515,11 +526,26 @@ describe('tile forest', () => {
 });
 
 function getForestAccessoryMaterialMarker(node: FakeNode): string | null {
+  const landmarkMarker = node.userData?.forestLandmarkInstancedPart;
+  if (
+    landmarkMarker === 'stone-ring' ||
+    landmarkMarker === 'mushroom-ring-stem' ||
+    landmarkMarker === 'mushroom-ring-cap'
+  ) {
+    return `forestLandmark:${landmarkMarker}`;
+  }
   if (node.userData?.forestHollowInstanced) {
     return 'forestHollowInstanced';
   }
+  if (node.userData?.forestOwlBodyInstanced) {
+    return 'forestOwlBodyInstanced';
+  }
   if (node.userData?.forestOwlEye) {
     return 'forestOwlEye';
+  }
+  const spiderMarker = node.userData?.forestSpider;
+  if (spiderMarker === 'body' || spiderMarker === 'legs') {
+    return `forestSpider:${spiderMarker}`;
   }
   if (node.userData?.forestCarvingInstanced) {
     return 'forestCarvingInstanced';
@@ -529,11 +555,23 @@ function getForestAccessoryMaterialMarker(node: FakeNode): string | null {
   }
   const meadowMarker = node.userData?.forestMeadow;
   if (
+    meadowMarker === 'grass' ||
     meadowMarker === 'flower-stem' ||
     meadowMarker === 'white' ||
     meadowMarker === 'yellow'
   ) {
     return `forestMeadow:${meadowMarker}`;
+  }
+  if (node.userData?.forestTrail === 'breadcrumb') {
+    return 'forestTrail:breadcrumb';
+  }
+  const birdMarker = node.userData?.forestBirdInstancedPart;
+  if (
+    birdMarker === 'left-wing' ||
+    birdMarker === 'right-wing' ||
+    birdMarker === 'body'
+  ) {
+    return `forestBird:${birdMarker}`;
   }
   return null;
 }
