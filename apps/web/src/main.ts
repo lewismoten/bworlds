@@ -2477,6 +2477,7 @@ function collectCurrentDebugSnapshot(
     loadedChunkCount: rendererStats.loadedChunkCount,
     chunkGenerationQueueSize: rendererStats.pendingTileCount,
     pendingTileCount: rendererStats.pendingTileCount,
+    peakPendingTileCount: rendererStats.peakPendingTileCount,
     averagePendingFlushTiles: rendererStats.averagePendingFlushTiles,
     maxPendingFlushTiles: rendererStats.maxPendingFlushTiles,
     averageTileBuildMs: rendererStats.averageTileBuildMs,

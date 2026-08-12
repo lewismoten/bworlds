@@ -60,6 +60,7 @@ describe('debug panel', () => {
       loadedChunkCount: 112,
       chunkGenerationQueueSize: 6,
       pendingTileCount: 6,
+      peakPendingTileCount: 9,
       averagePendingFlushTiles: 3.5,
       maxPendingFlushTiles: 5,
       averageTileBuildMs: 2.45,

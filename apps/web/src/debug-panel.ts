@@ -24,6 +24,7 @@ export type DebugSnapshot = {
   loadedChunkCount: number;
   chunkGenerationQueueSize: number;
   pendingTileCount: number;
+  peakPendingTileCount?: number;
   averagePendingFlushTiles: number;
   maxPendingFlushTiles: number;
   averageTileBuildMs: number;
@@ -455,6 +456,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Chunk Queue</dt><dd>${snapshot.chunkGenerationQueueSize}</dd></div>
     <div><dt>Model Queue</dt><dd>${snapshot.chunkGenerationQueueSize}</dd></div>
     <div><dt>Pending Tiles</dt><dd>${snapshot.pendingTileCount}</dd></div>
+    <div><dt>Peak Pending Tiles</dt><dd>${snapshot.peakPendingTileCount ?? 0}</dd></div>
     <div><dt>Avg Flush Tiles</dt><dd>${snapshot.averagePendingFlushTiles.toFixed(2)}</dd></div>
     <div><dt>Max Flush Tiles</dt><dd>${snapshot.maxPendingFlushTiles}</dd></div>
     <div><dt>Avg Tile Build</dt><dd>${snapshot.averageTileBuildMs.toFixed(2)} ms</dd></div>

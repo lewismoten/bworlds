@@ -323,6 +323,7 @@ type Render3DController = {
     maxChunkTriangleCount: number;
     visibleTreeCount: number;
     pendingTileCount: number;
+    peakPendingTileCount: number;
     averagePendingFlushTiles: number;
     maxPendingFlushTiles: number;
     averageTileBuildMs: number;
@@ -1520,6 +1521,7 @@ type RenderChurnMetrics = {
   pendingCancelledEntries: number[];
   schedulerStarvations: number[];
   schedulerStarvationLabels: RecentLabeledCountSample[];
+  pendingTileCounts: RecentCountSample[];
   lodChecks: number[];
   lodReplacements: number[];
   lodReplacementLabels: RecentLabeledCountSample[];
@@ -1754,6 +1756,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     pendingCancelledEntries: [] as number[],
     schedulerStarvations: [] as number[],
     schedulerStarvationLabels: [] as RecentLabeledCountSample[],
+    pendingTileCounts: [] as RecentCountSample[],
     lodChecks: [] as number[],
     lodReplacements: [] as number[],
     lodReplacementLabels: [] as RecentLabeledCountSample[],
@@ -2948,6 +2951,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       cycle,
       environment,
     });
+    recordRecentCountMetric(renderChurnMetrics.pendingTileCounts, {
+      nowMs: frameNowMs,
+      count: pendingWorldBuild.queue.length,
+    });
     renderer.render(scene, camera);
   }
 
@@ -3003,6 +3010,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     );
     const recentPendingFlushStats = getRecentCountStats(
       renderChurnMetrics.pendingFlushCounts,
+      nowMs
+    );
+    const recentPendingTileStats = getRecentCountStats(
+      renderChurnMetrics.pendingTileCounts,
       nowMs
     );
     const recentTilePluginBuildStats = getRecentLabeledDurationStats(
@@ -3073,6 +3084,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       maxChunkTriangleCount: visibleTileResourceStats.maxChunkTriangleCount,
       visibleTreeCount: sceneResourceStats.treeCount,
       pendingTileCount: pendingWorldBuild.queue.length,
+      peakPendingTileCount: recentPendingTileStats.maxCount,
       averagePendingFlushTiles: recentPendingFlushStats.averageCount,
       maxPendingFlushTiles: recentPendingFlushStats.maxCount,
       averageTileBuildMs: recentTileBuildStats.averageMs,
