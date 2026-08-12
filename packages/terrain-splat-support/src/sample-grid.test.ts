@@ -97,6 +97,138 @@ describe('terrain splat sample grid', () => {
     }
   });
 
+  it('blends neighboring terrain kinds into deterministic boundary samples', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x >= 2 ? 'forest' : 'plains',
+      signals: {
+        moisture: x >= 2 ? 0.95 : 0.55,
+        temperature: 0.65,
+        season: 'summer',
+      },
+    }));
+
+    const unblendedGrid = createTerrainSplatSampleGrid({
+      seed: 'blend-zone-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+    });
+    const blendedGrid = createTerrainSplatSampleGrid({
+      seed: 'blend-zone-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    expect(
+      getTerrainSplatGridSample(unblendedGrid, 1, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).not.toEqual(expect.arrayContaining(['leaf']));
+    expect(
+      getTerrainSplatGridSample(blendedGrid, 1, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['leaf']));
+    expect(
+      getTerrainSplatGridSample(blendedGrid, 0, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).not.toEqual(expect.arrayContaining(['leaf']));
+  });
+
+  it('blends snow coverage gradually from neighboring cold terrain', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: y >= 2 ? 'snow' : 'plains',
+      signals: {
+        moisture: 0.55,
+        temperature: y >= 2 ? 0.2 : 0.7,
+        season: y >= 2 ? 'winter' : 'summer',
+      },
+    }));
+
+    const blendedGrid = createTerrainSplatSampleGrid({
+      seed: 'snow-blend-seed',
+      bounds: {
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    expect(
+      getTerrainSplatGridSample(blendedGrid, 1, 1).entries.map(
+        (entry) => entry.layerId
+      )
+    ).toEqual(expect.arrayContaining(['snow']));
+  });
+
+  it('keeps adjacent chunk borders identical when blend zones use world neighbors', () => {
+    const { kindCatalog } = createGridCatalogs();
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x >= 2 ? 'forest' : y >= 2 ? 'snow' : 'plains',
+      signals: {
+        moisture: normalizeSignal(x + y, 0.55),
+        temperature: y >= 2 ? 0.2 : 0.7,
+        season: y >= 2 ? 'winter' : 'summer',
+        roadSignal: x === 2 ? 0.4 : 0,
+      },
+    }));
+
+    const leftGrid = createTerrainSplatSampleGrid({
+      seed: 'blended-border-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+    const rightGrid = createTerrainSplatSampleGrid({
+      seed: 'blended-border-seed',
+      bounds: {
+        minX: 2,
+        maxX: 4,
+        minY: 0,
+        maxY: 3,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    for (let row = 0; row < leftGrid.height; row += 1) {
+      expect(
+        getTerrainSplatGridSample(leftGrid, leftGrid.width - 1, row)
+      ).toEqual(getTerrainSplatGridSample(rightGrid, 0, row));
+    }
+  });
+
   it('packs and unpacks sample grids into transferable typed arrays', () => {
     const { layerCatalog, kindCatalog } = createGridCatalogs();
     const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
@@ -395,6 +527,102 @@ describe('terrain splat sample grid', () => {
     expect(warningSummary.warnings.map((warning) => warning.code)).toEqual([
       'hard-boundary-no-blend-zone',
     ]);
+  });
+
+  it('reduces hard-boundary warnings once blend zones are generated', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'rock',
+        baseColorTextureId: 'rock/base',
+        normalTextureId: 'rock/normal',
+        roughnessTextureId: 'rock/roughness',
+        textureScale: 4,
+        defaultTint: '#7f7f7f',
+        defaultRoughness: 0.7,
+      },
+      {
+        id: 'snow',
+        baseColorTextureId: 'snow/base',
+        normalTextureId: 'snow/normal',
+        roughnessTextureId: 'snow/roughness',
+        textureScale: 4,
+        defaultTint: '#eef2f6',
+        defaultRoughness: 0.42,
+      },
+    ]);
+    const kindCatalog = createTerrainKindSplatCatalog(
+      [
+        {
+          kind: 'plains',
+          baseLayerIds: ['grass'],
+        },
+        {
+          kind: 'rocky',
+          baseLayerIds: ['rock'],
+        },
+        {
+          kind: 'snow',
+          baseLayerIds: ['snow'],
+        },
+      ],
+      layerCatalog
+    );
+    const resolveTile = createTerrainSplatGridTileResolver(({ x, y }) => ({
+      kind: x >= 1 ? 'rocky' : y >= 1 ? 'snow' : 'plains',
+    }));
+
+    const unblendedGrid = createTerrainSplatSampleGrid({
+      seed: 'hard-boundary-seed',
+      bounds: {
+        minX: 0,
+        maxX: 1,
+        minY: 0,
+        maxY: 1,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+    });
+    const blendedGrid = createTerrainSplatSampleGrid({
+      seed: 'hard-boundary-seed',
+      bounds: {
+        minX: 0,
+        maxX: 1,
+        minY: 0,
+        maxY: 1,
+      },
+      kindCatalog,
+      resolveTile,
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    const unblendedSummary = summarizeTerrainSplatSampleGridUsage(
+      unblendedGrid,
+      layerCatalog,
+      {
+        warnOnHardBoundaries: true,
+      }
+    );
+    const blendedSummary = summarizeTerrainSplatSampleGridUsage(
+      blendedGrid,
+      layerCatalog,
+      {
+        warnOnHardBoundaries: true,
+      }
+    );
+
+    expect(unblendedSummary.hardBoundaryCount).toBeGreaterThan(0);
+    expect(blendedSummary.hardBoundaryCount).toBe(0);
   });
 });
 

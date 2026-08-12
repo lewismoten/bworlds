@@ -1,5 +1,6 @@
 import type { Kind, OverworldSignals, Seed } from '@bworlds/plugin-api';
 import {
+  normalizeTerrainSplatSample,
   packTerrainSplatSample,
   resolveTerrainKindSplatSample,
   unpackTerrainSplatSample,
@@ -22,7 +23,7 @@ export type TerrainSplatGridBounds = {
 
 export type TerrainSplatGridTile = {
   kind: Kind;
-  signals?: Partial<OverworldSignals>;
+  signals?: ResolveTerrainKindSplatSampleInput['signals'];
 };
 
 export type ResolveTerrainSplatGridTile = (position: {
@@ -70,6 +71,11 @@ export type TerrainSplatGridUsageSummary = {
   warnings: readonly TerrainSplatGridUsageWarning[];
 };
 
+type ResolvedTerrainSplatGridCell = {
+  tile: TerrainSplatGridTile;
+  sample: TerrainSplatSample;
+};
+
 export function createTerrainSplatSampleGrid(params: {
   seed: Seed;
   bounds: TerrainSplatGridBounds;
@@ -81,32 +87,59 @@ export function createTerrainSplatSampleGrid(params: {
   resolveTile: ResolveTerrainSplatGridTile;
   fallbackKind?: Kind;
   fallbackLayerId?: TerrainMaterialLayerId;
+  blendWidth?: number;
 }): TerrainSplatSampleGrid {
   const { width, height, minX, maxX, minY, maxY, step } =
     normalizeTerrainSplatGridBounds(params.bounds);
+  const blendWidth = normalizeTerrainSplatBlendWidth(params.blendWidth);
   const samples: TerrainSplatSample[] = [];
+  const cellCache = new Map<string, ResolvedTerrainSplatGridCell>();
+
+  const resolveCell = (x: number, y: number): ResolvedTerrainSplatGridCell => {
+    const key = `${x}:${y}`;
+    const cached = cellCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const tile = params.resolveTile({ x, y });
+    const sample = resolveTerrainKindSplatSample(
+      {
+        seed: params.seed,
+        x,
+        y,
+        kind: tile.kind,
+        signals: tile.signals,
+      },
+      params.kindCatalog,
+      {
+        fallbackKind: params.fallbackKind,
+        fallbackLayerId: params.fallbackLayerId,
+      }
+    );
+    const resolved = { tile, sample };
+    cellCache.set(key, resolved);
+    return resolved;
+  };
 
   for (let row = 0; row < height; row += 1) {
     for (let column = 0; column < width; column += 1) {
       const x = minX + column * step;
       const y = minY + row * step;
-      const tile = params.resolveTile({ x, y });
+      const centerCell = resolveCell(x, y);
 
       samples.push(
-        resolveTerrainKindSplatSample(
-          {
-            seed: params.seed,
-            x,
-            y,
-            kind: tile.kind,
-            signals: tile.signals,
-          },
-          params.kindCatalog,
-          {
-            fallbackKind: params.fallbackKind,
-            fallbackLayerId: params.fallbackLayerId,
-          }
-        )
+        blendWidth > 0
+          ? blendTerrainSplatGridSample({
+              x,
+              y,
+              step,
+              blendWidth,
+              centerCell,
+              resolveCell,
+              fallbackLayerId: params.fallbackLayerId,
+            })
+          : centerCell.sample
       );
     }
   }
@@ -496,4 +529,103 @@ function isHardTerrainBoundary(
     typeof rightLayerId === 'string' &&
     leftLayerId !== rightLayerId
   );
+}
+
+function blendTerrainSplatGridSample(params: {
+  x: number;
+  y: number;
+  step: number;
+  blendWidth: number;
+  centerCell: ResolvedTerrainSplatGridCell;
+  resolveCell: (x: number, y: number) => ResolvedTerrainSplatGridCell;
+  fallbackLayerId?: TerrainMaterialLayerId;
+}): TerrainSplatSample {
+  const entries = params.centerCell.sample.entries.map((entry) => ({
+    layerId: entry.layerId,
+    weight: entry.weight,
+  }));
+
+  for (
+    let rowOffset = -params.blendWidth;
+    rowOffset <= params.blendWidth;
+    rowOffset += 1
+  ) {
+    for (
+      let columnOffset = -params.blendWidth;
+      columnOffset <= params.blendWidth;
+      columnOffset += 1
+    ) {
+      if (columnOffset === 0 && rowOffset === 0) {
+        continue;
+      }
+
+      const neighborCell = params.resolveCell(
+        params.x + columnOffset * params.step,
+        params.y + rowOffset * params.step
+      );
+      if (neighborCell.tile.kind === params.centerCell.tile.kind) {
+        continue;
+      }
+
+      const blendWeight = computeTerrainSplatNeighborBlendWeight(
+        columnOffset,
+        rowOffset,
+        params.blendWidth
+      );
+      if (blendWeight <= 0) {
+        continue;
+      }
+
+      for (const entry of neighborCell.sample.entries) {
+        entries.push({
+          layerId: entry.layerId,
+          weight: entry.weight * blendWeight,
+        });
+      }
+    }
+  }
+
+  return normalizeTerrainSplatSample(
+    { entries },
+    {
+      fallbackLayerId: params.fallbackLayerId,
+    }
+  );
+}
+
+function computeTerrainSplatNeighborBlendWeight(
+  columnOffset: number,
+  rowOffset: number,
+  blendWidth: number
+): number {
+  const chebyshevDistance = Math.max(
+    Math.abs(columnOffset),
+    Math.abs(rowOffset)
+  );
+  if (chebyshevDistance > blendWidth) {
+    return 0;
+  }
+
+  const distanceFactor =
+    (blendWidth - chebyshevDistance + 1) / (blendWidth + 1);
+  const directionalFactor = columnOffset !== 0 && rowOffset !== 0 ? 0.18 : 0.32;
+
+  return distanceFactor * directionalFactor;
+}
+
+function normalizeTerrainSplatBlendWidth(value: unknown): number {
+  if (value === undefined) {
+    return 0;
+  }
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    !Number.isInteger(value)
+  ) {
+    throw new Error(
+      'Terrain splat grid blendWidth must be a non-negative finite integer.'
+    );
+  }
+  return value;
 }

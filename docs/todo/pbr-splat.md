@@ -67,14 +67,14 @@
 
 ## Boundary Blending
 
-- [ ] Blend terrain types across logical tile boundaries.
-- [ ] Avoid hard square borders between terrain types.
-- [ ] Generate blend zones from neighboring terrain types.
-- [ ] Keep blend widths deterministic.
-- [ ] Keep blend weights continuous across chunk edges.
+- [x] Blend terrain types across logical tile boundaries.
+- [x] Avoid hard square borders between terrain types.
+- [x] Generate blend zones from neighboring terrain types.
+- [x] Keep blend widths deterministic.
+- [x] Keep blend weights continuous across chunk edges.
 - [ ] Blend road edges into surrounding ground.
-- [ ] Blend forest floor gradually into open grass.
-- [ ] Blend snow coverage gradually by local conditions.
+- [x] Blend forest floor gradually into open grass.
+- [x] Blend snow coverage gradually by local conditions.
 
 ## Height Integration
 
@@ -358,7 +358,10 @@ conditions so the shared overworld splat mapping can favor gentler soil mixes
 or steeper exposed rock without coupling slope rules to renderer code, plus
 deterministic POI and settlement influence conditions so nearby landmarks and
 settlement footprints can bias dirt, gravel, or clearing layers without
-embedding plugin-specific ground rules into renderer code.
+embedding plugin-specific ground rules into renderer code, plus deterministic
+sample-grid blend zones driven by neighboring world samples so forest-floor and
+snow transitions can taper across chunk boundaries without depending on
+renderer-only smoothing.
 
 # Roads and Paths as Terrain Splats
 
