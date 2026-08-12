@@ -695,24 +695,19 @@ function selectRuntimePerformanceIssueSummary(
   reasons: string[],
   renderQualityLimiterDetails: string[]
 ): string {
-  const hardCapDetail = renderQualityLimiterDetails.find(
-    (detail) =>
-      isActionableLimiterDetail(detail) && /hard cap|critical cap/.test(detail)
-  );
-  if (hardCapDetail) {
-    return `${hardCapDetail}.`;
-  }
-  const firstLimiterDetail = renderQualityLimiterDetails.find(
-    isActionableLimiterDetail
-  );
-  if (firstLimiterDetail) {
-    return `${firstLimiterDetail}.`;
-  }
   const firstActionableReason = reasons.find(
     isReportableRuntimePerformanceReason
   );
   if (firstActionableReason) {
     return ensureTrailingPeriod(firstActionableReason);
+  }
+  const firstLimiterDetail = renderQualityLimiterDetails.find(
+    (detail) =>
+      isActionableLimiterDetail(detail) &&
+      !isGenericRuntimePerformanceBudgetReason(detail)
+  );
+  if (firstLimiterDetail) {
+    return `${firstLimiterDetail}.`;
   }
   return ensureTrailingPeriod(reasons[0]!);
 }
@@ -737,7 +732,46 @@ function isReportableRuntimePerformanceReason(reason: string): boolean {
     !reason.startsWith('Latest quality change was triggered by ') &&
     !reason.startsWith('Visibility radius is currently reduced to ') &&
     !reason.startsWith('Top ') &&
-    !/^[a-z0-9-]+:\d+(?:,\s*[a-z0-9-]+:\d+)*$/iu.test(reason.trim())
+    !/^[a-z0-9-]+:\d+(?:,\s*[a-z0-9-]+:\d+)*$/iu.test(reason.trim()) &&
+    !isGenericRuntimePerformanceBudgetReason(reason)
+  );
+}
+
+function isGenericRuntimePerformanceBudgetReason(reason: string): boolean {
+  const normalized = reason.trim();
+  return (
+    normalized.startsWith('Maximum frame time ') ||
+    normalized.startsWith('Draw calls ') ||
+    normalized.startsWith('Active Three.js object count ') ||
+    normalized.startsWith('Audio node count ') ||
+    normalized.startsWith('Frame time is over budget ') ||
+    normalized.startsWith('Draw calls exceed the target ') ||
+    normalized.startsWith('Triangle count is high ') ||
+    normalized.startsWith('Three.js object count is high ') ||
+    normalized.startsWith('Shader program count is high ') ||
+    normalized.startsWith('Shadow light count is high ') ||
+    normalized.startsWith('Active audio source count is high ') ||
+    normalized.startsWith('Visibility radius reduced to ') ||
+    normalized.startsWith('Weather visibility capped draw distance at ') ||
+    normalized.startsWith('Scene draw calls ') ||
+    normalized.startsWith('Chunk draw calls ') ||
+    normalized.startsWith('Chunk objects ') ||
+    normalized.startsWith('Chunk meshes ') ||
+    normalized.startsWith('Chunk triangles ') ||
+    normalized.startsWith('Active lights ') ||
+    normalized.startsWith('Shadow lights ') ||
+    normalized.startsWith('Active textures ') ||
+    normalized.startsWith('Estimated GPU memory ') ||
+    normalized.startsWith('Scene materials ') ||
+    normalized.startsWith('Visible objects ') ||
+    normalized.startsWith('Visible triangles ') ||
+    normalized.startsWith('Visible vertices ') ||
+    normalized.startsWith('Visible meshes ') ||
+    normalized.startsWith('Smoothed frame time ') ||
+    normalized.startsWith('Target FPS reduced to 30') ||
+    normalized.startsWith(
+      'Optional effects minimized after sustained frame stalls'
+    )
   );
 }
 

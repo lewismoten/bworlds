@@ -302,7 +302,7 @@ describe('runtime performance tracking', () => {
     );
   });
 
-  it('adds measured quality-limiter details and prefers hard-cap details in the summary', () => {
+  it('keeps measured quality-limiter details without letting them drive the summary', () => {
     const issue = buildRuntimePerformanceIssueReport({
       source: 'game',
       route: '/',
@@ -329,7 +329,9 @@ describe('runtime performance tracking', () => {
       }),
     });
 
-    expect(issue?.summary).toBe('Scene materials 52 exceeded hard cap 48.');
+    expect(issue?.summary).toBe(
+      'Visible tile generation 22.0 ms exceeded 16.0 ms.'
+    );
     expect(issue?.renderState.renderQualityLimiterDetails).toEqual([
       'Visibility radius reduced to 10 (full 18, reduced 14, minimum 10)',
       'Weather visibility capped draw distance at 10 (full 18, weather cap 10)',
@@ -613,6 +615,45 @@ describe('runtime performance tracking', () => {
     ]);
   });
 
+  it('skips runtime issue reports when only generic budget pressure remains', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        worstRecentFrameMs: 75,
+        frameMs: 55,
+        renderQualityLimiters:
+          'Visibility radius reduced to 10, Weather visibility reduced draw distance, Chunk draw calls exceeded the hard cap, Scene materials exceeded the hard cap',
+        latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
+        latestQualityChangeSummary:
+          'Target FPS 60 -> 30, visibility radius 18.0 -> 10.0, quality Full -> Reduced, limiters: Scene materials exceeded the hard cap',
+        visibilityRadius: 10,
+        weatherVisibilityRadiusCap: 10,
+        drawCalls: 1301,
+        object3dCount: 2600,
+        maxTileBuildMs: 8,
+        averageTileBuildMs: 4,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxTopPluginLabel: undefined,
+        fallbackBoxSummary: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [
+          'Draw calls exceed the target (1301 > 900).',
+          'Three.js object count is high (2600 > 2400).',
+        ],
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
   it('posts runtime issue reports to the dedicated vite endpoint', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
     const issue = buildRuntimePerformanceIssueReport({
@@ -688,30 +729,62 @@ describe('runtime performance tracking', () => {
       source: 'game',
       route: '/',
       debugSnapshot: createDebugSnapshot({
-        performanceTier: 'critical',
-        drawCalls: 240,
-        renderQualityLimiters: 'Scene materials exceeded the hard cap',
-        materialCount: 52,
-        latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
+        worstRecentFrameMs: 16.7,
+        frameMs: 16.7,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters: '',
+        maxTileBuildMs: 8,
+        averageTileBuildMs: 4,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxTopPluginLabel: undefined,
+        fallbackBoxSummary: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [
+          'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).',
+        ],
       }),
     });
     const secondIssue = buildRuntimePerformanceIssueReport({
       source: 'game',
       route: '/',
       debugSnapshot: createDebugSnapshot({
-        performanceTier: 'critical',
-        drawCalls: 240,
-        renderQualityLimiters: 'Scene materials exceeded the hard cap',
-        materialCount: 85,
-        latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
+        worstRecentFrameMs: 16.7,
+        frameMs: 16.7,
+        performanceTier: 'reduced',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters: '',
+        maxTileBuildMs: 8,
+        averageTileBuildMs: 4,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxTopPluginLabel: undefined,
+        fallbackBoxSummary: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: undefined,
+        resourceWarnings: [
+          'Chunk-generation queue is backing up (412 queued, avg flush 2.0, max flush 4).',
+        ],
       }),
     });
 
     expect(firstIssue?.summary).toBe(
-      'Scene materials 52 exceeded hard cap 48.'
+      'Chunk-generation queue is backing up (347 queued, avg flush 1.0, max flush 1).'
     );
     expect(secondIssue?.summary).toBe(
-      'Scene materials 85 exceeded hard cap 48.'
+      'Chunk-generation queue is backing up (412 queued, avg flush 2.0, max flush 4).'
     );
     expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
   });
