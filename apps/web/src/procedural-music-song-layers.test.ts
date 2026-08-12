@@ -118,7 +118,9 @@ describe('procedural music song layers', () => {
     expect(returnLead.muted).toBe(false);
     expect(returnLead.volumeMultiplier).toBeLessThan(1);
     expect(returnBass.muted).toBe(false);
-    expect(returnBass.volumeMultiplier).toBeLessThan(returnBassCadence.volumeMultiplier);
+    expect(returnBass.volumeMultiplier).toBeLessThan(
+      returnBassCadence.volumeMultiplier
+    );
     expect(returnBass.durationMultiplier).toBeGreaterThan(1);
     expect(returnHarmony.muted).toBe(false);
     expect(returnHarmony.volumeMultiplier).toBeGreaterThan(

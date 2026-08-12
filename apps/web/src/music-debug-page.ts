@@ -1,12 +1,10 @@
 import './music-debug.css';
 import { installDeferredClientErrorSnapshotReporter } from './client-error-snapshot-loader.ts';
 import { SESSION_STORAGE_KEY, parseSavedSession } from './session-state.ts';
-import {
-  buildRuntimePerformanceSnapshot,
-  normalizeRuntimePerformanceTrackingPreferences,
-  postRuntimePerformanceSnapshot,
-  type RuntimePerformanceSnapshot,
-  type RuntimePerformanceSnapshotTrigger,
+import { normalizeRuntimePerformanceTrackingPreferences } from './runtime-performance-tracking.ts';
+import type {
+  RuntimePerformanceSnapshot,
+  RuntimePerformanceSnapshotTrigger,
 } from './runtime-performance-tracking.ts';
 import { collectMusicDebugFormOptions } from './music-debug-form.ts';
 import {
@@ -17,11 +15,7 @@ import { restoreMusicDebugPageStateFromPersistence } from './music-debug-page-re
 import { restorePersistedPageScrollY } from './page-scroll-state.ts';
 import { createMusicDebugPageState } from './music-debug-page-state.ts';
 import { createMusicDebugPlaybackController } from './music-debug-playback.ts';
-import { downloadMusicDebugMidiFile } from './music-debug-midi.ts';
 import { normalizeMusicDebugMidiExportVariant } from './music-debug-midi-export-variant.ts';
-import { downloadMusicDebugExportBundle } from './music-debug-export-bundle.ts';
-import { confirmMusicDebugExportPreflight } from './music-debug-export-preflight.ts';
-import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
 import {
   buildMusicDebugRuntimePerformanceContext,
   buildMusicDebugRuntimePerformanceWorldSeed,
@@ -190,6 +184,21 @@ let trackPlaybackState: MusicDebugTrackPlaybackState =
 let timelineDragState: MusicDebugTimelinePointerDragState | null = null;
 let timelineDragOffsetMs: number | null = null;
 let suppressTimelineClick = false;
+let runtimePerformanceTrackingModulePromise: Promise<
+  typeof import('./runtime-performance-tracking.ts')
+> | null = null;
+let musicDebugMidiModulePromise: Promise<
+  typeof import('./music-debug-midi.ts')
+> | null = null;
+let musicDebugExportBundleModulePromise: Promise<
+  typeof import('./music-debug-export-bundle.ts')
+> | null = null;
+let musicDebugExportPreflightModulePromise: Promise<
+  typeof import('./music-debug-export-preflight.ts')
+> | null = null;
+let musicDebugInstrumentPreviewModulePromise: Promise<
+  typeof import('./music-debug-instrument-preview.ts')
+> | null = null;
 const pagePersistence = createMusicDebugPagePersistenceController({
   storage: globalThis.localStorage ?? null,
   hmr: import.meta.hot,
@@ -588,7 +597,6 @@ const pageState = createMusicDebugPageState({
   },
 });
 const playback = createMusicDebugSongPlayback();
-const instrumentPreviewPlayer = createMusicDebugInstrumentPreviewPlayer();
 const playbackController = createMusicDebugPlaybackController({
   playback,
   onPlayingChange(playing) {
@@ -627,6 +635,35 @@ function warmMusicDebugPlayback(): void {
   playback.prepare?.();
 }
 
+function loadRuntimePerformanceTrackingModule() {
+  runtimePerformanceTrackingModulePromise ??=
+    import('./runtime-performance-tracking.ts');
+  return runtimePerformanceTrackingModulePromise;
+}
+
+function loadMusicDebugMidiModule() {
+  musicDebugMidiModulePromise ??= import('./music-debug-midi.ts');
+  return musicDebugMidiModulePromise;
+}
+
+function loadMusicDebugExportBundleModule() {
+  musicDebugExportBundleModulePromise ??=
+    import('./music-debug-export-bundle.ts');
+  return musicDebugExportBundleModulePromise;
+}
+
+function loadMusicDebugExportPreflightModule() {
+  musicDebugExportPreflightModulePromise ??=
+    import('./music-debug-export-preflight.ts');
+  return musicDebugExportPreflightModulePromise;
+}
+
+function loadMusicDebugInstrumentPreviewModule() {
+  musicDebugInstrumentPreviewModulePromise ??=
+    import('./music-debug-instrument-preview.ts');
+  return musicDebugInstrumentPreviewModulePromise;
+}
+
 document.addEventListener('pointerdown', warmMusicDebugPlayback, {
   passive: true,
   once: true,
@@ -651,15 +688,18 @@ function reportMusicDebugRuntimePerformanceSnapshot(
     return;
   }
 
-  void postRuntimePerformanceSnapshot(
-    buildRuntimePerformanceSnapshot({
-      source: 'music-debug',
-      trigger,
-      route: window.location.pathname || '/debug/music',
-      worldSeed: buildMusicDebugRuntimePerformanceWorldSeed(snapshot),
-      context: buildMusicDebugRuntimePerformanceContext(snapshot),
-      metrics,
-    })
+  void loadRuntimePerformanceTrackingModule().then(
+    ({ buildRuntimePerformanceSnapshot, postRuntimePerformanceSnapshot }) =>
+      postRuntimePerformanceSnapshot(
+        buildRuntimePerformanceSnapshot({
+          source: 'music-debug',
+          trigger,
+          route: window.location.pathname || '/debug/music',
+          worldSeed: buildMusicDebugRuntimePerformanceWorldSeed(snapshot),
+          context: buildMusicDebugRuntimePerformanceContext(snapshot),
+          metrics,
+        })
+      )
   );
 }
 
@@ -692,13 +732,21 @@ globalThis.addEventListener?.(
   { passive: true }
 );
 
-form?.addEventListener('submit', (event) => {
+form?.addEventListener('submit', async (event) => {
   event.preventDefault();
+  const instrumentPreviewPlayer =
+    await loadMusicDebugInstrumentPreviewModule().then((module) =>
+      module.createMusicDebugInstrumentPreviewPlayer()
+    );
   instrumentPreviewPlayer.stop();
   pageState.refreshNow();
 });
 
-form?.addEventListener('input', () => {
+form?.addEventListener('input', async () => {
+  const instrumentPreviewPlayer =
+    await loadMusicDebugInstrumentPreviewModule().then((module) =>
+      module.createMusicDebugInstrumentPreviewPlayer()
+    );
   instrumentPreviewPlayer.stop();
   pageState.scheduleRefresh();
   persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
@@ -722,7 +770,11 @@ playButton?.addEventListener('click', () => {
   });
 });
 
-randomizeButton?.addEventListener('click', () => {
+randomizeButton?.addEventListener('click', async () => {
+  const instrumentPreviewPlayer =
+    await loadMusicDebugInstrumentPreviewModule().then((module) =>
+      module.createMusicDebugInstrumentPreviewPlayer()
+    );
   instrumentPreviewPlayer.stop();
   const randomized = randomizeMusicDebugSeed(collectOptions());
   if (clusterXInput) {
@@ -735,10 +787,19 @@ randomizeButton?.addEventListener('click', () => {
   persistPageState(playbackController.isPlaying(), resolveDisplayedOffsetMs());
 });
 
-downloadButton?.addEventListener('click', () => {
+downloadButton?.addEventListener('click', async () => {
+  const instrumentPreviewPlayer =
+    await loadMusicDebugInstrumentPreviewModule().then((module) =>
+      module.createMusicDebugInstrumentPreviewPlayer()
+    );
   instrumentPreviewPlayer.stop();
   playbackController.stop();
   const snapshot = pageState.refreshNow();
+  const [{ confirmMusicDebugExportPreflight }, { downloadMusicDebugMidiFile }] =
+    await Promise.all([
+      loadMusicDebugExportPreflightModule(),
+      loadMusicDebugMidiModule(),
+    ]);
   if (
     !confirmMusicDebugExportPreflight(snapshot, {
       confirm: globalThis.confirm?.bind(globalThis),
@@ -756,26 +817,39 @@ downloadButton?.addEventListener('click', () => {
 });
 
 downloadBundleButton?.addEventListener('click', () => {
-  instrumentPreviewPlayer.stop();
-  playbackController.stop();
-  const snapshot = pageState.refreshNow();
-  if (
-    !confirmMusicDebugExportPreflight(snapshot, {
-      confirm: globalThis.confirm?.bind(globalThis),
-    })
-  ) {
-    return;
-  }
-  const metrics = downloadMusicDebugExportBundle(snapshot, undefined, {
-    variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
-  });
-  reportMusicDebugRuntimePerformanceSnapshot('bundle-export', snapshot, {
-    midiExportMs: metrics.midiExportMs,
-    wavExportMs: metrics.wavExportMs,
-  });
+  void (async () => {
+    const instrumentPreviewPlayer =
+      await loadMusicDebugInstrumentPreviewModule().then((module) =>
+        module.createMusicDebugInstrumentPreviewPlayer()
+      );
+    instrumentPreviewPlayer.stop();
+    playbackController.stop();
+    const snapshot = pageState.refreshNow();
+    const [
+      { confirmMusicDebugExportPreflight },
+      { downloadMusicDebugExportBundle },
+    ] = await Promise.all([
+      loadMusicDebugExportPreflightModule(),
+      loadMusicDebugExportBundleModule(),
+    ]);
+    if (
+      !confirmMusicDebugExportPreflight(snapshot, {
+        confirm: globalThis.confirm?.bind(globalThis),
+      })
+    ) {
+      return;
+    }
+    const metrics = downloadMusicDebugExportBundle(snapshot, undefined, {
+      variant: normalizeMusicDebugMidiExportVariant(exportVariantSelect?.value),
+    });
+    reportMusicDebugRuntimePerformanceSnapshot('bundle-export', snapshot, {
+      midiExportMs: metrics.midiExportMs,
+      wavExportMs: metrics.wavExportMs,
+    });
+  })();
 });
 
-function handleInstrumentPreviewClick(event: Event): boolean {
+async function handleInstrumentPreviewClick(event: Event): Promise<boolean> {
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) {
     return false;
@@ -795,40 +869,49 @@ function handleInstrumentPreviewClick(event: Event): boolean {
   if (!note) {
     return true;
   }
+  const instrumentPreviewPlayer =
+    await loadMusicDebugInstrumentPreviewModule().then((module) =>
+      module.createMusicDebugInstrumentPreviewPlayer()
+    );
   instrumentPreviewPlayer.stop();
   instrumentPreviewPlayer.play(note);
   return true;
 }
 
 summary?.addEventListener('click', (event) => {
-  if (handleInstrumentPreviewClick(event)) {
-    return;
-  }
-  const target = event.target;
-  if (!(target instanceof HTMLButtonElement)) {
-    return;
-  }
-  const percussionAction = target.dataset.percussionPlaybackAction;
-  const percussionVoiceId = target.dataset.percussionVoiceId;
-  if (handlePercussionPlaybackAction(percussionAction, percussionVoiceId)) {
-    return;
-  }
-  if (percussionAction === 'audition-pattern') {
-    const snapshot = pageState.refreshNow();
-    const notes = createMusicDebugDrumKitAuditionNotes(
-      snapshot,
-      percussionPlaybackState,
-      performance.now()
-    );
-    if (notes.length === 0) {
+  void (async () => {
+    if (await handleInstrumentPreviewClick(event)) {
       return;
     }
-    instrumentPreviewPlayer.stop();
-    for (const note of notes) {
-      instrumentPreviewPlayer.play(note);
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) {
+      return;
     }
-    return;
-  }
+    const percussionAction = target.dataset.percussionPlaybackAction;
+    const percussionVoiceId = target.dataset.percussionVoiceId;
+    if (handlePercussionPlaybackAction(percussionAction, percussionVoiceId)) {
+      return;
+    }
+    if (percussionAction === 'audition-pattern') {
+      const snapshot = pageState.refreshNow();
+      const notes = createMusicDebugDrumKitAuditionNotes(
+        snapshot,
+        percussionPlaybackState,
+        performance.now()
+      );
+      if (notes.length === 0) {
+        return;
+      }
+      const instrumentPreviewPlayer =
+        await loadMusicDebugInstrumentPreviewModule().then((module) =>
+          module.createMusicDebugInstrumentPreviewPlayer()
+        );
+      instrumentPreviewPlayer.stop();
+      for (const note of notes) {
+        instrumentPreviewPlayer.play(note);
+      }
+    }
+  })();
 });
 
 function handlePercussionPlaybackAction(
@@ -864,7 +947,7 @@ function handlePercussionPlaybackAction(
 }
 
 instrumentPanelRoot?.addEventListener('click', (event) => {
-  handleInstrumentPreviewClick(event);
+  void handleInstrumentPreviewClick(event);
 });
 
 sectionButtons?.addEventListener('click', (event) => {
