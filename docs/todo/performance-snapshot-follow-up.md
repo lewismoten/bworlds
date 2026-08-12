@@ -133,13 +133,20 @@
       the tile root instead of a dedicated wrapper group per tree, preserving
       the same transforms and metadata on the instanced children while trimming
       one avoidable `Group` from every full-detail tree.
-- [ ] Investigate the 656 static objects using matrix auto-update.
-- [ ] Disable matrix auto-update for truly static objects.
+- [x] Investigate the 656 static objects using matrix auto-update.
+      Progress: renderer diagnostics now count static `matrixAutoUpdate`
+      owners separately by plugin, and the renderer regression tests cover
+      static-versus-dynamic transform counting plus visible-tile root freezing
+      behavior so the remaining offenders are attributable instead of hidden in
+      one aggregate scene total.
+- [x] Disable matrix auto-update for truly static objects.
       Progress: `render3d` now freezes each visible tile root group at build
       creation time, so floor-only plains tiles and other static tile
       containers stop contributing one avoidable `matrixAutoUpdate` traversal
       per visible tile while dynamic descendants still keep their responder-
-      flagged transforms live.
+      flagged transforms live, and the renderer tests verify that static
+      descendants freeze while animated wind responders and lighthouse sweep
+      pivots remain dynamic.
 - [x] Report static matrix updates by plugin.
 - [ ] Reduce total Object3D count without changing visuals.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
