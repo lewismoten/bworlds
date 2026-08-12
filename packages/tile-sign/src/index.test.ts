@@ -678,6 +678,55 @@ describe('tile sign', () => {
     expect(highestSharedCount).toBeGreaterThanOrEqual(4);
   });
 
+  it('shares core sign materials across different regional style variants when their effective colors match', () => {
+    const models: FakeNode[] = [];
+
+    for (let regionY = 0; regionY < 8; regionY += 1) {
+      for (let regionX = 0; regionX < 8; regionX += 1) {
+        const model = signTile?.create3DModel?.({
+          three: fakeThree as never,
+          state: createSignState('Oakcross'),
+          tile: { kind: 'sign' },
+          tileX: regionX * 10,
+          tileY: regionY * 10,
+        }) as FakeNode | undefined;
+        if (model) {
+          models.push(model);
+        }
+      }
+    }
+
+    let foundSharedVariantPair = false;
+    for (let leftIndex = 0; leftIndex < models.length; leftIndex += 1) {
+      for (
+        let rightIndex = leftIndex + 1;
+        rightIndex < models.length;
+        rightIndex += 1
+      ) {
+        if (
+          createModelSignature(models[leftIndex]) ===
+          createModelSignature(models[rightIndex])
+        ) {
+          continue;
+        }
+        if (
+          countSharedMaterialReferences(
+            models[leftIndex],
+            models[rightIndex]
+          ) >= 3
+        ) {
+          foundSharedVariantPair = true;
+          break;
+        }
+      }
+      if (foundSharedVariantPair) {
+        break;
+      }
+    }
+
+    expect(foundSharedVariantPair).toBe(true);
+  });
+
   it('instances repeated full-detail placard support hardware', () => {
     const model = signTile?.create3DModel?.({
       three: fakeThree as never,

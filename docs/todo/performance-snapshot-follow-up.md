@@ -141,6 +141,11 @@
       `render3d` now caches constellation sky line/sprite materials and Milky
       Way fill/center-line materials per sky root and per effective opacity
       instead of allocating fresh equivalent materials on repeated sky syncs.
+      Progress: `tile-sign` now resolves its post, placard, and trim
+      `MeshStandardMaterial` instances through host-level color-keyed caches and
+      resolves its invariant lantern material through one host-level shared
+      material, so different regional sign variants that land on the same
+      effective palette stop duplicating equivalent roadside-sign materials.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`

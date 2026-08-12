@@ -24,6 +24,10 @@ Current full-detail optimizations:
 - label textures and their `MeshBasicMaterial` wrappers are cached per host and
   sign style, so repeated builds of the same placard text reuse both the canvas
   texture and the label material instead of manufacturing equivalent materials
+- core post, placard, trim, and lantern `MeshStandardMaterial` instances are
+  now also cached per host by their effective colors and fixed render-state
+  values, so different regional sign variants can reuse the same materials
+  whenever their resolved palette actually matches
 - the sign's tiny box and cone parts collapse their geometry groups to one
   shared single-material draw group so default primitive grouping does not
   inflate draw-call and material-group diagnostics for a small roadside prop
@@ -43,5 +47,8 @@ Material reuse:
 - repeated full-detail sign builds on one Three host are expected to stay
   within one shared seven-material palette for the post, placard, trim,
   lantern, and three cached label surfaces
+- different regional sign variants that happen to land on the same post,
+  placard, or trim colors are also expected to share those host-level material
+  instances instead of duplicating equivalent `MeshStandardMaterial` objects
 - the regression test locks that budget so repeated nearby sign builds cannot
   quietly start allocating extra equivalent materials on the same host

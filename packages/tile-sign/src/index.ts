@@ -13,6 +13,7 @@ import {
 } from '@bworlds/poi-support';
 import { createTilePlugin } from '@bworlds/plugin-api';
 import { createHostMaterialResolver } from '@bworlds/procedural-style';
+import { createHostVariantMaterialResolver } from '@bworlds/procedural-style';
 import {
   createRoadsideRouteProfile,
   createRouteTraversalProfile,
@@ -830,32 +831,61 @@ function getRegionalSignStyle(
         labelMaterialCache: createBoundedCache<string, ThreeMaterialLike>(
           SIGN_LABEL_CACHE_LIMIT
         ),
-        postMaterial: new host.MeshStandardMaterial({
-          color: styleVariant.variant.postColor,
-          roughness: 0.94,
-          metalness: 0.02,
-        }),
-        placardMaterial: new host.MeshStandardMaterial({
-          color: styleVariant.variant.placardColor,
-          roughness: 0.88,
-          metalness: 0.02,
-        }),
-        trimMaterial: new host.MeshStandardMaterial({
-          color: styleVariant.variant.trimColor,
-          roughness: 0.86,
-          metalness: 0.03,
-        }),
-        lanternMaterial: new host.MeshStandardMaterial({
-          color: '#f7d38a',
-          emissive: '#f7d38a',
-          emissiveIntensity: 0.04,
-          roughness: 0.52,
-          metalness: 0.02,
-        }),
+        postMaterial: signPostMaterialResolver.getMaterial(
+          host,
+          styleVariant.variant.postColor
+        ),
+        placardMaterial: signPlacardMaterialResolver.getMaterial(
+          host,
+          styleVariant.variant.placardColor
+        ),
+        trimMaterial: signTrimMaterialResolver.getMaterial(
+          host,
+          styleVariant.variant.trimColor
+        ),
+        lanternMaterial: signLanternMaterialResolver.createMaterials(host),
       }))
     )
     .createMaterials(three);
 }
+
+const signPostMaterialResolver = createHostVariantMaterialResolver(
+  (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color,
+      roughness: 0.94,
+      metalness: 0.02,
+    })
+);
+
+const signPlacardMaterialResolver = createHostVariantMaterialResolver(
+  (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color,
+      roughness: 0.88,
+      metalness: 0.02,
+    })
+);
+
+const signTrimMaterialResolver = createHostVariantMaterialResolver(
+  (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color,
+      roughness: 0.86,
+      metalness: 0.03,
+    })
+);
+
+const signLanternMaterialResolver = createHostMaterialResolver(
+  (host: ThreeHostLike): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color: '#f7d38a',
+      emissive: '#f7d38a',
+      emissiveIntensity: 0.04,
+      roughness: 0.52,
+      metalness: 0.02,
+    })
+);
 
 function getSignStyleVariant(
   regionX: number,
