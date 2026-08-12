@@ -8,6 +8,7 @@ import {
   normalizeTerrainSplatSample,
   packTerrainSplatSample,
   PACKED_TERRAIN_SPLAT_WEIGHT_MAX,
+  resolveTerrainMaterialLayerSeasonalTintTransform,
   resolveTerrainMaterialLayerTintTransform,
   resolveTerrainMaterialLayerWorldUvSample,
   resolveTerrainMaterialLayerUvTransform,
@@ -229,6 +230,85 @@ describe('terrain splat support', () => {
       baseColorTextureId: 'grass/base',
       normalTextureId: 'grass/normal',
       roughnessTextureId: 'grass/roughness',
+    });
+  });
+
+  it('applies deterministic seasonal tint transforms on top of base tint variation', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 3,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      tintVariation: 0.12,
+      tintVariationCellSize: 8,
+    };
+
+    const autumn = resolveTerrainMaterialLayerSeasonalTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 10,
+      y: 20,
+      kind: 'plains',
+      season: 'autumn',
+    });
+    const repeatedAutumn = resolveTerrainMaterialLayerSeasonalTintTransform(
+      layer,
+      {
+        seed: 'pbr-splat-seed',
+        x: 10,
+        y: 20,
+        kind: 'plains',
+        season: 'autumn',
+      }
+    );
+    const winter = resolveTerrainMaterialLayerSeasonalTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 10,
+      y: 20,
+      kind: 'plains',
+      season: 'winter',
+    });
+
+    expect(repeatedAutumn).toEqual(autumn);
+    expect(autumn.baseResolvedTint).toBe(
+      resolveTerrainMaterialLayerTintTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 10,
+        y: 20,
+        kind: 'plains',
+      }).resolvedTint
+    );
+    expect(autumn.resolvedTint).not.toBe(autumn.baseResolvedTint);
+    expect(winter.resolvedTint).not.toBe(autumn.resolvedTint);
+    expect(autumn.season).toBe('autumn');
+    expect(autumn.seasonalStrength).toBeGreaterThan(0);
+  });
+
+  it('defaults seasonal tint resolution to summer when no season is provided', () => {
+    const layer = {
+      id: 'soil',
+      baseColorTextureId: 'soil/base',
+      normalTextureId: 'soil/normal',
+      roughnessTextureId: 'soil/roughness',
+      textureScale: 2,
+      defaultTint: '#7b5a3d',
+      defaultRoughness: 0.8,
+    };
+
+    expect(
+      resolveTerrainMaterialLayerSeasonalTintTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 2,
+        y: 4,
+        kind: 'dirt',
+      })
+    ).toMatchObject({
+      defaultTint: '#7b5a3d',
+      baseResolvedTint: '#7b5a3d',
+      season: 'summer',
+      seasonalStrength: 0.04,
     });
   });
 

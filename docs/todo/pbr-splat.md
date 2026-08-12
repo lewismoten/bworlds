@@ -310,6 +310,10 @@
   accumulation, and melting can overlay shared `mud` and `snow` layer weights
   plus wetness-driven roughness/tint metadata without mutating the
   deterministic base terrain sample.
+- Added `resolveTerrainMaterialLayerSeasonalTintTransform(...)` in
+  `@bworlds/terrain-splat-support` so shared layer tint metadata can apply
+  deterministic spring, summer, autumn, or winter color shifts on top of the
+  existing tint-variation path without introducing season-specific materials.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -330,7 +334,7 @@
 - [x] Add weather-driven wetness.
 - [x] Add snow accumulation blending.
 - [x] Add mud accumulation blending.
-- [ ] Add seasonal terrain tinting.
+- [x] Add seasonal terrain tinting.
 - [ ] Add worker-based splat generation.
 - [ ] Add performance limits and regression tests.
 
@@ -347,14 +351,15 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/texture-array-plans.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
 `packages/terrain-splat-support/docs/tint-variation.md`, plus
-`packages/terrain-splat-support/docs/weather-effects.md`, and focused tests
+`packages/terrain-splat-support/docs/weather-effects.md`, plus
+`packages/terrain-splat-support/docs/seasonal-tinting.md`, and focused tests
 cover normalization, packing, validation, deterministic mapping, chunk border
 stability, chunk layer-usage analysis, bounded family variant selection,
 neighborhood shared-layer planning, stable terrain family resolution for the
 same seed, texture-array plan validation for aligned dimensions, formats, and
-memory estimates, plus deterministic UV rotation, mirroring, and tint
-variation resolution, plus world-space UV scale and seam continuity, plus
-deterministic temperature- and season-aware blend conditions so the shared
+memory estimates, plus deterministic UV rotation, mirroring, tint variation,
+and seasonal tint resolution, plus world-space UV scale and seam continuity,
+plus deterministic temperature- and season-aware blend conditions so the shared
 overworld splat mapping can add cold winter snow cover to plains and forest
 ground without coupling climate-sensitive terrain blending to renderer code,
 plus deterministic biome-aware blend conditions so the same shared mapping can
@@ -374,7 +379,9 @@ plus road-aware sample-grid shoulder weighting so broad road tiles can bleed
 deterministic dirt/gravel edge material into adjacent terrain without needing
 renderer-only overlays, plus deterministic weather overlays so rain, snow
 accumulation, melting, and sustained wetness can adjust terrain splat weights
-and wetness metadata without changing the shared base sample identity.
+and wetness metadata without changing the shared base sample identity, plus
+deterministic seasonal tint overlays so spring, summer, autumn, and winter can
+shift shared layer color metadata without changing material identity.
 
 # Roads and Paths as Terrain Splats
 

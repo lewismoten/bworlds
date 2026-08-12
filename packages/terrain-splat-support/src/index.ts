@@ -57,6 +57,13 @@ export type TerrainMaterialLayerTintTransform = {
   variationStrength: number;
 };
 
+export type TerrainMaterialLayerSeasonalTintTransform =
+  TerrainMaterialLayerTintTransform & {
+    baseResolvedTint: string;
+    season: TerrainSplatSeason;
+    seasonalStrength: number;
+  };
+
 export type TerrainMaterialLayerCatalogEntry =
   TerrainMaterialLayerDefinition & {
     index: number;
@@ -1381,6 +1388,36 @@ export function resolveTerrainMaterialLayerTintTransform(
   };
 }
 
+export function resolveTerrainMaterialLayerSeasonalTintTransform(
+  layer: TerrainMaterialLayerDefinition,
+  input: Pick<
+    ResolveTerrainKindSplatSampleInput,
+    'seed' | 'x' | 'y' | 'kind'
+  > & {
+    season?: TerrainSplatSeason;
+  }
+): TerrainMaterialLayerSeasonalTintTransform {
+  const baseTransform = resolveTerrainMaterialLayerTintTransform(layer, input);
+  const season = isTerrainSplatSeason(input.season) ? input.season : 'summer';
+  const seasonalProfile = resolveTerrainSeasonalTintProfile(season);
+  const resolvedTint =
+    seasonalProfile.strength > 0
+      ? blendHexColors(
+          baseTransform.resolvedTint,
+          seasonalProfile.targetTint,
+          seasonalProfile.strength
+        )
+      : baseTransform.resolvedTint;
+
+  return {
+    ...baseTransform,
+    baseResolvedTint: baseTransform.resolvedTint,
+    resolvedTint,
+    season,
+    seasonalStrength: seasonalProfile.strength,
+  };
+}
+
 function collapseTerrainSplatWeights(
   entries: readonly TerrainSplatWeight[]
 ): TerrainSplatWeight[] {
@@ -1511,6 +1548,24 @@ function normalizeHexColor(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function blendHexColors(
+  fromHexColor: string,
+  toHexColor: string,
+  amount: number
+): string {
+  const mix = clampWeight(amount);
+  const fromRgb = parseHexColor(fromHexColor);
+  const toRgb = parseHexColor(toHexColor);
+
+  return formatHexColor({
+    red: clampColorChannel(fromRgb.red + (toRgb.red - fromRgb.red) * mix),
+    green: clampColorChannel(
+      fromRgb.green + (toRgb.green - fromRgb.green) * mix
+    ),
+    blue: clampColorChannel(fromRgb.blue + (toRgb.blue - fromRgb.blue) * mix),
+  });
+}
+
 function applyTintVariation(
   hexColor: string,
   tintNoise: number,
@@ -1551,6 +1606,34 @@ function formatHexColor(rgb: {
 
 function clampColorChannel(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function resolveTerrainSeasonalTintProfile(season: TerrainSplatSeason): {
+  targetTint: string;
+  strength: number;
+} {
+  switch (season) {
+    case 'spring':
+      return {
+        targetTint: '#93ba70',
+        strength: 0.08,
+      };
+    case 'summer':
+      return {
+        targetTint: '#b5ad66',
+        strength: 0.04,
+      };
+    case 'autumn':
+      return {
+        targetTint: '#b57a49',
+        strength: 0.14,
+      };
+    case 'winter':
+      return {
+        targetTint: '#dbe8f2',
+        strength: 0.12,
+      };
+  }
 }
 
 function wrapUnitCoordinate(value: number): number {
