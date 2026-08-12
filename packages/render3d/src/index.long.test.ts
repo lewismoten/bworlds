@@ -3,7 +3,10 @@ import { createDungeonTilePlugin } from '@bworlds/tile-dungeon';
 import { createForestTilePlugin } from '@bworlds/tile-forest';
 import { createLighthouseTilePlugin } from '@bworlds/tile-lighthouse';
 import { createTownTilePlugin } from '@bworlds/tile-town';
-import { validateTileModelAgainstRenderBudget } from './index.ts';
+import {
+  collectSceneResourceStats,
+  validateTileModelAgainstRenderBudget,
+} from './index.ts';
 
 vi.mock('@bworlds/three-support', () => ({
   createPaintedCanvasTexture() {
@@ -480,6 +483,72 @@ describe('render3d representative render-budget integrations', () => {
         violations: [],
       })
     );
+  });
+
+  it('keeps visible instanced meshes in a representative nearby scene', () => {
+    const forestPlugin = createForestTilePlugin();
+    const forestTile = forestPlugin.tiles?.find(
+      (entry) => entry.kind === 'forest'
+    );
+    const townPlugin = createTownTilePlugin();
+    const townTile = townPlugin.tiles?.find((entry) => entry.kind === 'town');
+    const lighthousePlugin = createLighthouseTilePlugin();
+    const lighthouseTile = lighthousePlugin.tiles?.find(
+      (entry) => entry.kind === 'lighthouse'
+    );
+    const state = createPluginRenderState();
+
+    const forestModel = forestTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 8,
+      tileY: 6,
+      detailLevel: 'full',
+    });
+    const townModel = townTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: {
+        kind: 'town',
+        poi: {
+          id: 'town-poi',
+          name: 'Oak Hollow',
+          type: 'town',
+          x: 4,
+          y: 4,
+        },
+      } as never,
+      tileX: 4,
+      tileY: 4,
+      detailLevel: 'full',
+    });
+    const lighthouseModel = lighthouseTile?.create3DModel?.({
+      three: fakePluginThree as never,
+      state,
+      tile: { kind: 'lighthouse' },
+      tileX: 3,
+      tileY: 3,
+      detailLevel: 'full',
+    });
+
+    const root = new FakePluginGroup();
+    root.add(
+      forestModel as FakePluginNode,
+      townModel as FakePluginNode,
+      lighthouseModel as FakePluginNode
+    );
+    const stats = collectSceneResourceStats(root as never);
+
+    expect(stats).toEqual(
+      expect.objectContaining({
+        instancedMeshCount: expect.any(Number),
+        visibleInstancedMeshCount: expect.any(Number),
+        renderedInstanceCount: expect.any(Number),
+      })
+    );
+    expect(stats.visibleInstancedMeshCount).toBeGreaterThan(0);
+    expect(stats.renderedInstanceCount).toBeGreaterThan(0);
   });
 });
 

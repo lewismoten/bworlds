@@ -51,7 +51,7 @@
 - [ ] Verify LOD conversion does not replace instanced models.
 - [x] Report InstancedMesh counts by tile plugin.
 - [x] Report rendered instance counts by tile plugin.
-- [ ] Add a test scene that must contain visible instances.
+- [x] Add a test scene that must contain visible instances.
 - [x] Warn when repeated meshes exist but no instances exist.
 
 ## Scene Graph
