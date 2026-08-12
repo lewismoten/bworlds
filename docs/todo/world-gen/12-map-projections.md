@@ -29,7 +29,7 @@
 
 ## Interaction
 
-- [ ] Add mouse pan and wheel zoom to 2D maps.
+- [x] Add mouse pan and wheel zoom to 2D maps.
 - [ ] Add touch pan and pinch zoom to 2D maps.
 - [ ] Add mouse rotate, pan, and zoom to 3D maps.
 - [ ] Preserve selected position across projection changes.
@@ -109,6 +109,11 @@ Current support:
   full-world near-side perspective option with configurable center and
   camera distance, plus inverse projection support for visible-disk
   coordinates.
+- `@bworlds/map-support` now also exposes shared 2D viewport helpers for
+  `createMapViewportState(...)`, screen-to-map/map-to-screen conversion,
+  mouse pan deltas, cursor-anchored wheel zoom, and world-space selection
+  reprojection so future projected 2D map viewers can share one interaction
+  math layer instead of reimplementing viewport transforms.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

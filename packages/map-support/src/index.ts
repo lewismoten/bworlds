@@ -13,6 +13,7 @@ import type {
   WorldMapLike,
 } from '@bworlds/plugin-api';
 export type * from './map-projections.ts';
+export type * from './map-viewport.ts';
 export {
   AZIMUTHAL_CENTER_LATITUDE,
   AZIMUTHAL_CENTER_LONGITUDE,
@@ -105,6 +106,20 @@ export {
   WINKEL_TRIPEL_STANDARD_PARALLEL_DEGREES,
   WINKEL_TRIPEL_STANDARD_PARALLEL_RADIANS,
 } from './map-projections.ts';
+export {
+  createMapViewportState,
+  DEFAULT_MAP_VIEWPORT_CENTER_X,
+  DEFAULT_MAP_VIEWPORT_CENTER_Y,
+  DEFAULT_MAP_VIEWPORT_MAX_ZOOM,
+  DEFAULT_MAP_VIEWPORT_MIN_ZOOM,
+  DEFAULT_MAP_VIEWPORT_WHEEL_ZOOM_STEP,
+  DEFAULT_MAP_VIEWPORT_ZOOM,
+  mapViewportMapToScreenCoordinate,
+  mapViewportScreenToMapCoordinate,
+  panMapViewport,
+  reprojectMapViewportSelection,
+  zoomMapViewportAtScreenPoint,
+} from './map-viewport.ts';
 
 type DecoratedTileContext =
   | DecorateTownTileContext
