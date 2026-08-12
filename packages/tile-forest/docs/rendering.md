@@ -47,6 +47,10 @@ Current layout:
   and historical-marker instance sets directly under the tile root instead of a
   dedicated wrapper group per tree, while preserving the same transforms and
   metadata on the instance sets themselves.
+- Full-detail branch and foliage passes now also batch tile-wide by compatible
+  material/form buckets, so a dense forest tile pays a small shared set of
+  branch and canopy draws instead of one branch mesh and one foliage mesh per
+  tree.
 - Full-detail trunk segments now also batch at the tile level into shared
   `InstancedMesh` groups keyed by taper geometry and material, so dense forest
   tiles do not pay two standalone trunk draw calls per tree before close-detail

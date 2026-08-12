@@ -109,7 +109,10 @@
       atlas variant into one shared instanced layer instead of one box mesh per
       visible plains tile, which dropped the live `tile-plains` draw-call
       ownership from `1053` to `15` in the August 12, 2026 runtime issue
-      snapshots and moved the top draw-call hotspot back to `tile-forest`.
+      snapshots and moved the top draw-call hotspot back to `tile-forest`, and
+      full-detail `tile-forest` now batches branch and foliage instance sets
+      tile-wide by compatible form/material buckets instead of emitting one
+      branch mesh and one foliage mesh per tree.
 
 ## LOD Stability
 

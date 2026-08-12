@@ -1478,6 +1478,8 @@ function* createForestModelProgressive({
   const secondaryTreeDescriptors =
     fullDetailDescriptors.slice(firstTreeBatchCount);
   const trunkSegments: ForestTrunkSegmentInstance[] = [];
+  const branchInstances: ForestBranchInstance[] = [];
+  const foliageInstances: ForestFoliageInstance[] = [];
   const totalSteps = secondaryTreeDescriptors.length > 0 ? 6 : 5;
 
   for (const descriptor of primaryTreeDescriptors) {
@@ -1488,7 +1490,9 @@ function* createForestModelProgressive({
       tileX,
       tileY,
       descriptor,
-      trunkSegments
+      trunkSegments,
+      branchInstances,
+      foliageInstances
     );
   }
 
@@ -1506,12 +1510,15 @@ function* createForestModelProgressive({
       tileX,
       tileY,
       descriptor,
-      trunkSegments
+      trunkSegments,
+      branchInstances,
+      foliageInstances
     );
   }
 
+  addForestFullDetailBranchInstances(group, three, geometry, branchInstances);
+  addForestFullDetailFoliageInstances(group, three, geometry, foliageInstances);
   addForestFullDetailTrunkInstances(group, three, trunkSegments);
-
   if (secondaryTreeDescriptors.length > 0) {
     yield {
       completedSteps: 2,
@@ -1967,7 +1974,9 @@ function addForestFullDetailTree(
   tileX: number,
   tileY: number,
   descriptor: ForestTreeDescriptor,
-  trunkSegments: ForestTrunkSegmentInstance[]
+  trunkSegments: ForestTrunkSegmentInstance[],
+  branchInstances: ForestBranchInstance[],
+  foliageInstances: ForestFoliageInstance[]
 ): void {
   const style = getTreeStyle(three, tileX, tileY, descriptor.variety);
   const structure = getTreeStructuralState(descriptor);
@@ -1993,11 +2002,24 @@ function addForestFullDetailTree(
         }
       : {}),
   };
+  const treeTransform: ForestTreeTransform = {
+    positionX: tileX + descriptor.x,
+    positionY: 0,
+    positionZ: tileY + descriptor.y,
+    rotationX: treeRotationX,
+    rotationZ: treeRotationZ,
+    scale: structure.scale,
+    form: descriptor.form,
+  };
   const applyTreeTransform = (node: ThreeObject3DLike) => {
-    node.position.set(tileX + descriptor.x, 0, tileY + descriptor.y);
-    node.scale.setScalar(structure.scale);
-    node.rotation.x = treeRotationX;
-    node.rotation.z = treeRotationZ;
+    node.position.set(
+      treeTransform.positionX,
+      treeTransform.positionY,
+      treeTransform.positionZ
+    );
+    node.scale.setScalar(treeTransform.scale);
+    node.rotation.x = treeTransform.rotationX;
+    node.rotation.z = treeTransform.rotationZ;
     node.userData = {
       ...(node.userData ?? {}),
       ...treeUserData,
@@ -2015,77 +2037,41 @@ function addForestFullDetailTree(
   );
 
   if (structure.branches.length > 0) {
-    const branchInstances = new three.InstancedMesh(
-      geometry.branch,
-      style.trunkMaterial,
-      structure.branches.length
-    );
-    branchInstances.userData = {
-      ...(branchInstances.userData ?? {}),
-      [TREE_BRANCH_INSTANCED_KEY]: true,
-    };
-    const branchMatrixScratch = new three.Matrix4();
-    structure.branches.forEach((branch, index) => {
+    structure.branches.forEach((branch) => {
       const branchCurveInfluence = Math.max(
         0,
         Math.min(1, branch.y / Math.max(0.001, structure.trunkHeight))
       );
-      branchInstances.setMatrixAt(
-        index,
-        writeForestBranchInstancedMatrix(
-          branchMatrixScratch,
-          branch.x + structure.trunkCurveX * branchCurveInfluence,
-          branch.y,
-          branch.z + structure.trunkCurveZ * branchCurveInfluence,
-          branch.length,
-          branch.pitch,
-          branch.roll
-        )
-      );
+      branchInstances.push({
+        material: style.trunkMaterial,
+        transform: treeTransform,
+        x: branch.x + structure.trunkCurveX * branchCurveInfluence,
+        y: branch.y,
+        z: branch.z + structure.trunkCurveZ * branchCurveInfluence,
+        length: branch.length,
+        pitch: branch.pitch,
+        roll: branch.roll,
+      });
     });
-    applyTreeTransform(branchInstances);
-    group.add(branchInstances);
   }
 
   if (canopy.foliage.length > 0) {
-    const foliageInstances = new three.InstancedMesh(
-      geometry.foliage,
-      style.foliageMaterial,
-      canopy.foliage.length
-    );
-    foliageInstances.userData = {
-      ...(foliageInstances.userData ?? {}),
-      [TREE_FOLIAGE_INSTANCED_KEY]: true,
-    };
-    const foliageMatrixScratch = new three.Matrix4();
-    canopy.foliage.forEach((clump, index) => {
+    canopy.foliage.forEach((clump) => {
       const canopyCurveInfluence = Math.max(
         0,
         Math.min(1, clump.y / Math.max(0.001, structure.trunkHeight))
       );
-      foliageInstances.setMatrixAt(
-        index,
-        writeLowDetailInstancedMatrix(
-          foliageMatrixScratch,
-          clump.x + structure.trunkCurveX * canopyCurveInfluence,
-          clump.y,
-          clump.z + structure.trunkCurveZ * canopyCurveInfluence,
-          clump.scaleX,
-          clump.scaleY,
-          clump.scaleZ
-        )
-      );
+      foliageInstances.push({
+        material: style.foliageMaterial,
+        transform: treeTransform,
+        x: clump.x + structure.trunkCurveX * canopyCurveInfluence,
+        y: clump.y,
+        z: clump.z + structure.trunkCurveZ * canopyCurveInfluence,
+        scaleX: clump.scaleX,
+        scaleY: clump.scaleY,
+        scaleZ: clump.scaleZ,
+      });
     });
-    const leadClump = canopy.foliage[0]!;
-    tagForestFoliageWind(
-      foliageInstances,
-      tileX,
-      tileY,
-      descriptor.variety,
-      leadClump.x + leadClump.y + leadClump.z
-    );
-    applyTreeTransform(foliageInstances);
-    group.add(foliageInstances);
   }
 
   if (damage.barkMarks.length > 0) {
@@ -2153,6 +2139,113 @@ function addForestFullDetailTree(
     }
     applyTreeTransform(markerInstances);
     group.add(markerInstances);
+  }
+}
+
+function addForestFullDetailBranchInstances(
+  group: ThreeObject3DLike,
+  three: ThreeHostLike,
+  geometry: TreeGeometry,
+  instances: readonly ForestBranchInstance[]
+): void {
+  const batches: ForestBranchBatch[] = [];
+  for (const instance of instances) {
+    const batch = batches.find(
+      (entry) =>
+        entry.material === instance.material &&
+        entry.form === instance.transform.form
+    );
+    if (batch) {
+      batch.instances.push(instance);
+      continue;
+    }
+    batches.push({
+      material: instance.material,
+      form: instance.transform.form,
+      instances: [instance],
+    });
+  }
+
+  for (const batch of batches) {
+    const branchInstances = new three.InstancedMesh(
+      geometry.branch,
+      batch.material,
+      batch.instances.length
+    );
+    branchInstances.userData = {
+      ...(branchInstances.userData ?? {}),
+      [TREE_BRANCH_INSTANCED_KEY]: true,
+      [TREE_FORM_KEY]: batch.form,
+      [RENDER_STATS_CATEGORY_KEY]: 'tree',
+    };
+    const branchMatrixScratch = new three.Matrix4();
+    batch.instances.forEach((instance, index) => {
+      branchInstances.setMatrixAt(
+        index,
+        writeForestTreeBranchTileInstancedMatrix(branchMatrixScratch, instance)
+      );
+    });
+    group.add(branchInstances);
+  }
+}
+
+function addForestFullDetailFoliageInstances(
+  group: ThreeObject3DLike,
+  three: ThreeHostLike,
+  geometry: TreeGeometry,
+  instances: readonly ForestFoliageInstance[]
+): void {
+  const batches: ForestFoliageBatch[] = [];
+  for (const instance of instances) {
+    const batch = batches.find(
+      (entry) =>
+        entry.material === instance.material &&
+        entry.form === instance.transform.form
+    );
+    if (batch) {
+      batch.instances.push(instance);
+      continue;
+    }
+    batches.push({
+      material: instance.material,
+      form: instance.transform.form,
+      instances: [instance],
+    });
+  }
+
+  for (const batch of batches) {
+    const foliageInstances = new three.InstancedMesh(
+      geometry.foliage,
+      batch.material,
+      batch.instances.length
+    );
+    foliageInstances.userData = {
+      ...(foliageInstances.userData ?? {}),
+      [TREE_FOLIAGE_INSTANCED_KEY]: true,
+      [TREE_FORM_KEY]: batch.form,
+      [RENDER_STATS_CATEGORY_KEY]: 'tree',
+    };
+    const foliageMatrixScratch = new three.Matrix4();
+    batch.instances.forEach((instance, index) => {
+      foliageInstances.setMatrixAt(
+        index,
+        writeForestTreeFoliageTileInstancedMatrix(
+          foliageMatrixScratch,
+          instance
+        )
+      );
+    });
+    const leadInstance = batch.instances[0];
+    if (leadInstance) {
+      tagForestFoliageWind(
+        foliageInstances,
+        Math.round(leadInstance.transform.positionX),
+        Math.round(leadInstance.transform.positionZ),
+        batch.form === 'pine' ? 2 : 0,
+        leadInstance.x + leadInstance.y + leadInstance.z
+      );
+    }
+    group.add(foliageInstances);
   }
 }
 
@@ -2389,6 +2482,132 @@ function writeForestBranchInstancedMatrix(
     sinPitch * length,
     cosPitch,
     z,
+    0,
+    0,
+    0,
+    1
+  );
+}
+
+function rotateForestTreeLocalVector(
+  transform: ForestTreeTransform,
+  x: number,
+  y: number,
+  z: number
+) {
+  const cosX = Math.cos(transform.rotationX);
+  const sinX = Math.sin(transform.rotationX);
+  const cosZ = Math.cos(transform.rotationZ);
+  const sinZ = Math.sin(transform.rotationZ);
+  const scaledX = x * transform.scale;
+  const scaledY = y * transform.scale;
+  const scaledZ = z * transform.scale;
+  return {
+    x:
+      cosZ * scaledX +
+      -sinZ * cosX * scaledY +
+      sinZ * sinX * scaledZ,
+    y:
+      sinZ * scaledX +
+      cosZ * cosX * scaledY +
+      -cosZ * sinX * scaledZ,
+    z: sinX * scaledY + cosX * scaledZ,
+  };
+}
+
+function writeForestTreeBranchTileInstancedMatrix(
+  target: ThreeMatrix4Like,
+  instance: ForestBranchInstance
+) {
+  const cosPitch = Math.cos(instance.pitch);
+  const sinPitch = Math.sin(instance.pitch);
+  const cosRoll = Math.cos(instance.roll);
+  const sinRoll = Math.sin(instance.roll);
+  const xAxis = rotateForestTreeLocalVector(
+    instance.transform,
+    cosRoll,
+    sinRoll,
+    0
+  );
+  const yAxis = rotateForestTreeLocalVector(
+    instance.transform,
+    -sinRoll * cosPitch * instance.length,
+    cosRoll * cosPitch * instance.length,
+    sinPitch * instance.length
+  );
+  const zAxis = rotateForestTreeLocalVector(
+    instance.transform,
+    sinRoll * sinPitch,
+    -cosRoll * sinPitch,
+    cosPitch
+  );
+  const translation = rotateForestTreeLocalVector(
+    instance.transform,
+    instance.x,
+    instance.y,
+    instance.z
+  );
+  return target.set(
+    xAxis.x,
+    yAxis.x,
+    zAxis.x,
+    instance.transform.positionX + translation.x,
+    xAxis.y,
+    yAxis.y,
+    zAxis.y,
+    instance.transform.positionY + translation.y,
+    xAxis.z,
+    yAxis.z,
+    zAxis.z,
+    instance.transform.positionZ + translation.z,
+    0,
+    0,
+    0,
+    1
+  );
+}
+
+function writeForestTreeFoliageTileInstancedMatrix(
+  target: ThreeMatrix4Like,
+  instance: ForestFoliageInstance
+) {
+  const xAxis = rotateForestTreeLocalVector(
+    instance.transform,
+    instance.scaleX,
+    0,
+    0
+  );
+  const yAxis = rotateForestTreeLocalVector(
+    instance.transform,
+    0,
+    instance.scaleY,
+    0
+  );
+  const zAxis = rotateForestTreeLocalVector(
+    instance.transform,
+    0,
+    0,
+    instance.scaleZ
+  );
+  const translation = rotateForestTreeLocalVector(
+    instance.transform,
+    instance.x,
+    instance.y,
+    instance.z
+  );
+  return target.set(
+    xAxis.x,
+    yAxis.x,
+    zAxis.x,
+    instance.transform.positionX + translation.x,
+    xAxis.y,
+    yAxis.y,
+    zAxis.y,
+    instance.transform.positionY + translation.y,
+    xAxis.z,
+    yAxis.z,
+    zAxis.z,
+    instance.transform.positionZ + translation.z,
     0,
     0,
     0,
@@ -6421,6 +6640,50 @@ interface ForestTrunkSegmentBatch {
   geometry: ThreeGeometryLike;
   material: ThreeMaterialLike;
   instances: ForestTrunkSegmentInstance[];
+}
+
+interface ForestTreeTransform {
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationZ: number;
+  scale: number;
+  form: ForestTreeForm;
+}
+
+interface ForestBranchInstance {
+  material: ThreeMaterialLike;
+  transform: ForestTreeTransform;
+  x: number;
+  y: number;
+  z: number;
+  length: number;
+  pitch: number;
+  roll: number;
+}
+
+interface ForestBranchBatch {
+  material: ThreeMaterialLike;
+  form: ForestTreeForm;
+  instances: ForestBranchInstance[];
+}
+
+interface ForestFoliageInstance {
+  material: ThreeMaterialLike;
+  transform: ForestTreeTransform;
+  x: number;
+  y: number;
+  z: number;
+  scaleX: number;
+  scaleY: number;
+  scaleZ: number;
+}
+
+interface ForestFoliageBatch {
+  material: ThreeMaterialLike;
+  form: ForestTreeForm;
+  instances: ForestFoliageInstance[];
 }
 
 type ForestBranchDescriptor = TreeBranchState;

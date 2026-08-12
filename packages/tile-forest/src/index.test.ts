@@ -546,8 +546,10 @@ describe('tile forest', () => {
 
     expect(branchInstances.length).toBeGreaterThan(0);
     expect(branchInstances.every((mesh) => mesh.count > 0)).toBe(true);
+    expect(branchInstances.length).toBeLessThanOrEqual(2);
     expect(foliageInstances.length).toBeGreaterThan(0);
     expect(foliageInstances.every((mesh) => mesh.count > 0)).toBe(true);
+    expect(foliageInstances.length).toBeLessThanOrEqual(2);
   });
 
   it('places full-detail tree instance sets directly under the tile root', () => {
