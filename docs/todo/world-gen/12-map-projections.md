@@ -2,11 +2,11 @@
 
 ## Shared API
 
-- [ ] Define a map projection plugin interface.
-- [ ] Accept canonical world coordinates.
-- [ ] Return projected map coordinates.
-- [ ] Support inverse projection where practical.
-- [ ] Expose bounds, wrapping, and distortion metadata.
+- [x] Define a map projection plugin interface.
+- [x] Accept canonical world coordinates.
+- [x] Return projected map coordinates.
+- [x] Support inverse projection where practical.
+- [x] Expose bounds, wrapping, and distortion metadata.
 
 ## Projection Plugins
 
@@ -33,3 +33,19 @@
 - [ ] Add touch pan and pinch zoom to 2D maps.
 - [ ] Add mouse rotate, pan, and zoom to 3D maps.
 - [ ] Preserve selected position across projection changes.
+
+Current support:
+
+- `@bworlds/map-support` now exposes one shared `MapProjectionPlugin`
+  contract plus `createMapProjectionPlugin(...)`, so future map products can
+  declare stable projection ids, explicit world-space bounds, projected
+  map-space bounds, wrapping metadata, distortion families, and optional
+  inverse projection support without repeating validation logic.
+- The projection contract uses canonical `worldX/worldY` inputs and
+  `mapX/mapY` outputs so map code can keep world-space and projected-space
+  coordinates explicit instead of overloading generic `x` and `y` labels.
+- Forward-only and invertible projection modes now share one normalized API,
+  which keeps clipped perspective or globe-style views compatible with the
+  same contract even when a full inverse mapping is not practical.
+- See `packages/map-support/docs/map-projection-plugins.md` for the current
+  contract shape and validation rules.
