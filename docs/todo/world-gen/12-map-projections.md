@@ -23,7 +23,7 @@
 - [x] Add a Mollweide projection plugin.
 - [x] Add an Equal Earth projection plugin.
 - [x] Add a Goode homolosine projection plugin.
-- [ ] Add a Robinson projection plugin.
+- [x] Add a Robinson projection plugin.
 - [ ] Add a Winkel Tripel projection plugin.
 - [ ] Add a globe projection plugin.
 
@@ -96,6 +96,10 @@ Current support:
   full-world equal-area composite option that switches from sinusoidal to
   Mollweide math outside the equatorial latitude band while preserving
   inverse projection support.
+- `@bworlds/map-support` now also exposes
+  `createRobinsonMapProjectionPlugin()`, which gives the map stack a
+  full-world compromise option based on the standard Robinson lookup tables
+  with interpolated forward projection and numeric inverse support.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

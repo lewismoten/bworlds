@@ -25,6 +25,7 @@ Current built-in support:
 - `createMillerCylindricalMapProjectionPlugin()`
 - `createMollweideMapProjectionPlugin()`
 - `createOrthographicMapProjectionPlugin()`
+- `createRobinsonMapProjectionPlugin()`
 - `createSinusoidalMapProjectionPlugin()`
 - `createStereographicMapProjectionPlugin()`
 - `createTransverseMercatorMapProjectionPlugin()`
@@ -320,6 +321,27 @@ equatorial branch.
 
 This gives later map UIs a classic full-world equal-area composite
 projection while still fitting the same normalized plugin contract.
+
+## Robinson
+
+`createRobinsonMapProjectionPlugin()` provides a global table-driven
+compromise projection using the standard 5-degree Robinson coefficient
+tables.
+
+It currently:
+
+- uses `id: 'robinson'`
+- declares `distortion: 'compromise'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- supports the full `±180` longitude and `±90` latitude range
+
+The projected range is normalized from the standard Robinson reference
+extents, with forward interpolation between 5-degree latitude table rows and
+numeric inversion of the Y lookup.
+
+This gives later map UIs a classic world-atlas compromise projection while
+still fitting the shared normalized plugin contract.
 
 ## Miller Cylindrical
 

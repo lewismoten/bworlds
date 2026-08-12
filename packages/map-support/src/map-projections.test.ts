@@ -23,6 +23,7 @@ import {
   createMillerCylindricalMapProjectionPlugin,
   createMollweideMapProjectionPlugin,
   createOrthographicMapProjectionPlugin,
+  createRobinsonMapProjectionPlugin,
   createSinusoidalMapProjectionPlugin,
   createStereographicMapProjectionPlugin,
   createTransverseMercatorMapProjectionPlugin,
@@ -58,6 +59,11 @@ import {
   ORTHOGRAPHIC_CENTER_LATITUDE,
   ORTHOGRAPHIC_CENTER_LONGITUDE,
   ORTHOGRAPHIC_MAX_PROJECTED_RADIUS,
+  ROBINSON_MAX_PROJECTED_X,
+  ROBINSON_MAX_PROJECTED_Y,
+  ROBINSON_MAX_SOLVER_ITERATIONS,
+  ROBINSON_MAX_WORLD_LATITUDE,
+  ROBINSON_MAX_WORLD_LONGITUDE,
   SINUSOIDAL_MAX_PROJECTED_X,
   SINUSOIDAL_MAX_PROJECTED_Y,
   SINUSOIDAL_MAX_WORLD_LATITUDE,
@@ -753,5 +759,34 @@ describe('map projections', () => {
     expect(GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET).toBeCloseTo(0.0528, 10);
     expect(GOODE_HOMOLOSINE_MAX_PROJECTED_X).toBeCloseTo(2 * Math.SQRT2, 10);
     expect(GOODE_HOMOLOSINE_MAX_PROJECTED_Y).toBeGreaterThan(1.3);
+  });
+
+  it('projects and inverts Robinson coordinates across the full latitude range', () => {
+    const projection = createRobinsonMapProjectionPlugin();
+
+    expect(projection.id).toBe('robinson');
+    expect(projection.label).toBe('Robinson');
+    expect(projection.distortion).toBe('compromise');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 75,
+      worldY: 35,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(75, 2);
+    expect(inverted?.worldY).toBeCloseTo(35, 1);
+    expect(ROBINSON_MAX_WORLD_LONGITUDE).toBe(180);
+    expect(ROBINSON_MAX_WORLD_LATITUDE).toBe(90);
+    expect(ROBINSON_MAX_PROJECTED_X).toBeCloseTo(0.8487, 10);
+    expect(ROBINSON_MAX_PROJECTED_Y).toBeCloseTo(1.3523, 10);
+    expect(ROBINSON_MAX_SOLVER_ITERATIONS).toBe(12);
   });
 });

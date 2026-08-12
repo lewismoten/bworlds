@@ -131,6 +131,54 @@ export const GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET = 0.0528;
 export const GOODE_HOMOLOSINE_MAX_PROJECTED_X = 2 * Math.SQRT2;
 export const GOODE_HOMOLOSINE_MAX_PROJECTED_Y =
   Math.SQRT2 - GOODE_HOMOLOSINE_MOLLWEIDE_Y_OFFSET;
+export const ROBINSON_MAX_WORLD_LONGITUDE = 180;
+export const ROBINSON_MAX_WORLD_LATITUDE = 90;
+export const ROBINSON_MAX_PROJECTED_X = 0.8487;
+export const ROBINSON_MAX_PROJECTED_Y = 1.3523;
+export const ROBINSON_MAX_SOLVER_ITERATIONS = 12;
+export const ROBINSON_SOLVER_TOLERANCE = 1e-12;
+const ROBINSON_X_TABLE = [
+  1,
+  0.9986,
+  0.9954,
+  0.99,
+  0.9822,
+  0.973,
+  0.96,
+  0.9427,
+  0.9216,
+  0.8962,
+  0.8679,
+  0.835,
+  0.7986,
+  0.7597,
+  0.7186,
+  0.6732,
+  0.6213,
+  0.5722,
+  0.5322,
+];
+const ROBINSON_Y_TABLE = [
+  0,
+  0.062,
+  0.124,
+  0.186,
+  0.248,
+  0.31,
+  0.372,
+  0.434,
+  0.4958,
+  0.5571,
+  0.6176,
+  0.6769,
+  0.7346,
+  0.7903,
+  0.8435,
+  0.8936,
+  0.9394,
+  0.9761,
+  1,
+];
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -1266,6 +1314,64 @@ export function createGoodeHomolosineMapProjectionPlugin(): MapProjectionPlugin 
   });
 }
 
+export function createRobinsonMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'robinson',
+    label: 'Robinson',
+    distortion: 'compromise',
+    bounds: {
+      minWorldX: -ROBINSON_MAX_WORLD_LONGITUDE,
+      maxWorldX: ROBINSON_MAX_WORLD_LONGITUDE,
+      minWorldY: -ROBINSON_MAX_WORLD_LATITUDE,
+      maxWorldY: ROBINSON_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLongitude = clamp(
+        worldX,
+        -ROBINSON_MAX_WORLD_LONGITUDE,
+        ROBINSON_MAX_WORLD_LONGITUDE
+      );
+      const clampedLatitude = clamp(
+        worldY,
+        -ROBINSON_MAX_WORLD_LATITUDE,
+        ROBINSON_MAX_WORLD_LATITUDE
+      );
+      const longitudeRadians = degreesToRadians(clampedLongitude);
+      const latitudeSign = Math.sign(clampedLatitude) || 1;
+      const { x, y } = sampleRobinson(Math.abs(clampedLatitude));
+      return {
+        mapX: snapNearZero(
+          ((0.8487 * x * longitudeRadians) / Math.PI) /
+            ROBINSON_MAX_PROJECTED_X
+        ),
+        mapY: snapNearZero((latitudeSign * 1.3523 * y) / ROBINSON_MAX_PROJECTED_Y),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * ROBINSON_MAX_PROJECTED_X;
+      const projectedY = mapY * ROBINSON_MAX_PROJECTED_Y;
+      const latitudeSign = Math.sign(projectedY) || 1;
+      const yNormalized = Math.abs(projectedY) / 1.3523;
+      const absoluteLatitude = invertRobinsonLatitude(yNormalized);
+      const { x } = sampleRobinson(absoluteLatitude);
+      const longitudeRadians =
+        Math.abs(x) <= 1e-12 ? 0 : (projectedX * Math.PI) / (0.8487 * x);
+      return {
+        worldX: radiansToDegrees(longitudeRadians),
+        worldY: latitudeSign * absoluteLatitude,
+      };
+    },
+  });
+}
+
 function normalizeMapProjectionWorldCoordinate(
   coordinate: MapProjectionWorldCoordinate
 ): MapProjectionWorldCoordinate {
@@ -1467,6 +1573,56 @@ function solveEqualEarthTheta(projectedY: number): number {
     }
   }
   return clamp(theta, -maxTheta, maxTheta);
+}
+
+function sampleRobinson(absoluteLatitudeDegrees: number): {
+  x: number;
+  y: number;
+} {
+  const clampedLatitude = clamp(absoluteLatitudeDegrees, 0, 90);
+  const scaledLatitude = clampedLatitude / 5;
+  const lowerIndex = Math.floor(scaledLatitude);
+  const upperIndex = Math.min(lowerIndex + 1, ROBINSON_X_TABLE.length - 1);
+  const fraction = scaledLatitude - lowerIndex;
+  return {
+    x: interpolate(
+      ROBINSON_X_TABLE[lowerIndex] ?? ROBINSON_X_TABLE.at(-1) ?? 1,
+      ROBINSON_X_TABLE[upperIndex] ?? ROBINSON_X_TABLE.at(-1) ?? 1,
+      fraction
+    ),
+    y: interpolate(
+      ROBINSON_Y_TABLE[lowerIndex] ?? ROBINSON_Y_TABLE.at(-1) ?? 1,
+      ROBINSON_Y_TABLE[upperIndex] ?? ROBINSON_Y_TABLE.at(-1) ?? 1,
+      fraction
+    ),
+  };
+}
+
+function invertRobinsonLatitude(yNormalized: number): number {
+  const clampedY = clamp(yNormalized, 0, 1);
+  let lower = 0;
+  let upper = 90;
+  for (
+    let iteration = 0;
+    iteration < ROBINSON_MAX_SOLVER_ITERATIONS;
+    iteration += 1
+  ) {
+    const midpoint = (lower + upper) / 2;
+    const sampled = sampleRobinson(midpoint).y;
+    if (Math.abs(sampled - clampedY) <= ROBINSON_SOLVER_TOLERANCE) {
+      return midpoint;
+    }
+    if (sampled < clampedY) {
+      lower = midpoint;
+    } else {
+      upper = midpoint;
+    }
+  }
+  return (lower + upper) / 2;
+}
+
+function interpolate(start: number, end: number, fraction: number): number {
+  return start + (end - start) * fraction;
 }
 
 function resolveGenericConicConeConstant(
