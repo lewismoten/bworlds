@@ -560,6 +560,10 @@ describe('three support', () => {
 
     const geometryPlan = createTestTerrainChunkGeometryPlan();
     const attributePlanSet = createTerrainSplatGeometryAttributePlanSet({
+      minX: 0,
+      maxX: 1,
+      minY: 0,
+      maxY: 1,
       width: 2,
       height: 2,
       step: 1,
@@ -658,6 +662,10 @@ describe('three support', () => {
         {
           geometryPlan: createTestTerrainChunkGeometryPlan(),
           attributePlanSet: createTerrainSplatGeometryAttributePlanSet({
+            minX: 0,
+            maxX: 2,
+            minY: 0,
+            maxY: 1,
             width: 3,
             height: 2,
             step: 1,
