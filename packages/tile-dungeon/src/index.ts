@@ -1,4 +1,4 @@
-import { createBoundedCache } from '@bworlds/cache-support';
+import { createBoundedCache, getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { hash2D, registerHashLabel } from '@bworlds/core/hash';
 import {
   createAnchoredEnterablePoiTilePlugin,
@@ -72,6 +72,7 @@ const DUNGEON_ROOF_Y_SEED = registerHashLabel('dungeon-roof-y');
 const DUNGEON_GLOW_INTENSITY_STEP = 0.02;
 const dungeonBarTextureCache = new WeakMap<object, ThreeTextureLike>();
 const dungeonBarMaterialCache = new WeakMap<object, ThreeMaterialLike>();
+const dungeonGateVoidMaterialCache = new WeakMap<object, ThreeMaterialLike>();
 
 export function createDungeonTilePlugin(): RuntimePlugin {
   return createAnchoredEnterablePoiTilePlugin({
@@ -719,10 +720,7 @@ const resolveDungeonStyle = createRegionalValueResolver(
             metalness: 0.05,
           }),
           barMaterial: getSharedDungeonBarMaterial(three),
-          gateVoidMaterial: createBasicMaterial(three, {
-            color: '#000000',
-            side: three.DoubleSide,
-          }),
+          gateVoidMaterial: getSharedDungeonGateVoidMaterial(three),
           getGlowMaterial(dayIntensity: number, nightIntensity: number) {
             const resolvedDayIntensity =
               quantizeDungeonGlowIntensity(dayIntensity);
@@ -1046,6 +1044,20 @@ function getSharedDungeonBarMaterial(three: ThreeHostLike): ThreeMaterialLike {
   });
   dungeonBarMaterialCache.set(three, material);
   return material;
+}
+
+function getSharedDungeonGateVoidMaterial(
+  three: ThreeHostLike
+): ThreeMaterialLike {
+  return getOrCreateWeakMapValue(
+    dungeonGateVoidMaterialCache,
+    three as object,
+    () =>
+      createBasicMaterial(three, {
+        color: '#000000',
+        side: three.DoubleSide,
+      })
+  );
 }
 
 interface DungeonStyle {

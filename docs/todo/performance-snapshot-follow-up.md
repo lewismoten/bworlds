@@ -97,7 +97,11 @@
       through one host-level cache instead of recreating the same emissive
       `MeshStandardMaterial` inside every regional ruins style, so cross-region
       ruins builds on one renderer no longer pay extra scene-unique glow
-      materials when only the painted stone and accent surfaces vary.
+      materials when only the painted stone and accent surfaces vary, and
+      `tile-dungeon` now resolves its invariant double-sided gate-void
+      material through one host-level cache instead of rebuilding the same
+      black surface inside every regional dungeon style while only the painted
+      walls, roofs, and trim vary by region.
 - [ ] Cache materials by their effective property values.
       Progress: `tile-route` now caches dock route sign label materials per
       Three host and per effective label content instead of allocating a fresh

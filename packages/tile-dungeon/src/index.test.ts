@@ -863,6 +863,7 @@ describe('tile dungeon', () => {
       new Set([findDungeonBarMaterial(first), findDungeonBarMaterial(second)])
         .size
     ).toBe(1);
+    expect(findGateVoidMaterial(first)).toBe(findGateVoidMaterial(second));
   });
 
   it('bounds shared dungeon glow material variants within a region', () => {
