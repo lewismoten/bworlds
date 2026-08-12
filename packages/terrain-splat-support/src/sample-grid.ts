@@ -50,7 +50,9 @@ export type PackedTerrainSplatSampleGrid = Omit<
 };
 
 export type TerrainSplatGridUsageWarningCode =
-  'too-many-active-layers' | 'too-many-unique-layer-combinations';
+  | 'too-many-active-layers'
+  | 'too-many-unique-layer-combinations'
+  | 'hard-boundary-no-blend-zone';
 
 export type TerrainSplatGridUsageWarning = {
   code: TerrainSplatGridUsageWarningCode;
@@ -64,6 +66,7 @@ export type TerrainSplatGridUsageSummary = {
   dominantLayerId: TerrainMaterialLayerId | null;
   perSampleActiveLayerCount: readonly number[];
   unusedLayerIds: readonly TerrainMaterialLayerId[];
+  hardBoundaryCount: number;
   warnings: readonly TerrainSplatGridUsageWarning[];
 };
 
@@ -227,6 +230,7 @@ export function summarizeTerrainSplatSampleGridUsage(
   options: {
     maxActiveLayers?: number;
     maxUniqueLayerCombinations?: number;
+    warnOnHardBoundaries?: boolean;
   } = {}
 ): TerrainSplatGridUsageSummary {
   const catalogEntries = toTerrainMaterialLayerEntries(catalog);
@@ -264,6 +268,9 @@ export function summarizeTerrainSplatSampleGridUsage(
   const warnings: TerrainSplatGridUsageWarning[] = [];
   const maxActiveLayers = options.maxActiveLayers;
   const maxUniqueLayerCombinations = options.maxUniqueLayerCombinations;
+  const hardBoundaryCount = options.warnOnHardBoundaries
+    ? countHardTerrainBoundaries(grid)
+    : 0;
 
   if (
     typeof maxActiveLayers === 'number' &&
@@ -283,6 +290,12 @@ export function summarizeTerrainSplatSampleGridUsage(
       message: `Terrain splat grid uses ${layerCombinationKeys.size} unique layer combinations, exceeding the chunk budget ${maxUniqueLayerCombinations}.`,
     });
   }
+  if (hardBoundaryCount > 0) {
+    warnings.push({
+      code: 'hard-boundary-no-blend-zone',
+      message: `Terrain splat grid contains ${hardBoundaryCount} hard boundary transition(s) with no blend zone.`,
+    });
+  }
 
   return {
     activeLayerIds,
@@ -291,6 +304,7 @@ export function summarizeTerrainSplatSampleGridUsage(
     dominantLayerId,
     perSampleActiveLayerCount,
     unusedLayerIds,
+    hardBoundaryCount,
     warnings,
   };
 }
@@ -426,4 +440,60 @@ function getTerrainSplatGridOffset(
   }
 
   return row * grid.width + column;
+}
+
+function countHardTerrainBoundaries(
+  grid: Pick<TerrainSplatSampleGrid, 'width' | 'height' | 'samples'>
+): number {
+  let count = 0;
+
+  for (let row = 0; row < grid.height; row += 1) {
+    for (let column = 0; column < grid.width; column += 1) {
+      const current = getTerrainSplatGridSample(
+        grid as TerrainSplatSampleGrid,
+        column,
+        row
+      );
+      if (column + 1 < grid.width) {
+        const right = getTerrainSplatGridSample(
+          grid as TerrainSplatSampleGrid,
+          column + 1,
+          row
+        );
+        if (isHardTerrainBoundary(current, right)) {
+          count += 1;
+        }
+      }
+      if (row + 1 < grid.height) {
+        const below = getTerrainSplatGridSample(
+          grid as TerrainSplatSampleGrid,
+          column,
+          row + 1
+        );
+        if (isHardTerrainBoundary(current, below)) {
+          count += 1;
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
+function isHardTerrainBoundary(
+  left: TerrainSplatSample,
+  right: TerrainSplatSample
+): boolean {
+  if (left.entries.length !== 1 || right.entries.length !== 1) {
+    return false;
+  }
+
+  const leftLayerId = left.entries[0]?.layerId;
+  const rightLayerId = right.entries[0]?.layerId;
+
+  return (
+    typeof leftLayerId === 'string' &&
+    typeof rightLayerId === 'string' &&
+    leftLayerId !== rightLayerId
+  );
 }

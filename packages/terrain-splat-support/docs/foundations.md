@@ -58,3 +58,5 @@ Current limits:
   needs to apply the transforms in shared terrain materials
 - tint variation support currently resolves metadata only; renderer code still
   needs to apply the resolved colors through shared material inputs
+- hard-boundary warnings currently detect abrupt single-layer transitions; they
+  do not generate blend zones or smooth the terrain automatically

@@ -215,6 +215,7 @@ describe('terrain splat sample grid', () => {
     expect(summary.dominantLayerId).toBe('dirt-road');
     expect(summary.uniqueLayerCombinationCount).toBeGreaterThan(1);
     expect(summary.perSampleActiveLayerCount).toHaveLength(grid.samples.length);
+    expect(summary.hardBoundaryCount).toBe(0);
     expect(summary.warnings).toEqual([]);
   });
 
@@ -315,6 +316,84 @@ describe('terrain splat sample grid', () => {
     expect(summary.warnings.map((warning) => warning.code)).toEqual([
       'too-many-active-layers',
       'too-many-unique-layer-combinations',
+    ]);
+    expect(summary.hardBoundaryCount).toBe(0);
+  });
+
+  it('warns about hard terrain boundaries only when explicitly requested', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'rock',
+        baseColorTextureId: 'rock/base',
+        normalTextureId: 'rock/normal',
+        roughnessTextureId: 'rock/roughness',
+        textureScale: 4,
+        defaultTint: '#7f7f7f',
+        defaultRoughness: 0.7,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+    ]);
+    const grid = {
+      minX: 0,
+      maxX: 1,
+      minY: 0,
+      maxY: 1,
+      step: 1,
+      width: 2,
+      height: 2,
+      samples: [
+        {
+          entries: [{ layerId: 'grass', weight: 1 }],
+        },
+        {
+          entries: [{ layerId: 'rock', weight: 1 }],
+        },
+        {
+          entries: [{ layerId: 'soil', weight: 1 }],
+        },
+        {
+          entries: [
+            { layerId: 'soil', weight: 0.75 },
+            { layerId: 'grass', weight: 0.25 },
+          ],
+        },
+      ],
+    } as const;
+
+    const defaultSummary = summarizeTerrainSplatSampleGridUsage(
+      grid,
+      layerCatalog
+    );
+    const warningSummary = summarizeTerrainSplatSampleGridUsage(
+      grid,
+      layerCatalog,
+      {
+        warnOnHardBoundaries: true,
+      }
+    );
+
+    expect(defaultSummary.hardBoundaryCount).toBe(0);
+    expect(defaultSummary.warnings).toEqual([]);
+    expect(warningSummary.hardBoundaryCount).toBe(2);
+    expect(warningSummary.warnings.map((warning) => warning.code)).toEqual([
+      'hard-boundary-no-blend-zone',
     ]);
   });
 });

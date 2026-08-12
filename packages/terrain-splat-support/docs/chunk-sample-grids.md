@@ -41,3 +41,5 @@ Usage summaries:
 - count unique layer combinations across samples
 - identify one dominant layer by usage count
 - emit warnings when chunk-level active-layer or variation budgets are exceeded
+- optionally warn when neighboring samples collapse into hard single-layer
+  transitions with no blend zone

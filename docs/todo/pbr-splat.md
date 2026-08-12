@@ -213,8 +213,8 @@
 - [x] Reject invalid terrain layer indices.
 - [x] Reject texture arrays with mismatched dimensions.
 - [x] Warn about unused terrain texture layers.
-- [ ] Warn about chunks using too many terrain layers.
-- [ ] Warn about hard terrain boundaries with no blend zone.
+- [x] Warn about chunks using too many terrain layers.
+- [x] Warn about hard terrain boundaries with no blend zone.
 
 ## Tests
 
@@ -257,6 +257,9 @@
   `@bworlds/terrain-splat-support/sample-grid` to report active and unused
   layers, dominant layer usage, unique layer combinations, and chunk-level
   warnings when terrain layer budgets are exceeded.
+- Added optional hard-boundary analysis in
+  `@bworlds/terrain-splat-support/sample-grid` so neighboring single-layer
+  transitions with no blend zone can be flagged before renderer integration.
 - Added `@bworlds/terrain-splat-support/variant-pool` to define bounded terrain
   material families and resolve deterministic layer variants from a shared pool
   instead of creating ad hoc per-chunk variants.
