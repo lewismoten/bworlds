@@ -156,33 +156,33 @@ function* createQuarryModelProgressive({
   derrickPostInstances.setMatrixAt(
     0,
     writeInstancedScalePositionMatrix(
-        derrickPostMatrixScratch,
-        derrickOriginX +
-          rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).x -
-          tileX,
-        0.19,
-        derrickOriginZ +
-          rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).z -
-          tileY,
-        1,
-        1,
-        1
+      derrickPostMatrixScratch,
+      derrickOriginX +
+        rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).x -
+        tileX,
+      0.19,
+      derrickOriginZ +
+        rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).z -
+        tileY,
+      1,
+      1,
+      1
     )
   );
   derrickPostInstances.setMatrixAt(
     1,
     writeInstancedScalePositionMatrix(
-        derrickPostMatrixScratch,
-        derrickOriginX +
-          rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).x -
-          tileX,
-        0.19,
-        derrickOriginZ +
-          rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).z -
-          tileY,
-        1,
-        1,
-        1
+      derrickPostMatrixScratch,
+      derrickOriginX +
+        rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).x -
+        tileX,
+      0.19,
+      derrickOriginZ +
+        rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).z -
+        tileY,
+      1,
+      1,
+      1
     )
   );
   rim.add(derrickPostInstances);

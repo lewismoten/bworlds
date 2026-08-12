@@ -169,9 +169,13 @@ class FakeTerrainSplatWorker implements TerrainSplatWorkerLike {
         const response =
           this.options.handleMessage?.(message) ??
           buildTerrainSplatWorkerResponseMessage(
-            message as ReturnType<typeof createTerrainSplatWorkerBuildRequestMessage>
+            message as ReturnType<
+              typeof createTerrainSplatWorkerBuildRequestMessage
+            >
           );
-        this.messageListeners.forEach((listener) => listener({ data: response }));
+        this.messageListeners.forEach((listener) =>
+          listener({ data: response })
+        );
       } catch (error) {
         this.errorListeners.forEach((listener) =>
           listener({
@@ -190,10 +194,14 @@ class FakeTerrainSplatWorker implements TerrainSplatWorkerLike {
       | ((event: TerrainSplatWorkerErrorEvent) => void)
   ): void {
     if (type === 'message') {
-      this.messageListeners.add(listener as (event: TerrainSplatWorkerEvent) => void);
+      this.messageListeners.add(
+        listener as (event: TerrainSplatWorkerEvent) => void
+      );
       return;
     }
-    this.errorListeners.add(listener as (event: TerrainSplatWorkerErrorEvent) => void);
+    this.errorListeners.add(
+      listener as (event: TerrainSplatWorkerErrorEvent) => void
+    );
   }
 
   removeEventListener(
@@ -330,10 +338,10 @@ function createWorkerRuntimeCatalogs() {
       grassLayerIds: ['grass-a', 'grass-b'],
       soilLayerId: 'soil',
       leafLayerId: 'leaf',
-    rockLayerId: 'rock',
-    sandLayerId: 'sand',
-    dirtLayerId: 'dirt',
-    gravelLayerId: 'gravel',
+      rockLayerId: 'rock',
+      sandLayerId: 'sand',
+      dirtLayerId: 'dirt',
+      gravelLayerId: 'gravel',
       mudLayerId: 'mud',
       snowLayerId: 'snow',
       dirtRoadLayerId: 'dirt-road',

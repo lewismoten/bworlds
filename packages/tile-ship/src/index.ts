@@ -187,13 +187,7 @@ function* createShipModelProgressive({
       label: 'rigging',
     };
   } else {
-    addBrokenShipDetails(
-      three,
-      hull,
-      hullMaterial,
-      mastMaterial,
-      trimMaterial
-    );
+    addBrokenShipDetails(three, hull, hullMaterial, mastMaterial, trimMaterial);
     yield {
       completedSteps: 3,
       totalSteps,

@@ -155,11 +155,7 @@ function* createMountainModelProgressive({
       ),
       style.mountainMaterial
     );
-    crown.position.set(
-      0,
-      upperHeight * 0.42,
-      0
-    );
+    crown.position.set(0, upperHeight * 0.42, 0);
     crown.rotation.y = hash2D(MOUNTAIN_ROTATION_C_SEED, tileX, tileY) * Math.PI;
     crown.scale.z = depth / width;
     upper.add(crown);
@@ -180,11 +176,7 @@ function* createMountainModelProgressive({
       ),
       style.snowMaterial
     );
-    snow.position.set(
-      0,
-      upperHeight * 0.56,
-      0
-    );
+    snow.position.set(0, upperHeight * 0.56, 0);
     snow.rotation.y = upper.rotation.y;
     snow.scale.z = depth / width;
     upper.add(snow);

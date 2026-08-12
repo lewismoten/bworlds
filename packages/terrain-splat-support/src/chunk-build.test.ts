@@ -231,9 +231,13 @@ class FakeTerrainSplatWorker implements TerrainSplatWorkerLike {
     queueMicrotask(() => {
       try {
         const response = buildTerrainSplatWorkerResponseMessage(
-          message as ReturnType<typeof createTerrainSplatWorkerBuildRequestMessage>
+          message as ReturnType<
+            typeof createTerrainSplatWorkerBuildRequestMessage
+          >
         );
-        this.messageListeners.forEach((listener) => listener({ data: response }));
+        this.messageListeners.forEach((listener) =>
+          listener({ data: response })
+        );
       } catch (error) {
         this.errorListeners.forEach((listener) =>
           listener({
@@ -252,10 +256,14 @@ class FakeTerrainSplatWorker implements TerrainSplatWorkerLike {
       | ((event: TerrainSplatWorkerErrorEvent) => void)
   ): void {
     if (type === 'message') {
-      this.messageListeners.add(listener as (event: TerrainSplatWorkerEvent) => void);
+      this.messageListeners.add(
+        listener as (event: TerrainSplatWorkerEvent) => void
+      );
       return;
     }
-    this.errorListeners.add(listener as (event: TerrainSplatWorkerErrorEvent) => void);
+    this.errorListeners.add(
+      listener as (event: TerrainSplatWorkerErrorEvent) => void
+    );
   }
 
   removeEventListener(

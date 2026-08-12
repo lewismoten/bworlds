@@ -216,7 +216,9 @@ describe('tile mountain', () => {
       }
     }
 
-    expect(createModelSignature(progressiveModel)).toEqual(createModelSignature(syncModel));
+    expect(createModelSignature(progressiveModel)).toEqual(
+      createModelSignature(syncModel)
+    );
   });
 
   it('creates deterministic mountain model signatures for the same tile', () => {

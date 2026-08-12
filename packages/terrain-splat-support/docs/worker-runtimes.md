@@ -3,6 +3,7 @@ between the serializable terrain-splat worker contract and a real Worker-like
 host.
 
 Goals:
+
 - reuse the existing `worker-contract` request/result shapes instead of
   defining a second async protocol
 - keep chunk cache keys and packed typed-array results identical between sync
@@ -10,6 +11,7 @@ Goals:
 - allow browser workers and test fakes to use the same request/response flow
 
 Main API:
+
 - `createTerrainSplatWorkerBuildRequestMessage(...)`
 - `buildTerrainSplatWorkerResponseMessage(...)`
 - `runTerrainSplatWorkerBuild(...)`

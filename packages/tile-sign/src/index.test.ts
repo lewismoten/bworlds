@@ -854,9 +854,7 @@ describe('tile sign', () => {
       full?.children.length ?? Infinity
     );
     expect(lowPointLightCount).toBe(0);
-    expect(
-      lowDetailParts.sort()
-    ).toEqual(['placard', 'post']);
+    expect(lowDetailParts.sort()).toEqual(['placard', 'post']);
     expect(nestedLowDetailGroups).toHaveLength(0);
   });
 
@@ -875,7 +873,9 @@ describe('tile sign', () => {
     expect(low?.position.z).toBe(8);
     expect(low?.position.y ?? 0).toBeGreaterThan(0.3);
     expect(
-      low?.children.some((child) => child.userData?.signLowDetailPart === 'placard')
+      low?.children.some(
+        (child) => child.userData?.signLowDetailPart === 'placard'
+      )
     ).toBe(true);
     expect(low?.userData?.signLowDetailPart).toBe('post');
   });
