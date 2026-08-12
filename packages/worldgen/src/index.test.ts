@@ -42,8 +42,10 @@ import {
   resolveOverworldMountainDetailHeight,
   resolveOverworldReliefHeightFromSignals,
   resolveOverworldRiverCarvingHeight,
+  resolveOverworldRouteGradingHeight,
 } from '@bworlds/runtime-overworld-relief';
 import type {
+  RuntimePlugin,
   PluginPackDefinitionLike,
   ResolveWorldEnvironmentContext,
   WorldActionLike,
@@ -485,7 +487,7 @@ describe('world generator', () => {
     expect(sampleOverworld(10, 20)).toEqual(generator.sampleOverworld(10, 20));
   });
 
-  it('provides a lightweight preview sampler that is stable and omits route decoration', () => {
+  it('provides a lightweight preview sampler that is stable and now follows full overworld composition', () => {
     const generator = createGenerator();
 
     expect(generator.sampleTerrainHeight(10, 20)).toBe(
@@ -500,8 +502,8 @@ describe('world generator', () => {
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(
       generator.samplePreviewOverworld(10, 20)
     );
-    expect(generator.samplePreviewSurfaceKind(3, 2)).not.toBe('bridge');
-    expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
+    expect(generator.samplePreviewSurfaceKind(3, 2)).toBe('bridge');
+    expect(generator.samplePreviewOverworld(3, 2).kind).toBe('bridge');
     expect(generator.sampleOverworld(3, 2).kind).toBe('bridge');
   });
 
@@ -1055,9 +1057,11 @@ describe('world generator', () => {
       'continent-uplift',
       'mountain-detail',
       'river-carving',
+      'route-grading',
     ]);
     expect(influences[1]?.order?.after).toEqual(['continent-uplift']);
     expect(influences[2]?.order?.after).toEqual(['mountain-detail']);
+    expect(influences[3]?.order?.after).toEqual(['river-carving']);
 
     const signals = sampleTerrainSignals(10, 20);
     const tile = { kind: 'plains' as const };
@@ -1086,9 +1090,37 @@ describe('world generator', () => {
     expect(sampledAmounts[2]).toBeCloseTo(
       resolveOverworldRiverCarvingHeight(signals.riverSignal, tile)
     );
+    expect(sampledAmounts[3]).toBeCloseTo(
+      resolveOverworldRouteGradingHeight(signals.roadSignal, tile)
+    );
     expect(sampledAmounts.reduce((sum, amount) => sum + amount, 0)).toBeCloseTo(
       resolveOverworldReliefHeightFromSignals(signals, tile)
     );
+  });
+
+  it('derives preview surface kinds from full overworld composition instead of terrain-only classification', () => {
+    const plugins = createDefaultPluginRegistry();
+    const forceRoadPlugin: RuntimePlugin = {
+      name: 'force-preview-road',
+      tiles: [
+        {
+          kind: 'preview-road-probe',
+          classifyOverworldTile(context) {
+            return context.x === 12 && context.y === 8
+              ? { kind: 'road' }
+              : null;
+          },
+        },
+      ],
+    };
+    plugins.register(forceRoadPlugin);
+    const generator = createWorldGenerator({
+      seed: 'spec',
+      plugins,
+    });
+
+    expect(generator.samplePreviewSurfaceKind(12, 8)).toBe('road');
+    expect(generator.samplePreviewOverworld(12, 8).kind).toBe('road');
   });
 
   it('keeps player-facing runtime tile heights aligned with the shared terrain sampler', () => {
@@ -1193,7 +1225,7 @@ describe('world generator', () => {
     );
     expect(generator.samplePreviewOverworld(10, 20)).toEqual(baselinePreview);
     expect(generator.sampleOverworld(3, 2)).toEqual(baselineOverworld);
-    expect(generator.samplePreviewOverworld(3, 2).kind).not.toBe('bridge');
+    expect(generator.samplePreviewOverworld(3, 2).kind).toBe('bridge');
   });
 
   it('creates the overworld through the registered map plugin path', () => {

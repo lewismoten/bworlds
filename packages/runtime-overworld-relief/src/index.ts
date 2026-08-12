@@ -54,7 +54,7 @@ export function resolveOverworldReliefHeight(
 }
 
 export function resolveOverworldReliefHeightFromSignals(
-  signals: Pick<OverworldSignals, 'elevation' | 'riverSignal'>,
+  signals: Pick<OverworldSignals, 'elevation' | 'riverSignal' | 'roadSignal'>,
   tile: Pick<TileLike, 'kind'>
 ): number {
   if (RELIEF_DISABLED_KINDS.has(tile.kind)) {
@@ -64,7 +64,8 @@ export function resolveOverworldReliefHeightFromSignals(
   return clamp(
     resolveOverworldContinentUpliftHeight(signals.elevation, tile) +
       resolveOverworldMountainDetailHeight(signals.elevation, tile) +
-      resolveOverworldRiverCarvingHeight(signals.riverSignal, tile),
+      resolveOverworldRiverCarvingHeight(signals.riverSignal, tile) +
+      resolveOverworldRouteGradingHeight(signals.roadSignal, tile),
     0,
     0.36
   );
@@ -102,4 +103,15 @@ export function resolveOverworldRiverCarvingHeight(
   }
 
   return -smoothstep(0.72, 0.94, riverSignal) * 0.02;
+}
+
+export function resolveOverworldRouteGradingHeight(
+  roadSignal: number,
+  tile: Pick<TileLike, 'kind'>
+): number {
+  if (tile.kind !== 'road') {
+    return 0;
+  }
+
+  return -smoothstep(0.78, 0.96, roadSignal) * 0.018;
 }

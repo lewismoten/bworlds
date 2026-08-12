@@ -7,6 +7,7 @@ import {
   resolveOverworldReliefHeightFromSignals,
   resolveOverworldReliefHeight,
   resolveOverworldRiverCarvingHeight,
+  resolveOverworldRouteGradingHeight,
 } from './index.ts';
 
 const plugin = createOverworldReliefRuntimePlugin();
@@ -40,6 +41,7 @@ describe('runtime overworld relief', () => {
     const tile = { kind: 'plains' as const };
     const elevation = 0.68;
     const riverSignal = 0.83;
+    const roadSignal = 0.2;
 
     const uplift = resolveOverworldContinentUpliftHeight(elevation, tile);
     const mountainDetail = resolveOverworldMountainDetailHeight(
@@ -47,19 +49,35 @@ describe('runtime overworld relief', () => {
       tile
     );
     const riverCarving = resolveOverworldRiverCarvingHeight(riverSignal, tile);
+    const routeGrading = resolveOverworldRouteGradingHeight(roadSignal, tile);
 
     expect(uplift).toBeGreaterThan(0);
     expect(mountainDetail).toBeGreaterThan(0);
     expect(riverCarving).toBeLessThanOrEqual(0);
+    expect(routeGrading).toBe(0);
     expect(
       resolveOverworldReliefHeightFromSignals(
         {
           elevation,
           riverSignal,
+          roadSignal,
         },
         tile
       )
-    ).toBeCloseTo(uplift + mountainDetail + riverCarving);
+    ).toBeCloseTo(uplift + mountainDetail + riverCarving + routeGrading);
+  });
+
+  it('only applies route grading to road tiles with strong road signals', () => {
+    expect(
+      resolveOverworldRouteGradingHeight(0.92, {
+        kind: 'road',
+      })
+    ).toBeLessThan(0);
+    expect(
+      resolveOverworldRouteGradingHeight(0.92, {
+        kind: 'plains',
+      })
+    ).toBe(0);
   });
 
   it('keeps legacy elevation-only relief compatibility without river carving', () => {

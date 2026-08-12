@@ -126,10 +126,14 @@ Current support:
   authoritative height path to renderer-only noise.
 - `createWorldGenerator(...)` now routes its current preview terrain-height
   query through one sorted default layer stack of `continent-uplift`,
-  `mountain-detail`, and `river-carving`, so the existing relief-based height
-  sampler now already uses explicit ordered layers instead of a package-local
-  one-off formula.
+  `mountain-detail`, `river-carving`, and `route-grading`, so the existing
+  relief-based height sampler now already uses explicit ordered layers instead
+  of a package-local one-off formula.
 - That same generator entry point now also accepts `heightInfluencePlugins`,
   which lets callers compose ordered uplift, carving, grading, and other
   signed height-delta layers directly into the shared terrain sampler while
   keeping invalid sampled values attributed to the plugin that produced them.
+- The preview surface-kind path now also uses full overworld plugin
+  composition rather than terrain-only classification, so route-aware grading
+  layers can key off actual route tile kinds instead of only raw terrain
+  signals.

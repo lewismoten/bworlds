@@ -86,6 +86,7 @@ through one sorted default height-influence stack:
 - `continent-uplift`
 - `mountain-detail`
 - `river-carving`
+- `route-grading`
 
 These layers preserve the current shared relief behavior while moving the
 sampler onto the ordered plugin composition path needed for the full
@@ -103,3 +104,8 @@ entry point for:
 - mountain detail after uplift
 - river carving after mountains
 - route grading after hydrology
+
+The preview sampler now also derives its surface kind from full overworld
+plugin composition rather than terrain-only classification. That means route
+and other overworld overrides can participate in the shared terrain-height
+stack when their tile kind matters to later grading layers.

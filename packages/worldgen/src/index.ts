@@ -29,6 +29,7 @@ import {
 } from '@bworlds/plugin-api';
 import {
   createOverworldTerrainSignalSampler,
+  composeOverworldTileFromPlugins,
   getOverworldPlacementChance,
   isNearOverworldLand,
 } from '@bworlds/overworld-support';
@@ -355,41 +356,14 @@ export function createWorldGenerator({
   ): SpawnTile['kind'] => {
     const key = getPreviewKey(x, y);
     return previewKindCache.getOrCreate(key, () => {
-      const signals = terrainSignals(x, y);
-      const townChance = resolvePreviewPlacementChance('town', x, y);
-      const caveChance = resolvePreviewPlacementChance('cave', x, y);
-      const dungeonChance = resolvePreviewPlacementChance('dungeon', x, y);
-      const signChance = resolvePreviewPlacementChance('sign', x, y);
-      const previewTile = plugins.classifyTerrainTile({
+      const previewTile = composeOverworldTileFromPlugins({
         seed: seedHash,
         x,
         y,
-        tile: { kind: defaultPreviewTileKind },
-        nearLand: isNearOverworldLand(signals),
-        townChance,
-        caveChance,
-        dungeonChance,
-        signChance,
-        getPlacementChance(chanceKey: string) {
-          switch (chanceKey) {
-            case 'town':
-              return townChance;
-            case 'cave':
-              return caveChance;
-            case 'dungeon':
-              return dungeonChance;
-            case 'sign':
-              return signChance;
-            default:
-              return resolvePreviewPlacementChance(chanceKey, x, y);
-          }
-        },
-        signals,
+        plugins,
         sampleTerrainSignals: terrainSignals,
-        townAnchors: EMPTY_PREVIEW_ANCHORS,
-        bridgeAnchors: EMPTY_PREVIEW_ANCHORS,
-        poiAnchors: EMPTY_PREVIEW_ANCHORS,
-      }) ?? { kind: defaultPreviewTileKind };
+        initialTile: { kind: defaultPreviewTileKind },
+      });
 
       return previewTile.kind;
     });

@@ -2,6 +2,7 @@ import {
   resolveOverworldContinentUpliftHeight,
   resolveOverworldMountainDetailHeight,
   resolveOverworldRiverCarvingHeight,
+  resolveOverworldRouteGradingHeight,
 } from '@bworlds/runtime-overworld-relief';
 import type { OverworldSignals, TileLike } from '@bworlds/plugin-api';
 import {
@@ -75,6 +76,27 @@ export function createDefaultTerrainHeightInfluencePlugins(params: {
           ),
           reason:
             'subtracts shallow river-carved relief near strong river signals',
+        };
+      },
+    }),
+    createWorldTerrainHeightInfluencePlugin({
+      id: 'route-grading',
+      order: {
+        priority: 40,
+        after: ['river-carving'],
+      },
+      sampling: {
+        resolutions: ['coarse', 'fine'],
+      },
+      sample({ worldX, worldY }) {
+        return {
+          amount: resolveOverworldRouteGradingHeight(
+            params.sampleTerrainSignals(worldX, worldY).roadSignal,
+            {
+              kind: params.sampleSurfaceKind(worldX, worldY),
+            }
+          ),
+          reason: 'slightly flattens shared road relief after river carving',
         };
       },
     }),
