@@ -550,12 +550,12 @@ worker-backed generation. The worker runtime notes live in
 - [ ] Allow roads to curve inside logical terrain cells.
 - [ ] Use world-space route data to generate splat weights.
 - [ ] Keep route splats deterministic from world data.
-- [ ] Add wheel rut variation to dirt roads.
-- [ ] Add worn centers to heavily traveled paths.
-- [ ] Add edge grass where roads receive little traffic.
-- [ ] Let traffic intensity influence road appearance.
-- [ ] Let weather influence road wetness and mud.
-- [ ] Let snow partially cover road splat layers.
+- [x] Add wheel rut variation to dirt roads.
+- [x] Add worn centers to heavily traveled paths.
+- [x] Add edge grass where roads receive little traffic.
+- [x] Let traffic intensity influence road appearance.
+- [x] Let weather influence road wetness and mud.
+- [x] Let snow partially cover road splat layers.
 - [ ] Keep bridges as separate geometry.
 - [ ] Keep tunnels as separate geometry.
 - [ ] Keep raised causeways as separate geometry.
@@ -569,3 +569,9 @@ worker-backed generation. The worker runtime notes live in
 - [ ] Test roads follow terrain height without gaps.
 - [x] Test roads remain continuous across chunk borders.
 - [ ] Test intersections blend without visible seams.
+
+- Added `@bworlds/terrain-splat-support/route-appearance-plan` so route
+  splatting can resolve deterministic wear, wheel-rut, worn-center,
+  edge-grass, wetness, mud, and partial snow-cover signals from shared route
+  traffic and weather inputs before any renderer-specific shader or mesh path
+  consumes them.
