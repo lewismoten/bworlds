@@ -589,8 +589,6 @@ function* createRiverModelProgressive({
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
   const connections = getRiverConnections(state, tileX, tileY);
   const tileSeed = createRiverTileSeed(tileX, tileY);
-  const group = new three.Group();
-  group.position.set(tileX, 0, tileY);
   const { riverMaterial, highlightMaterial } = getRiverSharedMaterials(three);
 
   if (connections.length === 0) {
@@ -604,9 +602,15 @@ function* createRiverModelProgressive({
       inwardZ: 0.18,
     });
     const stubSeed = appendHashSeedLabel(tileSeed, RIVER_RIBBON_STUB_SEED);
-    group.add(
-      createRiverRibbonMesh(three, stub, 0.34, riverMaterial, stubSeed, 0.12)
+    const stubMesh = createRiverRibbonMesh(
+      three,
+      stub,
+      0.34,
+      riverMaterial,
+      stubSeed,
+      0.12
     );
+    stubMesh.position.set(tileX, 0, tileY);
 
     yield {
       completedSteps: 1,
@@ -614,7 +618,7 @@ function* createRiverModelProgressive({
       label: 'stub-water',
     };
 
-    group.add(
+    stubMesh.add(
       createRiverRibbonMesh(
         three,
         stub,
@@ -632,16 +636,15 @@ function* createRiverModelProgressive({
       label: 'stub-highlight',
     };
 
-    return group;
+    return stubMesh;
   }
 
   const centerPool = new three.Mesh(
     new three.CircleGeometry(0.14, 18),
     riverMaterial
   );
+  centerPool.position.set(tileX, RIVER_SURFACE_HEIGHT, tileY);
   centerPool.rotation.x = -Math.PI * 0.5;
-  centerPool.position.y = RIVER_SURFACE_HEIGHT;
-  group.add(centerPool);
 
   yield {
     completedSteps: 1,
@@ -658,7 +661,7 @@ function* createRiverModelProgressive({
       connections[1]
     );
     const curveSeed = appendHashSeedLabel(tileSeed, RIVER_RIBBON_RIVER_SEED);
-    group.add(
+    centerPool.add(
       createRiverRibbonMesh(three, curve, 0.36, riverMaterial, curveSeed, 0.12)
     );
 
@@ -668,7 +671,7 @@ function* createRiverModelProgressive({
       label: 'curve-water',
     };
 
-    group.add(
+    centerPool.add(
       createRiverRibbonMesh(
         three,
         curve,
@@ -686,7 +689,7 @@ function* createRiverModelProgressive({
       label: 'curve-highlight',
     };
 
-    return group;
+    return centerPool;
   }
 
   const branchBuilds = connections.map((connection, index) => {
@@ -702,7 +705,7 @@ function* createRiverModelProgressive({
   });
 
   for (const { branch, branchSeed } of branchBuilds) {
-    group.add(
+    centerPool.add(
       createRiverRibbonMesh(
         three,
         branch,
@@ -721,7 +724,7 @@ function* createRiverModelProgressive({
   };
 
   for (const { branch, branchSeed } of branchBuilds) {
-    group.add(
+    centerPool.add(
       createRiverRibbonMesh(
         three,
         branch,
@@ -740,7 +743,7 @@ function* createRiverModelProgressive({
     label: 'branch-highlight',
   };
 
-  return group;
+  return centerPool;
 }
 
 function getRiverSharedMaterials(three: ThreeHostLike) {

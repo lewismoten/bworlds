@@ -17,3 +17,8 @@ Stub rivers use a shorter two-step path:
 
 The synchronous `create3DModel()` path exhausts the same generator so the
 progressive and eager builds stay structurally aligned.
+
+River tiles now also use the center pool mesh as the root for connected rivers
+and the primary ribbon mesh as the root for stub rivers, attaching the
+remaining water/highlight ribbons beneath that first mesh so each river tile
+avoids one otherwise empty wrapper `Group` without changing the river shape.

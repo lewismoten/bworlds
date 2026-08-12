@@ -158,7 +158,7 @@ describe('tile water', () => {
       state: state as never,
       tileX: 0,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const progressiveBuild = riverTile?.create3DModelProgressive?.({
       tile: { kind: 'river' } as never,
       three: host as never,
@@ -166,12 +166,12 @@ describe('tile water', () => {
       tileX: 0,
       tileY: 0,
     });
-    let progressiveModel: FakeGroup | undefined;
+    let progressiveModel: FakeNode | undefined;
 
     while (true) {
       const next = progressiveBuild?.next();
       if (next?.done) {
-        progressiveModel = next.value as FakeGroup | undefined;
+        progressiveModel = next.value as FakeNode | undefined;
         break;
       }
     }
@@ -193,7 +193,7 @@ describe('tile water', () => {
         state: state as never,
         tileX: 0,
         tileY: 0,
-      }) as FakeGroup | undefined;
+      }) as FakeNode | undefined;
 
       return (model?.children ?? []).map((child) => ({
         geometry: child.geometry?.constructor.name ?? 'unknown',
@@ -235,14 +235,14 @@ describe('tile water', () => {
       state: state as never,
       tileX: 0,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const second = riverTile?.create3DModel?.({
       tile: { kind: 'river' } as never,
       three: sharedHost as never,
       state: state as never,
       tileX: 1,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const otherHost = riverTile?.create3DModel?.({
       tile: { kind: 'river' } as never,
       three: createFakeThree() as never,
@@ -263,6 +263,22 @@ describe('tile water', () => {
     expect(
       [...firstMaterials].some((material) => otherHostMaterials.has(material))
     ).toBe(false);
+  });
+
+  it('uses the center pool mesh as the connected-river root instead of a wrapper group', () => {
+    const plugin = createWaterTilePlugin();
+    const riverTile = plugin.tiles?.find((tile) => tile.kind === 'river');
+    const model = riverTile?.create3DModel?.({
+      tile: { kind: 'river' } as never,
+      three: createFakeThree() as never,
+      state: createRiverState() as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 0, y: -0.115, z: 0 });
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(4);
   });
 
   it('produces animated ocean overlays only when time is available', () => {
@@ -437,7 +453,7 @@ function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   return materials;
 }
 
-function captureRiverGeometrySignature(model: FakeGroup | undefined) {
+function captureRiverGeometrySignature(model: FakeNode | undefined) {
   return (model?.children ?? []).map((child) => ({
     geometry: child.geometry?.constructor.name ?? 'unknown',
     opacity:

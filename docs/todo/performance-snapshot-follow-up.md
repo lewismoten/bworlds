@@ -288,7 +288,12 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       `tile-sign` tiles now use their main post mesh as the root and attach the
       simplified placard and optional brace beneath it instead of wrapping the
       silhouette in a dedicated `Group`, which removes one static `Object3D`
-      from each reduced-quality sign tile without changing the silhouette.
+      from each reduced-quality sign tile without changing the silhouette, and
+      `tile-water` now uses the center pool mesh as the root for connected
+      rivers and the primary ribbon mesh as the root for stub rivers, attaching
+      the remaining water and highlight ribbons beneath that first mesh instead
+      of wrapping each river tile in a dedicated `Group`, which removes one
+      static `Object3D` from each river tile without changing the river shape.
 
 ## LOD Stability
 
