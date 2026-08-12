@@ -341,6 +341,10 @@
   road and trail splat points can project onto the shared terrain height field
   while preserving bounded route weights and layer metadata for later shoulder
   and edge-blend stages.
+- Added `@bworlds/terrain-splat-support/route-shoulder-weight` so road and
+  trail splat builders can resolve a deterministic soft shoulder falloff from
+  distance-to-center samples plus shared width metadata before edge blending or
+  full route distance-field generation lands.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
@@ -511,7 +515,7 @@ color metadata without changing material identity.
 - [ ] Keep road gameplay data separate from road rendering.
 - [x] Project road splat weights onto the terrain height field.
 - [x] Generate road width from route metadata.
-- [ ] Generate soft shoulder weights around road edges.
+- [x] Generate soft shoulder weights around road edges.
 - [ ] Blend roads gradually into surrounding terrain.
 - [ ] Let trails use narrower blend zones than roads.
 - [ ] Allow road surface type to choose a PBR layer.
