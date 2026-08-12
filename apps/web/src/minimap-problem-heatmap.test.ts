@@ -15,6 +15,9 @@ function createState() {
   return {
     player: { x: 10.25, y: -4.4, facing: 0 },
     getCurrentTile(worldX = 0, worldY = 0) {
+      if (worldX === 9 && worldY === -4) {
+        return { kind: 'road' };
+      }
       if (worldX === 11 && worldY === -4) {
         return { kind: 'forest' };
       }
@@ -154,6 +157,7 @@ describe('minimap problem heatmap', () => {
     );
 
     const currentTile = cells.find((cell) => cell.key === '10:-4');
+    const roadTile = cells.find((cell) => cell.key === '9:-4');
     const neighborTile = cells.find((cell) => cell.key === '11:-4');
 
     expect(currentTile).toEqual(
@@ -169,6 +173,15 @@ describe('minimap problem heatmap', () => {
       'lod',
       'lod',
     ]);
+    expect(roadTile).toEqual(
+      expect.objectContaining({
+        tileKind: 'road',
+        terrainSurfaceMode: 'legacy-mesh',
+        sharedSplatEligible: true,
+        terrainSurfaceReason:
+          'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
+      })
+    );
     expect(neighborTile).toEqual(
       expect.objectContaining({
         tileKind: 'forest',

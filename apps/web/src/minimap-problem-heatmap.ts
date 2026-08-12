@@ -5,6 +5,7 @@ import {
   render2D,
   type Render2DViewport,
 } from '@bworlds/render2d';
+import { resolveTileTerrainSurfaceSelection } from '@bworlds/render3d';
 import type { DebugSnapshotRecentEvent } from './debug-snapshot.ts';
 import type { DebugSnapshot } from './debug-panel.ts';
 
@@ -105,6 +106,12 @@ export function buildMinimapProblemCells(
             ? 'critical'
             : 'warning';
       const score = issueCount === 0 ? 0 : getProblemScore(issues);
+      const tile = tileAt(worldX, worldY);
+      const terrainSurfaceDetails = resolveMinimapTerrainSurfaceDetails(
+        tile.kind,
+        key,
+        options
+      );
       const drawX =
         centerX + tileSize / 2 + (x - offsetX) * tileSize - tileSize / 2;
       const drawY =
@@ -113,21 +120,12 @@ export function buildMinimapProblemCells(
         key,
         worldX,
         worldY,
-        tileKind: tileAt(worldX, worldY).kind,
+        tileKind: tile.kind,
         issueCount,
         severity,
         score,
         issues,
-        ...(key === `${options.currentTileX}:${options.currentTileY}`
-          ? {
-              terrainSurfaceMode:
-                options.latestSnapshot?.currentTileTerrainSurfaceMode ?? null,
-              sharedSplatEligible:
-                options.latestSnapshot?.currentTileSharedSplatEligible ?? false,
-              terrainSurfaceReason:
-                options.latestSnapshot?.currentTileTerrainSurfaceReason ?? null,
-            }
-          : {}),
+        ...terrainSurfaceDetails,
         rect: {
           left: drawX,
           top: drawY,
@@ -425,6 +423,42 @@ function getCurrentTileSnapshotProblemIssues(
   return issues;
 }
 
+function resolveMinimapTerrainSurfaceDetails(
+  tileKind: string,
+  tileKey: string,
+  options: {
+    latestSnapshot: DebugSnapshot | null;
+    currentTileX: number;
+    currentTileY: number;
+  }
+): Pick<
+  MinimapProblemCell,
+  'terrainSurfaceMode' | 'sharedSplatEligible' | 'terrainSurfaceReason'
+> {
+  const currentTileKey = `${options.currentTileX}:${options.currentTileY}`;
+  if (tileKey === currentTileKey) {
+    return {
+      terrainSurfaceMode:
+        options.latestSnapshot?.currentTileTerrainSurfaceMode ?? null,
+      sharedSplatEligible:
+        options.latestSnapshot?.currentTileSharedSplatEligible ?? false,
+      terrainSurfaceReason:
+        options.latestSnapshot?.currentTileTerrainSurfaceReason ?? null,
+    };
+  }
+
+  if (!isRouteLikeTileKind(tileKind)) {
+    return {};
+  }
+
+  const selection = resolveTileTerrainSurfaceSelection({ kind: tileKind });
+  return {
+    terrainSurfaceMode: selection.activeMode,
+    sharedSplatEligible: selection.sharedSplatEligible,
+    terrainSurfaceReason: selection.reason,
+  };
+}
+
 function classifyMinimapProblemCategory(
   summary: string,
   type?: DebugSnapshotRecentEvent['type']
@@ -510,6 +544,12 @@ function formatMinimapProblemLabel(category: MinimapProblemCategory): string {
     default:
       return 'Quality';
   }
+}
+
+function isRouteLikeTileKind(kind: string): boolean {
+  return (
+    kind === 'road' || kind === 'path' || kind === 'bridge' || kind === 'dock'
+  );
 }
 
 function getProblemScore(issues: readonly MinimapProblemIssue[]): number {
