@@ -111,7 +111,9 @@ export {
   sortWorldGenerationLayerPlugins,
 } from './world-generation-layers';
 export {
+  createWorldGenerationChunkBounds,
   createWorldGenerationRegionRunner,
+  type WorldGenerationChunkRecordQuery,
   type WorldGenerationRecordQuery,
   type WorldGenerationRecordSummary,
   type WorldGenerationRegionRunResult,

@@ -1,6 +1,7 @@
 import type {
   Seed,
   WorldGenerationBounds,
+  WorldGenerationChunkBoundsQuery,
   WorldGenerationFeatureRecordLike,
   WorldGenerationLayerContext,
   WorldGenerationLayerDependency,
@@ -20,6 +21,10 @@ export interface WorldGenerationRecordQuery {
   zoomLevel?: number;
 }
 
+export interface WorldGenerationChunkRecordQuery
+  extends Omit<WorldGenerationRecordQuery, 'bounds'>,
+    WorldGenerationChunkBoundsQuery {}
+
 export interface WorldGenerationRecordSummary {
   pluginId: WorldGenerationLayerPluginId;
   recordType: WorldGenerationRecordType;
@@ -33,8 +38,14 @@ export interface WorldGenerationRegionRunResult {
   queryRecords(
     query?: WorldGenerationRecordQuery
   ): readonly WorldGenerationFeatureRecordLike[];
+  queryChunkRecords(
+    query: WorldGenerationChunkRecordQuery
+  ): readonly WorldGenerationFeatureRecordLike[];
   summarizeRecords(
     query?: WorldGenerationRecordQuery
+  ): readonly WorldGenerationRecordSummary[];
+  summarizeChunkRecords(
+    query: WorldGenerationChunkRecordQuery
   ): readonly WorldGenerationRecordSummary[];
 }
 
@@ -160,6 +171,9 @@ function runWorldGenerationRegion(params: {
       queryCache.set(cacheKey, filtered);
       return filtered;
     },
+    queryChunkRecords(query) {
+      return this.queryRecords(normalizeChunkRecordQuery(query));
+    },
     summarizeRecords(query = {}) {
       const normalizedQuery = normalizeRecordQuery(query);
       const cacheKey = createRecordQueryCacheKey(normalizedQuery);
@@ -192,6 +206,9 @@ function runWorldGenerationRegion(params: {
       );
       summaryCache.set(cacheKey, summarized);
       return summarized;
+    },
+    summarizeChunkRecords(query) {
+      return this.summarizeRecords(normalizeChunkRecordQuery(query));
     },
   };
 }
@@ -229,6 +246,15 @@ function normalizeRecordQuery(
         ? query.zoomLevel
         : undefined,
   };
+}
+
+function normalizeChunkRecordQuery(
+  query: WorldGenerationChunkRecordQuery
+): WorldGenerationRecordQuery {
+  return normalizeRecordQuery({
+    ...query,
+    bounds: createWorldGenerationChunkBounds(query),
+  });
 }
 
 function matchesRecordQuery(
@@ -304,6 +330,36 @@ function createBoundsKey(bounds: WorldGenerationBounds): string {
   return `${bounds.minX}:${bounds.maxX}:${bounds.minY}:${bounds.maxY}`;
 }
 
+export function createWorldGenerationChunkBounds(
+  query: WorldGenerationChunkBoundsQuery
+): WorldGenerationBounds {
+  const chunkX = normalizeFiniteInteger(
+    query.chunkX,
+    'World generation chunk query chunkX'
+  );
+  const chunkY = normalizeFiniteInteger(
+    query.chunkY,
+    'World generation chunk query chunkY'
+  );
+  const chunkWidth = normalizePositiveFiniteInteger(
+    query.chunkWidth,
+    'World generation chunk query chunkWidth'
+  );
+  const chunkHeight = normalizePositiveFiniteInteger(
+    query.chunkHeight ?? query.chunkWidth,
+    'World generation chunk query chunkHeight'
+  );
+  const minX = chunkX * chunkWidth;
+  const minY = chunkY * chunkHeight;
+
+  return {
+    minX,
+    maxX: minX + chunkWidth - 1,
+    minY,
+    maxY: minY + chunkHeight - 1,
+  };
+}
+
 function normalizeBounds(bounds: WorldGenerationBounds): WorldGenerationBounds {
   return {
     minX: Math.min(bounds.minX, bounds.maxX),
@@ -331,6 +387,20 @@ function normalizeOptionalString(value: string | undefined): string | undefined 
   }
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeFiniteInteger(value: number, label: string): number {
+  if (!Number.isInteger(value)) {
+    throw new Error(`${label} must be a finite integer.`);
+  }
+  return value;
+}
+
+function normalizePositiveFiniteInteger(value: number, label: string): number {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${label} must be a positive finite integer.`);
+  }
+  return value;
 }
 
 function normalizeMaxCachedRegions(value: number | undefined): number {

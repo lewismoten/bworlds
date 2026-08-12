@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createWorldGenerationChunkBounds,
   createWorldGenerationDependencyKey,
   createWorldGenerationLayerPlugin,
   createWorldGenerationRegionRunner,
@@ -210,6 +211,38 @@ describe('world generation layer plugins', () => {
         recordType: 'river-segment',
       })
     ).toBe('hydrology:river-segment');
+  });
+
+  it('derives inclusive world bounds from signed chunk coordinates', () => {
+    expect(
+      createWorldGenerationChunkBounds({
+        chunkX: -1,
+        chunkY: 2,
+        chunkWidth: 16,
+      })
+    ).toEqual({
+      minX: -16,
+      maxX: -1,
+      minY: 32,
+      maxY: 47,
+    });
+
+    expect(() =>
+      createWorldGenerationChunkBounds({
+        chunkX: 0.5,
+        chunkY: 0,
+        chunkWidth: 16,
+      })
+    ).toThrow('World generation chunk query chunkX must be a finite integer.');
+    expect(() =>
+      createWorldGenerationChunkBounds({
+        chunkX: 0,
+        chunkY: 0,
+        chunkWidth: 0,
+      })
+    ).toThrow(
+      'World generation chunk query chunkWidth must be a positive finite integer.'
+    );
   });
 
   it('runs generation layers in deterministic order and exposes filtered regional queries', () => {
@@ -452,6 +485,48 @@ describe('world generation layer plugins', () => {
         zoomLevel: 2,
       })
     ).toEqual([]);
+    expect(
+      result.queryChunkRecords({
+        chunkX: 0,
+        chunkY: 0,
+        chunkWidth: 16,
+        pluginId: 'terrain',
+      })
+    ).toEqual([
+      {
+        id: 'terrain:near',
+        type: 'height-sample',
+        pluginId: 'terrain',
+        bounds: {
+          minX: 0,
+          maxX: 16,
+          minY: 0,
+          maxY: 16,
+        },
+        summary: {
+          averageHeight: 1200,
+        },
+      },
+    ]);
+    expect(
+      result.summarizeChunkRecords({
+        chunkX: 0,
+        chunkY: 0,
+        chunkWidth: 16,
+        zoomLevel: 4,
+      })
+    ).toEqual([
+      {
+        pluginId: 'climate',
+        recordType: 'biome-region',
+        count: 1,
+      },
+      {
+        pluginId: 'terrain',
+        recordType: 'height-sample',
+        count: 1,
+      },
+    ]);
     expect(result.summarizeRecords()).toEqual([
       {
         pluginId: 'climate',

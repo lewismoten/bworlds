@@ -68,9 +68,11 @@ and query helper for these layer plugins:
 
 - runs layers in deterministic sorted order
 - exposes upstream records to later layers through `queryRecords(...)`
+- exposes explicit chunk-scoped queries through `queryChunkRecords(...)`
 - normalizes plugin ownership onto emitted records
 - filters records by bounds, plugin id, record type, and zoom relevance
 - summarizes matching records by `pluginId` and `recordType`
+- exposes chunk-scoped summaries through `summarizeChunkRecords(...)`
 - caches repeated region runs by seed, world revision, bounds, and plugin set
 
 This gives worldgen packages one concrete regional-query path before the
@@ -87,6 +89,10 @@ shape for:
 - world-bounds summaries
 - zoom-relevant feature subsets
 - per-plugin debug filtering
+
+`createWorldGenerationChunkBounds(...)` gives those chunk-bounds queries one
+shared inclusive chunk-to-world conversion so negative chunk coordinates and
+non-square chunk dimensions stay deterministic across callers.
 
 The region runner uses those same dependency keys internally when wiring
 upstream records into later layers, so query behavior stays aligned with the

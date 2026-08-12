@@ -785,6 +785,13 @@ export interface WorldGenerationBounds {
   maxY: WorldY;
 }
 
+export interface WorldGenerationChunkBoundsQuery {
+  chunkX: number;
+  chunkY: number;
+  chunkWidth: number;
+  chunkHeight?: number;
+}
+
 export type WorldGenerationLayerPluginId = string;
 export type WorldGenerationRecordType = string;
 

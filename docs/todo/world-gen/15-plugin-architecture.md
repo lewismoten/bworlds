@@ -2,13 +2,13 @@
 
 ## Plugin Contract
 
-- [ ] Define one world generation layer plugin interface.
-- [ ] Give every plugin a stable ID and execution order.
-- [ ] Give every plugin declared input dependencies.
-- [ ] Give every plugin declared output records.
-- [ ] Keep plugins deterministic from explicit inputs.
-- [ ] Keep renderer and UI code out of generation plugins.
-- [ ] Keep gameplay callbacks out of frozen world records.
+- [x] Define one world generation layer plugin interface.
+- [x] Give every plugin a stable ID and execution order.
+- [x] Give every plugin declared input dependencies.
+- [x] Give every plugin declared output records.
+- [x] Keep plugins deterministic from explicit inputs.
+- [x] Keep renderer and UI code out of generation plugins.
+- [x] Keep gameplay callbacks out of frozen world records.
 
 ## Layer Order
 
@@ -27,12 +27,12 @@
 
 ## Regional Queries
 
-- [ ] Query generated features by world bounds.
-- [ ] Query generated features by chunk bounds.
-- [ ] Query features by type and plugin owner.
-- [ ] Query features by zoom relevance.
-- [ ] Return coarse summaries without fine detail.
-- [ ] Cache regional summaries by world revision.
+- [x] Query generated features by world bounds.
+- [x] Query generated features by chunk bounds.
+- [x] Query features by type and plugin owner.
+- [x] Query features by zoom relevance.
+- [x] Return coarse summaries without fine detail.
+- [x] Cache regional summaries by world revision.
 
 ## Debugging
 
@@ -63,6 +63,9 @@ Current support:
   concrete deterministic execution path with revision-keyed regional caching,
   upstream dependency queries, and post-run record filtering by bounds, plugin
   owner, record type, and zoom relevance.
+- `createWorldGenerationChunkBounds(...)`, `queryChunkRecords(...)`, and
+  `summarizeChunkRecords(...)` now make chunk-scoped inspection explicit
+  instead of forcing every caller to rebuild inclusive chunk bounds by hand.
 - That same runner now also summarizes matching regional records by
   `pluginId` and `recordType`, which gives future chunk-bounds and world-bounds
   debug panels one shared count-oriented query path without pulling renderer
