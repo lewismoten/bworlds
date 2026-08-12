@@ -54,4 +54,7 @@ requirements, expected violation accounting, and exact / below / above hard-
 limit behavior for the current startup, frame, tile-build max, object, draw-
 call, audio, memory, song-export, MIDI-export, and WAV-export limits, and
 the snapshot store regression tests now verify that a persisted runtime
-snapshot can be written to JSON and read back without changing any fields.
+snapshot can be written to JSON and read back without changing any fields, and
+music-debug export/runtime snapshots now derive a deterministic non-empty
+`worldSeed` plus stable context metadata from the resolved debug snapshot
+instead of posting `null` and failing the stricter runtime snapshot schema.

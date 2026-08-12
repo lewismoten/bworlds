@@ -22,6 +22,10 @@ import { normalizeMusicDebugMidiExportVariant } from './music-debug-midi-export-
 import { downloadMusicDebugExportBundle } from './music-debug-export-bundle.ts';
 import { confirmMusicDebugExportPreflight } from './music-debug-export-preflight.ts';
 import { createMusicDebugInstrumentPreviewPlayer } from './music-debug-instrument-preview.ts';
+import {
+  buildMusicDebugRuntimePerformanceContext,
+  buildMusicDebugRuntimePerformanceWorldSeed,
+} from './music-debug-runtime-performance.ts';
 import { saveRejectedMusicDebugReport } from './music-debug-rejection-report-storage.ts';
 import {
   buildMusicDebugInstrumentPanelMarkup,
@@ -638,20 +642,6 @@ function collectOptions(): Partial<MusicDebugOptions> {
   return collectMusicDebugFormOptions(form);
 }
 
-function buildMusicDebugSnapshotContext(
-  snapshot: ReturnType<typeof resolveCurrentSnapshot>
-) {
-  if (!snapshot) {
-    return null;
-  }
-
-  return {
-    id: `${snapshot.options.contextType}:${snapshot.options.tileKind}:${snapshot.options.clusterX}:${snapshot.options.clusterY}`,
-    label: `${snapshot.options.contextType} ${snapshot.options.tileKind}`,
-    depth: 0,
-  };
-}
-
 function reportMusicDebugRuntimePerformanceSnapshot(
   trigger: RuntimePerformanceSnapshotTrigger,
   snapshot: ReturnType<typeof resolveCurrentSnapshot>,
@@ -666,8 +656,8 @@ function reportMusicDebugRuntimePerformanceSnapshot(
       source: 'music-debug',
       trigger,
       route: window.location.pathname || '/debug/music',
-      worldSeed: null,
-      context: buildMusicDebugSnapshotContext(snapshot),
+      worldSeed: buildMusicDebugRuntimePerformanceWorldSeed(snapshot),
+      context: buildMusicDebugRuntimePerformanceContext(snapshot),
       metrics,
     })
   );
