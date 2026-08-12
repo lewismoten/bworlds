@@ -52,7 +52,6 @@ import {
   FakeInstancedMesh,
   FakeMaterial,
   FakeMesh,
-  FakeNode,
   createFakeThreeHost,
   createForestTestState,
   fakeThree,
