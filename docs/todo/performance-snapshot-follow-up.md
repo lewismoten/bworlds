@@ -67,7 +67,12 @@
       shared line, sprite, and additive-ribbon materials by compatible
       color/opacity buckets instead of allocating a fresh material per visible
       star, connection, ribbon, rib, or comet tail.
-- [ ] Report material cache hit and miss counts.
+- [x] Report material cache hit and miss counts.
+      Progress: `render3d` now tracks cumulative material cache reuse across
+      the persistent shared sky/event material buckets and exposes hit, miss,
+      and hit-rate counters through the live debug snapshot plus exported
+      diagnostics payloads, so runtime captures can distinguish poor material
+      reuse from unavoidable live material ownership.
 - [ ] Fail tests when material counts regress sharply.
 
 ## Instancing
@@ -268,4 +273,9 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 - [x] Add top LOD-swapping plugins to the snapshot.
 - [x] Add top fallback-model plugins to the snapshot.
 - [x] Add top matrix-update plugins to the snapshot.
-- [ ] Include cache hit rates for geometry and materials.
+- [x] Include cache hit rates for geometry and materials.
+      Progress: the live snapshot and exported diagnostics now include
+      geometry and material cache hit counts, miss counts, and hit rates, with
+      geometry reuse covering shared box/plane plus tile-atlas geometry
+      variants and material reuse covering the renderer-owned shared sky/event
+      material buckets.

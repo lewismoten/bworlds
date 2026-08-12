@@ -129,6 +129,9 @@ export type DebugSnapshot = {
   activeAudioSourceCount: number;
   materialRefCount?: number;
   materialCount: number;
+  materialCacheHitCount?: number;
+  materialCacheMissCount?: number;
+  materialCacheHitRate?: number;
   sharedMaterialCount?: number;
   clonedMaterialCount?: number;
   transparentMaterialCount?: number;
@@ -142,6 +145,9 @@ export type DebugSnapshot = {
   peakMaterialCount?: number;
   geometryRefCount?: number;
   geometryCount: number;
+  geometryCacheHitCount?: number;
+  geometryCacheMissCount?: number;
+  geometryCacheHitRate?: number;
   sharedGeometryCount?: number;
   gpuGeometryCount?: number;
   geometryBytes?: number;
@@ -537,6 +543,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Objects / Tree</dt><dd>${objectsPerVisibleTree}</dd></div>
     <div><dt>Meshes / Tree</dt><dd>${meshesPerVisibleTree}</dd></div>
     <div><dt>Materials</dt><dd>${snapshot.materialCount}</dd></div>
+    <div><dt>Material Cache</dt><dd>${snapshot.materialCacheHitCount ?? 0}/${(snapshot.materialCacheHitCount ?? 0) + (snapshot.materialCacheMissCount ?? 0)} hits (${((snapshot.materialCacheHitRate ?? 0) * 100).toFixed(0)}%)</dd></div>
     <div><dt>Unique Material Plugin</dt><dd>${snapshot.materialTopPluginLabel || 'None'}</dd></div>
     <div><dt>Unique Material Summary</dt><dd>${snapshot.materialSummary || 'None'}</dd></div>
     <div><dt>Scene Material Plugin</dt><dd>${snapshot.sceneUniqueMaterialTopPluginLabel || 'None'}</dd></div>
@@ -546,6 +553,7 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Materials / Tree</dt><dd>${materialsPerVisibleTree}</dd></div>
     <div><dt>Tile Kinds</dt><dd>${snapshot.visibleTileKindSummary || 'None'}</dd></div>
     <div><dt>Geometry Count</dt><dd>${snapshot.geometryCount}</dd></div>
+    <div><dt>Geometry Cache</dt><dd>${snapshot.geometryCacheHitCount ?? 0}/${(snapshot.geometryCacheHitCount ?? 0) + (snapshot.geometryCacheMissCount ?? 0)} hits (${((snapshot.geometryCacheHitRate ?? 0) * 100).toFixed(0)}%)</dd></div>
     <div><dt>Vertices</dt><dd>${snapshot.vertexCount}</dd></div>
     <div><dt>Geometry Memory</dt><dd>${snapshot.geometryMemoryCount}</dd></div>
     <div><dt>Textures</dt><dd>${snapshot.textureCount}</dd></div>

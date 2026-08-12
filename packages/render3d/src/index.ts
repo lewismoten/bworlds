@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import {
   createBoundedCache,
   createCoordinateCache,
-  getOrCreateCacheValue,
-  getOrCreateMapValue,
+  type CacheLike,
 } from '@bworlds/cache-support';
 import {
   getTileAtlasCanvas,
@@ -410,6 +409,9 @@ type Render3DController = {
     materialRefCount: number;
     geometryRefCount: number;
     materialCount: number;
+    materialCacheHitCount: number;
+    materialCacheMissCount: number;
+    materialCacheHitRate: number;
     sharedMaterialCount: number;
     clonedMaterialCount: number;
     colorVariantMaterialCount: number;
@@ -425,6 +427,9 @@ type Render3DController = {
     materialsCreatedDuringSamplingWindow: number;
     materialsDisposedDuringSamplingWindow: number;
     geometryCount: number;
+    geometryCacheHitCount: number;
+    geometryCacheMissCount: number;
+    geometryCacheHitRate: number;
     sharedGeometryCount: number;
     geometryBytes: number;
     vertexBufferBytes: number;
@@ -462,6 +467,60 @@ type Render3DController = {
   render(state: Render3DState, options?: Render3DOptions): void;
   resize(width: number, height: number, pixelRatio?: number): void;
 };
+
+type CacheAccessStats = {
+  hitCount: number;
+  missCount: number;
+};
+
+function createCacheAccessStats(): CacheAccessStats {
+  return {
+    hitCount: 0,
+    missCount: 0,
+  };
+}
+
+function getCacheHitRate({ hitCount, missCount }: CacheAccessStats): number {
+  const total = hitCount + missCount;
+  if (total <= 0) {
+    return 0;
+  }
+  return hitCount / total;
+}
+
+function getOrCreateTrackedCacheValue<Key, Value>(
+  cache: CacheLike<Key, Value>,
+  key: Key,
+  accessStats: CacheAccessStats,
+  create: () => Value
+): Value {
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    accessStats.hitCount += 1;
+    return cached;
+  }
+  accessStats.missCount += 1;
+  const value = create();
+  cache.set(key, value);
+  return value;
+}
+
+function getOrCreateTrackedMapValue<Key, Value>(
+  cache: Map<Key, Value>,
+  key: Key,
+  accessStats: CacheAccessStats,
+  create: () => Value
+): Value {
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    accessStats.hitCount += 1;
+    return cached;
+  }
+  accessStats.missCount += 1;
+  const value = create();
+  cache.set(key, value);
+  return value;
+}
 
 export type Render3DDebugEvent = {
   nowMs: number;
@@ -1641,6 +1700,8 @@ const sharedPlaneGeometryCache = createBoundedCache<
   string,
   THREE.PlaneGeometry
 >(SHARED_RENDER_GEOMETRY_CACHE_MAX_ENTRIES);
+const sharedGeometryCacheAccessStats = createCacheAccessStats();
+const sharedMaterialCacheAccessStats = createCacheAccessStats();
 
 export function getWaterFloorBodyProfile(inset: {
   north: number;
@@ -1753,6 +1814,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     THREE.BufferGeometry,
     Map<string, THREE.BufferGeometry>
   >();
+  const tileAtlasGeometryCacheAccessStats = createCacheAccessStats();
   const tilePluginOwnerCache = new Map<string, string>();
   const visibleTileNodes = new Map<string, DynamicTileNode>();
   const lastSuccessfulVisibleTileDetailLevels = new Map<
@@ -3169,6 +3231,14 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       );
     const visibleTileOneChildGroupStats =
       summarizeVisibleTileOneChildGroupsByPlugin(visibleTileNodes.values());
+    const geometryCacheHitCount =
+      sharedGeometryCacheAccessStats.hitCount +
+      tileAtlasGeometryCacheAccessStats.hitCount;
+    const geometryCacheMissCount =
+      sharedGeometryCacheAccessStats.missCount +
+      tileAtlasGeometryCacheAccessStats.missCount;
+    const materialCacheHitCount = sharedMaterialCacheAccessStats.hitCount;
+    const materialCacheMissCount = sharedMaterialCacheAccessStats.missCount;
     return {
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -3279,6 +3349,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialRefCount: sceneResourceStats.materialRefCount,
       geometryRefCount: sceneResourceStats.geometryRefCount,
       materialCount: sceneResourceStats.materialCount,
+      materialCacheHitCount,
+      materialCacheMissCount,
+      materialCacheHitRate: getCacheHitRate({
+        hitCount: materialCacheHitCount,
+        missCount: materialCacheMissCount,
+      }),
       sharedMaterialCount: sceneResourceStats.sharedMaterialCount,
       clonedMaterialCount: sceneResourceStats.clonedMaterialCount,
       colorVariantMaterialCount: sceneResourceStats.colorVariantMaterialCount,
@@ -3297,6 +3373,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       materialsDisposedDuringSamplingWindow:
         ownedMaterialLifecycleCounts.disposedCount,
       geometryCount: sceneResourceStats.geometryCount,
+      geometryCacheHitCount,
+      geometryCacheMissCount,
+      geometryCacheHitRate: getCacheHitRate({
+        hitCount: geometryCacheHitCount,
+        missCount: geometryCacheMissCount,
+      }),
       sharedGeometryCount: sceneResourceStats.sharedGeometryCount,
       geometryBytes: sceneResourceStats.geometryBytes,
       vertexBufferBytes: sceneResourceStats.vertexBufferBytes,
@@ -3632,17 +3714,22 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     }
 
     const key = `${kind}:${variant}`;
-    return getOrCreateMapValue(variantCache, key, () => {
-      const geometry = baseGeometry.clone();
-      remapGeometryUvsToTileAtlasSprite(
-        geometry,
-        kind,
-        variant,
-        atlasTexture.image.width,
-        atlasTexture.image.height
-      );
-      return geometry;
-    });
+    return getOrCreateTrackedMapValue(
+      variantCache,
+      key,
+      tileAtlasGeometryCacheAccessStats,
+      () => {
+        const geometry = baseGeometry.clone();
+        remapGeometryUvsToTileAtlasSprite(
+          geometry,
+          kind,
+          variant,
+          atlasTexture.image.width,
+          atlasTexture.image.height
+        );
+        return geometry;
+      }
+    );
   }
 
   function createTileFloorContent(
@@ -5259,9 +5346,10 @@ export function getSharedBoxGeometry(
   depth: number
 ): THREE.BoxGeometry {
   const key = `${width}:${height}:${depth}`;
-  return getOrCreateCacheValue(
+  return getOrCreateTrackedCacheValue(
     sharedBoxGeometryCache,
     key,
+    sharedGeometryCacheAccessStats,
     () => new THREE.BoxGeometry(width, height, depth)
   );
 }
@@ -5271,9 +5359,10 @@ export function getSharedPlaneGeometry(
   height: number
 ): THREE.PlaneGeometry {
   const key = `${width}:${height}`;
-  return getOrCreateCacheValue(
+  return getOrCreateTrackedCacheValue(
     sharedPlaneGeometryCache,
     key,
+    sharedGeometryCacheAccessStats,
     () => new THREE.PlaneGeometry(width, height)
   );
 }
@@ -7167,9 +7256,10 @@ export function syncCelestialEvents(
 
     if (event.type === 'meteor-shower') {
       const streakCount = Math.max(4, Math.round(4 + event.intensity * 6));
-      const material = getOrCreateMapValue(
+      const material = getOrCreateTrackedMapValue(
         lineMaterialCache,
         `${event.color}|${lineOpacity.toFixed(3)}`,
+        sharedMaterialCacheAccessStats,
         () =>
           new THREE.LineBasicMaterial({
             color: event.color,
@@ -7214,9 +7304,10 @@ export function syncCelestialEvents(
     }
 
     const sprite = new THREE.Sprite(
-      getOrCreateMapValue(
+      getOrCreateTrackedMapValue(
         spriteMaterialCache,
         `${event.color}|${spriteOpacity.toFixed(3)}`,
+        sharedMaterialCacheAccessStats,
         () =>
           new THREE.SpriteMaterial({
             color: event.color,
@@ -7257,9 +7348,10 @@ export function syncCelestialEvents(
       );
       const line = new THREE.Line(
         tail,
-        getOrCreateMapValue(
+        getOrCreateTrackedMapValue(
           lineMaterialCache,
           `${event.color}|${tailOpacity.toFixed(3)}|tail`,
+          sharedMaterialCacheAccessStats,
           () =>
             new THREE.LineBasicMaterial({
               color: event.color,
@@ -7436,9 +7528,10 @@ export function syncAuroraBands(
     root.add(
       new THREE.Mesh(
         geometry,
-        getOrCreateMapValue(
+        getOrCreateTrackedMapValue(
           meshMaterialCache,
           `${band.colorA}|${(band.intensity * 0.24).toFixed(3)}|outer`,
+          sharedMaterialCacheAccessStats,
           () =>
             new THREE.MeshBasicMaterial({
               color: band.colorA,
@@ -7503,9 +7596,10 @@ export function syncAuroraBands(
     root.add(
       new THREE.Mesh(
         innerRibbonGeometry,
-        getOrCreateMapValue(
+        getOrCreateTrackedMapValue(
           meshMaterialCache,
           `${band.colorB}|${(band.intensity * 0.18).toFixed(3)}|inner`,
+          sharedMaterialCacheAccessStats,
           () =>
             new THREE.MeshBasicMaterial({
               color: band.colorB,
@@ -7525,9 +7619,10 @@ export function syncAuroraBands(
         'position',
         new THREE.Float32BufferAttribute(crestPositions, 3)
       ),
-      getOrCreateMapValue(
+      getOrCreateTrackedMapValue(
         lineMaterialCache,
         `${band.colorB}|${(band.intensity * 0.4).toFixed(3)}|crest`,
+        sharedMaterialCacheAccessStats,
         () =>
           new THREE.LineBasicMaterial({
             color: band.colorB,
@@ -7577,9 +7672,10 @@ export function syncAuroraBands(
       );
       const rib = new THREE.Line(
         ribGeometry,
-        getOrCreateMapValue(
+        getOrCreateTrackedMapValue(
           lineMaterialCache,
           `${ribIndex % 2 === 0 ? band.colorA : band.colorB}|${(band.intensity * 0.14).toFixed(3)}|rib`,
+          sharedMaterialCacheAccessStats,
           () =>
             new THREE.LineBasicMaterial({
               color: ribIndex % 2 === 0 ? band.colorA : band.colorB,

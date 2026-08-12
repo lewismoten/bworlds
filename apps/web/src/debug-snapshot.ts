@@ -387,6 +387,9 @@ export type DebugSnapshotExport = {
     topSceneUniqueMaterialPlugin: string | null;
     sceneUniqueMaterialSummary: string;
     sharedMaterialCount: number;
+    materialCacheHitCount: number;
+    materialCacheMissCount: number;
+    materialCacheHitRate: number;
     clonedMaterialCount: number;
     topClonedMaterialPlugin: string | null;
     clonedMaterialSummary: string;
@@ -402,6 +405,9 @@ export type DebugSnapshotExport = {
     totalGeometryReferences: number;
     geometryCount: number;
     sharedGeometryCount: number;
+    geometryCacheHitCount: number;
+    geometryCacheMissCount: number;
+    geometryCacheHitRate: number;
     totalGeometryBytes: number;
     vertexBufferBytes: number;
     indexBufferBytes: number;
@@ -607,6 +613,9 @@ export function buildDebugSnapshotExport(
       sceneUniqueMaterialSummary:
         options.snapshot.sceneUniqueMaterialSummary ?? '',
       sharedMaterialCount: options.snapshot.sharedMaterialCount ?? 0,
+      materialCacheHitCount: options.snapshot.materialCacheHitCount ?? 0,
+      materialCacheMissCount: options.snapshot.materialCacheMissCount ?? 0,
+      materialCacheHitRate: options.snapshot.materialCacheHitRate ?? 0,
       clonedMaterialCount: options.snapshot.clonedMaterialCount ?? 0,
       topClonedMaterialPlugin:
         options.snapshot.clonedMaterialTopPluginLabel?.trim() || null,
@@ -626,6 +635,9 @@ export function buildDebugSnapshotExport(
       totalGeometryReferences: options.snapshot.geometryRefCount ?? 0,
       geometryCount: options.snapshot.geometryCount,
       sharedGeometryCount: options.snapshot.sharedGeometryCount ?? 0,
+      geometryCacheHitCount: options.snapshot.geometryCacheHitCount ?? 0,
+      geometryCacheMissCount: options.snapshot.geometryCacheMissCount ?? 0,
+      geometryCacheHitRate: options.snapshot.geometryCacheHitRate ?? 0,
       totalGeometryBytes: options.snapshot.geometryBytes ?? 0,
       vertexBufferBytes: options.snapshot.vertexBufferBytes ?? 0,
       indexBufferBytes: options.snapshot.indexBufferBytes ?? 0,

@@ -134,7 +134,13 @@ describe('debug panel', () => {
       reducedSimulationEntityCount: 2,
       activeAudioSourceCount: 6,
       materialCount: 24,
+      materialCacheHitCount: 18,
+      materialCacheMissCount: 6,
+      materialCacheHitRate: 0.75,
       geometryCount: 61,
+      geometryCacheHitCount: 27,
+      geometryCacheMissCount: 9,
+      geometryCacheHitRate: 0.75,
       vertexCount: 14432,
       geometryMemoryCount: 63,
       treeObjectCount: 216,
@@ -238,7 +244,9 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Meshes / Tree');
     expect(buildDebugMarkup(snapshot)).toContain('Objects / Tile');
     expect(buildDebugMarkup(snapshot)).toContain('Materials');
+    expect(buildDebugMarkup(snapshot)).toContain('Material Cache');
     expect(buildDebugMarkup(snapshot)).toContain('Tile Kinds');
+    expect(buildDebugMarkup(snapshot)).toContain('Geometry Cache');
     expect(buildDebugMarkup(snapshot)).toContain('Triangles');
     expect(buildDebugMarkup(snapshot)).toContain('Shader Programs');
     expect(buildDebugMarkup(snapshot)).toContain('Warnings');
