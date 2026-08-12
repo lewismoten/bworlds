@@ -147,7 +147,7 @@ Current support:
 ## 2D and 3D Parity
 
 - [x] Derive 2D terrain from the same world data as 3D.
-- [ ] Derive roads and rivers from the same graphs as 3D.
+- [x] Derive roads and rivers from the same graphs as 3D.
 - [ ] Derive settlements and borders from shared records.
 - [ ] Keep 2D tile symbols representative of 3D state.
 - [ ] Avoid separate hand-authored map-only world state.
@@ -162,3 +162,10 @@ Current support:
   products can convert those shared terrain samples into canonical
   `terrain-surface` polygons instead of building a separate map-only terrain
   state path.
+- `@bworlds/map-support` now also exposes
+  `createMapNetworkLineFeatureRecord(...)`,
+  `createRoadNetworkMapFeatureGeneratorPlugin(...)`, and
+  `createRiverNetworkMapFeatureGeneratorPlugin(...)`, so later 2D road and
+  river map products can convert shared world-space route and river path points
+  into canonical `road-network` and `river-network` line features instead of
+  tracing a separate 2D-only network.

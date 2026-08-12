@@ -17,6 +17,7 @@ export type * from './map-layer-generators.ts';
 export type * from './map-feature-policies.ts';
 export type * from './map-features.ts';
 export type * from './map-pmtiles.ts';
+export type * from './map-network-lines.ts';
 export type * from './map-terrain-surface.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
@@ -70,6 +71,13 @@ export {
   selectPmtilesTileFeaturesForZoom,
   simplifyPmtilesFeatureGeometry,
 } from './map-pmtiles.ts';
+export {
+  createMapNetworkLineFeatureRecord,
+  createRiverNetworkMapFeatureGeneratorPlugin,
+  createRoadNetworkMapFeatureGeneratorPlugin,
+  DEFAULT_MAP_RIVER_NETWORK_LAYER_ID,
+  DEFAULT_MAP_ROAD_NETWORK_LAYER_ID,
+} from './map-network-lines.ts';
 export {
   createMapTerrainSurfaceCellBounds,
   createMapTerrainSurfaceFeatureRecord,
