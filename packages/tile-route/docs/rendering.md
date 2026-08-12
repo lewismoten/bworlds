@@ -11,6 +11,11 @@ Current road progressive phases:
 - straight runs: `center-patch`, `shoulder-ribbon`, `road-ribbon`
 - junctions: `center-patch`, then one `branch-N` phase per connected branch
 
+Low-detail road builds now drop shoulder ribbons entirely, and low-detail
+junctions also drop the shoulder center patch. That keeps three-way junctions
+under the low-detail tile draw-call cap instead of building decorative road
+trim only to prune or reject it later.
+
 Road shoulder meshes are tagged as optional render-budget parts. When a dense
 road junction crosses the per-tile draw-call cap, `render3d` can prune shoulder
 strips first and keep the core road surface instead of rejecting the entire

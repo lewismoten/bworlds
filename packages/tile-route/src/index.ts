@@ -303,19 +303,37 @@ export function createRouteTilePlugin(): RuntimePlugin {
           return true;
         }
       ),
-      create3DModel({ three, state, tileX, tileY }: Create3DModelContext) {
+      create3DModel({
+        three,
+        state,
+        tileX,
+        tileY,
+        detailLevel,
+      }: Create3DModelContext) {
         if (state.getCurrentContext().type !== 'overworld') {
           return null;
         }
         return runRoadModelBuildToCompletion(
-          createRoadGroupProgressive({ three, state, tileX, tileY })
+          createRoadGroupProgressive({
+            three,
+            state,
+            tileX,
+            tileY,
+            detailLevel,
+          })
         );
       },
-      create3DModelProgressive({ three, state, tileX, tileY }) {
+      create3DModelProgressive({ three, state, tileX, tileY, detailLevel }) {
         if (state.getCurrentContext().type !== 'overworld') {
           return null;
         }
-        return createRoadGroupProgressive({ three, state, tileX, tileY });
+        return createRoadGroupProgressive({
+          three,
+          state,
+          tileX,
+          tileY,
+          detailLevel,
+        });
       },
       resolveFloorKind3D(context) {
         if (context.state.getCurrentContext().type !== 'overworld') {
@@ -1013,44 +1031,53 @@ function* createRoadGroupProgressive({
   state,
   tileX,
   tileY,
+  detailLevel,
 }: Pick<
   Create3DModelContext,
-  'three' | 'state' | 'tileX' | 'tileY'
+  'three' | 'state' | 'tileX' | 'tileY' | 'detailLevel'
 >): Generator<Create3DModelProgress, unknown, void> {
   const style = getRoadStyle(three, tileX, tileY);
   const connections = getRoadConnections(state, tileX, tileY);
   const tileSeed = createRoadTileSeed(tileX, tileY);
   const group = new three.Group();
   group.position.set(tileX, 0, tileY);
+  const lowDetail = detailLevel === 'low';
+  const includeShoulders = !lowDetail;
+  const includeCenterPatch = !lowDetail || connections.length <= 2;
 
   if (connections.length === 0) {
-    group.add(
-      markOptionalDecorativeRenderBudgetPart(
-        createRoadRibbonMesh(
-          three,
-          [
-            new three.Vector3(-0.18, ROAD_SURFACE_HEIGHT, 0),
-            new three.Vector3(0, ROAD_SURFACE_HEIGHT, 0),
-            new three.Vector3(0.18, ROAD_SURFACE_HEIGHT, 0),
-          ],
-          0.18,
-          style.shoulderMaterial,
-          appendHashSeedLabel(
-            appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
-            ROAD_RIBBON_SHOULDER_SEED
+    const totalSteps = includeShoulders ? 2 : 1;
+    let completedSteps = 0;
+    if (includeShoulders) {
+      group.add(
+        markOptionalDecorativeRenderBudgetPart(
+          createRoadRibbonMesh(
+            three,
+            [
+              new three.Vector3(-0.18, ROAD_SURFACE_HEIGHT, 0),
+              new three.Vector3(0, ROAD_SURFACE_HEIGHT, 0),
+              new three.Vector3(0.18, ROAD_SURFACE_HEIGHT, 0),
+            ],
+            0.18,
+            style.shoulderMaterial,
+            appendHashSeedLabel(
+              appendHashSeedLabel(tileSeed, ROAD_RIBBON_STUB_SEED),
+              ROAD_RIBBON_SHOULDER_SEED
+            ),
+            0.04
           ),
-          0.04
-        ),
-        {
-          label: 'stub-shoulder',
-        }
-      )
-    );
-    yield {
-      completedSteps: 1,
-      totalSteps: 2,
-      label: 'stub-shoulder',
-    };
+          {
+            label: 'stub-shoulder',
+          }
+        )
+      );
+      completedSteps += 1;
+      yield {
+        completedSteps,
+        totalSteps,
+        label: 'stub-shoulder',
+      };
+    }
     group.add(
       createRoadRibbonMesh(
         three,
@@ -1065,29 +1092,35 @@ function* createRoadGroupProgressive({
         0.028
       )
     );
+    completedSteps += 1;
     yield {
-      completedSteps: 2,
-      totalSteps: 2,
+      completedSteps,
+      totalSteps,
       label: 'stub-road',
     };
     return group;
   }
 
-  const totalSteps = connections.length === 2 ? 3 : 1 + connections.length;
+  const totalSteps =
+    connections.length === 2
+      ? 1 + (includeShoulders ? 2 : 1)
+      : (includeCenterPatch ? 1 : 0) + connections.length;
   let completedSteps = 0;
-  const centerPatch = new three.Mesh(
-    new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
-    style.shoulderMaterial
-  );
-  centerPatch.position.y = ROAD_SURFACE_HEIGHT;
-  centerPatch.scale.z = 0.85;
-  group.add(centerPatch);
-  completedSteps += 1;
-  yield {
-    completedSteps,
-    totalSteps,
-    label: 'center-patch',
-  };
+  if (includeCenterPatch) {
+    const centerPatch = new three.Mesh(
+      new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
+      style.shoulderMaterial
+    );
+    centerPatch.position.y = ROAD_SURFACE_HEIGHT;
+    centerPatch.scale.z = 0.85;
+    group.add(centerPatch);
+    completedSteps += 1;
+    yield {
+      completedSteps,
+      totalSteps,
+      label: 'center-patch',
+    };
+  }
 
   if (connections.length === 2) {
     const curve = createRoadCurve(
@@ -1097,27 +1130,29 @@ function* createRoadGroupProgressive({
       connections[0],
       connections[1]
     );
-    group.add(
-      markOptionalDecorativeRenderBudgetPart(
-        createRoadRibbonMesh(
-          three,
-          curve,
-          style.shoulderWidth,
-          style.shoulderMaterial,
-          appendHashSeedLabel(tileSeed, ROAD_RIBBON_SHOULDER_SEED),
-          0.045
-        ),
-        {
-          label: 'shoulder-ribbon',
-        }
-      )
-    );
-    completedSteps += 1;
-    yield {
-      completedSteps,
-      totalSteps,
-      label: 'shoulder-ribbon',
-    };
+    if (includeShoulders) {
+      group.add(
+        markOptionalDecorativeRenderBudgetPart(
+          createRoadRibbonMesh(
+            three,
+            curve,
+            style.shoulderWidth,
+            style.shoulderMaterial,
+            appendHashSeedLabel(tileSeed, ROAD_RIBBON_SHOULDER_SEED),
+            0.045
+          ),
+          {
+            label: 'shoulder-ribbon',
+          }
+        )
+      );
+      completedSteps += 1;
+      yield {
+        completedSteps,
+        totalSteps,
+        label: 'shoulder-ribbon',
+      };
+    }
     group.add(
       createRoadRibbonMesh(
         three,
@@ -1144,21 +1179,23 @@ function* createRoadGroupProgressive({
       appendHashSeedLabel(tileSeed, ROAD_RIBBON_BRANCH_SEED),
       ROAD_CONNECTION_DIRECTION_SEEDS[connection.id]
     );
-    group.add(
-      markOptionalDecorativeRenderBudgetPart(
-        createRoadRibbonMesh(
-          three,
-          branch,
-          style.shoulderWidth,
-          style.shoulderMaterial,
-          appendHashSeedLabel(branchSeed, ROAD_RIBBON_SHOULDER_SEED),
-          0.04
-        ),
-        {
-          label: `branch-${index + 1}-shoulder`,
-        }
-      )
-    );
+    if (includeShoulders) {
+      group.add(
+        markOptionalDecorativeRenderBudgetPart(
+          createRoadRibbonMesh(
+            three,
+            branch,
+            style.shoulderWidth,
+            style.shoulderMaterial,
+            appendHashSeedLabel(branchSeed, ROAD_RIBBON_SHOULDER_SEED),
+            0.04
+          ),
+          {
+            label: `branch-${index + 1}-shoulder`,
+          }
+        )
+      );
+    }
     group.add(
       createRoadRibbonMesh(
         three,

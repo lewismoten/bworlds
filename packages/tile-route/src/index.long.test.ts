@@ -836,6 +836,76 @@ describe('tile route', () => {
     ]);
   });
 
+  it('skips low-detail road junction shoulder and center phases', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+      '0:-1': 'road',
+    });
+    const build = roadTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+      detailLevel: 'low',
+    });
+    const progress: Array<{
+      completedSteps: number;
+      totalSteps: number;
+      label: string;
+    }> = [];
+
+    while (true) {
+      const next = build?.next();
+      if (next?.done) {
+        break;
+      }
+      progress.push(next.value as (typeof progress)[number]);
+    }
+
+    expect(progress).toEqual([
+      { completedSteps: 1, totalSteps: 3, label: 'branch-1' },
+      { completedSteps: 2, totalSteps: 3, label: 'branch-2' },
+      { completedSteps: 3, totalSteps: 3, label: 'branch-3' },
+    ]);
+  });
+
+  it('skips low-detail road shoulder ribbons on straight segments', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+    });
+    const build = roadTile?.create3DModelProgressive?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+      detailLevel: 'low',
+    });
+    const progress: Array<{
+      completedSteps: number;
+      totalSteps: number;
+      label: string;
+    }> = [];
+
+    while (true) {
+      const next = build?.next();
+      if (next?.done) {
+        break;
+      }
+      progress.push(next.value as (typeof progress)[number]);
+    }
+
+    expect(progress).toEqual([
+      { completedSteps: 1, totalSteps: 2, label: 'center-patch' },
+      { completedSteps: 2, totalSteps: 2, label: 'road-ribbon' },
+    ]);
+  });
+
   it('marks road shoulder ribbons as optional budget parts', () => {
     const state = createRoadModelState({
       '0:0': 'road',
