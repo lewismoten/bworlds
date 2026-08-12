@@ -75,6 +75,7 @@ import { getTileModelPerformanceWarnings } from './tile-model-performance-warnin
 import {
   createPendingWorldBuildQueueScratch,
   reconcilePendingWorldBuildQueueWithScratch,
+  type PendingWorldBuildEntry,
 } from './pending-world-build-queue.ts';
 import { shouldProcessPendingWorldBuildEntryWithinBudget } from './pending-world-build-processing.ts';
 import { collectMaterialTexturesInto } from './material-texture-collector.ts';
@@ -340,6 +341,7 @@ type Render3DController = {
     tileNodeBuildsPerSecond: number;
     tileBuildsPerSecond: number;
     pendingCancelledEntriesPerSecond: number;
+    schedulerStarvationEventsPerSecond: number;
     lodChecksPerSecond: number;
     lodReplacementsPerSecond: number;
     lodReplacementTopPluginLabel: string;
@@ -348,6 +350,8 @@ type Render3DController = {
     fallbackBoxesPerSecond: number;
     fallbackBoxTopPluginLabel: string;
     fallbackBoxSummary: string;
+    schedulerStarvationTopPluginLabel: string;
+    schedulerStarvationSummary: string;
     drawCallTopPluginLabel: string;
     drawCallSummary: string;
     objectTopPluginLabel: string;
@@ -1514,6 +1518,8 @@ type RenderChurnMetrics = {
   tileNodeBuilds: number[];
   tileBuilds: number[];
   pendingCancelledEntries: number[];
+  schedulerStarvations: number[];
+  schedulerStarvationLabels: RecentLabeledCountSample[];
   lodChecks: number[];
   lodReplacements: number[];
   lodReplacementLabels: RecentLabeledCountSample[];
@@ -1746,6 +1752,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     tileNodeBuilds: [] as number[],
     tileBuilds: [] as number[],
     pendingCancelledEntries: [] as number[],
+    schedulerStarvations: [] as number[],
+    schedulerStarvationLabels: [] as RecentLabeledCountSample[],
     lodChecks: [] as number[],
     lodReplacements: [] as number[],
     lodReplacementLabels: [] as RecentLabeledCountSample[],
@@ -2456,6 +2464,25 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     return kind;
   }
 
+  function recordPendingWorldBuildSchedulerStarvation(
+    nowMs: number,
+    registry: ReturnType<typeof getActivePluginRegistry>,
+    state: Render3DState,
+    entry?: PendingWorldBuildEntry
+  ) {
+    recordRecentMetric(renderChurnMetrics.schedulerStarvations, nowMs);
+    recordRecentLabeledCountMetric(renderChurnMetrics.schedulerStarvationLabels, {
+      nowMs,
+      count: 1,
+      label: entry
+        ? getTilePluginOwnerLabel(
+            registry,
+            state.getCurrentTile(entry.x, entry.y).kind
+          )
+        : 'unknown',
+    });
+  }
+
   function syncVisibleWorld(state, chunkRadius = CHUNK_RADIUS) {
     const context = state.getCurrentContext();
     const centerX = Math.round(state.player.x);
@@ -2582,6 +2609,12 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       ? getRemainingFrameTimeBudgetMs(frameBudget, flushStartMs)
       : Number.POSITIVE_INFINITY;
     if (remainingFrameBudgetMs <= 0) {
+      recordPendingWorldBuildSchedulerStarvation(
+        nowMs,
+        registry,
+        state,
+        pendingWorldBuild.queue[0]
+      );
       return;
     }
     const recentTileBuildStats = getRecentDurationStats(
@@ -2669,6 +2702,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         );
         activePendingTileBuild = null;
       } else {
+        recordRecentMetric(renderChurnMetrics.schedulerStarvations, nowMs);
+        recordRecentLabeledCountMetric(
+          renderChurnMetrics.schedulerStarvationLabels,
+          {
+            nowMs,
+            count: 1,
+            label: activePendingTileBuild.shell.tilePluginOwnerLabel,
+          }
+        );
         return;
       }
     }
@@ -2763,6 +2805,18 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       if (pendingWorldBuild.queue.length === 0) {
         lastLodSyncPlayerPosition = null;
       }
+    }
+
+    if (
+      pendingWorldBuild.queue.length > processedEntryCount &&
+      activePendingTileBuild === null
+    ) {
+      recordPendingWorldBuildSchedulerStarvation(
+        nowMs,
+        registry,
+        state,
+        pendingWorldBuild.queue[processedEntryCount]
+      );
     }
   }
 
@@ -2967,6 +3021,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       renderChurnMetrics.fallbackBoxLabels,
       nowMs
     );
+    const recentSchedulerStarvationStats = getRecentLabeledCountStats(
+      renderChurnMetrics.schedulerStarvationLabels,
+      nowMs
+    );
     const ownedMaterialLifecycleCounts =
       getRecentOwnedMaterialLifecycleCounts(nowMs);
     const recentEvents = getRecentRenderDebugEvents(recentDebugEvents, nowMs);
@@ -3037,6 +3095,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileBuildsPerSecond: renderChurnStats.tileBuildsPerSecond,
       pendingCancelledEntriesPerSecond:
         renderChurnStats.pendingCancelledEntriesPerSecond,
+      schedulerStarvationEventsPerSecond:
+        renderChurnStats.schedulerStarvationEventsPerSecond,
       lodChecksPerSecond: renderChurnStats.lodChecksPerSecond,
       lodReplacementsPerSecond: renderChurnStats.lodReplacementsPerSecond,
       lodReplacementTopPluginLabel: recentLodReplacementStats.topLabel,
@@ -3045,6 +3105,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       fallbackBoxesPerSecond: renderChurnStats.fallbackBoxesPerSecond,
       fallbackBoxTopPluginLabel: recentFallbackBoxStats.topLabel,
       fallbackBoxSummary: recentFallbackBoxStats.summary,
+      schedulerStarvationTopPluginLabel:
+        recentSchedulerStarvationStats.topLabel,
+      schedulerStarvationSummary: recentSchedulerStarvationStats.summary,
       drawCallTopPluginLabel: visibleTileDrawCallStats.topLabel,
       drawCallSummary: visibleTileDrawCallStats.summary,
       objectTopPluginLabel: visibleTileObjectStats.topLabel,
@@ -6000,6 +6063,7 @@ export function getRenderChurnStats(
   tileNodeBuildsPerSecond: number;
   tileBuildsPerSecond: number;
   pendingCancelledEntriesPerSecond: number;
+  schedulerStarvationEventsPerSecond: number;
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
   lowerLodRecoveriesPerSecond: number;
@@ -6018,6 +6082,11 @@ export function getRenderChurnStats(
     ),
     pendingCancelledEntriesPerSecond: countRecentMetricEvents(
       metrics.pendingCancelledEntries,
+      nowMs,
+      windowMs
+    ),
+    schedulerStarvationEventsPerSecond: countRecentMetricEvents(
+      metrics.schedulerStarvations,
       nowMs,
       windowMs
     ),
@@ -6533,10 +6602,7 @@ export function syncConstellationSky(
           3
         )
       );
-      const line = new THREE.Line(
-        geometry,
-        sharedLineMaterial
-      );
+      const line = new THREE.Line(geometry, sharedLineMaterial);
       const horizonFade = smoothstep(
         -1.6,
         5.8,
@@ -6557,8 +6623,7 @@ export function syncConstellationSky(
         Math.max(0.42, horizonFade);
       sprite.scale.set(scale, scale, 1);
       sprite.visible =
-        horizonFade *
-          (0.28 + star.brightness * cycle.starsOpacity * 0.56) >
+        horizonFade * (0.28 + star.brightness * cycle.starsOpacity * 0.56) >
         0.015;
       root.add(sprite);
     });
@@ -6682,10 +6747,7 @@ export function syncCelestialEvents(
             3
           )
         );
-        const line = new THREE.Line(
-          geometry,
-          material
-        );
+        const line = new THREE.Line(geometry, material);
         line.visible = material.opacity > 0.015;
         root.add(line);
       }

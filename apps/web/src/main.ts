@@ -125,6 +125,7 @@ import {
   getMaterialGrowthWarning,
   getPerformanceWarnings,
   getRenderBudgetViolationWarnings,
+  getSchedulerStarvationWarnings,
   getSceneBudgetWarnings,
   getSynchronousTileBuildWarnings,
   getStationaryTileBuildWarning,
@@ -2495,6 +2496,11 @@ function collectCurrentDebugSnapshot(
       rendererStats.tileModelBudgetViolationSummary,
     tileNodeBuildsPerSecond: rendererStats.tileNodeBuildsPerSecond,
     tileBuildsPerSecond: rendererStats.tileBuildsPerSecond,
+    schedulerStarvationEventsPerSecond:
+      rendererStats.schedulerStarvationEventsPerSecond,
+    schedulerStarvationTopPluginLabel:
+      rendererStats.schedulerStarvationTopPluginLabel,
+    schedulerStarvationSummary: rendererStats.schedulerStarvationSummary,
     lodChecksPerSecond: rendererStats.lodChecksPerSecond,
     lodReplacementsPerSecond: rendererStats.lodReplacementsPerSecond,
     lodReplacementTopPluginLabel: rendererStats.lodReplacementTopPluginLabel,
@@ -2684,6 +2690,7 @@ function collectCurrentDebugSnapshot(
     ...getPerformanceWarnings(debugSnapshot),
     ...getWorkQueueWarnings(debugSnapshot),
     ...getSynchronousTileBuildWarnings(debugSnapshot),
+    ...getSchedulerStarvationWarnings(debugSnapshot),
     ...getRenderBudgetViolationWarnings(debugSnapshot),
     ...getFallbackModelWarnings(debugSnapshot),
     ...getUnloadedRegionWarnings(debugSnapshot),

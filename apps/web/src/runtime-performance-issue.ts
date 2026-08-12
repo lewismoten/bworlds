@@ -51,6 +51,7 @@ export type RuntimePerformanceIssueReport = {
     objects: string | null;
     meshes: string | null;
     lodSwaps: string | null;
+    schedulerStarvations: string | null;
     fallbackBoxes: string | null;
     rejectedModels: string | null;
     staticMatrixUpdates: string | null;
@@ -161,6 +162,8 @@ export function buildRuntimePerformanceIssueReport(
       meshes: options.debugSnapshot.meshTopPluginLabel?.trim() || null,
       lodSwaps:
         options.debugSnapshot.lodReplacementTopPluginLabel?.trim() || null,
+      schedulerStarvations:
+        options.debugSnapshot.schedulerStarvationTopPluginLabel?.trim() || null,
       fallbackBoxes:
         options.debugSnapshot.fallbackBoxTopPluginLabel?.trim() || null,
       rejectedModels:
@@ -246,6 +249,13 @@ function collectRuntimePerformanceIssueReasons(
     );
   }
 
+  if ((debugSnapshot.schedulerStarvationEventsPerSecond ?? 0) > 0) {
+    reasons.push(
+      debugSnapshot.schedulerStarvationSummary?.trim() ||
+        `Pending world-build scheduler starvation is occurring ${debugSnapshot.schedulerStarvationEventsPerSecond?.toFixed(1) ?? '0.0'} time(s) per second.`
+    );
+  }
+
   if (debugSnapshot.lastLodFailureReason?.trim()) {
     reasons.push(`Latest LOD failure: ${debugSnapshot.lastLodFailureReason}.`);
   }
@@ -309,6 +319,10 @@ function describeRuntimePerformanceHotspots(
     formatRuntimePerformanceHotspot(
       'Top fallback-model plugins',
       debugSnapshot.fallbackBoxSummary
+    ),
+    formatRuntimePerformanceHotspot(
+      'Top scheduler-starvation plugins',
+      debugSnapshot.schedulerStarvationSummary
     ),
     formatRuntimePerformanceHotspot(
       'Top static-matrix-update plugins',

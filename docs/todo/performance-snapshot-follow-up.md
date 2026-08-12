@@ -144,6 +144,11 @@
 - [ ] Record peak pending tile count during the sample window.
 - [ ] Record peak pending build time during the sample window.
 - [ ] Report scheduler starvation events.
+      Progress: `render3d` now records per-plugin pending-build scheduler
+      starvation rates when queued tile work cannot advance within the shared
+      generation/frame budget, and the web debug snapshot/runtime issue path
+      now surfaces that summary so long-running pending queues can be tied to
+      the dominant tile plugin instead of only showing aggregate backlog.
 - [ ] Report model downgrade reasons separately from failures.
 
 ## Snapshot Diagnostics

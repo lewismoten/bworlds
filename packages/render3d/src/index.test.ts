@@ -368,47 +368,44 @@ describe('render3d visibility helpers', () => {
   it('shares constellation sky materials across all rendered stars and links', () => {
     const root = new THREE.Group();
 
-    syncConstellationSky(
-      root,
-      {
-        constellations: [
-          {
-            stars: [
-              { x: 0.2, y: 0.2, brightness: 0.4 },
-              { x: 0.5, y: 0.35, brightness: 0.7 },
-              { x: 0.8, y: 0.55, brightness: 0.9 },
-            ],
-            connections: [
-              [0, 1],
-              [1, 2],
-            ],
-          },
-          {
-            stars: [
-              { x: 0.25, y: 0.25, brightness: 0.5 },
-              { x: 0.55, y: 0.4, brightness: 0.8 },
-            ],
-            connections: [[0, 1]],
-          },
-          {
-            stars: [
-              { x: 0.35, y: 0.2, brightness: 0.6 },
-              { x: 0.65, y: 0.45, brightness: 0.85 },
-              { x: 0.78, y: 0.58, brightness: 0.7 },
-            ],
-            connections: [
-              [0, 1],
-              [1, 2],
-            ],
-          },
-        ],
-        activeConstellationIndex: 1,
-        sunriseAzimuth: 0,
-        dayProgress: 0.25,
-        sunriseProgress: 0.2,
-        starsOpacity: 0.9,
-      } as never
-    );
+    syncConstellationSky(root, {
+      constellations: [
+        {
+          stars: [
+            { x: 0.2, y: 0.2, brightness: 0.4 },
+            { x: 0.5, y: 0.35, brightness: 0.7 },
+            { x: 0.8, y: 0.55, brightness: 0.9 },
+          ],
+          connections: [
+            [0, 1],
+            [1, 2],
+          ],
+        },
+        {
+          stars: [
+            { x: 0.25, y: 0.25, brightness: 0.5 },
+            { x: 0.55, y: 0.4, brightness: 0.8 },
+          ],
+          connections: [[0, 1]],
+        },
+        {
+          stars: [
+            { x: 0.35, y: 0.2, brightness: 0.6 },
+            { x: 0.65, y: 0.45, brightness: 0.85 },
+            { x: 0.78, y: 0.58, brightness: 0.7 },
+          ],
+          connections: [
+            [0, 1],
+            [1, 2],
+          ],
+        },
+      ],
+      activeConstellationIndex: 1,
+      sunriseAzimuth: 0,
+      dayProgress: 0.25,
+      sunriseProgress: 0.2,
+      starsOpacity: 0.9,
+    } as never);
 
     expect(collectSceneResourceStats(root as never)).toMatchObject({
       lineObjectCount: 5,
@@ -423,33 +420,30 @@ describe('render3d visibility helpers', () => {
   it('reuses aurora materials across repeated bands with matching colors', () => {
     const root = new THREE.Group();
 
-    syncAuroraBands(
-      root,
-      {
-        auroraBands: [
-          {
-            azimuthCenter: 0.8,
-            span: 0.9,
-            altitude: 0.32,
-            height: 0.26,
-            wavePhase: 0.1,
-            colorA: '#55d6be',
-            colorB: '#b8fff3',
-            intensity: 0.8,
-          },
-          {
-            azimuthCenter: 1.4,
-            span: 0.85,
-            altitude: 0.35,
-            height: 0.24,
-            wavePhase: 0.3,
-            colorA: '#55d6be',
-            colorB: '#b8fff3',
-            intensity: 0.8,
-          },
-        ],
-      } as never
-    );
+    syncAuroraBands(root, {
+      auroraBands: [
+        {
+          azimuthCenter: 0.8,
+          span: 0.9,
+          altitude: 0.32,
+          height: 0.26,
+          wavePhase: 0.1,
+          colorA: '#55d6be',
+          colorB: '#b8fff3',
+          intensity: 0.8,
+        },
+        {
+          azimuthCenter: 1.4,
+          span: 0.85,
+          altitude: 0.35,
+          height: 0.24,
+          wavePhase: 0.3,
+          colorA: '#55d6be',
+          colorB: '#b8fff3',
+          intensity: 0.8,
+        },
+      ],
+    } as never);
 
     expect(collectSceneResourceStats(root as never)).toMatchObject({
       lineObjectCount: 14,
@@ -463,43 +457,40 @@ describe('render3d visibility helpers', () => {
   it('reuses celestial-event materials across repeated event colors and opacities', () => {
     const root = new THREE.Group();
 
-    syncCelestialEvents(
-      root,
-      {
-        visibleEvents: [
-          {
-            type: 'planet',
-            color: '#cfe8ff',
-            intensity: 0.6,
-            visibility: 0.9,
-            altitude: 0.4,
-            azimuth: 0.6,
-            size: 0.8,
-            trailLength: 0,
-          },
-          {
-            type: 'planet',
-            color: '#cfe8ff',
-            intensity: 0.6,
-            visibility: 0.9,
-            altitude: 0.42,
-            azimuth: 0.72,
-            size: 0.84,
-            trailLength: 0,
-          },
-          {
-            type: 'comet',
-            color: '#ffdca8',
-            intensity: 0.7,
-            visibility: 0.85,
-            altitude: 0.5,
-            azimuth: 1.1,
-            size: 1,
-            trailLength: 0.9,
-          },
-        ],
-      } as never
-    );
+    syncCelestialEvents(root, {
+      visibleEvents: [
+        {
+          type: 'planet',
+          color: '#cfe8ff',
+          intensity: 0.6,
+          visibility: 0.9,
+          altitude: 0.4,
+          azimuth: 0.6,
+          size: 0.8,
+          trailLength: 0,
+        },
+        {
+          type: 'planet',
+          color: '#cfe8ff',
+          intensity: 0.6,
+          visibility: 0.9,
+          altitude: 0.42,
+          azimuth: 0.72,
+          size: 0.84,
+          trailLength: 0,
+        },
+        {
+          type: 'comet',
+          color: '#ffdca8',
+          intensity: 0.7,
+          visibility: 0.85,
+          altitude: 0.5,
+          azimuth: 1.1,
+          size: 1,
+          trailLength: 0.9,
+        },
+      ],
+    } as never);
 
     expect(collectSceneResourceStats(root as never)).toMatchObject({
       spriteCount: 3,
@@ -1519,6 +1510,8 @@ describe('render3d visibility helpers', () => {
           tileNodeBuilds: [100, 450, 900],
           tileBuilds: [450, 900],
           pendingCancelledEntries: [450, 800],
+          schedulerStarvations: [450, 900],
+          schedulerStarvationLabels: [],
           lodChecks: [900],
           lodReplacements: [100, 450],
           lodReplacementLabels: [],
@@ -1537,6 +1530,7 @@ describe('render3d visibility helpers', () => {
       tileNodeBuildsPerSecond: 3,
       tileBuildsPerSecond: 2,
       pendingCancelledEntriesPerSecond: 2,
+      schedulerStarvationEventsPerSecond: 2,
       lodChecksPerSecond: 1,
       lodReplacementsPerSecond: 2,
       lowerLodRecoveriesPerSecond: 1,
@@ -1549,6 +1543,8 @@ describe('render3d visibility helpers', () => {
           tileNodeBuilds: [100, 450, 900],
           tileBuilds: [450, 900],
           pendingCancelledEntries: [450, 800],
+          schedulerStarvations: [450, 900],
+          schedulerStarvationLabels: [],
           lodChecks: [900],
           lodReplacements: [100, 450],
           lodReplacementLabels: [],
@@ -1567,6 +1563,7 @@ describe('render3d visibility helpers', () => {
       tileNodeBuildsPerSecond: 1,
       tileBuildsPerSecond: 1,
       pendingCancelledEntriesPerSecond: 1,
+      schedulerStarvationEventsPerSecond: 1,
       lodChecksPerSecond: 1,
       lodReplacementsPerSecond: 0,
       lowerLodRecoveriesPerSecond: 0,

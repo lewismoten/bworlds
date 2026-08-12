@@ -9,6 +9,7 @@ import {
   getPerformanceWarnings,
   getReducedQualityDurationSec,
   getRenderBudgetViolationWarnings,
+  getSchedulerStarvationWarnings,
   getSceneBudgetWarnings,
   getSynchronousTileBuildWarnings,
   getStationaryTileBuildWarning,
@@ -847,6 +848,24 @@ describe('debug panel', () => {
         fallbackBoxesPerSecond: 5,
         fallbackBoxTopPluginLabel: 'tile-plains',
         fallbackBoxSummary: 'tile-plains:2.9, tile-route:2.1',
+      })
+    ).toEqual([]);
+  });
+
+  it('warns when pending builds keep starving behind the scheduler budget', () => {
+    expect(
+      getSchedulerStarvationWarnings({
+        schedulerStarvationEventsPerSecond: 3,
+        schedulerStarvationTopPluginLabel: 'tile-forest',
+        schedulerStarvationSummary: 'tile-forest:3, tile-town:1',
+      })
+    ).toEqual(['tile-forest:3, tile-town:1']);
+
+    expect(
+      getSchedulerStarvationWarnings({
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: 'tile-forest',
+        schedulerStarvationSummary: 'tile-forest:3, tile-town:1',
       })
     ).toEqual([]);
   });

@@ -57,6 +57,9 @@ function createDebugSnapshot(
       'tile-plains rejected 2.0 models per second.',
     tileNodeBuildsPerSecond: 4,
     tileBuildsPerSecond: 4,
+    schedulerStarvationEventsPerSecond: 2,
+    schedulerStarvationTopPluginLabel: 'tile-forest',
+    schedulerStarvationSummary: 'tile-forest starved 2.0 times per second.',
     lodChecksPerSecond: 24,
     lodReplacementsPerSecond: 18,
     lodReplacementTopPluginLabel: 'tile-town',
@@ -254,6 +257,7 @@ describe('runtime performance tracking', () => {
     expect(issue?.pluginHotspots.instancedMeshes).toBe('tile-forest');
     expect(issue?.pluginHotspots.renderedInstances).toBe('tile-forest');
     expect(issue?.pluginHotspots.instancingWarnings).toBe('tile-town');
+    expect(issue?.pluginHotspots.schedulerStarvations).toBe('tile-forest');
     expect(issue?.renderState.renderQualityLimiters).toEqual([
       'frame time',
       'materials',
@@ -301,6 +305,12 @@ describe('runtime performance tracking', () => {
     );
     expect(issue?.reasons).toContain(
       'Top scene-unique-material plugins: tile-route owns 9 scene-unique materials.'
+    );
+    expect(issue?.reasons).toContain(
+      'tile-forest starved 2.0 times per second.'
+    );
+    expect(issue?.reasons).toContain(
+      'Top scheduler-starvation plugins: tile-forest starved 2.0 times per second.'
     );
     expect(issue?.reasons).toContain(
       'Top static-matrix-update plugins: tile-sign keeps static matrices hot.'
@@ -379,6 +389,9 @@ describe('runtime performance tracking', () => {
         tileModelBudgetViolationsPerSecond: 0,
         tileModelBudgetViolationTopPluginLabel: undefined,
         tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
         fallbackBoxesPerSecond: 0,
         fallbackBoxSummary: undefined,
         fallbackBoxTopPluginLabel: undefined,

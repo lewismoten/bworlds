@@ -40,6 +40,9 @@ export type DebugSnapshot = {
   tileModelBudgetViolationSummary?: string;
   tileNodeBuildsPerSecond: number;
   tileBuildsPerSecond: number;
+  schedulerStarvationEventsPerSecond?: number;
+  schedulerStarvationTopPluginLabel?: string;
+  schedulerStarvationSummary?: string;
   lodChecksPerSecond: number;
   lodReplacementsPerSecond: number;
   lodReplacementTopPluginLabel?: string;
@@ -907,6 +910,34 @@ export function getSynchronousTileBuildWarnings(
   ];
 }
 
+export function getSchedulerStarvationWarnings(
+  snapshot: Pick<
+    DebugSnapshot,
+    | 'schedulerStarvationEventsPerSecond'
+    | 'schedulerStarvationTopPluginLabel'
+    | 'schedulerStarvationSummary'
+  >,
+  {
+    maxSchedulerStarvationEventsPerSecond = 0,
+  }: {
+    maxSchedulerStarvationEventsPerSecond?: number;
+  } = {}
+): string[] {
+  const starvationEventsPerSecond =
+    snapshot.schedulerStarvationEventsPerSecond ?? 0;
+  if (starvationEventsPerSecond <= maxSchedulerStarvationEventsPerSecond) {
+    return [];
+  }
+
+  const label =
+    snapshot.schedulerStarvationTopPluginLabel?.trim() ||
+    'unknown tile plugin';
+  return [
+    snapshot.schedulerStarvationSummary?.trim() ||
+      `Pending world-build scheduler is starving queued work (${starvationEventsPerSecond.toFixed(1)}/s, top plugin ${label}).`,
+  ];
+}
+
 export function getRenderBudgetViolationWarnings(
   snapshot: Pick<
     DebugSnapshot,
@@ -1058,7 +1089,9 @@ function parsePluginRateSummary(
       }
       return { plugin, rate };
     })
-    .filter((entry): entry is { plugin: string; rate: number } => entry !== null)
+    .filter(
+      (entry): entry is { plugin: string; rate: number } => entry !== null
+    )
     .sort((left, right) => right.rate - left.rate);
 }
 
