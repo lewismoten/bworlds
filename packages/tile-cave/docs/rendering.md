@@ -18,11 +18,13 @@ progressive renderer and the eager build path stay structurally aligned.
 Current layout:
 
 - The repeated cave mushrooms now share one `CylinderGeometry`, one
-  `SphereGeometry`, and two `InstancedMesh` nodes, with per-instance scale and
-  position stored in matrices for the stem and cap sets.
+  `SphereGeometry`, and two `InstancedMesh` nodes, with the stem instances now
+  serving as the tile root and the cap instances attached beneath them. Per-
+  instance scale and position stay stored in matrices for both sets.
 - The repeated cave dripstone floor spires now share one `ConeGeometry`, one
-  material, and one `InstancedMesh`, with per-instance height and position
-  stored in matrices.
+  material, and one `InstancedMesh`, with the spire instances now serving as
+  the tile root and the hanging stalactite attached beneath them. Per-instance
+  height and position stay stored in matrices.
 - The repeated cave obstacle boulders now share one `SphereGeometry`, one
   material, and one `InstancedMesh`, with per-instance scale and position
   stored in matrices.

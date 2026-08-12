@@ -355,7 +355,13 @@ low` visible recovery, and full-detail `tile-sign` tiles now use their post
       mesh as the tile root and attach the repeated rail/pile `InstancedMesh`
       sets plus optional boat and route sign beneath it instead of wrapping the
       crossing in a dedicated `Group`, which removes one static `Object3D` from
-      each dock tile without changing dock geometry or route-sign placement.
+      each dock tile without changing dock geometry or route-sign placement,
+      and cave mushroom tiles now use their stem `InstancedMesh` as the root
+      and attach the cap `InstancedMesh` beneath it while cave dripstone tiles
+      now use their floor-spire `InstancedMesh` as the root and attach the
+      hanging stalactite beneath it, which removes one static `Object3D` from
+      each of those cave-floor decoration tiles without changing their per-
+      instance layout.
 
 ## LOD Stability
 

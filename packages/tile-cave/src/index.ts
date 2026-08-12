@@ -793,7 +793,6 @@ function createCaveMushroomGroup(
   tileX: number,
   tileY: number
 ) {
-  const group = new three.Group();
   const { mushroomCapMaterial, mushroomStemMaterial } =
     getCaveSharedMaterials(three);
   const count =
@@ -852,10 +851,8 @@ function createCaveMushroomGroup(
     );
   }
 
-  group.add(stemInstances);
-  group.add(capInstances);
-
-  return group;
+  stemInstances.add(capInstances);
+  return stemInstances;
 }
 
 function getCaveSharedMaterials(three: Create3DModelContext['three']) {
@@ -979,7 +976,6 @@ function createCaveDripstoneGroup(
   tileY: number
 ) {
   const { mountainMaterial } = createMountainTerrainMaterials(three);
-  const group = new three.Group();
   const spireCount =
     3 + Math.floor(hash2D(CAVE_DRIPSTONE_COUNT_SEED, tileX, tileY) * 3);
   const spireGeometry = new three.ConeGeometry(0.08, 1, 5);
@@ -1013,7 +1009,6 @@ function createCaveDripstoneGroup(
       )
     );
   }
-  group.add(spireInstances);
 
   const hanging = new three.Mesh(
     new three.ConeGeometry(0.07, 0.28, 5),
@@ -1025,9 +1020,9 @@ function createCaveDripstoneGroup(
     tileY + (hash2D(CAVE_DRIPSTONE_HANG_Z_SEED, tileX, tileY) - 0.5) * 0.3
   );
   hanging.rotation.x = Math.PI;
-  group.add(hanging);
+  spireInstances.add(hanging);
 
-  return group;
+  return spireInstances;
 }
 
 function createCaveObstacleGroup(

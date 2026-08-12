@@ -381,21 +381,29 @@ describe('tile cave', () => {
       state: {} as never,
       tileX: 2,
       tileY: 3,
-    }) as { children?: Array<{ material?: unknown }> } | null | undefined;
+    }) as
+      | {
+          material?: unknown;
+          children?: Array<{ material?: unknown }>;
+        }
+      | null
+      | undefined;
     const second = mushroomTile?.create3DModel?.({
       tile: { kind: 'cave-mushrooms' },
       three,
       state: {} as never,
       tileX: 6,
       tileY: 7,
-    }) as { children?: Array<{ material?: unknown }> } | null | undefined;
+    }) as
+      | {
+          material?: unknown;
+          children?: Array<{ material?: unknown }>;
+        }
+      | null
+      | undefined;
 
-    expect(first?.children?.[0]?.material).toBe(
-      second?.children?.[0]?.material
-    );
-    expect(first?.children?.[1]?.material).toBe(
-      second?.children?.[1]?.material
-    );
+    expect(first?.material).toBe(second?.material);
+    expect(first?.children?.[0]?.material).toBe(second?.children?.[0]?.material);
   });
 
   it('instances repeated cave mushrooms as shared stem and cap sets', () => {
@@ -412,6 +420,9 @@ describe('tile cave', () => {
       tileY: 3,
     }) as
       | {
+          userData?: Record<string, unknown>;
+          count?: number;
+          matrices?: Array<{ scale: { x: number; y: number; z: number } }>;
           children?: Array<{
             userData?: Record<string, unknown>;
             count?: number;
@@ -421,27 +432,47 @@ describe('tile cave', () => {
       | null
       | undefined;
 
-    const stemInstances = model?.children?.filter(
-      (child) => child.userData?.caveInstancedPart === 'mushroom-stem'
-    );
+    expect(model?.userData?.caveInstancedPart).toBe('mushroom-stem');
     const capInstances = model?.children?.filter(
       (child) => child.userData?.caveInstancedPart === 'mushroom-cap'
     );
 
-    expect(stemInstances).toHaveLength(1);
     expect(capInstances).toHaveLength(1);
-    expect(stemInstances?.[0]?.count).toBe(capInstances?.[0]?.count);
-    expect((stemInstances?.[0]?.count ?? 0) >= 3).toBe(true);
-    expect(stemInstances?.[0]?.matrices?.length).toBe(
-      stemInstances?.[0]?.count
-    );
+    expect(model?.count).toBe(capInstances?.[0]?.count);
+    expect((model?.count ?? 0) >= 3).toBe(true);
+    expect(model?.matrices?.length).toBe(model?.count);
     expect(capInstances?.[0]?.matrices?.length).toBe(capInstances?.[0]?.count);
-    expect(
-      stemInstances?.[0]?.matrices?.some((matrix) => matrix.scale.y > 1)
-    ).toBe(true);
+    expect(model?.matrices?.some((matrix) => matrix.scale.y > 1)).toBe(true);
     expect(
       capInstances?.[0]?.matrices?.some((matrix) => matrix.scale.x > 1)
     ).toBe(true);
+  });
+
+  it('returns cave mushroom stem instances directly without a wrapper group', () => {
+    const three = createFakeThree() as never;
+    const mushroomTile = plugin.tiles?.find(
+      (tile) => tile.kind === 'cave-mushrooms'
+    );
+
+    const model = mushroomTile?.create3DModel?.({
+      tile: { kind: 'cave-mushrooms' },
+      three,
+      state: {} as never,
+      tileX: 2,
+      tileY: 3,
+    }) as
+      | {
+          userData?: Record<string, unknown>;
+          children?: Array<{ userData?: Record<string, unknown> }>;
+        }
+      | null
+      | undefined;
+
+    expect(model?.userData?.caveInstancedPart).toBe('mushroom-stem');
+    expect(model?.children).toHaveLength(1);
+    expect(model?.children?.[0]?.userData?.caveInstancedPart).toBe(
+      'mushroom-cap'
+    );
   });
 
   it('instances repeated cave dripstone spires as one shared set', () => {
@@ -462,6 +493,11 @@ describe('tile cave', () => {
         tileY: 3,
       }) as
         | {
+            userData?: Record<string, unknown>;
+            count?: number;
+            matrices?: Array<{
+              scale: { x: number; y: number; z: number };
+            }>;
             children?: Array<{
               userData?: Record<string, unknown>;
               count?: number;
@@ -473,18 +509,43 @@ describe('tile cave', () => {
         | null
         | undefined;
 
-      const spireInstances = model?.children?.filter(
-        (child) => child.userData?.caveInstancedPart === 'dripstone-spire'
+      expect(model?.userData?.caveInstancedPart).toBe('dripstone-spire');
+      expect((model?.count ?? 0) >= 3).toBe(true);
+      expect(model?.matrices?.length).toBe(model?.count);
+      expect(model?.matrices?.some((matrix) => matrix.scale.y > 0.6)).toBe(
+        true
       );
+      expect(model?.children).toHaveLength(1);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
 
-      expect(spireInstances).toHaveLength(1);
-      expect((spireInstances?.[0]?.count ?? 0) >= 3).toBe(true);
-      expect(spireInstances?.[0]?.matrices?.length).toBe(
-        spireInstances?.[0]?.count
+  it('returns cave dripstone spire instances directly without a wrapper group', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+
+    try {
+      const three = createFakeThree() as never;
+      const dripstoneTile = plugin.tiles?.find(
+        (tile) => tile.kind === 'cave-dripstone'
       );
-      expect(
-        spireInstances?.[0]?.matrices?.some((matrix) => matrix.scale.y > 0.6)
-      ).toBe(true);
+      const model = dripstoneTile?.create3DModel?.({
+        tile: { kind: 'cave-dripstone' },
+        three,
+        state: {} as never,
+        tileX: 2,
+        tileY: 3,
+      }) as
+        | {
+            userData?: Record<string, unknown>;
+            children?: unknown[];
+          }
+        | null
+        | undefined;
+
+      expect(model?.userData?.caveInstancedPart).toBe('dripstone-spire');
+      expect(model?.children).toHaveLength(1);
     } finally {
       globalThis.document = previousDocument;
     }
@@ -607,7 +668,9 @@ describe('tile cave', () => {
         low?.children?.map((child) => child.userData?.caveLowDetailPart).sort()
       ).toEqual(['mound', 'mouth-void', 'tunnel-back']);
       expect(
-        low?.children?.every((child) => !Array.isArray(child.children))
+        low?.children?.every(
+          (child) => !Array.isArray(child.children) || child.children.length === 0
+        )
       ).toBe(true);
     } finally {
       globalThis.document = previousDocument;
@@ -757,6 +820,7 @@ function createFakeThree() {
     }
   }
   class Mesh {
+    children: unknown[] = [];
     position = {
       set() {
         return undefined;
@@ -773,8 +837,12 @@ function createFakeThree() {
       public geometry: unknown,
       public material: unknown
     ) {}
+    add(child: unknown) {
+      this.children.push(child);
+    }
   }
   class InstancedMesh {
+    children: unknown[] = [];
     rotation = { x: 0, y: 0, z: 0 };
     userData: Record<string, unknown> = {};
     matrices: Matrix4[] = [];
@@ -785,6 +853,9 @@ function createFakeThree() {
     ) {}
     setMatrixAt(index: number, matrix: Matrix4) {
       this.matrices[index] = matrix.clone();
+    }
+    add(child: unknown) {
+      this.children.push(child);
     }
   }
   class PointLight {
