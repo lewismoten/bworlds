@@ -76,6 +76,8 @@ export type DebugSnapshot = {
   staticMatrixUpdateSummary?: string;
   oneChildGroupTopPluginLabel?: string;
   oneChildGroupSummary?: string;
+  oneChildPlainWrapperTopPluginLabel?: string;
+  oneChildPlainWrapperSummary?: string;
   latestQualityChangeLimiter?: string;
   latestQualityChangeSummary?: string;
   reducedQualityDurationSec?: number;
@@ -309,6 +311,8 @@ export function getDebugSignature(snapshot: DebugSnapshot): string {
     snapshot.staticMatrixUpdateSummary ?? '',
     snapshot.oneChildGroupTopPluginLabel ?? '',
     snapshot.oneChildGroupSummary ?? '',
+    snapshot.oneChildPlainWrapperTopPluginLabel ?? '',
+    snapshot.oneChildPlainWrapperSummary ?? '',
     snapshot.lastLodFailureReason ?? '',
     snapshot.lastLodDowngradeReason ?? '',
     snapshot.lastFallbackReason ?? '',
@@ -505,6 +509,8 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>Static Matrix Summary</dt><dd>${snapshot.staticMatrixUpdateSummary || 'None'}</dd></div>
     <div><dt>One-Child Group Plugin</dt><dd>${snapshot.oneChildGroupTopPluginLabel || 'None'}</dd></div>
     <div><dt>One-Child Group Summary</dt><dd>${snapshot.oneChildGroupSummary || 'None'}</dd></div>
+    <div><dt>Plain Wrapper Plugin</dt><dd>${snapshot.oneChildPlainWrapperTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Plain Wrapper Summary</dt><dd>${snapshot.oneChildPlainWrapperSummary || 'None'}</dd></div>
     <div><dt>One-Child Plain Wrappers</dt><dd>${snapshot.oneChildGroupPlainWrapperCount ?? 0}</dd></div>
     <div><dt>One-Child Transform Pivots</dt><dd>${snapshot.oneChildGroupTransformCount ?? 0}</dd></div>
     <div><dt>One-Child Tagged Groups</dt><dd>${snapshot.oneChildGroupTaggedCount ?? 0}</dd></div>

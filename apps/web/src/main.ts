@@ -2592,6 +2592,9 @@ function collectCurrentDebugSnapshot(
     staticMatrixUpdateSummary: rendererStats.staticMatrixUpdateSummary,
     oneChildGroupTopPluginLabel: rendererStats.oneChildGroupTopPluginLabel,
     oneChildGroupSummary: rendererStats.oneChildGroupSummary,
+    oneChildPlainWrapperTopPluginLabel:
+      rendererStats.oneChildPlainWrapperTopPluginLabel,
+    oneChildPlainWrapperSummary: rendererStats.oneChildPlainWrapperSummary,
     object3dCount: rendererStats.object3dCount,
     visibleObjectCount: rendererStats.visibleObjectCount,
     invisibleObjectCount: rendererStats.invisibleObjectCount,

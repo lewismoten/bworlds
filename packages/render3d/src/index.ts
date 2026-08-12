@@ -384,6 +384,8 @@ type Render3DController = {
     staticMatrixUpdateSummary: string;
     oneChildGroupTopPluginLabel: string;
     oneChildGroupSummary: string;
+    oneChildPlainWrapperTopPluginLabel: string;
+    oneChildPlainWrapperSummary: string;
     object3dCount: number;
     visibleObjectCount: number;
     invisibleObjectCount: number;
@@ -1143,6 +1145,7 @@ type DynamicTileNode = {
   visibleInstancedMeshCount: number;
   renderedInstanceCount: number;
   oneChildGroupCount?: number;
+  oneChildGroupPlainWrapperCount?: number;
   staticMatrixAutoUpdateCount?: number;
   materialCount: number;
   clonedMaterialCount?: number;
@@ -2536,6 +2539,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         finalSceneResourceStats.visibleInstancedMeshCount,
       renderedInstanceCount: finalSceneResourceStats.renderedInstanceCount,
       oneChildGroupCount: finalSceneResourceStats.oneChildGroupCount,
+      oneChildGroupPlainWrapperCount:
+        finalSceneResourceStats.oneChildGroupPlainWrapperCount,
       staticMatrixAutoUpdateCount:
         finalSceneResourceStats.staticMatrixAutoUpdateCount,
       materialCount: finalSceneResourceStats.materialCount,
@@ -3353,6 +3358,10 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       );
     const visibleTileOneChildGroupStats =
       summarizeVisibleTileOneChildGroupsByPlugin(visibleTileNodes.values());
+    const visibleTileOneChildPlainWrapperStats =
+      summarizeVisibleTileOneChildPlainWrappersByPlugin(
+        visibleTileNodes.values()
+      );
     const geometryCacheHitCount =
       sharedGeometryCacheAccessStats.hitCount +
       tileAtlasGeometryCacheAccessStats.hitCount;
@@ -3436,6 +3445,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       staticMatrixUpdateSummary: visibleTileStaticMatrixUpdateStats.summary,
       oneChildGroupTopPluginLabel: visibleTileOneChildGroupStats.topLabel,
       oneChildGroupSummary: visibleTileOneChildGroupStats.summary,
+      oneChildPlainWrapperTopPluginLabel:
+        visibleTileOneChildPlainWrapperStats.topLabel,
+      oneChildPlainWrapperSummary: visibleTileOneChildPlainWrapperStats.summary,
       object3dCount: sceneResourceStats.object3dCount,
       visibleObjectCount: sceneResourceStats.visibleObjectCount,
       invisibleObjectCount: sceneResourceStats.invisibleObjectCount,
@@ -6561,6 +6573,25 @@ export function summarizeVisibleTileOneChildGroupsByPlugin(
   return summarizeVisibleTileCountByPlugin(entries, 'oneChildGroupCount');
 }
 
+export function summarizeVisibleTileOneChildPlainWrappersByPlugin(
+  entries: Iterable<
+    Pick<
+      DynamicTileNode,
+      'tilePluginOwnerLabel' | 'oneChildGroupPlainWrapperCount'
+    >
+  >
+): {
+  totalCount: number;
+  topCount: number;
+  topLabel: string;
+  summary: string;
+} {
+  return summarizeVisibleTileCountByPlugin(
+    entries,
+    'oneChildGroupPlainWrapperCount'
+  );
+}
+
 function summarizeVisibleTileCountByPlugin<
   K extends keyof Pick<
     DynamicTileNode,
@@ -6571,6 +6602,7 @@ function summarizeVisibleTileCountByPlugin<
     | 'materialCount'
     | 'clonedMaterialCount'
     | 'oneChildGroupCount'
+    | 'oneChildGroupPlainWrapperCount'
     | 'drawCallCount'
   >,
 >(

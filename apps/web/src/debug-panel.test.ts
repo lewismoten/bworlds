@@ -106,6 +106,8 @@ describe('debug panel', () => {
       staticMatrixUpdateSummary: 'tile-forest:9, tile-town:6',
       oneChildGroupTopPluginLabel: 'tile-forest',
       oneChildGroupSummary: 'tile-forest:11, tile-town:7',
+      oneChildPlainWrapperTopPluginLabel: 'tile-town',
+      oneChildPlainWrapperSummary: 'tile-town:4, tile-forest:2',
       oneChildGroupPlainWrapperCount: 6,
       oneChildGroupTransformCount: 8,
       oneChildGroupTaggedCount: 4,
@@ -182,6 +184,8 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('Cloned Material Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Group Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Group Summary');
+    expect(buildDebugMarkup(snapshot)).toContain('Plain Wrapper Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Plain Wrapper Summary');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Plain Wrappers');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Transform Pivots');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Tagged Groups');

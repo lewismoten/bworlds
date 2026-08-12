@@ -241,6 +241,7 @@ import {
   summarizeVisibleTileDrawCallsByPlugin,
   summarizeVisibleTileRenderedInstancesByPlugin,
   summarizeVisibleTileOneChildGroupsByPlugin,
+  summarizeVisibleTileOneChildPlainWrappersByPlugin,
   summarizeVisibleTileStaticMatrixUpdatesByPlugin,
   summarizeVisibleTileKinds,
   summarizeRemovedTileModelBudgetParts,
@@ -5303,6 +5304,41 @@ describe('render3d visibility helpers', () => {
     });
 
     expect(summarizeVisibleTileOneChildGroupsByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes visible tile plain wrapper groups by plugin', () => {
+    expect(
+      summarizeVisibleTileOneChildPlainWrappersByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          oneChildGroupPlainWrapperCount: 2,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          oneChildGroupPlainWrapperCount: 4,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          oneChildGroupPlainWrapperCount: 1,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          oneChildGroupPlainWrapperCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 7,
+      topCount: 4,
+      topLabel: 'tile-town',
+      summary: 'tile-town:4, tile-forest:3',
+    });
+
+    expect(summarizeVisibleTileOneChildPlainWrappersByPlugin([])).toEqual({
       totalCount: 0,
       topCount: 0,
       topLabel: '',
