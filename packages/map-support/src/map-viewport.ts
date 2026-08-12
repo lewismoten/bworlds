@@ -28,6 +28,12 @@ export type MapViewportWorldSelection = {
   worldY: number;
 };
 
+export type MapViewportProjectionChangeResult = {
+  viewport: MapViewportState;
+  selectedMapCoordinate: MapViewportMapPoint;
+  selectedScreenCoordinate: MapViewportScreenPoint;
+};
+
 export const DEFAULT_MAP_VIEWPORT_CENTER_X = 0;
 export const DEFAULT_MAP_VIEWPORT_CENTER_Y = 0;
 export const DEFAULT_MAP_VIEWPORT_ZOOM = 1;
@@ -198,6 +204,50 @@ export function reprojectMapViewportSelection(options: {
   return normalizeMapViewportMapPoint(
     options.project(normalizeMapViewportWorldSelection(options.selection))
   );
+}
+
+export function preserveMapViewportSelectionOnProjectionChange(options: {
+  viewport: MapViewportState;
+  frame: MapViewportFrame;
+  selection: MapViewportWorldSelection;
+  previousProject(selection: MapViewportWorldSelection): MapViewportMapPoint;
+  nextProject(selection: MapViewportWorldSelection): MapViewportMapPoint;
+}): MapViewportProjectionChangeResult {
+  const normalizedViewport = createMapViewportState(options.viewport);
+  const normalizedFrame = normalizeMapViewportFrame(options.frame);
+  const normalizedSelection = normalizeMapViewportWorldSelection(
+    options.selection
+  );
+  const previousSelectedMapCoordinate = normalizeMapViewportMapPoint(
+    options.previousProject(normalizedSelection)
+  );
+  const nextSelectedMapCoordinate = normalizeMapViewportMapPoint(
+    options.nextProject(normalizedSelection)
+  );
+  const selectedScreenCoordinate = mapViewportMapToScreenCoordinate(
+    normalizedViewport,
+    normalizedFrame,
+    previousSelectedMapCoordinate
+  );
+  const nextViewport = createMapViewportState(normalizedViewport);
+  const anchorAtSelectionScreen = mapViewportScreenToMapCoordinate(
+    nextViewport,
+    normalizedFrame,
+    selectedScreenCoordinate
+  );
+  return {
+    viewport: {
+      ...nextViewport,
+      centerMapX:
+        nextViewport.centerMapX +
+        (nextSelectedMapCoordinate.mapX - anchorAtSelectionScreen.mapX),
+      centerMapY:
+        nextViewport.centerMapY +
+        (nextSelectedMapCoordinate.mapY - anchorAtSelectionScreen.mapY),
+    },
+    selectedMapCoordinate: nextSelectedMapCoordinate,
+    selectedScreenCoordinate,
+  };
 }
 
 export function gesturePanAndZoomMapViewport(

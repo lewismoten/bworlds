@@ -12,6 +12,7 @@ import {
   mapViewportMapToScreenCoordinate,
   mapViewportScreenToMapCoordinate,
   panMapViewport,
+  preserveMapViewportSelectionOnProjectionChange,
   reprojectMapViewportSelection,
   zoomMapViewportAtScreenPoint,
 } from './map-viewport.ts';
@@ -209,5 +210,55 @@ describe('map viewport', () => {
       mapX: 1 / 6,
       mapY: 1 / 6,
     });
+  });
+
+  it('preserves a selected world position at the same screen coordinate across projection changes', () => {
+    const viewport = createMapViewportState({
+      centerMapX: 0.1,
+      centerMapY: -0.05,
+      zoom: 1.5,
+    });
+    const frame = { width: 800, height: 600 };
+    const selection = {
+      worldX: 30,
+      worldY: 15,
+    };
+    const previousSelectedMapCoordinate = {
+      mapX: selection.worldX / 180,
+      mapY: selection.worldY / 90,
+    };
+    const previousScreenCoordinate = mapViewportMapToScreenCoordinate(
+      viewport,
+      frame,
+      previousSelectedMapCoordinate
+    );
+
+    const projectionChange = preserveMapViewportSelectionOnProjectionChange({
+      viewport,
+      frame,
+      selection,
+      previousProject({ worldX, worldY }) {
+        return {
+          mapX: worldX / 180,
+          mapY: worldY / 90,
+        };
+      },
+      nextProject({ worldX, worldY }) {
+        return {
+          mapX: worldX / 90,
+          mapY: worldY / 180,
+        };
+      },
+    });
+    const nextScreenCoordinate = mapViewportMapToScreenCoordinate(
+      projectionChange.viewport,
+      frame,
+      projectionChange.selectedMapCoordinate
+    );
+
+    expect(projectionChange.selectedScreenCoordinate).toEqual(
+      previousScreenCoordinate
+    );
+    expect(nextScreenCoordinate).toEqual(previousScreenCoordinate);
   });
 });

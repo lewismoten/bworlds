@@ -6,6 +6,7 @@ for projected map interactions:
 - `mapViewportMapToScreenCoordinate(...)`
 - `mapViewportScreenToMapCoordinate(...)`
 - `panMapViewport(...)`
+- `preserveMapViewportSelectionOnProjectionChange(...)`
 - `zoomMapViewportAtScreenPoint(...)`
 - `reprojectMapViewportSelection(...)`
 
@@ -85,3 +86,13 @@ coordinate through a caller-provided projection callback.
 
 This keeps selected map positions anchored in world space instead of treating
 projected coordinates as stable across projection changes.
+
+`preserveMapViewportSelectionOnProjectionChange(...)` goes one step further:
+it keeps a selected world-space coordinate at the same screen coordinate while
+the caller swaps from one projection callback to another.
+
+That lets future projected map viewers:
+
+- keep the selected feature visible
+- avoid selection jumps during projection switches
+- reuse one deterministic projection-change path across UIs

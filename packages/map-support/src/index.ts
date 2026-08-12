@@ -117,6 +117,7 @@ export {
   DEFAULT_MAP_VIEWPORT_ZOOM,
   gesturePanAndZoomMapViewport,
   mapViewportMapToScreenCoordinate,
+  preserveMapViewportSelectionOnProjectionChange,
   mapViewportScreenToMapCoordinate,
   panMapViewport,
   reprojectMapViewportSelection,
