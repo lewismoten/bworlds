@@ -34,6 +34,11 @@ Current support:
   layer sets, texture binding runtime plans, terrain splat material plans, and
   compatibility buckets across visible chunks so later scene integration can
   share one splat material instance across compatible terrain chunks.
+- `packages/render3d/src/visible-terrain-chunk-renderables.ts` now combines the
+  shared chunk geometry path and shared chunk material compatibility path into
+  cached renderable records, so unchanged chunks can preserve geometry and
+  material pairing identity across repeated builds before the live renderer
+  starts swapping them into the scene.
 
 ## Replace Floor Meshes
 

@@ -61,6 +61,13 @@ export {
   type VisibleTerrainChunkMaterialPlans,
   type VisibleTerrainChunkMaterialSource,
 } from './visible-terrain-chunk-materials.ts';
+export {
+  buildVisibleTerrainChunkRenderables,
+  createVisibleTerrainChunkRenderableCache,
+  type VisibleTerrainChunkRenderable,
+  type VisibleTerrainChunkRenderableBuildResult,
+  type VisibleTerrainChunkRenderableCache,
+} from './visible-terrain-chunk-renderables.ts';
 import {
   countGeometriesExceedingBounds,
   countGeometryTriangles,

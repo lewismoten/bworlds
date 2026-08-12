@@ -22,7 +22,7 @@
 - [ ] Keep water, structures, and vegetation separate.
 - [ ] Render one test chunk beside the legacy floors.
 - [ ] Render a three by three live chunk neighborhood.
-- [ ] Cache unchanged chunk geometry.
+- [x] Cache unchanged chunk geometry.
 
 ## Seamless Geometry
 
@@ -110,6 +110,11 @@ Current support:
   set across visible terrain chunks, so the live renderer can detect which
   chunks can share one future PBR splat material instance before the scene path
   swaps away from legacy floor meshes.
+- `@bworlds/render3d/visible-terrain-chunk-renderables` now pairs visible chunk
+  geometry and shared material compatibility into one cached renderable record
+  keyed by chunk render-data and material compatibility, so unchanged terrain
+  chunks can preserve renderable identity across repeated builds before the
+  live world scene starts attaching those renderables.
 
 ## Sextant Panel
 
