@@ -27,7 +27,6 @@ import type {
   TilePlugin,
   ThreeMaterialLike,
   ThreeMatrix4Like,
-  ThreeObject3DLike,
 } from '@bworlds/plugin-api';
 
 const TILE_PIXEL_SIZE = 16;
