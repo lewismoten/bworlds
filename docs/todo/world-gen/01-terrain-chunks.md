@@ -77,7 +77,7 @@ Current support:
 - [x] Show sampled terrain height.
 - [ ] Show dominant splat layer.
 - [ ] Show current biome ID.
-- [ ] Show current terrain chunk LOD.
+- [x] Show current terrain chunk LOD.
 
 Progress:
 
@@ -85,6 +85,9 @@ Progress:
   terrain-height readout beside world/chunk/local coordinates.
 - This is an interim Phase 1 readout based on the current runtime tile
   decoration, not yet the Phase 2 authoritative shared height API.
+- The sextant now also shows the current terrain render LOD from the active
+  visible-tile debug state. This is an interim chunk-LOD proxy until the live
+  terrain chunk renderer replaces the legacy per-tile floor path.
 
 ## Visible Milestone
 

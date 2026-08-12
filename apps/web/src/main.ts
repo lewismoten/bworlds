@@ -4383,11 +4383,20 @@ function render(): FrameLoopActivityLike {
   const gridY = needsCoordinateSummary ? spatial.gridY : 0;
   if (sextantSummary && sextantInspectorVisible && gps) {
     const terrainChunkCoordinates = getTerrainChunkCoordinates(gridX, gridY);
+    const terrainTileDebugInfo = renderer3d.getVisibleTileDebugInfo(
+      gridX,
+      gridY
+    );
     const terrainHeight =
       typeof spatial.tile.surfaceHeight === 'number' &&
       Number.isFinite(spatial.tile.surfaceHeight)
         ? spatial.tile.surfaceHeight
         : null;
+    const terrainLod =
+      terrainTileDebugInfo?.renderedDetailLevel ??
+      terrainTileDebugInfo?.cachedDetailLevel ??
+      terrainTileDebugInfo?.requestedDetailLevel ??
+      null;
     const sextantSignature = getSextantSignature({
       latitude: gps.latitude,
       longitude: gps.longitude,
@@ -4398,6 +4407,7 @@ function render(): FrameLoopActivityLike {
       localX: terrainChunkCoordinates.localX,
       localY: terrainChunkCoordinates.localY,
       terrainHeight,
+      terrainLod,
     });
     if (sextantSignature !== uiRenderState.lastSextantSignature) {
       sextantSummary.innerHTML = buildSextantMarkup({
@@ -4410,6 +4420,7 @@ function render(): FrameLoopActivityLike {
         localX: terrainChunkCoordinates.localX,
         localY: terrainChunkCoordinates.localY,
         terrainHeight,
+        terrainLod,
       });
       uiRenderState.lastSextantSignature = sextantSignature;
     }

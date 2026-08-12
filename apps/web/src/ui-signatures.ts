@@ -62,6 +62,7 @@ type SextantSignatureOptions = {
   localX: number;
   localY: number;
   terrainHeight: number | null;
+  terrainLod: string | null;
 };
 
 type TimekeeperMiniSignatureOptions = {
@@ -157,6 +158,7 @@ export function getSextantSignature(options: SextantSignatureOptions): string {
     options.localX,
     options.localY,
     formatSextantTerrainHeight(options.terrainHeight),
+    formatSextantTerrainLod(options.terrainLod),
   ].join('|');
 }
 
@@ -325,6 +327,7 @@ export function buildSextantMarkup(options: SextantSignatureOptions): string {
       <div><dt>Chunk</dt><dd>${options.chunkX}, ${options.chunkY}</dd></div>
       <div><dt>Local</dt><dd>${options.localX}, ${options.localY}</dd></div>
       <div><dt>Height</dt><dd>${formatSextantTerrainHeight(options.terrainHeight)}</dd></div>
+      <div><dt>Terrain LOD</dt><dd>${formatSextantTerrainLod(options.terrainLod)}</dd></div>
     `;
 }
 
@@ -333,4 +336,9 @@ function formatSextantTerrainHeight(value: number | null): string {
     return 'n/a';
   }
   return value.toFixed(3);
+}
+
+function formatSextantTerrainLod(value: string | null): string {
+  const normalized = value?.trim().toUpperCase();
+  return normalized ? normalized : 'n/a';
 }
