@@ -16,3 +16,11 @@ The station silhouette now also uses the base floor mesh as its root and
 attaches the hall, roof, canopy, lamp mesh, and point light beneath it, so
 station tiles avoid one otherwise empty wrapper `Group` without changing the
 silhouette or night-light placement.
+
+Material reuse:
+
+- repeated station builds on one Three host are expected to stay within one
+  shared four-material palette for the floor/hall shell, roof, canopy trim,
+  and lamp surfaces
+- the regression test locks that budget so repeated nearby station builds
+  cannot quietly start allocating extra equivalent materials on the same host

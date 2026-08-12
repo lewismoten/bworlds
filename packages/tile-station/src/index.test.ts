@@ -220,6 +220,41 @@ describe('tile station', () => {
     );
   });
 
+  it('keeps repeated station builds on one host within the shared material budget', () => {
+    const plugin = createStationTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'station');
+    const sharedHost = { ...fakeThree };
+    const repeatedModels: FakeNode[] = [];
+
+    for (const [tileX, tileY] of [
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 8],
+    ]) {
+      const model = tile?.create3DModel?.({
+        three: sharedHost as never,
+        state: {} as never,
+        tile: { kind: 'station' } as never,
+        tileX,
+        tileY,
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(4);
+  });
+
   it('uses the station base mesh as the root instead of a wrapper group', () => {
     const plugin = createStationTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'station');
