@@ -21,6 +21,7 @@ Current built-in support:
 - `createGenericConicMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
+- `createStereographicMapProjectionPlugin()`
 - `createTransverseMercatorMapProjectionPlugin()`
 
 ## Coordinate Contract
@@ -186,6 +187,28 @@ maps to `mapX/mapY` within `-1..1`.
 This gives later map UIs one distance-preserving azimuthal option while
 keeping the general azimuthal equal-area path and the later orthographic and
 stereographic variants separate.
+
+## Stereographic
+
+`createStereographicMapProjectionPlugin()` provides a centered spherical
+stereographic projection with configurable center longitude and latitude.
+
+It currently:
+
+- uses `id: 'stereographic'` by default
+- declares `distortion: 'conformal'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- defaults to a `0,0` center
+- clips the angular distance to `179` degrees to keep the normalized map
+  bounds finite near the antipode
+
+The projected range is normalized to a circular disk using the clipped
+stereographic radius, which maps to `mapX/mapY` within `-1..1`.
+
+This gives later map UIs one conformal azimuthal option that stays compatible
+with the shared normalized plugin contract instead of leaving stereographic as
+an unbounded special case.
 
 ## Miller Cylindrical
 

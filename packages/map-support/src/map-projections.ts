@@ -89,6 +89,14 @@ export const AZIMUTHAL_MAX_PROJECTED_RADIUS = 2;
 export const AZIMUTHAL_EQUIDISTANT_CENTER_LONGITUDE = 0;
 export const AZIMUTHAL_EQUIDISTANT_CENTER_LATITUDE = 0;
 export const AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS = Math.PI;
+export const STEREOGRAPHIC_CENTER_LONGITUDE = 0;
+export const STEREOGRAPHIC_CENTER_LATITUDE = 0;
+export const STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES = 179;
+export const STEREOGRAPHIC_MAX_PROJECTED_RADIUS =
+  2 *
+  Math.tan(
+    degreesToRadians(STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES) / 2
+  );
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -690,6 +698,112 @@ export function createAzimuthalEquidistantMapProjectionPlugin(
         };
       }
       const centralAngle = clamp(radius, 0, Math.PI);
+      const sinCentralAngle = Math.sin(centralAngle);
+      const cosCentralAngle = Math.cos(centralAngle);
+      const latitudeRadians = Math.asin(
+        clamp(
+          cosCentralAngle * sinCenterLatitude +
+            (projectedY * sinCentralAngle * cosCenterLatitude) / radius,
+          -1,
+          1
+        )
+      );
+      const longitudeRadians =
+        centerLongitudeRadians +
+        Math.atan2(
+          projectedX * sinCentralAngle,
+          radius * cosCenterLatitude * cosCentralAngle -
+            projectedY * sinCenterLatitude * sinCentralAngle
+        );
+      return {
+        worldX: normalizeLongitudeDegrees(radiansToDegrees(longitudeRadians)),
+        worldY: radiansToDegrees(latitudeRadians),
+      };
+    },
+  });
+}
+
+export function createStereographicMapProjectionPlugin(
+  options: AzimuthalMapProjectionOptions = {}
+): MapProjectionPlugin {
+  const centerLongitudeDegrees = normalizeFiniteNumber(
+    options.centerLongitudeDegrees ?? STEREOGRAPHIC_CENTER_LONGITUDE,
+    'Stereographic centerLongitudeDegrees'
+  );
+  const centerLatitudeDegrees = normalizeFiniteNumber(
+    options.centerLatitudeDegrees ?? STEREOGRAPHIC_CENTER_LATITUDE,
+    'Stereographic centerLatitudeDegrees'
+  );
+  const centerLongitudeRadians = degreesToRadians(centerLongitudeDegrees);
+  const centerLatitudeRadians = degreesToRadians(centerLatitudeDegrees);
+  const sinCenterLatitude = Math.sin(centerLatitudeRadians);
+  const cosCenterLatitude = Math.cos(centerLatitudeRadians);
+  const maxCentralAngleRadians = degreesToRadians(
+    STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES
+  );
+
+  return createMapProjectionPlugin({
+    id: options.id ?? 'stereographic',
+    label: options.label ?? 'Stereographic',
+    distortion: 'conformal',
+    bounds: {
+      minWorldX: -180,
+      maxWorldX: 180,
+      minWorldY: -90,
+      maxWorldY: 90,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const longitudeRadians =
+        degreesToRadians(normalizeLongitudeDegrees(worldX)) -
+        centerLongitudeRadians;
+      const latitudeRadians = degreesToRadians(clamp(worldY, -90, 90));
+      const sinLatitude = Math.sin(latitudeRadians);
+      const cosLatitude = Math.cos(latitudeRadians);
+      const cosineCentralAngle = clamp(
+        sinCenterLatitude * sinLatitude +
+          cosCenterLatitude * cosLatitude * Math.cos(longitudeRadians),
+        -1,
+        1
+      );
+      const centralAngle = Math.min(
+        Math.acos(cosineCentralAngle),
+        maxCentralAngleRadians
+      );
+      const scale = 2 * Math.tan(centralAngle / 2);
+      const directionScale =
+        Math.abs(1 - cosineCentralAngle) <= 1e-12
+          ? 1
+          : scale / Math.sqrt(Math.max(1e-12, 1 - cosineCentralAngle ** 2));
+      const projectedX =
+        directionScale * cosLatitude * Math.sin(longitudeRadians);
+      const projectedY =
+        directionScale *
+        (cosCenterLatitude * sinLatitude -
+          sinCenterLatitude * cosLatitude * Math.cos(longitudeRadians));
+      return {
+        mapX: snapNearZero(projectedX / STEREOGRAPHIC_MAX_PROJECTED_RADIUS),
+        mapY: snapNearZero(projectedY / STEREOGRAPHIC_MAX_PROJECTED_RADIUS),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * STEREOGRAPHIC_MAX_PROJECTED_RADIUS;
+      const projectedY = mapY * STEREOGRAPHIC_MAX_PROJECTED_RADIUS;
+      const radius = Math.hypot(projectedX, projectedY);
+      if (radius <= 1e-12) {
+        return {
+          worldX: centerLongitudeDegrees,
+          worldY: centerLatitudeDegrees,
+        };
+      }
+      const centralAngle = 2 * Math.atan(radius / 2);
       const sinCentralAngle = Math.sin(centralAngle);
       const cosCentralAngle = Math.cos(centralAngle);
       const latitudeRadians = Math.asin(

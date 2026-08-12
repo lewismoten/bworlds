@@ -6,6 +6,7 @@ import {
   AZIMUTHAL_EQUIDISTANT_CENTER_LATITUDE,
   AZIMUTHAL_EQUIDISTANT_CENTER_LONGITUDE,
   AZIMUTHAL_EQUIDISTANT_MAX_PROJECTED_RADIUS,
+  createStereographicMapProjectionPlugin,
   ALBERS_CENTRAL_MERIDIAN,
   ALBERS_LATITUDE_OF_ORIGIN,
   ALBERS_MAX_WORLD_LATITUDE,
@@ -29,6 +30,10 @@ import {
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
+  STEREOGRAPHIC_CENTER_LATITUDE,
+  STEREOGRAPHIC_CENTER_LONGITUDE,
+  STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES,
+  STEREOGRAPHIC_MAX_PROJECTED_RADIUS,
   TRANSVERSE_MERCATOR_MAX_PROJECTED_X,
   TRANSVERSE_MERCATOR_MAX_WORLD_LATITUDE,
   TRANSVERSE_MERCATOR_MAX_WORLD_LONGITUDE,
@@ -477,5 +482,53 @@ describe('map projections', () => {
     const inverted = projection.invert?.(forward);
     expect(inverted?.worldX).toBeCloseTo(40, 10);
     expect(inverted?.worldY).toBeCloseTo(25, 10);
+  });
+
+  it('projects and inverts stereographic coordinates with the default center', () => {
+    const projection = createStereographicMapProjectionPlugin();
+
+    expect(projection.id).toBe('stereographic');
+    expect(projection.label).toBe('Stereographic');
+    expect(projection.distortion).toBe('conformal');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 20,
+      worldY: 30,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(20, 10);
+    expect(inverted?.worldY).toBeCloseTo(30, 10);
+    expect(STEREOGRAPHIC_CENTER_LONGITUDE).toBe(0);
+    expect(STEREOGRAPHIC_CENTER_LATITUDE).toBe(0);
+    expect(STEREOGRAPHIC_MAX_CENTRAL_ANGLE_DEGREES).toBe(179);
+    expect(STEREOGRAPHIC_MAX_PROJECTED_RADIUS).toBeGreaterThan(100);
+  });
+
+  it('supports custom stereographic centers with matching inverse projection', () => {
+    const projection = createStereographicMapProjectionPlugin({
+      id: 'regional-stereographic',
+      label: 'Regional Stereographic',
+      centerLongitudeDegrees: -75,
+      centerLatitudeDegrees: 35,
+    });
+
+    expect(projection.id).toBe('regional-stereographic');
+    expect(projection.label).toBe('Regional Stereographic');
+
+    const forward = projection.project({
+      worldX: -60,
+      worldY: 40,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(-60, 10);
+    expect(inverted?.worldY).toBeCloseTo(40, 10);
   });
 });
