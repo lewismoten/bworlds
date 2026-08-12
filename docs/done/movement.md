@@ -1,0 +1,2 @@
+- [x] Add light head bobbing when walking
+- [ ] As tiles come into view from the edge of view, fade them into view

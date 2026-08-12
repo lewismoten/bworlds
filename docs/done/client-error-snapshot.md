@@ -1,0 +1,43 @@
+# Client Error Snapshot Capture
+
+- [x] Choose one ignored folder for client error snapshots.
+- [x] Add the error snapshot folder to `.gitignore`.
+- [x] Reuse the runtime performance tracking enabled flag.
+- [x] Skip all error snapshot reporting when tracking is disabled.
+- [x] Create a shared client error snapshot type.
+- [x] Include time, message, stack, source, and page URL.
+- [x] Normalize non-Error values into readable details.
+- [x] Create a stable hash from the normalized error message.
+- [x] Use the message hash as the snapshot filename.
+- [x] Keep one snapshot file per unique error message.
+- [x] Overwrite a snapshot when the same error happens again.
+- [x] Update the timestamp when an existing snapshot is replaced.
+- [x] Add a Vite API endpoint for saving error snapshots.
+- [x] Create the snapshot folder when it does not exist.
+- [x] Add a client helper for posting snapshots to Vite.
+- [x] Guard the client reporter with the tracking flag.
+- [x] Capture unhandled `window.error` events.
+- [x] Capture unhandled promise rejection events.
+- [x] Capture explicit `console.error` calls.
+- [x] Prevent the reporter from reporting its own failures.
+- [x] Keep original `console.error` output visible.
+- [x] Rethrow unhandled errors after reporting them.
+- [x] Preserve the original stack when rethrowing errors.
+- [x] Add a helper to list all saved error snapshots.
+- [x] Sort saved snapshots by most recent timestamp.
+- [x] Add a test that fails when any snapshot exists.
+- [x] Print every saved error in the test failure.
+- [x] Print each error timestamp in the test failure.
+- [x] Print each error message and stack in the failure.
+- [x] State that fixed snapshots must be removed from disk.
+- [x] Ensure tests pass when the snapshot folder is empty.
+- [x] Test disabled tracking creates no snapshot files.
+- [x] Test enabled tracking creates snapshot files.
+- [x] Test duplicate messages reuse the same file.
+- [x] Test different messages create different files.
+- [x] Test duplicate errors update the stored timestamp.
+- [x] Test reporting failures do not create loops.
+- [x] Add a command to remove one error snapshot.
+- [x] Add a command to clear all resolved snapshots.
+- [x] Document that snapshots require tracking to be enabled.
+- [x] Document that snapshots are local and never committed.

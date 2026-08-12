@@ -1,0 +1,7 @@
+- [x] Add the ability to toggle the time keeper within the view as either none at all, time, time + date, or graphical.
+- [x] Add the ablity to toggle a compass wihin the 2D+3D view as graphical, just letters (NW, N, NE, S, SE, SW, E, W), or hidden
+- [x] Add the ability to toggle the 2D map as a small birds eye overhead view in the corner while in 3D mode. You can control the zoom as well.
+- [x] I should be able to use the mouse to look up/down/left/right in 3d mode
+- [x] Add an ASCII text mode where 2D tiles are represetnted as single letters and colors.
+- [x] The button to swith to 3D, 2D, and Text should show what the next mode is.
+- [x] As I walk through the 3D view, make the world feel more like a sphere where the horizon is a gentle arc instead of a flat horizontal line
