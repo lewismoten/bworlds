@@ -30,6 +30,11 @@ The default multi-plan entry point builds the required PBR baseline:
 - normal
 - roughness
 
+The module now also exposes a binding-plan entry point that can choose between:
+
+- `texture-array` mode when WebGL2-style array sampling is available
+- `per-layer-textures` fallback mode when texture arrays are unavailable
+
 Why this exists separately from the renderer:
 
 - terrain layer indices must stay aligned across all arrays before shaders can
@@ -51,7 +56,16 @@ Current rules:
   the layers included in that plan; partial participation is rejected
 - plan sets warn when catalog layers are skipped as unused
 - plan sets warn when requested active layer IDs are missing from the catalog
+- binding plans warn when they had to fall back away from texture arrays
+
+Fallback behavior:
+
+- fallback mode keeps the same stable layer IDs and layer indices
+- fallback mode resolves one texture descriptor per active layer and purpose
+- fallback mode does not require matching dimensions or formats across layers
+- fallback mode still reports deterministic texture memory estimates
+- fallback mode still fails when a required texture descriptor is missing
 
 This closes the planning and validation part of the texture-array checklist,
-but not the renderer work. WebGL2 upload, fallback materials, and shader
-sampling are still separate follow-up tasks.
+but not the renderer work. WebGL2 upload, concrete fallback materials, and
+shader sampling are still separate follow-up tasks.

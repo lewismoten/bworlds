@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTerrainMaterialLayerCatalog } from './index.ts';
 import {
+  createTerrainTextureBindingPlanSet,
   createTerrainTextureArrayPlan,
   createTerrainTextureArrayPlanSet,
 } from './texture-array-plan.ts';
@@ -347,6 +348,139 @@ describe('terrain texture array plan', () => {
       })
     ).toThrowError(
       'Terrain layer "rock" must define metalnessTextureId before building the metalness texture array plan.'
+    );
+  });
+
+  it('uses texture-array mode when arrays are supported', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    const planSet = createTerrainTextureBindingPlanSet({
+      catalog,
+      supportsTextureArrays: true,
+      resolveTexture: createTextureResolver({
+        'grass/base': createTextureSource('grass/base'),
+        'grass/normal': createTextureSource('grass/normal'),
+        'grass/roughness': createTextureSource('grass/roughness'),
+      }),
+    });
+
+    expect(planSet.mode).toBe('texture-array');
+    expect(planSet.plans.every((plan) => 'depth' in plan)).toBe(true);
+    expect(planSet.warnings).toEqual([]);
+  });
+
+  it('falls back to per-layer textures when texture arrays are unavailable', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+    ]);
+
+    const planSet = createTerrainTextureBindingPlanSet({
+      catalog,
+      supportsTextureArrays: false,
+      purposes: ['baseColor'],
+      resolveTexture: createTextureResolver({
+        'grass/base': createTextureSource('grass/base', {
+          width: 256,
+          height: 256,
+          format: 'rgba8',
+        }),
+        'soil/base': createTextureSource('soil/base', {
+          width: 512,
+          height: 256,
+          format: 'rgb8',
+          bytesPerPixel: 3,
+        }),
+      }),
+    });
+
+    expect(planSet.mode).toBe('per-layer-textures');
+    expect(planSet.plans).toEqual([
+      {
+        purpose: 'baseColor',
+        layerBindings: [
+          {
+            layerId: 'grass',
+            layerIndex: 0,
+            textureId: 'grass/base',
+            width: 256,
+            height: 256,
+            format: 'rgba8',
+            bytesPerPixel: 4,
+            estimatedBytes: 256 * 256 * 4,
+          },
+          {
+            layerId: 'soil',
+            layerIndex: 1,
+            textureId: 'soil/base',
+            width: 512,
+            height: 256,
+            format: 'rgb8',
+            bytesPerPixel: 3,
+            estimatedBytes: 512 * 256 * 3,
+          },
+        ],
+        estimatedBytes: 256 * 256 * 4 + 512 * 256 * 3,
+      },
+    ]);
+    expect(planSet.warnings).toEqual([
+      {
+        code: 'texture-array-fallback',
+        message:
+          'Terrain texture binding plan is using per-layer texture fallback because texture arrays are unavailable.',
+      },
+    ]);
+    expect(planSet.estimatedBytes).toBe(256 * 256 * 4 + 512 * 256 * 3);
+  });
+
+  it('still rejects missing fallback texture descriptors', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    expect(() =>
+      createTerrainTextureBindingPlanSet({
+        catalog,
+        supportsTextureArrays: false,
+        purposes: ['baseColor'],
+        resolveTexture: createTextureResolver({}),
+      })
+    ).toThrowError(
+      'Terrain base color texture fallback plan is missing descriptor "grass/base" for layer "grass".'
     );
   });
 });

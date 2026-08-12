@@ -33,7 +33,7 @@ export type TerrainTextureArrayPlan = {
 };
 
 export type TerrainTextureArrayPlanSetWarningCode =
-  'unused-layer' | 'unknown-active-layer';
+  'unused-layer' | 'unknown-active-layer' | 'texture-array-fallback';
 
 export type TerrainTextureArrayPlanSetWarning = {
   code: TerrainTextureArrayPlanSetWarningCode;
@@ -46,6 +46,41 @@ export type TerrainTextureArrayPlanSet = {
     'layerId' | 'layerIndex'
   >[];
   plans: readonly TerrainTextureArrayPlan[];
+  activeLayerIds: readonly TerrainMaterialLayerId[];
+  unusedLayerIds: readonly TerrainMaterialLayerId[];
+  warnings: readonly TerrainTextureArrayPlanSetWarning[];
+  estimatedBytes: number;
+};
+
+export type TerrainTextureBindingMode = 'texture-array' | 'per-layer-textures';
+
+export type TerrainTextureFallbackLayerBinding = {
+  layerId: TerrainMaterialLayerId;
+  layerIndex: number;
+  textureId: string;
+  width: number;
+  height: number;
+  format: string;
+  bytesPerPixel: number;
+  estimatedBytes: number;
+};
+
+export type TerrainTextureFallbackPlan = {
+  purpose: TerrainTextureArrayPurpose;
+  layerBindings: readonly TerrainTextureFallbackLayerBinding[];
+  estimatedBytes: number;
+};
+
+export type TerrainTextureBindingPlan =
+  TerrainTextureArrayPlan | TerrainTextureFallbackPlan;
+
+export type TerrainTextureBindingPlanSet = {
+  mode: TerrainTextureBindingMode;
+  layerSlots: readonly Pick<
+    TerrainTextureArrayLayerSlot,
+    'layerId' | 'layerIndex'
+  >[];
+  plans: readonly TerrainTextureBindingPlan[];
   activeLayerIds: readonly TerrainMaterialLayerId[];
   unusedLayerIds: readonly TerrainMaterialLayerId[];
   warnings: readonly TerrainTextureArrayPlanSetWarning[];
@@ -112,6 +147,44 @@ export function createTerrainTextureArrayPlanSet(params: {
     unusedLayerIds: activeCatalog.unusedLayerIds,
     warnings,
     estimatedBytes: plans.reduce((sum, plan) => sum + plan.estimatedBytes, 0),
+  };
+}
+
+export function createTerrainTextureBindingPlanSet(params: {
+  catalog:
+    | readonly TerrainMaterialLayerCatalogEntry[]
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        entries?: readonly TerrainMaterialLayerCatalogEntry[];
+        byId?: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      };
+  resolveTexture: (textureId: string) => TerrainTextureArraySource | undefined;
+  purposes?: readonly TerrainTextureArrayPurpose[];
+  activeLayerIds?: readonly TerrainMaterialLayerId[];
+  supportsTextureArrays: boolean;
+}): TerrainTextureBindingPlanSet {
+  if (params.supportsTextureArrays) {
+    return {
+      mode: 'texture-array',
+      ...createTerrainTextureArrayPlanSet(params),
+    };
+  }
+
+  const fallbackPlanSet = createTerrainTextureFallbackPlanSet(params);
+  return {
+    mode: 'per-layer-textures',
+    ...fallbackPlanSet,
+    warnings: [
+      {
+        code: 'texture-array-fallback',
+        message:
+          'Terrain texture binding plan is using per-layer texture fallback because texture arrays are unavailable.',
+      },
+      ...fallbackPlanSet.warnings,
+    ],
   };
 }
 
@@ -211,6 +284,114 @@ function createTerrainTextureArrayPlanInternal(params: {
     depth: layerSlots.length,
     estimatedBytes: width * height * layerSlots.length * bytesPerPixel,
     layerSlots,
+  };
+}
+
+function createTerrainTextureFallbackPlanSet(params: {
+  catalog:
+    | readonly TerrainMaterialLayerCatalogEntry[]
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        entries?: readonly TerrainMaterialLayerCatalogEntry[];
+        byId?: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      };
+  resolveTexture: (textureId: string) => TerrainTextureArraySource | undefined;
+  purposes?: readonly TerrainTextureArrayPurpose[];
+  activeLayerIds?: readonly TerrainMaterialLayerId[];
+}): Omit<TerrainTextureBindingPlanSet, 'mode'> {
+  const catalogEntries = getSortedCatalogEntries(params.catalog);
+  const activeCatalog = selectActiveTerrainTextureArrayCatalogEntries(
+    catalogEntries,
+    params.activeLayerIds
+  );
+  const purposes = [...(params.purposes ?? DEFAULT_REQUIRED_PURPOSES)];
+  const plans = purposes.map((purpose) =>
+    createTerrainTextureFallbackPlanInternal({
+      purpose,
+      catalogEntries: activeCatalog.entries,
+      resolveTexture: params.resolveTexture,
+    })
+  );
+  const layerSlots = activeCatalog.entries.map((entry) => ({
+    layerId: entry.id,
+    layerIndex: entry.index,
+  }));
+  const warnings: TerrainTextureArrayPlanSetWarning[] = [];
+
+  if (activeCatalog.unusedLayerIds.length > 0) {
+    warnings.push({
+      code: 'unused-layer',
+      message: `Terrain texture array plan skipped ${activeCatalog.unusedLayerIds.length} unused layer(s): ${activeCatalog.unusedLayerIds.join(', ')}.`,
+    });
+  }
+  if (activeCatalog.unknownActiveLayerIds.length > 0) {
+    warnings.push({
+      code: 'unknown-active-layer',
+      message: `Terrain texture array plan requested ${activeCatalog.unknownActiveLayerIds.length} unknown active layer(s): ${activeCatalog.unknownActiveLayerIds.join(', ')}.`,
+    });
+  }
+
+  return {
+    layerSlots,
+    plans,
+    activeLayerIds: activeCatalog.entries.map((entry) => entry.id),
+    unusedLayerIds: activeCatalog.unusedLayerIds,
+    warnings,
+    estimatedBytes: plans.reduce((sum, plan) => sum + plan.estimatedBytes, 0),
+  };
+}
+
+function createTerrainTextureFallbackPlanInternal(params: {
+  purpose: TerrainTextureArrayPurpose;
+  catalogEntries: readonly TerrainMaterialLayerCatalogEntry[];
+  resolveTexture: (textureId: string) => TerrainTextureArraySource | undefined;
+}): TerrainTextureFallbackPlan {
+  const property = getTexturePropertyName(params.purpose);
+  const label = formatPurposeLabel(params.purpose);
+  const layerBindings: TerrainTextureFallbackLayerBinding[] = [];
+
+  for (const layer of params.catalogEntries) {
+    const textureId = layer[property];
+    if (typeof textureId !== 'string' || textureId.trim().length === 0) {
+      throw new Error(
+        `Terrain layer "${layer.id}" must define ${property} before building the ${label} texture fallback plan.`
+      );
+    }
+    const source = params.resolveTexture(textureId);
+    if (!source) {
+      throw new Error(
+        `Terrain ${label} texture fallback plan is missing descriptor "${textureId}" for layer "${layer.id}".`
+      );
+    }
+    const normalized = normalizeTerrainTextureArraySource(source, {
+      purpose: params.purpose,
+      layerId: layer.id,
+      textureId,
+    });
+
+    layerBindings.push({
+      layerId: layer.id,
+      layerIndex: layer.index,
+      textureId,
+      width: normalized.width,
+      height: normalized.height,
+      format: normalized.format,
+      bytesPerPixel: normalized.bytesPerPixel,
+      estimatedBytes:
+        normalized.width * normalized.height * normalized.bytesPerPixel,
+    });
+  }
+
+  return {
+    purpose: params.purpose,
+    layerBindings,
+    estimatedBytes: layerBindings.reduce(
+      (sum, binding) => sum + binding.estimatedBytes,
+      0
+    ),
   };
 }
 

@@ -31,7 +31,7 @@
 - [x] Keep array texture dimensions consistent.
 - [x] Keep array texture formats consistent.
 - [x] Keep layer indices aligned across all arrays.
-- [ ] Add a fallback when texture arrays are unavailable.
+- [x] Add a fallback when texture arrays are unavailable.
 - [x] Report texture array memory usage.
 
 ## Terrain Layer Limits
@@ -300,6 +300,11 @@
   `@bworlds/terrain-splat-support` so deterministic UV rotation/mirroring and
   tint variation are locked to metadata-only behavior and do not imply new
   shared material identities for the same terrain layer catalog entry.
+- Added a renderer-free texture binding fallback contract in
+  `@bworlds/terrain-splat-support/texture-array-plan` so the shared terrain
+  layer catalog can resolve either aligned WebGL2 array plans or per-layer
+  texture fallback bindings with stable layer slots, warnings, and memory
+  estimates when texture arrays are unavailable.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.

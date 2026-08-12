@@ -1492,7 +1492,9 @@ function validateTerrainKindSplatCondition(
       errors.push(
         `Terrain splat kind ${formatLayerLabel(kind)} must omit seasons or define a non-empty array of valid seasons.`
       );
-    } else if (condition.seasons.some((season) => !isTerrainSplatSeason(season))) {
+    } else if (
+      condition.seasons.some((season) => !isTerrainSplatSeason(season))
+    ) {
       errors.push(
         `Terrain splat kind ${formatLayerLabel(kind)} seasons must only contain spring, summer, autumn, or winter.`
       );
@@ -1557,14 +1559,8 @@ function matchesTerrainKindSplatCondition(
     matchesMaximum(condition.maxRoadSignal, signals.roadSignal) &&
     matchesMinimum(condition.minPoiSignal, signals.poiSignal) &&
     matchesMaximum(condition.maxPoiSignal, signals.poiSignal) &&
-    matchesMinimum(
-      condition.minSettlementSignal,
-      signals.settlementSignal
-    ) &&
-    matchesMaximum(
-      condition.maxSettlementSignal,
-      signals.settlementSignal
-    ) &&
+    matchesMinimum(condition.minSettlementSignal, signals.settlementSignal) &&
+    matchesMaximum(condition.maxSettlementSignal, signals.settlementSignal) &&
     matchesBiome(condition.biomes, signals.biome) &&
     matchesPoiType(condition.poiTypes, signals.poiType) &&
     matchesSeason(condition.seasons, signals.season)
@@ -1624,7 +1620,9 @@ function matchesPoiType(
 ): boolean {
   return (
     poiTypes === undefined ||
-    poiTypes.some((candidate) => normalizeTerrainPoiLabel(candidate) === poiType)
+    poiTypes.some(
+      (candidate) => normalizeTerrainPoiLabel(candidate) === poiType
+    )
   );
 }
 
