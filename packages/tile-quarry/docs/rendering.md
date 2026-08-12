@@ -11,3 +11,8 @@ Current progressive phases:
 
 The synchronous `create3DModel()` path exhausts the same generator so the
 progressive and eager builds stay structurally aligned.
+
+The quarry landmark now also uses the rim mesh as its root and attaches the
+pit, derrick, lantern, and cart details beneath it, so quarry tiles avoid one
+otherwise empty wrapper `Group` without changing the landmark silhouette or
+night-light placement.

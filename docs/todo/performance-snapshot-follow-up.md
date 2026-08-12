@@ -255,7 +255,12 @@
       placement, and `tile-mountain` now uses its base cone mesh as the root
       and hangs the upper cone, crown, and snowcap beneath it instead of
       wrapping the peak stack in a dedicated `Group`, which removes one static
-      `Object3D` from each mountain tile without changing the silhouette.
+      `Object3D` from each mountain tile without changing the silhouette, and
+      `tile-quarry` now uses its rim mesh as the root and hangs the pit,
+      derrick, lantern, and cart details beneath it instead of wrapping the
+      landmark in a dedicated `Group`, which removes one static `Object3D` from
+      each quarry tile without changing the landmark silhouette or night-light
+      placement.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so

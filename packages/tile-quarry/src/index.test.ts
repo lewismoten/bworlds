@@ -238,7 +238,7 @@ describe('tile quarry', () => {
       tile: { kind: 'quarry' } as never,
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     const stoneInstances = model?.children.filter(
       (child) =>
@@ -250,7 +250,8 @@ describe('tile quarry', () => {
         child instanceof FakeMesh &&
         child.material instanceof FakeMaterial &&
         child.material.options.color === '#9c9186' &&
-        child.position.y < 0.1
+        child.position.y < 0.1 &&
+        Math.hypot(child.position.x, child.position.z) > 0.4
     );
 
     expect(stoneInstances).toHaveLength(1);
@@ -271,7 +272,7 @@ describe('tile quarry', () => {
       tile: { kind: 'quarry' } as never,
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     const wheelInstances = model?.children.filter(
       (child) =>
@@ -304,7 +305,7 @@ describe('tile quarry', () => {
       tile: { kind: 'quarry' } as never,
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     const derrickPostInstances = model?.children.filter(
       (child) =>
@@ -330,7 +331,7 @@ describe('tile quarry', () => {
     ).toBe(true);
     expect(
       derrickPostInstances[0]?.matrices.every(
-        (matrix) => matrix.position.y === 0.28
+        (matrix) => matrix.position.y === 0.19
       )
     ).toBe(true);
     expect(standalonePosts).toHaveLength(0);
@@ -447,7 +448,7 @@ describe('tile quarry', () => {
       tile: { kind: 'quarry' } as never,
       tileX: 8,
       tileY: 8,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     let glowMesh: FakeMesh | null = null;
     let pointLight: FakePointLight | null = null;
@@ -501,6 +502,22 @@ describe('tile quarry', () => {
     ).toBeGreaterThan(1);
     expect(pointLight?.intensity ?? 0).toBeCloseTo(0.76, 6);
     expect(pointLight?.visible).toBe(true);
+  });
+
+  it('uses the quarry rim mesh as the root instead of a wrapper group', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createQuarryState(),
+      tile: { kind: 'quarry' } as never,
+      tileX: 8,
+      tileY: 8,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 8, y: 0.09, z: 8 });
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(8);
   });
 });
 

@@ -91,7 +91,6 @@ function* createQuarryModelProgressive({
     lanternMaterial,
   } = getQuarrySharedMaterials(three);
 
-  const group = new three.Group();
   const facing = getQuarryFacing(state, tileX, tileY);
   const totalSteps = 3;
 
@@ -100,14 +99,13 @@ function* createQuarryModelProgressive({
     mountainMaterial
   );
   rim.position.set(tileX, 0.09, tileY);
-  group.add(rim);
 
   const pit = new three.Mesh(
     new three.CylinderGeometry(0.36, 0.52, 0.12, 8),
     darkMetalMaterial
   );
-  pit.position.set(tileX, 0.03, tileY);
-  group.add(pit);
+  pit.position.set(0, -0.06, 0);
+  rim.add(pit);
 
   const stoneInstances = new three.InstancedMesh(
     new three.BoxGeometry(1, 1, 1),
@@ -126,16 +124,16 @@ function* createQuarryModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         stoneMatrixScratch,
-        tileX + Math.cos(angle) * 0.58,
-        0.08,
-        tileY + Math.sin(angle) * 0.58,
+        Math.cos(angle) * 0.58,
+        -0.01,
+        Math.sin(angle) * 0.58,
         0.14 + hash2D(QUARRY_STONE_WIDTH_SEED, tileX + index, tileY) * 0.08,
         0.08 + hash2D(QUARRY_STONE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
         0.14 + hash2D(QUARRY_STONE_DEPTH_SEED, tileX - index, tileY) * 0.08
       )
     );
   }
-  group.add(stoneInstances);
+  rim.add(stoneInstances);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -158,28 +156,36 @@ function* createQuarryModelProgressive({
   derrickPostInstances.setMatrixAt(
     0,
     writeInstancedScalePositionMatrix(
-      derrickPostMatrixScratch,
-      derrickOriginX + rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).x,
-      0.28,
-      derrickOriginZ + rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).z,
-      1,
-      1,
-      1
+        derrickPostMatrixScratch,
+        derrickOriginX +
+          rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).x -
+          tileX,
+        0.19,
+        derrickOriginZ +
+          rotateQuarryLocalOffset(-0.18, 0.18, facing.rotationY).z -
+          tileY,
+        1,
+        1,
+        1
     )
   );
   derrickPostInstances.setMatrixAt(
     1,
     writeInstancedScalePositionMatrix(
-      derrickPostMatrixScratch,
-      derrickOriginX + rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).x,
-      0.28,
-      derrickOriginZ + rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).z,
-      1,
-      1,
-      1
+        derrickPostMatrixScratch,
+        derrickOriginX +
+          rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).x -
+          tileX,
+        0.19,
+        derrickOriginZ +
+          rotateQuarryLocalOffset(0.18, 0.18, facing.rotationY).z -
+          tileY,
+        1,
+        1,
+        1
     )
   );
-  group.add(derrickPostInstances);
+  rim.add(derrickPostInstances);
 
   const beam = new three.Mesh(
     new three.BoxGeometry(0.46, 0.05, 0.05),
@@ -187,12 +193,12 @@ function* createQuarryModelProgressive({
   );
   const beamOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
   beam.position.set(
-    derrickOriginX + beamOffset.x,
-    0.54,
-    derrickOriginZ + beamOffset.z
+    derrickOriginX + beamOffset.x - tileX,
+    0.45,
+    derrickOriginZ + beamOffset.z - tileY
   );
   beam.rotation.y = facing.rotationY;
-  group.add(beam);
+  rim.add(beam);
 
   const pulley = new three.Mesh(
     new three.TorusGeometry(0.06, 0.015, 6, 10),
@@ -200,13 +206,13 @@ function* createQuarryModelProgressive({
   );
   const pulleyOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
   pulley.position.set(
-    derrickOriginX + pulleyOffset.x,
-    0.5,
-    derrickOriginZ + pulleyOffset.z
+    derrickOriginX + pulleyOffset.x - tileX,
+    0.41,
+    derrickOriginZ + pulleyOffset.z - tileY
   );
   pulley.rotation.y = facing.rotationY;
   pulley.rotation.x = Math.PI / 2;
-  group.add(pulley);
+  rim.add(pulley);
 
   const cable = new three.Mesh(
     new three.CylinderGeometry(0.008, 0.008, 0.32, 6),
@@ -214,11 +220,11 @@ function* createQuarryModelProgressive({
   );
   const cableOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
   cable.position.set(
-    derrickOriginX + cableOffset.x,
-    0.33,
-    derrickOriginZ + cableOffset.z
+    derrickOriginX + cableOffset.x - tileX,
+    0.24,
+    derrickOriginZ + cableOffset.z - tileY
   );
-  group.add(cable);
+  rim.add(cable);
 
   const bucket = new three.Mesh(
     new three.BoxGeometry(0.12, 0.1, 0.12),
@@ -226,11 +232,11 @@ function* createQuarryModelProgressive({
   );
   const bucketOffset = rotateQuarryLocalOffset(0, 0.18, facing.rotationY);
   bucket.position.set(
-    derrickOriginX + bucketOffset.x,
-    0.12,
-    derrickOriginZ + bucketOffset.z
+    derrickOriginX + bucketOffset.x - tileX,
+    0.03,
+    derrickOriginZ + bucketOffset.z - tileY
   );
-  group.add(bucket);
+  rim.add(bucket);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -251,11 +257,11 @@ function* createQuarryModelProgressive({
     facing.rotationY
   );
   lanternCore.position.set(
-    derrickOriginX + lanternCoreOffset.x,
-    0.38,
-    derrickOriginZ + lanternCoreOffset.z
+    derrickOriginX + lanternCoreOffset.x - tileX,
+    0.29,
+    derrickOriginZ + lanternCoreOffset.z - tileY
   );
-  group.add(lanternCore);
+  rim.add(lanternCore);
 
   const lanternLight = markPoiLightEmitter(
     new three.PointLight('#f8c36a', 0, 3.1, 1.9),
@@ -271,20 +277,20 @@ function* createQuarryModelProgressive({
     facing.rotationY
   );
   lanternLight.position.set(
-    derrickOriginX + lanternLightOffset.x,
-    0.38,
-    derrickOriginZ + lanternLightOffset.z
+    derrickOriginX + lanternLightOffset.x - tileX,
+    0.29,
+    derrickOriginZ + lanternLightOffset.z - tileY
   );
   lanternLight.visible = false;
-  group.add(lanternLight);
+  rim.add(lanternLight);
 
   const cart = new three.Mesh(
     new three.BoxGeometry(0.22, 0.08, 0.14),
     timberMaterial
   );
-  cart.position.set(tileX - facing.dx * 0.34, 0.06, tileY - facing.dy * 0.34);
+  cart.position.set(-facing.dx * 0.34, -0.03, -facing.dy * 0.34);
   cart.rotation.y = facing.rotationY;
-  group.add(cart);
+  rim.add(cart);
 
   const wheelInstances = new three.InstancedMesh(
     new three.CylinderGeometry(0.04, 0.04, 0.02, 8),
@@ -303,7 +309,7 @@ function* createQuarryModelProgressive({
       writeInstancedScalePositionMatrix(
         wheelMatrixScratch,
         cart.position.x + wheelOffset,
-        0.04,
+        -0.05,
         cart.position.z + 0.08,
         1,
         1,
@@ -311,14 +317,14 @@ function* createQuarryModelProgressive({
       )
     );
   });
-  group.add(wheelInstances);
+  rim.add(wheelInstances);
   yield {
     completedSteps: 3,
     totalSteps,
     label: 'cart-lantern',
   };
 
-  return group;
+  return rim;
 }
 
 function runQuarryModelBuildToCompletion(
