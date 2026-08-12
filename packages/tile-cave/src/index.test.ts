@@ -403,7 +403,9 @@ describe('tile cave', () => {
       | undefined;
 
     expect(first?.material).toBe(second?.material);
-    expect(first?.children?.[0]?.material).toBe(second?.children?.[0]?.material);
+    expect(first?.children?.[0]?.material).toBe(
+      second?.children?.[0]?.material
+    );
   });
 
   it('instances repeated cave mushrooms as shared stem and cap sets', () => {
@@ -669,13 +671,15 @@ describe('tile cave', () => {
       expect(
         [
           low?.userData?.caveLowDetailPart,
-          ...(low?.children?.map((child) => child.userData?.caveLowDetailPart) ??
-            []),
+          ...(low?.children?.map(
+            (child) => child.userData?.caveLowDetailPart
+          ) ?? []),
         ].sort()
       ).toEqual(['mound', 'mouth-void', 'tunnel-back']);
       expect(
         low?.children?.every(
-          (child) => !Array.isArray(child.children) || child.children.length === 0
+          (child) =>
+            !Array.isArray(child.children) || child.children.length === 0
         )
       ).toBe(true);
     } finally {

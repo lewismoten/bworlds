@@ -4,11 +4,7 @@ import type { TerrainRouteClass } from './route-width-plan.ts';
 
 export type TerrainRouteSurfaceMode = 'splat' | 'overlay' | 'none';
 export type TerrainRouteSurfaceHint =
-  | 'dirt'
-  | 'gravel'
-  | 'stone'
-  | 'grass'
-  | 'mud';
+  'dirt' | 'gravel' | 'stone' | 'grass' | 'mud';
 export type TerrainRouteSurfaceType =
   | 'broad-dirt-road'
   | 'broad-gravel-road'
@@ -191,7 +187,10 @@ function resolveTrailSurfaceLayer(
     case 'grass':
       return {
         surfaceType: 'narrow-grass-trail',
-        layerId: params.grassTrailLayerId ?? params.dirtTrailLayerId ?? params.dirtRoadLayerId,
+        layerId:
+          params.grassTrailLayerId ??
+          params.dirtTrailLayerId ??
+          params.dirtRoadLayerId,
       };
     case 'stone':
     case 'gravel':

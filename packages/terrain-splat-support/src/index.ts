@@ -1072,7 +1072,10 @@ export function createOverworldTerrainSplatDefinitions(
           },
         },
         {
-          layerId: layers.grassTrailLayerId ?? layers.dirtTrailLayerId ?? layers.dirtLayerId,
+          layerId:
+            layers.grassTrailLayerId ??
+            layers.dirtTrailLayerId ??
+            layers.dirtLayerId,
           weight: 0.22,
           when: {
             maxRoadSignal: 0.16,

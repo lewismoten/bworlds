@@ -396,7 +396,9 @@ describe('terrain splat sample grid', () => {
 
     for (let row = 0; row < leftGrid.height; row += 1) {
       expect(
-        pickRouteEntries(getTerrainSplatGridSample(leftGrid, leftGrid.width - 1, row))
+        pickRouteEntries(
+          getTerrainSplatGridSample(leftGrid, leftGrid.width - 1, row)
+        )
       ).toEqual(pickRouteEntries(getTerrainSplatGridSample(rightGrid, 0, row)));
     }
   });
@@ -442,7 +444,9 @@ describe('terrain splat sample grid', () => {
 
     for (let column = 0; column < topGrid.width; column += 1) {
       expect(
-        pickRouteEntries(getTerrainSplatGridSample(topGrid, column, topGrid.height - 1))
+        pickRouteEntries(
+          getTerrainSplatGridSample(topGrid, column, topGrid.height - 1)
+        )
       ).toEqual(
         pickRouteEntries(getTerrainSplatGridSample(bottomGrid, column, 0))
       );
@@ -1226,10 +1230,11 @@ function createMockNowMs(values: readonly number[]): () => number {
   };
 }
 
-function pickRouteEntries(
-  sample: { entries: readonly { layerId: string; weight: number }[] }
-) {
-  return sample.entries.filter((entry) =>
-    entry.layerId.endsWith('-road') || entry.layerId.endsWith('-trail')
+function pickRouteEntries(sample: {
+  entries: readonly { layerId: string; weight: number }[];
+}) {
+  return sample.entries.filter(
+    (entry) =>
+      entry.layerId.endsWith('-road') || entry.layerId.endsWith('-trail')
   );
 }

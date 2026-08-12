@@ -242,13 +242,19 @@ describe('terrain splat performance estimate', () => {
     expect(terrainComparison.splat.estimatedFrameTimeMs).toBeLessThanOrEqual(
       TERRAIN_SPLAT_PERFORMANCE_LIMITS.maxSplatEstimatedFrameTimeMs
     );
-    expect(terrainComparison.reductionRatios.drawCallCount).toBeGreaterThanOrEqual(
+    expect(
+      terrainComparison.reductionRatios.drawCallCount
+    ).toBeGreaterThanOrEqual(
       TERRAIN_SPLAT_PERFORMANCE_LIMITS.minDrawCallReductionRatio
     );
-    expect(terrainComparison.reductionRatios.materialCount).toBeGreaterThanOrEqual(
+    expect(
+      terrainComparison.reductionRatios.materialCount
+    ).toBeGreaterThanOrEqual(
       TERRAIN_SPLAT_PERFORMANCE_LIMITS.minMaterialReductionRatio
     );
-    expect(terrainComparison.reductionRatios.programCount).toBeGreaterThanOrEqual(
+    expect(
+      terrainComparison.reductionRatios.programCount
+    ).toBeGreaterThanOrEqual(
       TERRAIN_SPLAT_PERFORMANCE_LIMITS.minProgramReductionRatio
     );
     expect(routeComparison.splat.drawCallCount).toBeLessThanOrEqual(

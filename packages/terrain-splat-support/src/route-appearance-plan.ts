@@ -1,4 +1,7 @@
-import type { Kind, WorldEnvironmentWeatherConditionLike } from '@bworlds/plugin-api';
+import type {
+  Kind,
+  WorldEnvironmentWeatherConditionLike,
+} from '@bworlds/plugin-api';
 import type { TerrainRouteSurfaceType } from './route-surface-plan.ts';
 
 export type TerrainRouteAppearanceProfile = {
@@ -71,7 +74,9 @@ export function resolveTerrainRouteAppearanceProfile(params: {
   const gravelLike = isGravelLikeSurface(params.surfaceType);
   const wheelRutStrength =
     params.kind === 'road' && dirtLike
-      ? clamp01(wearStrength * (0.32 + trafficIntensity * 0.18 + wetness * 0.42))
+      ? clamp01(
+          wearStrength * (0.32 + trafficIntensity * 0.18 + wetness * 0.42)
+        )
       : 0;
   const wornCenterStrength =
     params.kind === 'path'
@@ -96,9 +101,7 @@ export function resolveTerrainRouteAppearanceProfile(params: {
           (1 - snowCoverStrength * 0.82)
       )
     : clamp01(
-        wetness *
-          (gravelLike ? 0.1 : 0.18) *
-          (1 - snowCoverStrength * 0.88)
+        wetness * (gravelLike ? 0.1 : 0.18) * (1 - snowCoverStrength * 0.88)
       );
   const roughnessMultiplier = 1 - wetness * 0.22 - mudStrength * 0.08;
   const tintDarkening = wetness * 0.16 + mudStrength * 0.08;

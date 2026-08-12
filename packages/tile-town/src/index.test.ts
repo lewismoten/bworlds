@@ -414,9 +414,9 @@ describe('tile town', () => {
     expect(lowModel.userData?.townInstancedPart).toBe('low-building-body');
     expect(lowModel.count).toBe(descriptorCount);
     expect(lowModel.matrices).toHaveLength(descriptorCount);
-    expect(
-      collectTownInstancedParts(fullModel).includes('building-body')
-    ).toBe(true);
+    expect(collectTownInstancedParts(fullModel).includes('building-body')).toBe(
+      true
+    );
   });
 
   it('returns the low-detail town body instances directly without a wrapper group', () => {

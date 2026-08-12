@@ -46,9 +46,13 @@ describe('terrain route render plan', () => {
 
     expect(plan.mode).toBe('splat');
     expect(plan.classification).toBe('worn-path');
-    expect(plan.appearanceProfile.wornCenterStrength).toBeGreaterThanOrEqual(0.22);
+    expect(plan.appearanceProfile.wornCenterStrength).toBeGreaterThanOrEqual(
+      0.22
+    );
     expect(plan.removeSeparateRoadMesh).toBe(true);
-    expect(plan.reason).toContain('worn paths can stay on terrain splat layers');
+    expect(plan.reason).toContain(
+      'worn paths can stay on terrain splat layers'
+    );
   });
 
   it('keeps separate overlays for sharper gravel trails that should not widen into splats', () => {

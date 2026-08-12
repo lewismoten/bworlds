@@ -554,7 +554,10 @@ const constellationSkyMaterialCachesByRoot = new Map<
   THREE.Group,
   ConstellationSkyMaterialCaches
 >();
-const milkyWayMaterialCachesByRoot = new Map<THREE.Group, MilkyWayMaterialCaches>();
+const milkyWayMaterialCachesByRoot = new Map<
+  THREE.Group,
+  MilkyWayMaterialCaches
+>();
 
 function getCelestialEventMaterialCaches(
   root: THREE.Group

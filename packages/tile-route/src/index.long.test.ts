@@ -1470,7 +1470,8 @@ describe('tile route', () => {
         }) as FakeNode | undefined;
         if (
           candidate &&
-          collectTaggedInstancedMeshes(candidate, 'routeInstancedPart').length > 0
+          collectTaggedInstancedMeshes(candidate, 'routeInstancedPart').length >
+            0
         ) {
           model = candidate;
           break;
@@ -1946,10 +1947,7 @@ describe('tile route', () => {
       ) {
         const left = regionalBridgeModels[index]!;
         const right = regionalBridgeModels[compareIndex]!;
-        if (
-          left.regionX === right.regionX &&
-          left.regionY === right.regionY
-        ) {
+        if (left.regionX === right.regionX && left.regionY === right.regionY) {
           continue;
         }
         highestCrossRegionSharedCount = Math.max(

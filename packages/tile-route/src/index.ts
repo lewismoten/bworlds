@@ -3301,10 +3301,7 @@ function getOrCreateBridgeSolidMaterial(
     );
     bridgeSolidMaterialCache.set(host, cache);
   }
-  return cache.getOrCreate(
-    key,
-    () => new host.MeshStandardMaterial(options)
-  );
+  return cache.getOrCreate(key, () => new host.MeshStandardMaterial(options));
 }
 
 function createBridgeTexture(

@@ -1,4 +1,7 @@
-import type { Kind, WorldEnvironmentWeatherConditionLike } from '@bworlds/plugin-api';
+import type {
+  Kind,
+  WorldEnvironmentWeatherConditionLike,
+} from '@bworlds/plugin-api';
 import type { TerrainMaterialLayerId } from './index.ts';
 import {
   resolveTerrainRouteAppearanceProfile,
@@ -27,7 +30,8 @@ export type TerrainRouteRenderPlanClassification =
   | 'geometry-fallback'
   | 'none';
 
-export type TerrainRouteRenderPlanMode = 'splat' | 'overlay' | 'geometry' | 'none';
+export type TerrainRouteRenderPlanMode =
+  'splat' | 'overlay' | 'geometry' | 'none';
 
 export type TerrainRouteRenderPlan = {
   mode: TerrainRouteRenderPlanMode;
@@ -125,9 +129,10 @@ export function createTerrainRouteRenderPlan(params: {
   if (geometryPlan.mode === 'geometry') {
     return {
       mode: 'geometry',
-      classification: params.kind === 'road' || params.kind === 'path'
-        ? 'geometry-fallback'
-        : 'none',
+      classification:
+        params.kind === 'road' || params.kind === 'path'
+          ? 'geometry-fallback'
+          : 'none',
       removeSeparateRoadMesh: false,
       requiresSeparateRouteMesh: true,
       widthPlan,

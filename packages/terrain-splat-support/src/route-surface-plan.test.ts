@@ -16,7 +16,8 @@ describe('terrain route surface plan', () => {
       layerId: 'dirt-road',
       overlayWidth: 0,
       shoulderBlendWidth: 0.32,
-      reason: 'broad roads stay in terrain splats by default using the dirt route surface',
+      reason:
+        'broad roads stay in terrain splats by default using the dirt route surface',
     });
   });
 
