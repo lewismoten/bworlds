@@ -50,8 +50,9 @@ Material lifetime:
   created by a different host, which keeps material/shader ownership aligned
   with the renderer that will actually dispose them.
 - Low-detail forest trees also reuse one shared trunk material and one shared
-  foliage material across tree varieties, which keeps distant forest tiles
-  inside the renderer's per-tile material budget.
+  broadleaf foliage material plus one shared conifer foliage material across
+  tree varieties, which keeps mixed distant forest tiles inside the renderer's
+  per-tile material budget even when one low-detail tile contains both forms.
 - Full-detail forest also reuses one shared accessory palette for invariant
   hollow, owl-eye, web, carving, and meadow flower materials across varieties,
   so repeated nearby forest tiles stop minting duplicate detail materials for

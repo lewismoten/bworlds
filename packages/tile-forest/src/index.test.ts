@@ -227,6 +227,40 @@ describe('tile forest', () => {
     expect(materials.size).toBeLessThanOrEqual(3);
   });
 
+  it('keeps low-detail forest tree materials within budget across sampled tiles', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const lowModel = tile.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: { kind: 'forest' },
+          tileX,
+          tileY,
+          detailLevel: 'low',
+        }) as FakeGroup;
+
+        const materials = new Set<unknown>();
+        lowModel.traverse((node) => {
+          if (
+            node instanceof FakeInstancedMesh &&
+            node.userData?.renderStatKind === 'tree' &&
+            node.material
+          ) {
+            const nodeMaterials = Array.isArray(node.material)
+              ? node.material
+              : [node.material];
+            nodeMaterials.forEach((material) => materials.add(material));
+          }
+        });
+
+        expect(materials.size).toBeLessThanOrEqual(3);
+      }
+    }
+  });
+
   it('reuses full-detail forest family materials in low-detail tree instances', () => {
     const tile = getForestTile();
     const state = createForestTestState();

@@ -4027,9 +4027,10 @@ function getLowDetailTreeStyle(
   three: ThreeHostLike,
   form: ForestTreeForm
 ): Pick<ForestTreeStyle, 'trunkMaterial' | 'foliageMaterial'> {
+  const sharedTrunkStyle = getTreeStyle(three, 0, 0, 0);
   const sharedFamilyStyle = getTreeStyle(three, 0, 0, form === 'pine' ? 2 : 0);
   return {
-    trunkMaterial: sharedFamilyStyle.trunkMaterial,
+    trunkMaterial: sharedTrunkStyle.trunkMaterial,
     foliageMaterial: sharedFamilyStyle.foliageMaterial,
   };
 }
