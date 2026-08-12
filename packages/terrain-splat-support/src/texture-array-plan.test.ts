@@ -142,6 +142,95 @@ describe('terrain texture array plan', () => {
     expect(plan.estimatedBytes).toBe(128 * 128 * 2);
   });
 
+  it('supports optional ambient occlusion arrays for an active layer subset and warns about skipped layers', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'ore',
+        baseColorTextureId: 'ore/base',
+        normalTextureId: 'ore/normal',
+        roughnessTextureId: 'ore/roughness',
+        ambientOcclusionTextureId: 'ore/ao',
+        textureScale: 4,
+        defaultTint: '#8f8778',
+        defaultRoughness: 0.55,
+      },
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    const planSet = createTerrainTextureArrayPlanSet({
+      catalog,
+      activeLayerIds: ['ore'],
+      purposes: ['ambientOcclusion'],
+      resolveTexture: createTextureResolver({
+        'ore/ao': createTextureSource('ore/ao', {
+          width: 128,
+          height: 128,
+          format: 'r8',
+          bytesPerPixel: 1,
+        }),
+      }),
+    });
+
+    expect(planSet.activeLayerIds).toEqual(['ore']);
+    expect(planSet.unusedLayerIds).toEqual(['grass']);
+    expect(planSet.layerSlots).toEqual([{ layerId: 'ore', layerIndex: 0 }]);
+    expect(planSet.plans[0]).toMatchObject({
+      purpose: 'ambientOcclusion',
+      depth: 1,
+      format: 'r8',
+      bytesPerPixel: 1,
+      estimatedBytes: 128 * 128,
+    });
+    expect(planSet.warnings).toEqual([
+      {
+        code: 'unused-layer',
+        message: 'Terrain texture array plan skipped 1 unused layer(s): grass.',
+      },
+    ]);
+  });
+
+  it('warns when requested active layers are missing from the shared catalog', () => {
+    const catalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    const planSet = createTerrainTextureArrayPlanSet({
+      catalog,
+      activeLayerIds: ['grass', 'missing'],
+      resolveTexture: createTextureResolver({
+        'grass/base': createTextureSource('grass/base'),
+        'grass/normal': createTextureSource('grass/normal'),
+        'grass/roughness': createTextureSource('grass/roughness'),
+      }),
+    });
+
+    expect(planSet.activeLayerIds).toEqual(['grass']);
+    expect(planSet.unusedLayerIds).toEqual([]);
+    expect(planSet.warnings).toEqual([
+      {
+        code: 'unknown-active-layer',
+        message:
+          'Terrain texture array plan requested 1 unknown active layer(s): missing.',
+      },
+    ]);
+  });
+
   it('rejects mismatched texture dimensions inside one array purpose', () => {
     const catalog = createTerrainMaterialLayerCatalog([
       {

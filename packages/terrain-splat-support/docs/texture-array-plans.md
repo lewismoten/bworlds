@@ -12,6 +12,9 @@ questions that need stable, testable rules before renderer integration:
 - whether all participating textures use the same format
 - whether all participating textures use the same bytes-per-pixel budget
 - how much memory one planned array would use before renderer upload
+- which catalog layers are actively participating in the current plan set
+- which catalog layers were skipped as unused for the current chunk or
+  neighborhood layer subset
 
 The current planner supports one plan per texture purpose:
 
@@ -38,12 +41,16 @@ Why this exists separately from the renderer:
 Current rules:
 
 - array depth follows the shared terrain layer catalog order
+- callers may provide an active layer subset so plans only include the layers
+  needed for the current chunk or neighborhood
 - each plan requires one texture descriptor per participating layer
 - width and height must match across every layer in one plan
 - format must match across every layer in one plan
 - bytes per pixel must match across every layer in one plan
 - optional maps such as metalness and ambient occlusion must be complete for
   the layers included in that plan; partial participation is rejected
+- plan sets warn when catalog layers are skipped as unused
+- plan sets warn when requested active layer IDs are missing from the catalog
 
 This closes the planning and validation part of the texture-array checklist,
 but not the renderer work. WebGL2 upload, fallback materials, and shader

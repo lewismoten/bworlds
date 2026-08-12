@@ -15,8 +15,8 @@
 - [x] Store base color texture per terrain layer.
 - [x] Store normal texture per terrain layer.
 - [x] Store roughness texture per terrain layer.
-- [ ] Store metalness texture only when needed.
-- [ ] Store ambient occlusion texture when useful.
+- [x] Store metalness texture only when needed.
+- [x] Store ambient occlusion texture when useful.
 - [x] Store texture scale per terrain layer.
 - [x] Store default tint per terrain layer.
 - [x] Store roughness defaults per terrain layer.
@@ -212,7 +212,7 @@
 - [x] Reject samples whose weights do not sum near one.
 - [x] Reject invalid terrain layer indices.
 - [x] Reject texture arrays with mismatched dimensions.
-- [ ] Warn about unused terrain texture layers.
+- [x] Warn about unused terrain texture layers.
 - [ ] Warn about chunks using too many terrain layers.
 - [ ] Warn about hard terrain boundaries with no blend zone.
 
@@ -271,6 +271,11 @@
   from the shared layer catalog, keep layer indices aligned across array
   purposes, reject mismatched dimensions or formats before WebGL upload, and
   estimate array memory usage for future terrain budget tooling.
+- Added active-layer subset support to
+  `@bworlds/terrain-splat-support/texture-array-plan` so optional metalness and
+  ambient-occlusion arrays can be planned only for participating chunk layers.
+  Plan sets now report skipped unused catalog layers and unknown requested
+  layers before renderer upload code exists.
 - Added deterministic terrain UV transform support in
   `@bworlds/terrain-splat-support` so terrain layers can advertise quarter-turn
   rotation and axis mirroring without duplicating textures. The support

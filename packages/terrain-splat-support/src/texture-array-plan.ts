@@ -32,12 +32,23 @@ export type TerrainTextureArrayPlan = {
   layerSlots: readonly TerrainTextureArrayLayerSlot[];
 };
 
+export type TerrainTextureArrayPlanSetWarningCode =
+  'unused-layer' | 'unknown-active-layer';
+
+export type TerrainTextureArrayPlanSetWarning = {
+  code: TerrainTextureArrayPlanSetWarningCode;
+  message: string;
+};
+
 export type TerrainTextureArrayPlanSet = {
   layerSlots: readonly Pick<
     TerrainTextureArrayLayerSlot,
     'layerId' | 'layerIndex'
   >[];
   plans: readonly TerrainTextureArrayPlan[];
+  activeLayerIds: readonly TerrainMaterialLayerId[];
+  unusedLayerIds: readonly TerrainMaterialLayerId[];
+  warnings: readonly TerrainTextureArrayPlanSetWarning[];
   estimatedBytes: number;
 };
 
@@ -60,24 +71,46 @@ export function createTerrainTextureArrayPlanSet(params: {
       };
   resolveTexture: (textureId: string) => TerrainTextureArraySource | undefined;
   purposes?: readonly TerrainTextureArrayPurpose[];
+  activeLayerIds?: readonly TerrainMaterialLayerId[];
 }): TerrainTextureArrayPlanSet {
   const catalogEntries = getSortedCatalogEntries(params.catalog);
+  const activeCatalog = selectActiveTerrainTextureArrayCatalogEntries(
+    catalogEntries,
+    params.activeLayerIds
+  );
   const purposes = [...(params.purposes ?? DEFAULT_REQUIRED_PURPOSES)];
   const plans = purposes.map((purpose) =>
     createTerrainTextureArrayPlanInternal({
       purpose,
-      catalogEntries,
+      catalogEntries: activeCatalog.entries,
       resolveTexture: params.resolveTexture,
     })
   );
-  const layerSlots = catalogEntries.map((entry) => ({
+  const layerSlots = activeCatalog.entries.map((entry) => ({
     layerId: entry.id,
     layerIndex: entry.index,
   }));
+  const warnings: TerrainTextureArrayPlanSetWarning[] = [];
+
+  if (activeCatalog.unusedLayerIds.length > 0) {
+    warnings.push({
+      code: 'unused-layer',
+      message: `Terrain texture array plan skipped ${activeCatalog.unusedLayerIds.length} unused layer(s): ${activeCatalog.unusedLayerIds.join(', ')}.`,
+    });
+  }
+  if (activeCatalog.unknownActiveLayerIds.length > 0) {
+    warnings.push({
+      code: 'unknown-active-layer',
+      message: `Terrain texture array plan requested ${activeCatalog.unknownActiveLayerIds.length} unknown active layer(s): ${activeCatalog.unknownActiveLayerIds.join(', ')}.`,
+    });
+  }
 
   return {
     layerSlots,
     plans,
+    activeLayerIds: activeCatalog.entries.map((entry) => entry.id),
+    unusedLayerIds: activeCatalog.unusedLayerIds,
+    warnings,
     estimatedBytes: plans.reduce((sum, plan) => sum + plan.estimatedBytes, 0),
   };
 }
@@ -95,10 +128,15 @@ export function createTerrainTextureArrayPlan(params: {
         >;
       };
   resolveTexture: (textureId: string) => TerrainTextureArraySource | undefined;
+  activeLayerIds?: readonly TerrainMaterialLayerId[];
 }): TerrainTextureArrayPlan {
+  const catalogEntries = getSortedCatalogEntries(params.catalog);
   return createTerrainTextureArrayPlanInternal({
     purpose: params.purpose,
-    catalogEntries: getSortedCatalogEntries(params.catalog),
+    catalogEntries: selectActiveTerrainTextureArrayCatalogEntries(
+      catalogEntries,
+      params.activeLayerIds
+    ).entries,
     resolveTexture: params.resolveTexture,
   });
 }
@@ -281,6 +319,43 @@ function getSortedCatalogEntries(
       : [];
 
   return [...entries].sort((left, right) => left.index - right.index);
+}
+
+function selectActiveTerrainTextureArrayCatalogEntries(
+  catalogEntries: readonly TerrainMaterialLayerCatalogEntry[],
+  activeLayerIds: readonly TerrainMaterialLayerId[] | undefined
+): {
+  entries: readonly TerrainMaterialLayerCatalogEntry[];
+  unusedLayerIds: readonly TerrainMaterialLayerId[];
+  unknownActiveLayerIds: readonly TerrainMaterialLayerId[];
+} {
+  if (!activeLayerIds || activeLayerIds.length === 0) {
+    return {
+      entries: catalogEntries,
+      unusedLayerIds: [],
+      unknownActiveLayerIds: [],
+    };
+  }
+
+  const catalogById = new Map(catalogEntries.map((entry) => [entry.id, entry]));
+  const requestedIds = [...new Set(activeLayerIds)];
+  const activeEntries = requestedIds
+    .map((layerId) => catalogById.get(layerId))
+    .filter(
+      (entry): entry is TerrainMaterialLayerCatalogEntry => entry !== undefined
+    )
+    .sort((left, right) => left.index - right.index);
+  const activeIdSet = new Set(activeEntries.map((entry) => entry.id));
+
+  return {
+    entries: activeEntries,
+    unusedLayerIds: catalogEntries
+      .map((entry) => entry.id)
+      .filter((layerId) => !activeIdSet.has(layerId)),
+    unknownActiveLayerIds: requestedIds.filter(
+      (layerId) => !catalogById.has(layerId)
+    ),
+  };
 }
 
 function hasTerrainMaterialLayerCatalogEntries(value: unknown): value is {
