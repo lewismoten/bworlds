@@ -694,6 +694,9 @@ describe('tile town', () => {
     expect(secondLabelMaterials).toHaveLength(2);
     expect(secondLabelMaterials[0]).toBe(firstLabelMaterials[0]);
     expect(secondLabelMaterials[1]).toBe(firstLabelMaterials[1]);
+    expect(
+      new Set([...firstLabelMaterials, ...secondLabelMaterials]).size
+    ).toBe(1);
   });
 
   it('adds windy banners to full-detail town models and sways them with weather strength', () => {

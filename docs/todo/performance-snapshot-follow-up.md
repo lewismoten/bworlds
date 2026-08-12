@@ -89,6 +89,9 @@
       diagnostics payloads, so runtime captures can distinguish poor material
       reuse from unavoidable live material ownership.
 - [ ] Fail tests when material counts regress sharply.
+      Progress: route dock labels, town sign labels, and dungeon gate bars now
+      have repeated-build regression tests that fail if those paths start
+      allocating extra unique materials on the same Three host.
 
 ## Instancing
 

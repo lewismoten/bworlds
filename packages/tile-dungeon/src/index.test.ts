@@ -823,6 +823,10 @@ describe('tile dungeon', () => {
     }) as FakeGroup;
 
     expect(findDungeonBarMaterial(first)).toBe(findDungeonBarMaterial(second));
+    expect(
+      new Set([findDungeonBarMaterial(first), findDungeonBarMaterial(second)])
+        .size
+    ).toBe(1);
   });
 
   it('bounds shared dungeon glow material variants within a region', () => {

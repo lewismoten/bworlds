@@ -1351,6 +1351,9 @@ describe('tile route', () => {
     expect(secondLabelMaterials[0]).toBe(firstLabelMaterials[0]);
     expect(secondLabelMaterials[1]).toBe(firstLabelMaterials[1]);
     expect(secondLabelMaterials[2]).toBe(firstLabelMaterials[2]);
+    expect(
+      new Set([...firstLabelMaterials, ...secondLabelMaterials]).size
+    ).toBe(3);
   });
 
   it('instances repeated bridge railing posts on standard bridges', () => {
