@@ -241,7 +241,10 @@
       `tile-dungeon` banners now place their wind-driven cloth meshes directly
       under the dungeon root whenever the support poles and crossbars are
       already emitted through shared instanced sets, which removes one
-      avoidable one-child wrapper per banner without changing banner motion.
+      avoidable one-child wrapper per banner without changing banner motion,
+      and low-detail straight `tile-route` roads now use the road ribbon mesh
+      itself as the tile root and attach the center patch beneath it instead
+      of returning a wrapper group for that two-connection case.
 - [x] Investigate the 656 static objects using matrix auto-update.
       Progress: renderer diagnostics now count static `matrixAutoUpdate`
       owners separately by plugin, and the renderer regression tests cover

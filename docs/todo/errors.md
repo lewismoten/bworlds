@@ -118,7 +118,10 @@ Always run tests to make sure all tests pass
       and placard directly under the tile root instead of a dedicated
       silhouette subgroup, and full-detail roadside signs now place their
       post meshes, placard boards, and label planes directly under the tile
-      root instead of dedicated post and placard subgroups, and dock boats
+      root instead of dedicated post and placard subgroups, and low-detail
+      straight road tiles now use the road ribbon mesh itself as the tile root
+      and attach the center patch beneath it instead of paying a wrapper
+      group, and dock boats
       now place their hull, prow, cabin, sail, and ramp pieces directly
       under the dock root instead of a dedicated boat subgroup, and forest log
       bridges now collapse their repeated support posts into one shared

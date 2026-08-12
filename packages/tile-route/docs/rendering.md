@@ -16,6 +16,11 @@ junctions also drop the shoulder center patch. That keeps three-way junctions
 under the low-detail tile draw-call cap instead of building decorative road
 trim only to prune or reject it later.
 
+Low-detail straight roads now use the road ribbon mesh itself as the tile root
+and attach the center patch beneath it. That removes one static wrapper
+`Group` from each visible low-detail straight road while preserving the same
+surface marker and patch placement.
+
 Road shoulder meshes are tagged as optional render-budget parts. When a dense
 road junction crosses the per-tile draw-call cap, `render3d` can prune shoulder
 strips first and keep the core road surface instead of rejecting the entire

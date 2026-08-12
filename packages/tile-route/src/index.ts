@@ -1138,7 +1138,9 @@ function* createRoadGroupProgressive({
       ? 1 + (includeShoulders ? 2 : 1)
       : (includeCenterPatch ? 1 : 0) + connections.length;
   let completedSteps = 0;
-  if (includeCenterPatch) {
+  const attachCenterPatchToRoadRibbon =
+    !includeShoulders && includeCenterPatch && connections.length === 2;
+  if (includeCenterPatch && !attachCenterPatchToRoadRibbon) {
     const centerPatch = new three.Mesh(
       new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
       style.shoulderMaterial
@@ -1161,6 +1163,14 @@ function* createRoadGroupProgressive({
       tileY,
       connections[0],
       connections[1]
+    );
+    const roadRibbon = createRoadRibbonMesh(
+      three,
+      curve,
+      style.roadWidth,
+      style.roadMaterial,
+      appendHashSeedLabel(tileSeed, ROAD_RIBBON_ROAD_SEED),
+      0.03
     );
     if (includeShoulders) {
       group.add(
@@ -1185,23 +1195,27 @@ function* createRoadGroupProgressive({
         label: 'shoulder-ribbon',
       };
     }
-    group.add(
-      createRoadRibbonMesh(
-        three,
-        curve,
-        style.roadWidth,
-        style.roadMaterial,
-        appendHashSeedLabel(tileSeed, ROAD_RIBBON_ROAD_SEED),
-        0.03
-      )
-    );
+    if (includeShoulders) {
+      group.add(roadRibbon);
+    } else {
+      roadRibbon.position.set(tileX, 0, tileY);
+      if (attachCenterPatchToRoadRibbon) {
+        const centerPatch = new three.Mesh(
+          new three.CylinderGeometry(0.12, 0.15, 0.02, 8),
+          style.shoulderMaterial
+        );
+        centerPatch.position.set(0, ROAD_SURFACE_HEIGHT, 0);
+        centerPatch.scale.z = 0.85;
+        roadRibbon.add(centerPatch);
+      }
+    }
     completedSteps += 1;
     yield {
       completedSteps,
       totalSteps,
       label: 'road-ribbon',
     };
-    return group;
+    return includeShoulders ? group : roadRibbon;
   }
 
   for (let index = 0; index < connections.length; index += 1) {

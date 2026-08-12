@@ -270,6 +270,30 @@ function createIsolatedRoadModelState() {
   };
 }
 
+function createStraightRoadModelState() {
+  return {
+    player: { x: 0, y: 0, facing: 0 },
+    getCurrentContext() {
+      return { id: 'overworld', depth: 0, type: 'overworld' as const };
+    },
+    getCurrentTile(x: number, y: number) {
+      if (y === -4 && x >= 11 && x <= 13) {
+        return { kind: 'road' };
+      }
+      return { kind: 'plains' };
+    },
+    getTileDefinition(kind: string) {
+      return {
+        name: kind,
+        color: '#000000',
+        miniColor: '#111111',
+        walkable: true,
+        wallHeight: 0,
+      };
+    },
+  };
+}
+
 function createRoutedDockModelState() {
   const dockTiles = new Set(['0:0', '1:0', '22:0', '23:0', '11:22', '12:22']);
   const poiNames: Record<string, string> = {
@@ -548,6 +572,26 @@ describe('tile route', () => {
     expect(model.position.x).toBe(12);
     expect(model.position.y).toBe(0);
     expect(model.position.z).toBe(-4);
+  });
+
+  it('returns a low-detail straight road ribbon as the root and attaches the center patch beneath it', () => {
+    const state = createStraightRoadModelState();
+    const model = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 12,
+      tileY: -4,
+      detailLevel: 'low',
+    }) as FakeMesh;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model.position.x).toBe(12);
+    expect(model.position.y).toBe(0);
+    expect(model.position.z).toBe(-4);
+    expect(model.children).toHaveLength(1);
+    expect(model.children[0]).toBeInstanceOf(FakeMesh);
+    expect(model.children[0]?.position.y).toBeGreaterThan(0);
   });
 
   it('renders lowered paddle-boat boarding ramps on non-route docks', () => {
