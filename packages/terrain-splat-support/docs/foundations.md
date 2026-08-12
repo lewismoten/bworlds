@@ -31,6 +31,7 @@ Current responsibilities:
 - share deterministic terrain family variant pools across chunk generation paths
 - merge terrain splat contributions from multiple plugins into one shared
   catalog set
+- resolve deterministic road and trail widths from shared route metadata
 - plan one bounded active layer pool for neighboring chunk groups
 - plan aligned texture-array slots and validate descriptor consistency before
   renderer upload code exists

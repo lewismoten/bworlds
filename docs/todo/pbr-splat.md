@@ -333,6 +333,10 @@
   delivery path can resolve the strongest two terrain layers from packed vertex
   weights, renormalize them into one bounded blend factor, and keep that
   simpler renderer path derived from the shared splat data.
+- Added `@bworlds/terrain-splat-support/route-width-plan` so splat builders can
+  resolve deterministic road and trail widths from route class metadata,
+  traffic intensity, or fallback road-signal classification without depending
+  on renderer-owned route mesh widths.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
@@ -502,7 +506,7 @@ color metadata without changing material identity.
 - [ ] Remove separate road meshes where splatting is sufficient.
 - [ ] Keep road gameplay data separate from road rendering.
 - [ ] Project road splat weights onto the terrain height field.
-- [ ] Generate road width from route metadata.
+- [x] Generate road width from route metadata.
 - [ ] Generate soft shoulder weights around road edges.
 - [ ] Blend roads gradually into surrounding terrain.
 - [ ] Let trails use narrower blend zones than roads.
