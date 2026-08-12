@@ -5,7 +5,11 @@
       actionable tile/plugin/runtime diagnostics to
       `/api/runtime-performance-issues`; generic frame/draw-call/material/
       object pressure and reduced-quality limiter narration stay in the saved
-      payload context without creating another issue file on their own.
+      payload context without creating another issue file on their own, and
+      wrapped `Latest LOD failure` / `Latest fallback reason` strings are now
+      also suppressed when they only restate generic budget-threshold pressure
+      such as `tile drawCallCount 21>17` or
+      `plugin unique materialCount 13>12`.
 - [ ] Limit each tree species to 10 material variants per part type.
 - [ ] Reuse bark, foliage, and branch materials across nearby trees.
 - [ ] Prefer tinting shared materials over creating new textures.

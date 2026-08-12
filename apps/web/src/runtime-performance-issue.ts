@@ -257,11 +257,17 @@ function collectRuntimePerformanceIssueReasons(
   }
 
   if (debugSnapshot.lastLodFailureReason?.trim()) {
-    reasons.push(`Latest LOD failure: ${debugSnapshot.lastLodFailureReason}.`);
+    reasons.push(
+      `Latest LOD failure: ${ensureTrailingPeriod(
+        debugSnapshot.lastLodFailureReason.trim().replace(/[.!?]+$/u, '')
+      )}`
+    );
   }
   if (debugSnapshot.lastFallbackReason?.trim()) {
     reasons.push(
-      `Latest fallback reason: ${debugSnapshot.lastFallbackReason}.`
+      `Latest fallback reason: ${ensureTrailingPeriod(
+        debugSnapshot.lastFallbackReason.trim().replace(/[.!?]+$/u, '')
+      )}`
     );
   }
 
@@ -734,9 +740,68 @@ function isReportableRuntimePerformanceReason(reason: string): boolean {
     !normalized.startsWith('Visibility radius is currently reduced to ') &&
     !normalized.startsWith('Top ') &&
     !/^[a-z0-9-]+:\d+(?:,\s*[a-z0-9-]+:\d+)*$/iu.test(normalized) &&
+    !isWrappedGenericRuntimePerformanceBudgetReason(normalized) &&
     !isGenericRuntimePerformanceBudgetReason(normalized) &&
     isDirectRuntimePerformanceIssueReason(normalized)
   );
+}
+
+function isWrappedGenericRuntimePerformanceBudgetReason(
+  reason: string
+): boolean {
+  const payload = unwrapRuntimePerformanceIssueReason(reason);
+  if (payload === reason) {
+    return false;
+  }
+  return isGenericBudgetIssuePayload(payload);
+}
+
+function unwrapRuntimePerformanceIssueReason(reason: string): string {
+  return reason
+    .trim()
+    .replace(/[.!?]+$/u, '')
+    .replace(/^Latest LOD failure:\s*/u, '')
+    .replace(/^Latest fallback reason:\s*/u, '');
+}
+
+function isGenericBudgetIssuePayload(reason: string): boolean {
+  const normalized = reason.trim().replace(/[.!?]+$/u, '');
+  if (
+    isGenericRuntimePerformanceBudgetReason(normalized) ||
+    isNumericBudgetThresholdReason(normalized) ||
+    isGenericBudgetPlaceholderReason(normalized)
+  ) {
+    return true;
+  }
+
+  if (
+    normalized.startsWith('visible lod recovery failed after ') ||
+    normalized.startsWith('recovered at low after ')
+  ) {
+    const nestedReasons = [...normalized.matchAll(/\(([^()]*)\)/gu)]
+      .map((match) => match[1]?.trim() ?? '')
+      .filter(Boolean);
+    return (
+      nestedReasons.length > 0 &&
+      nestedReasons.every(
+        (nestedReason) =>
+          isGenericBudgetIssuePayload(nestedReason) ||
+          isGenericBudgetPlaceholderReason(nestedReason)
+      )
+    );
+  }
+
+  return false;
+}
+
+function isNumericBudgetThresholdReason(reason: string): boolean {
+  return /\b(?:drawCallCount|materialCount|triangleCount|vertexCount|meshCount|objectCount|textureCount|geometryCount|lightCount)\s+\d+(?:\.\d+)?>\d+(?:\.\d+)?\b/iu.test(
+    reason
+  );
+}
+
+function isGenericBudgetPlaceholderReason(reason: string): boolean {
+  return /^(?:full failed|low failed|budget rejection)$/iu.test(reason.trim());
 }
 
 function isGenericRuntimePerformanceBudgetReason(reason: string): boolean {

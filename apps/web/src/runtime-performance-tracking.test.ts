@@ -648,6 +648,112 @@ describe('runtime performance tracking', () => {
     expect(issue).toBeNull();
   });
 
+  it('skips runtime issue reports when only wrapped budget fallback and lod reasons remain', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        worstRecentFrameMs: 16.7,
+        frameMs: 16.7,
+        fps: 60,
+        averageFps: 60,
+        performanceTier: 'healthy',
+        renderQualityLevel: 'full',
+        renderQualityLimiters: '',
+        reducedQualityDurationSec: 0,
+        latestQualityChangeLimiter: undefined,
+        latestQualityChangeSummary: undefined,
+        drawCalls: 120,
+        object3dCount: 900,
+        visibleObjectCount: 300,
+        maxChunkDrawCalls: 16,
+        maxChunkObjectCount: 36,
+        maxChunkMeshes: 16,
+        maxChunkTriangleCount: 5000,
+        materialCount: 12,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 40,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 8,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxTopPluginLabel: undefined,
+        fallbackBoxSummary: undefined,
+        lastLodFailureReason:
+          '15:-9 / tile-route: visible lod recovery failed after full (full failed) -> low (tile drawCallCount 21>17)',
+        lastFallbackReason: 'plugin unique materialCount 13>12',
+        resourceWarnings: [],
+      }),
+    });
+
+    expect(issue).toBeNull();
+  });
+
+  it('keeps semantic fallback reasons reportable when they are not generic budget pressure', () => {
+    const issue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        worstRecentFrameMs: 16.7,
+        frameMs: 16.7,
+        fps: 60,
+        averageFps: 60,
+        performanceTier: 'healthy',
+        renderQualityLevel: 'full',
+        renderQualityLimiters: '',
+        reducedQualityDurationSec: 0,
+        latestQualityChangeLimiter: undefined,
+        latestQualityChangeSummary: undefined,
+        drawCalls: 120,
+        object3dCount: 900,
+        visibleObjectCount: 300,
+        maxChunkDrawCalls: 16,
+        maxChunkObjectCount: 36,
+        maxChunkMeshes: 16,
+        maxChunkTriangleCount: 5000,
+        materialCount: 12,
+        textureCount: 10,
+        visibleTriangleCount: 5000,
+        visibleVertexCount: 10000,
+        visibleMeshCount: 40,
+        averageTileBuildMs: 4,
+        maxTileBuildMs: 8,
+        averageFullTileBuildMs: 5,
+        maxFullTileBuildMs: 10,
+        averageLowTileBuildMs: 3,
+        maxLowTileBuildMs: 5,
+        tileModelBudgetViolationsPerSecond: 0,
+        tileModelBudgetViolationTopPluginLabel: undefined,
+        tileModelBudgetViolationSummary: undefined,
+        schedulerStarvationEventsPerSecond: 0,
+        schedulerStarvationTopPluginLabel: undefined,
+        schedulerStarvationSummary: undefined,
+        fallbackBoxesPerSecond: 0,
+        fallbackBoxTopPluginLabel: undefined,
+        fallbackBoxSummary: undefined,
+        lastLodFailureReason: undefined,
+        lastFallbackReason: 'Missing low-cost plains model.',
+        resourceWarnings: [],
+      }),
+    });
+
+    expect(issue).not.toBeNull();
+    expect(issue?.summary).toBe(
+      'Latest fallback reason: Missing low-cost plains model.'
+    );
+  });
+
   it('posts runtime issue reports to the dedicated vite endpoint', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response);
     const issue = buildRuntimePerformanceIssueReport({
@@ -708,7 +814,7 @@ describe('runtime performance tracking', () => {
         fallbackBoxSummary: undefined,
         fallbackBoxTopPluginLabel: undefined,
         lastLodFailureReason: undefined,
-        lastFallbackReason: 'Budget rejection',
+        lastFallbackReason: 'Missing low-cost plains model.',
         resourceWarnings: [],
       }),
     });
@@ -731,7 +837,7 @@ describe('runtime performance tracking', () => {
         fallbackBoxSummary: undefined,
         fallbackBoxTopPluginLabel: undefined,
         lastLodFailureReason: undefined,
-        lastFallbackReason: 'Budget rejection',
+        lastFallbackReason: 'Missing low-cost plains model.',
         resourceWarnings: [],
       }),
     });
