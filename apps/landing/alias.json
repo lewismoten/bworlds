@@ -39,15 +39,15 @@
         "1-2": ["Keep On"],
         "3-5": [
           "Generating New Areas",
-          "Growing New Areas",
+          "Growing New Abominations",
           "Generating New Adventures",
-          "Generating New Outposts",
+          "Generating New Accidents",
           "Going New Adventures",
-          "Growing New Outposts",
+          "Growing New Acronyms",
           "Generating New Archipelagos",
           "Generating New Attractions",
-          "Growing New Biomes",
-          "Generating New Biomes"
+          "Growing New Ambiguities",
+          "Generating New Anomalies"
         ],
         "6-7": [
           "Beyond Origin",
@@ -103,7 +103,7 @@
       "pools": {
         "1-2": ["Keep On", "Kinda Okay"],
         "3-5": [
-          "Generating Nobody Asked",
+          "Generating - Nobody Asked",
           "Guessing Nothing Actually",
           "Generating Nonsense Automatically",
           "Generating New Abstractions",
@@ -143,15 +143,15 @@
         "1-2": ["Keep Out"],
         "3-5": [
           "Gremlins Need Another",
-          "Gamers Need Another",
-          "Generators Need Another",
-          "Glitches Need Another",
-          "GPTs Need Another",
-          "Garbage Needs Another",
-          "Gremlins Notice Another",
-          "Generators Notice Another",
+          "Gamers Need Ambitious",
+          "Generators Need Awkward",
+          "Glitches Need Absurd",
+          "GPTs Need Apocalyptic",
+          "Garbage Needs Aggresive",
+          "Gremlins Notice Anxious",
+          "Generators Notice Administrative",
           "Glitches Need Attention",
-          "Good News Another"
+          "Good News Anti-fun"
         ],
         "6-7": [
           "Build Obviously",
@@ -190,9 +190,9 @@
           "Generated Nonsense Apparently",
           "Game Not Actually",
           "Garbage Nearly Always",
-          "Generated Noise Apparently",
-          "Glitchy Nonsense Apparently",
-          "Game Nearly Always"
+          "Generated Noise Allegedly",
+          "Glitchy Nonsense Aguably",
+          "Game Nearly Approximately"
         ],
         "6-7": [
           "Builds Okay",
@@ -225,10 +225,10 @@
         "1-2": ["Known Output", "Known Only", "Kernel Output"],
         "3-5": [
           "Generated No Assurance",
-          "Generated Nearly Automatically",
+          "Generated Nearly Allegedly",
           "Generated Nonsense Again",
           "Generating New Abstractions",
-          "Generated Noise Apparently"
+          "Generated Noise Atomically"
         ],
         "6-7": [
           "Beyond Optimism",
@@ -245,22 +245,23 @@
       "tone": ["world", "exploration", "serious"],
       "segments": [
         [1, 1],
-        [2, 3],
-        [4, 5],
-        [6, 7]
+        [2, 2],
+        [3, 3],
+        [4, 4],
+        [5, 5],
+        [6, 6],
+        [7, 7]
       ],
       "join": " ",
       "description": "Single-word opener with world-building phrase blocks.",
       "pools": {
-        "1-1": ["Keep", "Known"],
-        "2-3": ["On Generating", "On Growing", "Over Generated"],
-        "4-5": ["New Areas", "New Adventures", "New Biomes", "New Outposts"],
-        "6-7": [
-          "Beyond Origin",
-          "Beyond Overworld",
-          "Beyond Observation",
-          "Beyond Outposts"
-        ]
+        "1-1": ["Keep", "Knock", "Kick", "Kreeping", "Kontinuing"],
+        "2-2": ["On", "Over", "Open", "Onward"],
+        "3-3": ["Generating", "Growing", "Generated"],
+        "4-4": ["New", "Next", "Newborn", "Novel"],
+        "5-5": ["Areas", "Adventures", "Accidents", "Agents"],
+        "6-6": ["Beyond", "Before", "Behind", "Braving"],
+        "7-7": ["Origin", "Overworld", "Observation","Outposts"]
       }
     },
     {
