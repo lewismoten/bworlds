@@ -14,6 +14,7 @@ import {
   createWorldRuntime,
   createWorldGenerator,
   getTerrainChunkCellBounds,
+  getTerrainChunkHeightSampleCoordinate,
   getTerrainChunkHeightSampleBorder,
   getTerrainChunkCoordinates,
   getTerrainChunkHeightSampleBounds,
@@ -152,6 +153,21 @@ describe('world generator', () => {
     expect(center.maxY).toBe(south.minY);
   });
 
+  it('maps chunk height sample indices onto world-space coordinates', () => {
+    expect(getTerrainChunkHeightSampleCoordinate(0, 0, 0, 0)).toEqual({
+      x: 0,
+      y: 0,
+    });
+    expect(getTerrainChunkHeightSampleCoordinate(0, 0, 16, 16)).toEqual({
+      x: 16,
+      y: 16,
+    });
+    expect(getTerrainChunkHeightSampleCoordinate(-2, 3, 4, 7)).toEqual({
+      x: -28,
+      y: 55,
+    });
+  });
+
   it('derives identical shared border sample lines for adjacent chunks', () => {
     expect(getTerrainChunkHeightSampleBorder(0, 0, 'east')).toEqual(
       getTerrainChunkHeightSampleBorder(1, 0, 'west')
@@ -171,6 +187,21 @@ describe('world generator', () => {
       minY: -32,
       maxY: -32,
     });
+    expect(getTerrainChunkHeightSampleCoordinate(0, 0, 16, 5)).toEqual(
+      getTerrainChunkHeightSampleCoordinate(1, 0, 0, 5)
+    );
+    expect(getTerrainChunkHeightSampleCoordinate(0, 0, 9, 16)).toEqual(
+      getTerrainChunkHeightSampleCoordinate(0, 1, 9, 0)
+    );
+  });
+
+  it('rejects terrain height sample indices outside the seam-safe 17x17 grid', () => {
+    expect(() => getTerrainChunkHeightSampleCoordinate(0, 0, -1, 0)).toThrow(
+      'Terrain chunk height sample x-index -1 must stay within 0..16.'
+    );
+    expect(() => getTerrainChunkHeightSampleCoordinate(0, 0, 0, 17)).toThrow(
+      'Terrain chunk height sample y-index 17 must stay within 0..16.'
+    );
   });
 
   it('lists built-in content packs with manifest metadata', () => {

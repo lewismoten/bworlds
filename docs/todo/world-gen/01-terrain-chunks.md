@@ -27,7 +27,7 @@
 ## Seamless Geometry
 
 - [x] Sample chunk border heights from world coordinates.
-- [ ] Never derive border heights from local-only noise.
+- [x] Never derive border heights from local-only noise.
 - [x] Share exact border height samples between neighbors.
 - [ ] Use world-space UVs across all chunk borders.
 - [ ] Keep splat weights continuous across chunk borders.
@@ -43,6 +43,10 @@ Current support:
 - `getTerrainChunkHeightSampleBorder(...)` now exposes the exact world-space
   sample line for each chunk edge, and tests verify adjacent chunks resolve the
   same east/west and north/south seam coordinates.
+- `getTerrainChunkHeightSampleCoordinate(...)` now maps every seam-safe sample
+  index onto a world-space coordinate, so chunk builders can sample one shared
+  height function instead of inventing edge values from local chunk noise; see
+  `docs/terrain-chunk-height-sample-contract.md`.
 
 ## Sextant Panel
 

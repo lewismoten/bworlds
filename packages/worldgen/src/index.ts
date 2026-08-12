@@ -34,6 +34,7 @@ import {
 } from '@bworlds/overworld-support';
 export {
   getTerrainChunkCellBounds,
+  getTerrainChunkHeightSampleCoordinate,
   getTerrainChunkHeightSampleBorder,
   getTerrainChunkCoordinates,
   getTerrainChunkHeightSampleBounds,
@@ -42,6 +43,7 @@ export {
   type TerrainChunkBorderEdge,
   type TerrainChunkCellBounds,
   type TerrainChunkCoordinates,
+  type TerrainChunkHeightSampleCoordinate,
   type TerrainChunkHeightSampleBorder,
   type TerrainChunkHeightSampleBounds,
   type TerrainChunkId,

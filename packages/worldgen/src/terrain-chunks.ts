@@ -23,6 +23,10 @@ export type TerrainChunkCellBounds = {
 export type TerrainChunkHeightSampleBounds = TerrainChunkCellBounds;
 export type TerrainChunkBorderEdge = 'north' | 'east' | 'south' | 'west';
 export type TerrainChunkHeightSampleBorder = TerrainChunkHeightSampleBounds;
+export type TerrainChunkHeightSampleCoordinate = {
+  x: number;
+  y: number;
+};
 
 export function getTerrainChunkCoordinates(
   worldX: number,
@@ -68,6 +72,22 @@ export function getTerrainChunkHeightSampleBounds(
   };
 }
 
+export function getTerrainChunkHeightSampleCoordinate(
+  chunkX: number,
+  chunkY: number,
+  sampleX: number,
+  sampleY: number
+): TerrainChunkHeightSampleCoordinate {
+  assertTerrainChunkHeightSampleIndexInBounds(sampleX, 'x');
+  assertTerrainChunkHeightSampleIndexInBounds(sampleY, 'y');
+
+  const bounds = getTerrainChunkHeightSampleBounds(chunkX, chunkY);
+  return {
+    x: bounds.minX + sampleX,
+    y: bounds.minY + sampleY,
+  };
+}
+
 export function getTerrainChunkHeightSampleBorder(
   chunkX: number,
   chunkY: number,
@@ -104,5 +124,20 @@ export function getTerrainChunkHeightSampleBorder(
         minY: bounds.minY,
         maxY: bounds.maxY,
       };
+  }
+}
+
+function assertTerrainChunkHeightSampleIndexInBounds(
+  value: number,
+  axis: 'x' | 'y'
+): void {
+  if (
+    !Number.isInteger(value) ||
+    value < 0 ||
+    value >= TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE
+  ) {
+    throw new Error(
+      `Terrain chunk height sample ${axis}-index ${value} must stay within 0..${TERRAIN_CHUNK_HEIGHT_SAMPLE_SIZE - 1}.`
+    );
   }
 }
