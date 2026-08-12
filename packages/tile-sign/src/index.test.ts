@@ -24,7 +24,19 @@ vi.mock('@bworlds/three-support', () => ({
   createPaintedCanvasTexture() {
     return { colorSpace: '', needsUpdate: false };
   },
+  createBasicMaterial(_three: unknown, options: Record<string, unknown> = {}) {
+    return new FakeMaterial(options);
+  },
   getOrCreatePaintedCanvasTexture: getOrCreatePaintedCanvasTextureMock,
+  getSharedBoxGeometry() {
+    return createSharedGeometryStub();
+  },
+  getSharedConeGeometry() {
+    return createSharedGeometryStub();
+  },
+  getSharedPlaneGeometry() {
+    return createSharedGeometryStub();
+  },
   createTexturedPlaneMesh() {
     return {
       position: {
@@ -80,6 +92,26 @@ class FakeMaterial {
       this.opacity = options.opacity;
     }
   }
+}
+
+function createSharedGeometryStub() {
+  return {
+    groups: [
+      { start: 0, count: 6, materialIndex: 0 },
+      { start: 6, count: 6, materialIndex: 0 },
+    ],
+    clearGroups() {
+      this.groups = [];
+    },
+    addGroup(start: number, count: number, materialIndex = 0) {
+      this.groups = [{ start, count, materialIndex }];
+    },
+    attributes: {
+      position: {
+        count: 24,
+      },
+    },
+  };
 }
 
 class FakeMatrix4 {
@@ -182,9 +214,12 @@ const fakeThree = {
   InstancedMesh: FakeInstancedMesh,
   Matrix4: FakeMatrix4,
   PointLight: FakePointLight,
+  MeshBasicMaterial: FakeMaterial,
   MeshStandardMaterial: FakeMaterial,
   BoxGeometry: FakeGeometry,
   ConeGeometry: FakeGeometry,
+  PlaneGeometry: FakeGeometry,
+  DoubleSide: 'double-side',
 } as const;
 
 const plugin = createSignTilePlugin();
@@ -718,6 +753,16 @@ describe('tile sign', () => {
         (child) => child.userData?.signFullDetailPart === 'placard'
       )
     ).toHaveLength(3);
+    expect(
+      rootTaggedParts?.filter(
+        (child) => child.userData?.signFullDetailPart === 'text-plane'
+      )
+    ).toHaveLength(3);
+    expect(
+      rootTaggedParts?.some(
+        (child) => child.userData?.signFullDetailPart === 'back-plane'
+      )
+    ).toBe(false);
     expect(nestedGroups).toHaveLength(0);
   });
 

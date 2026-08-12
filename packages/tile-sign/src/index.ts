@@ -14,8 +14,11 @@ import {
   createRouteTraversalProfile,
 } from '@bworlds/tile-support';
 import {
-  createTexturedPlaneMesh,
+  createBasicMaterial,
+  getSharedBoxGeometry,
+  getSharedConeGeometry,
   getOrCreatePaintedCanvasTexture,
+  getSharedPlaneGeometry,
 } from '@bworlds/three-support';
 import type {
   ClassifyOverworldTileContext,
@@ -249,7 +252,7 @@ function* createSignModelProgressive({
       ? nearbyPois.slice(0, 3)
       : [fallbackPlacard(tileX, tileY)];
   const placardSupportInstances = new three.InstancedMesh(
-    new three.BoxGeometry(1, 1, 1),
+    getSharedSingleMaterialBoxGeometry(three, 1, 1, 1),
     style.postMaterial,
     placards.length
   );
@@ -258,7 +261,7 @@ function* createSignModelProgressive({
     signInstancedPart: 'placard-support',
   };
   const placardEdgeCapInstances = new three.InstancedMesh(
-    new three.BoxGeometry(1, 1, 1),
+    getSharedSingleMaterialBoxGeometry(three, 1, 1, 1),
     style.trimMaterial,
     placards.length
   );
@@ -267,7 +270,7 @@ function* createSignModelProgressive({
     signInstancedPart: 'placard-edge-cap',
   };
   const placardArrowHeadInstances = new three.InstancedMesh(
-    new three.ConeGeometry(1, 1, 3),
+    getSharedSingleMaterialConeGeometry(three, 1, 1, 3),
     style.placardMaterial,
     placards.length
   );
@@ -373,7 +376,8 @@ function addSignPost(
   x: number
 ) {
   const postMesh = new three.Mesh(
-    new three.BoxGeometry(
+    getSharedSingleMaterialBoxGeometry(
+      three,
       style.postThickness,
       style.postHeight,
       style.postThickness
@@ -390,7 +394,8 @@ function addSignPost(
 
   if (placardCount > 1) {
     const brace = new three.Mesh(
-      new three.BoxGeometry(
+      getSharedSingleMaterialBoxGeometry(
+        three,
         style.postThickness * 2.1,
         style.postThickness * 0.8,
         style.postThickness * 2.1
@@ -414,7 +419,8 @@ function addSecondaryPost(
   x: number
 ) {
   const mesh = new three.Mesh(
-    new three.BoxGeometry(
+    getSharedSingleMaterialBoxGeometry(
+      three,
       style.postThickness * 0.92,
       style.postHeight * 0.84,
       style.postThickness * 0.92
@@ -438,7 +444,8 @@ function addLowDetailSign(
   heading: number
 ) {
   const post = new three.Mesh(
-    new three.BoxGeometry(
+    getSharedSingleMaterialBoxGeometry(
+      three,
       style.postThickness * 1.08,
       style.postHeight * 0.82,
       style.postThickness * 1.08
@@ -454,7 +461,8 @@ function addLowDetailSign(
 
   if (placardCount > 1) {
     const brace = new three.Mesh(
-      new three.BoxGeometry(
+      getSharedSingleMaterialBoxGeometry(
+        three,
         style.postThickness * 1.9,
         style.postThickness * 0.7,
         style.postThickness * 1.9
@@ -470,7 +478,8 @@ function addLowDetailSign(
   }
 
   const placard = new three.Mesh(
-    new three.BoxGeometry(
+    getSharedSingleMaterialBoxGeometry(
+      three,
       style.placardWidth * 1.2,
       style.placardHeight * 1.08,
       style.placardDepth * 1.35
@@ -516,7 +525,7 @@ function addDirectionalPlacard(
   const armLength = 0.14 + index * 0.035;
 
   const placard = new three.Mesh(
-    new three.BoxGeometry(width, height, depth),
+    getSharedSingleMaterialBoxGeometry(three, width, height, depth),
     style.placardMaterial
   );
   const placardOffset = rotateSignLocalOffset(
@@ -577,10 +586,17 @@ function addDirectionalPlacard(
     )
   );
 
-  const textPlane = createSignLabelSprite(three, style, poi, width, height);
+  const labelMaterial = createSignLabelMaterial(three, style, poi);
+  const textPlane = createSignLabelPlane(
+    three,
+    labelMaterial,
+    width,
+    height,
+    'text-plane'
+  );
   const textPlaneOffset = rotateSignLocalOffset(
     width * 0.5 + armLength,
-    depth * 0.65,
+    0,
     -heading
   );
   textPlane.position.set(
@@ -589,29 +605,7 @@ function addDirectionalPlacard(
     textPlaneOffset.z
   );
   textPlane.rotation.y = -heading;
-  textPlane.userData = {
-    ...(textPlane.userData ?? {}),
-    signFullDetailPart: 'text-plane',
-  };
   group.add(textPlane);
-
-  const backPlane = createSignLabelSprite(three, style, poi, width, height);
-  const backPlaneOffset = rotateSignLocalOffset(
-    width * 0.5 + armLength,
-    -depth * 0.65,
-    -heading
-  );
-  backPlane.position.set(
-    mountOffsetX + backPlaneOffset.x,
-    rowOffset,
-    backPlaneOffset.z
-  );
-  backPlane.rotation.y = Math.PI - heading;
-  backPlane.userData = {
-    ...(backPlane.userData ?? {}),
-    signFullDetailPart: 'back-plane',
-  };
-  group.add(backPlane);
 }
 
 function addSignLantern(
@@ -623,7 +617,8 @@ function addSignLantern(
   z: number
 ) {
   const frame = new three.Mesh(
-    new three.BoxGeometry(
+    getSharedSingleMaterialBoxGeometry(
+      three,
       style.postThickness * 1.55,
       style.postThickness * 1.9,
       style.postThickness * 1.55
@@ -639,7 +634,8 @@ function addSignLantern(
 
   const glow = markPoiLightEmitter(
     new three.Mesh(
-      new three.BoxGeometry(
+      getSharedSingleMaterialBoxGeometry(
+        three,
         style.postThickness * 1.05,
         style.postThickness * 1.35,
         style.postThickness * 1.05
@@ -676,7 +672,8 @@ function addSignLantern(
   group.add(pointLight);
 
   const cap = new three.Mesh(
-    new three.BoxGeometry(
+    getSharedSingleMaterialBoxGeometry(
+      three,
       style.postThickness * 1.85,
       style.postThickness * 0.35,
       style.postThickness * 1.85
@@ -691,19 +688,35 @@ function addSignLantern(
   group.add(cap);
 }
 
-function createSignLabelSprite(
+function createSignLabelMaterial(
   three: ThreeHostLike,
   style: SignStyle,
-  poi: NearbyPoi,
-  width: number,
-  height: number
-) {
-  const texture = getSignLabelTexture(three, style, poi);
-  return createTexturedPlaneMesh(three, {
-    width: width * 0.92,
-    height: height * 0.78,
-    texture,
+  poi: NearbyPoi
+): ThreeMaterialLike {
+  return createBasicMaterial(three, {
+    map: getSignLabelTexture(three, style, poi),
+    transparent: true,
+    depthWrite: false,
+    side: three.DoubleSide,
   });
+}
+
+function createSignLabelPlane(
+  three: Pick<ThreeHostLike, 'Mesh' | 'PlaneGeometry'>,
+  material: ThreeMaterialLike,
+  width: number,
+  height: number,
+  part: string
+): ThreeObject3DLike {
+  const mesh = new three.Mesh(
+    getSharedPlaneGeometry(three, width * 0.92, height * 0.78),
+    material
+  ) as ThreeObject3DLike;
+  mesh.userData = {
+    ...(mesh.userData ?? {}),
+    signFullDetailPart: part,
+  };
+  return mesh;
 }
 
 function getSignLabelTexture(
@@ -858,6 +871,56 @@ function getSignStyleVariant(
     key: `variant:${variantIndex}`,
     variant,
   };
+}
+
+function getSharedSingleMaterialBoxGeometry(
+  three: Pick<ThreeHostLike, 'BoxGeometry'>,
+  width: number,
+  height: number,
+  depth: number
+) {
+  const geometry = getSharedBoxGeometry(three, width, height, depth);
+  collapseGeometryGroupsForSingleMaterial(geometry);
+  return geometry;
+}
+
+function getSharedSingleMaterialConeGeometry(
+  three: Pick<ThreeHostLike, 'ConeGeometry'>,
+  radius: number,
+  height: number,
+  radialSegments: number
+) {
+  const geometry = getSharedConeGeometry(three, radius, height, radialSegments);
+  collapseGeometryGroupsForSingleMaterial(geometry);
+  return geometry;
+}
+
+function collapseGeometryGroupsForSingleMaterial(geometry: unknown): void {
+  const nextGeometry = geometry as {
+    groups?: Array<{ start: number; count: number; materialIndex?: number }>;
+    clearGroups?: () => void;
+    addGroup?: (start: number, count: number, materialIndex?: number) => void;
+    index?: { count?: number } | null;
+    attributes?: { position?: { count?: number } };
+  };
+  const groups = Array.isArray(nextGeometry.groups) ? nextGeometry.groups : [];
+  if (groups.length <= 1) {
+    return;
+  }
+
+  const drawCount =
+    typeof nextGeometry.index?.count === 'number'
+      ? nextGeometry.index.count
+      : typeof nextGeometry.attributes?.position?.count === 'number'
+        ? nextGeometry.attributes.position.count
+        : 0;
+
+  nextGeometry.clearGroups?.();
+  if (typeof nextGeometry.addGroup === 'function') {
+    nextGeometry.addGroup(0, drawCount, 0);
+    return;
+  }
+  nextGeometry.groups = [{ start: 0, count: drawCount, materialIndex: 0 }];
 }
 
 function arrowFromVector(dx: number, dy: number): SignArrow {
