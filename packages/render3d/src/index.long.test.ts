@@ -556,6 +556,24 @@ describe('render3d representative render-budget integrations', () => {
         sampledStats
       )}`
     ).toBeLessThanOrEqual(8);
+    expect(
+      sampledStats.oneChildGroupCount,
+      `Representative nearby scene total one-child groups regressed: ${JSON.stringify(
+        sampledStats
+      )}`
+    ).toBeLessThanOrEqual(20);
+    expect(
+      sampledStats.oneChildGroupTransformCount,
+      `Representative nearby scene transform one-child groups regressed: ${JSON.stringify(
+        sampledStats
+      )}`
+    ).toBeLessThanOrEqual(8);
+    expect(
+      sampledStats.oneChildGroupTaggedCount,
+      `Representative nearby scene tagged one-child groups regressed: ${JSON.stringify(
+        sampledStats
+      )}`
+    ).toBeLessThanOrEqual(8);
   });
 });
 
