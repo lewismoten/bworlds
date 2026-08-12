@@ -24,6 +24,7 @@
     "./sample-grid": "./src/sample-grid.ts",
     "./shader-source": "./src/shader-source.ts",
     "./terrain-state": "./src/terrain-state.ts",
+    "./texture-array-capability": "./src/texture-array-capability.ts",
     "./texture-binding-runtime-plan": "./src/texture-binding-runtime-plan.ts",
     "./worker-contract": "./src/worker-contract.ts",
     "./variant-pool": "./src/variant-pool.ts",

@@ -28,6 +28,8 @@ Current responsibilities:
 - plan one bounded active layer pool for neighboring chunk groups
 - plan aligned texture-array slots and validate descriptor consistency before
   renderer upload code exists
+- assess runtime WebGL2 array capability against planned terrain arrays before
+  choosing array or fallback binding mode
 - resolve deterministic per-layer UV transforms for rotation and mirroring
 - resolve deterministic per-layer tint variation metadata without new materials
 - support low-frequency tint fields so nearby terrain can share broader color

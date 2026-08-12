@@ -35,6 +35,11 @@ The module now also exposes a binding-plan entry point that can choose between:
 - `texture-array` mode when WebGL2-style array sampling is available
 - `per-layer-textures` fallback mode when texture arrays are unavailable
 
+Capability-aware entry points:
+
+- `assessTerrainTextureArrayCapabilities(...)`
+- `createTerrainTextureBindingPlanSetFromCapabilities(...)`
+
 Why this exists separately from the renderer:
 
 - terrain layer indices must stay aligned across all arrays before shaders can
@@ -57,6 +62,9 @@ Current rules:
 - plan sets warn when catalog layers are skipped as unused
 - plan sets warn when requested active layer IDs are missing from the catalog
 - binding plans warn when they had to fall back away from texture arrays
+- capability-aware binding plans can reject array mode when runtime limits such
+  as `maxTextureSize`, `maxArrayTextureLayers`, or available texture units are
+  too small for the current plan
 
 Fallback behavior:
 
@@ -66,6 +74,6 @@ Fallback behavior:
 - fallback mode still reports deterministic texture memory estimates
 - fallback mode still fails when a required texture descriptor is missing
 
-This closes the planning and validation part of the texture-array checklist,
-but not the renderer work. WebGL2 upload, concrete fallback materials, and
-shader sampling are still separate follow-up tasks.
+This now closes the planning, capability-gating, and validation part of the
+texture-array checklist, but not the renderer upload work. Concrete WebGL2
+upload and live material binding are still separate follow-up tasks.

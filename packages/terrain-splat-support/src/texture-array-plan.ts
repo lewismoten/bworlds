@@ -33,7 +33,10 @@ export type TerrainTextureArrayPlan = {
 };
 
 export type TerrainTextureArrayPlanSetWarningCode =
-  'unused-layer' | 'unknown-active-layer' | 'texture-array-fallback';
+  | 'unused-layer'
+  | 'unknown-active-layer'
+  | 'texture-array-fallback'
+  | 'texture-array-capability';
 
 export type TerrainTextureArrayPlanSetWarning = {
   code: TerrainTextureArrayPlanSetWarningCode;

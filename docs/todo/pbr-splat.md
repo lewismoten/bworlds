@@ -24,7 +24,7 @@
 
 ## Texture Arrays
 
-- [ ] Use WebGL2 texture arrays for terrain layers.
+- [x] Use WebGL2 texture arrays for terrain layers.
 - [x] Put matching base color textures into one array.
 - [x] Put matching normal textures into one array.
 - [x] Put matching roughness textures into one array.
@@ -317,6 +317,10 @@
   contribute terrain layers, bounded variant families, and terrain-kind splat
   rules into one validated shared catalog set with ownership metadata and
   collision checks.
+- Added `@bworlds/terrain-splat-support/texture-array-capability` so terrain
+  bindings can choose WebGL2 texture-array mode from runtime capability limits
+  instead of a loose boolean, and fall back deterministically when array size,
+  layer-depth, or texture-unit limits are too small.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
