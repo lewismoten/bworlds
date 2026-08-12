@@ -165,6 +165,7 @@ export class FakeFloat32BufferAttribute {
 
 export class FakeInstancedMesh extends FakeNode {
   matrices: FakeMatrix4[] = [];
+  colors: unknown[] = [];
   constructor(
     public geometry?: object,
     public material?: FakeMaterial | FakeMaterial[],
@@ -174,6 +175,9 @@ export class FakeInstancedMesh extends FakeNode {
   }
   setMatrixAt(index: number, matrix: FakeMatrix4) {
     this.matrices[index] = matrix.clone();
+  }
+  setColorAt(index: number, color: unknown) {
+    this.colors[index] = color;
   }
 }
 
@@ -197,6 +201,9 @@ export const fakeThree = {
   MeshStandardMaterial: FakeMaterial,
   PointsMaterial: FakeMaterial,
   ShaderMaterial: FakeMaterial,
+  Color: class {
+    constructor(public value: unknown) {}
+  },
   CanvasTexture: class {
     colorSpace = '';
     needsUpdate = false;
@@ -219,6 +226,9 @@ export function createFakeThreeHost() {
     MeshStandardMaterial: FakeMaterial,
     PointsMaterial: FakeMaterial,
     ShaderMaterial: FakeMaterial,
+    Color: class {
+      constructor(public value: unknown) {}
+    },
     CanvasTexture: class {
       colorSpace = '';
       needsUpdate = false;

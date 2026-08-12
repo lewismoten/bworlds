@@ -11,6 +11,11 @@ texture and one host-scoped neutral foliage texture. Family distinction comes
 from `MeshStandardMaterial.color` tinting instead of painting separate bark and
 leaf textures for broadleaf versus conifer trees.
 
+Oak and birch now stay on that same shared broadleaf material bundle, but the
+instanced trunk, branch, and foliage meshes apply per-instance color shifts.
+That keeps nearby broadleaf species visually distinct without paying another
+pair of broadleaf bark/foliage materials.
+
 ## Why
 
 Broadleaf and conifer trees still need distinct bark and foliage materials so
@@ -31,9 +36,12 @@ forest scenes.
 For one Three host:
 
 - bark and foliage stay cached per tree family
+- oak and birch distinction comes from per-instance tint on the shared
+  broadleaf instanced meshes instead of another species-scoped material pair
 - bark and foliage texture maps stay shared across those families
 - low-detail tree instances reuse those same family bark and foliage materials
-  instead of creating a separate low-detail-only pair
+  instead of creating a separate low-detail-only pair, while still carrying
+  species tint through instance colors
 - accessory materials are cached once and reused across every forest tile
 
 That keeps the structural tree silhouette readable while reducing material

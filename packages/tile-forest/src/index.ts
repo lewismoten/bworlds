@@ -75,6 +75,7 @@ import type {
   ThreeBufferGeometryLike,
   ThreeGeometryLike,
   ThreeHostLike,
+  ThreeInstancedMeshLike,
   ThreeMaterialLike,
   ThreeMatrix4Like,
   ThreeObject3DLike,
@@ -2058,6 +2059,7 @@ function addForestFullDetailTree(
       );
       branchInstances.push({
         material: style.trunkMaterial,
+        color: getForestTreeSpeciesTint(descriptor.speciesId, 'trunk'),
         transform: treeTransform,
         x: branch.x + structure.trunkCurveX * branchCurveInfluence,
         y: branch.y,
@@ -2077,6 +2079,7 @@ function addForestFullDetailTree(
       );
       foliageInstances.push({
         material: style.foliageMaterial,
+        color: getForestTreeSpeciesTint(descriptor.speciesId, 'foliage'),
         transform: treeTransform,
         x: clump.x + structure.trunkCurveX * canopyCurveInfluence,
         y: clump.y,
@@ -2198,6 +2201,7 @@ function addForestFullDetailBranchInstances(
         index,
         writeForestTreeBranchTileInstancedMatrix(branchMatrixScratch, instance)
       );
+      setForestInstancedColorAt(three, branchInstances, index, instance.color);
     });
     group.add(branchInstances);
   }
@@ -2248,6 +2252,7 @@ function addForestFullDetailFoliageInstances(
           instance
         )
       );
+      setForestInstancedColorAt(three, foliageInstances, index, instance.color);
     });
     const leadInstance = batch.instances[0];
     if (leadInstance) {
@@ -2286,7 +2291,7 @@ function getForestTrunkGeometry(
 function getForestTrunkMidRadius(
   descriptor: Pick<
     ForestTreeDescriptor,
-    'form' | 'x' | 'y' | 'variety' | 'scale'
+    'form' | 'x' | 'y' | 'variety' | 'scale' | 'speciesId'
   >,
   structure: Pick<TreeStructuralState, 'radius' | 'trunkTopRadius'>
 ): number {
@@ -2314,7 +2319,7 @@ function addForestFullDetailTrunk(
   tileY: number,
   descriptor: Pick<
     ForestTreeDescriptor,
-    'form' | 'x' | 'y' | 'variety' | 'scale'
+    'form' | 'x' | 'y' | 'variety' | 'scale' | 'speciesId'
   >,
   structure: TreeStructuralState
 ) {
@@ -2343,6 +2348,7 @@ function addForestFullDetailTrunk(
       midRadius / Math.max(0.0001, structure.radius)
     ),
     material,
+    color: getForestTreeSpeciesTint(descriptor.speciesId, 'trunk'),
     segment: 'lower',
     positionX: treePositionX,
     positionY: 0,
@@ -2363,6 +2369,7 @@ function addForestFullDetailTrunk(
       structure.trunkTopRadius / Math.max(0.0001, midRadius)
     ),
     material,
+    color: getForestTreeSpeciesTint(descriptor.speciesId, 'trunk'),
     segment: 'upper',
     positionX: treePositionX,
     positionY: 0,
@@ -2426,8 +2433,57 @@ function addForestFullDetailTrunkInstances(
         index,
         writeForestTrunkInstancedMatrix(matrixScratch, segment)
       );
+      setForestInstancedColorAt(three, instances, index, segment.color);
     });
     group.add(instances);
+  }
+}
+
+function setForestInstancedColorAt(
+  three: ThreeHostLike,
+  mesh: ThreeInstancedMeshLike,
+  index: number,
+  color: string
+): void {
+  const colorHost = three as ThreeHostLike & {
+    Color?: new (value: string) => unknown;
+  };
+  const colorTarget = mesh as ThreeInstancedMeshLike & {
+    setColorAt?: (index: number, color: unknown) => void;
+  };
+  if (typeof colorTarget.setColorAt !== 'function') {
+    return;
+  }
+  colorTarget.setColorAt(
+    index,
+    colorHost.Color ? new colorHost.Color(color) : color
+  );
+}
+
+function getForestTreeSpeciesTint(
+  speciesId: ForestTreeSpeciesId,
+  part: 'trunk' | 'foliage'
+): string {
+  if (part === 'trunk') {
+    switch (speciesId) {
+      case 'birch':
+        return '#c7b39d';
+      case 'pine':
+        return '#8d7965';
+      case 'oak':
+      default:
+        return '#9d7d61';
+    }
+  }
+
+  switch (speciesId) {
+    case 'birch':
+      return '#b7d789';
+    case 'pine':
+      return '#7aa764';
+    case 'oak':
+    default:
+      return '#92bc6e';
   }
 }
 
@@ -4662,6 +4718,12 @@ function addLowDetailForestTreeInstances(
           trunkRadiusScale
         )
       );
+      setForestInstancedColorAt(
+        three,
+        trunkInstances,
+        index,
+        getForestTreeSpeciesTint(descriptor.speciesId, 'trunk')
+      );
     });
     group.add(trunkInstances);
   }
@@ -4711,6 +4773,12 @@ function addLowDetailForestTreeInstances(
           descriptor.scale * canopyHeightScale,
           descriptor.scale * (descriptor.form === 'pine' ? 0.54 : 0.84)
         )
+      );
+      setForestInstancedColorAt(
+        three,
+        canopyInstances,
+        index,
+        getForestTreeSpeciesTint(descriptor.speciesId, 'foliage')
       );
     });
     group.add(canopyInstances);
@@ -6582,6 +6650,7 @@ interface ForestTreeStyle {
 interface ForestTrunkSegmentInstance {
   geometry: ThreeGeometryLike;
   material: ThreeMaterialLike;
+  color: string;
   segment: 'lower' | 'upper';
   positionX: number;
   positionY: number;
@@ -6615,6 +6684,7 @@ interface ForestTreeTransform {
 
 interface ForestBranchInstance {
   material: ThreeMaterialLike;
+  color: string;
   transform: ForestTreeTransform;
   x: number;
   y: number;
@@ -6632,6 +6702,7 @@ interface ForestBranchBatch {
 
 interface ForestFoliageInstance {
   material: ThreeMaterialLike;
+  color: string;
   transform: ForestTreeTransform;
   x: number;
   y: number;

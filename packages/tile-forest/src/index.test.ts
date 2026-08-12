@@ -745,6 +745,83 @@ describe('tile forest', () => {
     );
   });
 
+  it('uses per-instance colors to distinguish oak and birch while keeping shared broadleaf materials', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    let nearbyPair: {
+      oak: { x: number; y: number };
+      birch: { x: number; y: number };
+    } | null = null;
+
+    outer: for (let originY = 0; originY < 32; originY += 1) {
+      for (let originX = 0; originX < 32; originX += 1) {
+        const originSpecies = new Set(
+          getForestTreeSpeciesIds(originX, originY)
+        );
+        if (originSpecies.size !== 1 || !originSpecies.has('oak')) {
+          continue;
+        }
+
+        for (let offsetY = -2; offsetY <= 2; offsetY += 1) {
+          for (let offsetX = -2; offsetX <= 2; offsetX += 1) {
+            if (offsetX === 0 && offsetY === 0) {
+              continue;
+            }
+            const neighborX = originX + offsetX;
+            const neighborY = originY + offsetY;
+            if (
+              neighborX < 0 ||
+              neighborY < 0 ||
+              neighborX >= 32 ||
+              neighborY >= 32
+            ) {
+              continue;
+            }
+            const neighborSpecies = new Set(
+              getForestTreeSpeciesIds(neighborX, neighborY)
+            );
+            if (neighborSpecies.size === 1 && neighborSpecies.has('birch')) {
+              nearbyPair = {
+                oak: { x: originX, y: originY },
+                birch: { x: neighborX, y: neighborY },
+              };
+              break outer;
+            }
+          }
+        }
+      }
+    }
+
+    expect(nearbyPair).not.toBeNull();
+
+    const oakModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: nearbyPair!.oak.x,
+      tileY: nearbyPair!.oak.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+    const birchModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: nearbyPair!.birch.x,
+      tileY: nearbyPair!.birch.y,
+      detailLevel: 'full',
+    }) as FakeGroup;
+
+    const oakColors = collectTreeInstanceColors(oakModel);
+    const birchColors = collectTreeInstanceColors(birchModel);
+
+    expect(oakColors.trunk.size).toBeGreaterThan(0);
+    expect(oakColors.foliage.size).toBeGreaterThan(0);
+    expect(birchColors.trunk.size).toBeGreaterThan(0);
+    expect(birchColors.foliage.size).toBeGreaterThan(0);
+    expect(oakColors.trunk).not.toEqual(birchColors.trunk);
+    expect(oakColors.foliage).not.toEqual(birchColors.foliage);
+  });
+
   it('instances full-detail tree branches and foliage within each tree', () => {
     const tile = getForestTile();
     const state = createForestTestState();
@@ -1575,4 +1652,39 @@ function collectForestTreePartMaterials(model: FakeGroup): {
     trunkMaterials,
     foliageMaterials,
   };
+}
+
+function collectTreeInstanceColors(model: FakeGroup): {
+  trunk: Set<unknown>;
+  foliage: Set<unknown>;
+} {
+  const trunk = new Set<unknown>();
+  const foliage = new Set<unknown>();
+
+  model.traverse((node) => {
+    if (!(node instanceof FakeInstancedMesh)) {
+      return;
+    }
+    if (
+      node.userData?.forestTreeTrunkInstanced === true ||
+      node.userData?.forestTreeBranchInstanced === true
+    ) {
+      node.colors.forEach((color) => trunk.add(readFakeColorValue(color)));
+    }
+    if (node.userData?.forestTreeFoliageInstanced === true) {
+      node.colors.forEach((color) => foliage.add(readFakeColorValue(color)));
+    }
+  });
+
+  return {
+    trunk,
+    foliage,
+  };
+}
+
+function readFakeColorValue(color: unknown): unknown {
+  if (color && typeof color === 'object' && 'value' in color) {
+    return (color as { value: unknown }).value;
+  }
+  return color;
 }

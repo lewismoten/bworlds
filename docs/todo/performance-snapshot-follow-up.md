@@ -20,7 +20,13 @@
 - [x] Limit each tree species to 10 material variants per part type.
 - [x] Reuse bark, foliage, and branch materials across nearby trees.
 - [x] Prefer tinting shared materials over creating new textures.
-- [ ] Use color shifts to distinguish related tree species.
+- [x] Use color shifts to distinguish related tree species.
+      Progress: `tile-forest` now keeps oak and birch on one shared broadleaf
+      trunk/foliage material bundle per Three host, but applies species-specific
+      trunk and foliage tint through instanced-mesh colors in both full-detail
+      and low-detail tree batches. Nearby broadleaf species regain a visible
+      color distinction without reintroducing separate oak-versus-birch
+      material ownership.
 - [x] Avoid unique textures when color variation is sufficient.
 - [x] Share material variants between compatible tree species.
       Progress: `tile-forest` now resolves full-detail broadleaf materials
