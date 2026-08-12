@@ -1,26 +1,31 @@
 # Shared Visible Floor Batching
 
-`render3d` now batches simple visible plains floors into a shared instanced
-layer instead of creating one floor mesh per visible plains tile.
+`render3d` now batches simple visible terrain floors into a shared instanced
+layer instead of creating one floor mesh per visible terrain tile.
 
 ## Why
 
 The plains plugin already stopped creating its own duplicate ground model, but
 the renderer was still attaching one floor box mesh to every visible tile node.
-In the August 12, 2026 runtime issue snapshots, that left `tile-plains` as the
-top draw-call owner even when plains had no plugin model at all.
+In the runtime issue snapshots from Wednesday, August 12, 2026, that left
+`tile-plains` as the top draw-call owner even when plains had no plugin model
+at all.
 
 ## Current behavior
 
-- Only simple full-tile plains floors use the shared layer.
+- Simple full-tile `plains`, `forest`, and `shore` floors use the shared
+  layer.
+- `road` uses the shared layer only when terrain surface selection chooses the
+  temporary `shared-splat` mode.
 - Underlay floors, water floors, and river-edge floor geometry still use their
   tile-local meshes.
-- The shared plains floor batches are grouped by atlas variant so they can keep
-  correct tile UVs while sharing one atlas material.
+- Shared terrain floor batches are grouped by atlas variant and terrain blend
+  signature so they can keep correct tile UVs and edge blending while sharing
+  one atlas material.
 - World-curvature offset is baked into each shared floor instance position
   whenever visible-tile curvature sync runs.
-- Ordinary plains tiles no longer allocate a hidden plugin sentinel `Group`;
-  the visible LOD recovery path now treats shared-floor-only plains builds as
+- Ordinary shared-floor terrain tiles no longer allocate a hidden plugin
+  sentinel `Group`; the visible LOD recovery path now treats those builds as
   tiles that do not support plugin models, which avoids the extra per-tile
   object and the redundant `full -> low` recovery retry.
 

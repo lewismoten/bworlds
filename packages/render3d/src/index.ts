@@ -4011,10 +4011,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
           sharedFloorInstance: null,
         };
       }
-      if (
-        floorKind === 'plains' ||
-        (terrainSurfaceMode === 'shared-splat' && floorKind === 'road')
-      ) {
+      if (supportsSharedVisibleFloorKind(floorKind, terrainSurfaceMode)) {
         return {
           floorNode: null,
           sharedFloorInstance: {
@@ -5234,6 +5231,18 @@ export function collectSharedVisibleFloorBatches(
   }
 
   return [...batches.values()];
+}
+
+export function supportsSharedVisibleFloorKind(
+  floorKind: Kind,
+  terrainSurfaceMode: TerrainSurfaceRenderMode
+): boolean {
+  if (terrainSurfaceMode === 'shared-splat' && floorKind === 'road') {
+    return true;
+  }
+  return (
+    floorKind === 'plains' || floorKind === 'forest' || floorKind === 'shore'
+  );
 }
 
 export function collectSharedWallFallbackBatches(

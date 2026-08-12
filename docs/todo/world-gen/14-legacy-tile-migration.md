@@ -18,6 +18,10 @@ Current support:
   setup, which means gameplay indexing, local feature queries, and the 2D map
   can continue to rely on shared logical tiles even while the 3D floor path is
   being replaced.
+- `packages/render3d/src/index.ts` now routes simple flat overworld `plains`,
+  `forest`, and `shore` floor tiles through shared visible floor batches, and
+  `road` continues to use that path when temporary terrain surface selection
+  switches it to `shared-splat`.
 
 ## Replace Floor Meshes
 

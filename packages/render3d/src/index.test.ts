@@ -223,6 +223,7 @@ import {
   recordRecentLabeledDurationMetric,
   resolveTileTerrainSurfaceMode,
   resetOwnedMaterialLifecycleMetrics,
+  supportsSharedVisibleFloorKind,
   trackOwnedObject3DMaterials,
   isFrameTimeBudgetExhausted,
   shouldProcessPendingWorldBuildEntry,
@@ -2135,6 +2136,18 @@ describe('render3d visibility helpers', () => {
     );
     expect(resolveTileTerrainSurfaceMode({ kind: 'plains' })).toBe(
       'legacy-mesh'
+    );
+  });
+
+  it('uses shared visible floors only for explicit flat overworld terrain kinds', () => {
+    expect(supportsSharedVisibleFloorKind('plains', 'legacy-mesh')).toBe(true);
+    expect(supportsSharedVisibleFloorKind('forest', 'legacy-mesh')).toBe(true);
+    expect(supportsSharedVisibleFloorKind('shore', 'legacy-mesh')).toBe(true);
+    expect(supportsSharedVisibleFloorKind('road', 'shared-splat')).toBe(true);
+    expect(supportsSharedVisibleFloorKind('road', 'legacy-mesh')).toBe(false);
+    expect(supportsSharedVisibleFloorKind('rail', 'legacy-mesh')).toBe(false);
+    expect(supportsSharedVisibleFloorKind('bridge', 'shared-splat')).toBe(
+      false
     );
   });
 
@@ -6812,7 +6825,7 @@ describe('render3d visibility helpers', () => {
     expect(getWorldCurvatureOffset(24)).toBeCloseTo(-1.2, 6);
   });
 
-  it('batches shared plains and road floors by kind, surface signature, variant, and curvature-adjusted height', () => {
+  it('batches shared terrain floors by kind, surface signature, variant, and curvature-adjusted height', () => {
     expect(
       collectSharedVisibleFloorBatches(
         [
@@ -6850,6 +6863,30 @@ describe('render3d visibility helpers', () => {
               thickness: 0.03,
               tilePluginOwnerLabel: 'tile-route',
               surfaceBlendSignature: 'road:plains:plains:plains:plains',
+            },
+          },
+          {
+            sharedFloorInstance: {
+              kind: 'forest',
+              variant: 0,
+              tileX: 3,
+              tileY: 0,
+              surfaceHeight: 0.3,
+              thickness: 0.03,
+              tilePluginOwnerLabel: 'tile-forest',
+              surfaceBlendSignature: 'forest:forest:forest:plains:plains',
+            },
+          },
+          {
+            sharedFloorInstance: {
+              kind: 'shore',
+              variant: 0,
+              tileX: 4,
+              tileY: 0,
+              surfaceHeight: 0.15,
+              thickness: 0.03,
+              tilePluginOwnerLabel: 'tile-water',
+              surfaceBlendSignature: 'shore:ocean:shore:shore:plains',
             },
           },
           {
@@ -6903,6 +6940,34 @@ describe('render3d visibility helpers', () => {
             tileX: 2,
             tileY: 0,
             positionY: 0.235,
+          },
+        ],
+      },
+      {
+        kind: 'forest',
+        variant: 0,
+        thickness: 0.03,
+        tilePluginOwnerLabel: 'tile-forest',
+        surfaceBlendSignature: 'forest:forest:forest:plains:plains',
+        instances: [
+          {
+            tileX: 3,
+            tileY: 0,
+            positionY: 0.285,
+          },
+        ],
+      },
+      {
+        kind: 'shore',
+        variant: 0,
+        thickness: 0.03,
+        tilePluginOwnerLabel: 'tile-water',
+        surfaceBlendSignature: 'shore:ocean:shore:shore:plains',
+        instances: [
+          {
+            tileX: 4,
+            tileY: 0,
+            positionY: 0.135,
           },
         ],
       },
