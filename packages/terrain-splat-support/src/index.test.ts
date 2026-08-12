@@ -194,6 +194,43 @@ describe('terrain splat support', () => {
     expect(shifted.variationStrength).toBeCloseTo(0.12, 6);
   });
 
+  it('keeps tint variation in metadata so one layer can still use one shared material identity', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 3,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      tintVariation: 0.12,
+      tintVariationCellSize: 8,
+    };
+    const catalog = createTerrainMaterialLayerCatalog([layer]);
+    const first = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 10,
+      y: 20,
+      kind: 'plains',
+    });
+    const shifted = resolveTerrainMaterialLayerTintTransform(layer, {
+      seed: 'pbr-splat-seed',
+      x: 18,
+      y: 29,
+      kind: 'plains',
+    });
+
+    expect(first.resolvedTint).not.toBe(shifted.resolvedTint);
+    expect(catalog.entries).toHaveLength(1);
+    expect(catalog.entries[0]).toMatchObject({
+      id: 'grass',
+      index: 0,
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+    });
+  });
+
   it('resolves deterministic terrain UV transforms from layer configuration', () => {
     const layer = {
       id: 'grass',
@@ -252,6 +289,62 @@ describe('terrain splat support', () => {
     expect(typeof first.mirrorU).toBe('boolean');
     expect(typeof first.mirrorV).toBe('boolean');
     expect(uniqueTransforms.size).toBeGreaterThan(1);
+  });
+
+  it('keeps UV rotation and mirroring in metadata so one layer can still use one shared material identity', () => {
+    const layer = {
+      id: 'grass',
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 3,
+      defaultTint: '#88aa55',
+      defaultRoughness: 0.9,
+      uvRotationQuarterTurns: [0, 1, 2, 3] as const,
+      allowMirrorU: true,
+      allowMirrorV: true,
+    };
+    const catalog = createTerrainMaterialLayerCatalog([layer]);
+    const sampledTransforms = [
+      resolveTerrainMaterialLayerUvTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 18,
+        y: 27,
+        kind: 'plains',
+      }),
+      resolveTerrainMaterialLayerUvTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 19,
+        y: 27,
+        kind: 'plains',
+      }),
+      resolveTerrainMaterialLayerUvTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 20,
+        y: 27,
+        kind: 'plains',
+      }),
+      resolveTerrainMaterialLayerUvTransform(layer, {
+        seed: 'pbr-splat-seed',
+        x: 21,
+        y: 27,
+        kind: 'plains',
+      }),
+    ];
+
+    expect(
+      new Set(sampledTransforms.map((transform) => JSON.stringify(transform)))
+        .size
+    ).toBeGreaterThan(1);
+    expect(catalog.entries).toHaveLength(1);
+    expect(catalog.entries[0]).toMatchObject({
+      id: 'grass',
+      index: 0,
+      baseColorTextureId: 'grass/base',
+      normalTextureId: 'grass/normal',
+      roughnessTextureId: 'grass/roughness',
+      textureScale: 3,
+    });
   });
 
   it('defaults terrain UV transforms when no extra options are configured', () => {

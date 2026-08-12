@@ -222,8 +222,8 @@
 - [x] Test adjacent chunks share border splat weights.
 - [x] Test terrain layers stay stable for one seed.
 - [ ] Test mixed terrain renders in one chunk.
-- [ ] Test texture rotation does not add new materials.
-- [ ] Test tint variation does not add new materials.
+- [x] Test texture rotation does not add new materials.
+- [x] Test tint variation does not add new materials.
 - [ ] Test distant LOD keeps major terrain boundaries.
 - [ ] Test roads blend with surrounding terrain.
 - [ ] Test slope can increase rock material weight.
@@ -296,6 +296,10 @@
   `@bworlds/terrain-splat-support` so nearby terrain can share the same
   low-frequency tint drift across broader world-space regions while staying
   deterministic from seed and layer metadata.
+- Added focused material-invariance tests in
+  `@bworlds/terrain-splat-support` so deterministic UV rotation/mirroring and
+  tint variation are locked to metadata-only behavior and do not imply new
+  shared material identities for the same terrain layer catalog entry.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
