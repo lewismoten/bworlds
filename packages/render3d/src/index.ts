@@ -34,7 +34,6 @@ import {
   type Model3DResourceCostEstimate,
   type RenderBudget,
   type RenderBudgetDetailLevel,
-  type TerrainSurfaceRenderMode,
   type TileLike,
   type TilePlugin,
   type ViewMode,
@@ -105,6 +104,7 @@ import {
 } from './object-materials.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
+import { resolveTileTerrainSurfaceMode } from './terrain-surface-mode.ts';
 import {
   createSortedCountSummaryScratch,
   summarizeSortedCountMap,
@@ -114,6 +114,10 @@ import {
   createVisibleWorldBuildOrderScratch,
   fillVisibleWorldTileBuildOrder,
 } from './visible-world-build-order.ts';
+export {
+  resolveTileTerrainSurfaceMode,
+  resolveTileTerrainSurfaceSelection,
+} from './terrain-surface-mode.ts';
 import {
   collectVisibleTileResourceStats,
   DRAW_CALL_CHUNK_TILE_SIZE,
@@ -4482,13 +4486,6 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     render,
     resize,
   };
-}
-
-export function resolveTileTerrainSurfaceMode(
-  tile: Pick<TileLike, 'kind'>
-): TerrainSurfaceRenderMode {
-  void tile;
-  return 'legacy-mesh';
 }
 
 function applyPixelArtTextureSampling<
