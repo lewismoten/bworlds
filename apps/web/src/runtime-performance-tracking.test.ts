@@ -529,4 +529,33 @@ describe('runtime performance tracking', () => {
     expect(firstIssue?.summary).toBe(secondIssue?.summary);
     expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
   });
+
+  it('treats matching summary templates as the same issue hash when only measured values change', () => {
+    const firstIssue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        performanceTier: 'critical',
+        drawCalls: 240,
+        renderQualityLimiters: 'Scene materials exceeded the hard cap',
+        materialCount: 52,
+        latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
+      }),
+    });
+    const secondIssue = buildRuntimePerformanceIssueReport({
+      source: 'game',
+      route: '/',
+      debugSnapshot: createDebugSnapshot({
+        performanceTier: 'critical',
+        drawCalls: 240,
+        renderQualityLimiters: 'Scene materials exceeded the hard cap',
+        materialCount: 85,
+        latestQualityChangeLimiter: 'Scene materials exceeded the hard cap',
+      }),
+    });
+
+    expect(firstIssue?.summary).toBe('Scene materials 52 exceeded hard cap 48.');
+    expect(secondIssue?.summary).toBe('Scene materials 85 exceeded hard cap 48.');
+    expect(firstIssue?.issueHash).toBe(secondIssue?.issueHash);
+  });
 });

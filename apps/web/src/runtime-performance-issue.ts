@@ -743,10 +743,17 @@ function hasActionableVisibilityRadiusReduction(
   );
 }
 
+function normalizeRuntimePerformanceIssueHashSummary(value: string): string {
+  return value
+    .replace(/\b\d+(?:\.\d+)?\s*ms\b/giu, '{ms}')
+    .replace(/\b\d+(?:\.\d+)?\b/gu, '{value}');
+}
+
 function createRuntimePerformanceIssueHash(value: string): string {
+  const normalized = normalizeRuntimePerformanceIssueHashSummary(value);
   let hash = 0x811c9dc5;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
+  for (let index = 0; index < normalized.length; index += 1) {
+    hash ^= normalized.charCodeAt(index);
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash.toString(16).padStart(8, '0');
