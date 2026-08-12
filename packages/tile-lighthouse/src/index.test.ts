@@ -290,17 +290,17 @@ describe('tile lighthouse', () => {
     }) as FakeNode | undefined;
 
     const sharedCount = countSharedMaterialReferences(first, second);
-    const firstChildren = first?.children as FakeMesh[] | undefined;
-    const secondChildren = second?.children as FakeMesh[] | undefined;
-    const firstBeamPivot = firstChildren?.[5] as FakeGroup | undefined;
-    const secondBeamPivot = secondChildren?.[5] as FakeGroup | undefined;
+    const firstBeamPivot = findBeamPivot(first);
+    const secondBeamPivot = findBeamPivot(second);
     const firstBeamMeshes = collectBeamMeshes(first);
     const secondBeamMeshes = collectBeamMeshes(second);
 
     expect(sharedCount).toBeGreaterThanOrEqual(5);
     expect(firstBeamMeshes).toHaveLength(3);
     expect(firstBeamMeshes[0]?.material).toBe(secondBeamMeshes[0]?.material);
-    expect(firstChildren?.[0]?.geometry).toBe(secondChildren?.[0]?.geometry);
+    expect((first as FakeMesh | undefined)?.geometry).toBe(
+      (second as FakeMesh | undefined)?.geometry
+    );
     expect(
       (firstBeamPivot?.children[0] as FakeMesh | undefined)?.geometry
     ).toBe((secondBeamPivot?.children[0] as FakeMesh | undefined)?.geometry);
@@ -498,8 +498,8 @@ describe('tile lighthouse', () => {
     });
 
     expect(fullEstimate).toEqual({
-      object3dCount: 22,
-      groupCount: 2,
+      object3dCount: 21,
+      groupCount: 1,
       meshCount: 19,
       geometryCount: 19,
       materialCount: 9,
@@ -549,8 +549,8 @@ describe('tile lighthouse', () => {
         model,
       })
     ).toEqual({
-      object3dCount: 22,
-      groupCount: 2,
+      object3dCount: 21,
+      groupCount: 1,
       meshCount: 19,
       geometryCount: 19,
       materialCount: 9,
@@ -697,8 +697,8 @@ describe('tile lighthouse', () => {
       tileY: 5,
     }) as FakeNode | undefined;
 
-    const base = model?.children[0];
-    const tower = model?.children[1];
+    const base = model;
+    const tower = model?.children[0];
     const glass = collectTaggedMeshes(model, 'lighthouseGlass')[0];
     const balcony = collectTaggedMeshes(model, 'lighthouseBalcony')[0];
     const wallGlow = collectTaggedMeshes(model, 'lighthouseWallGlow')[0];
@@ -788,6 +788,23 @@ describe('tile lighthouse', () => {
     expect(low).toBeInstanceOf(FakeMesh);
     expect(low?.position).toMatchObject({ x: 4, y: 0.14, z: 5 });
     expect(low?.children.length ?? 0).toBeGreaterThanOrEqual(4);
+  });
+
+  it('uses the full-detail base mesh as the lighthouse root instead of a wrapper group', () => {
+    const plugin = createLighthouseTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'lighthouse');
+    const full = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: {} as never,
+      tile: { kind: 'lighthouse' } as never,
+      tileX: 4,
+      tileY: 5,
+      detailLevel: 'full',
+    }) as FakeNode | undefined;
+
+    expect(full).toBeInstanceOf(FakeMesh);
+    expect(full?.position).toMatchObject({ x: 4, y: 0.16, z: 5 });
+    expect(full?.children.length ?? 0).toBeGreaterThanOrEqual(17);
   });
 
   it('activates the lighthouse beam early in dense fog near daytime', () => {

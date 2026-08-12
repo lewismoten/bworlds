@@ -230,6 +230,12 @@
       beneath it instead of wrapping them in a dedicated `Group`, which removes
       one static `Object3D` from each reduced-quality lighthouse tile while
       preserving the same beam animation and silhouette, and full-detail
+      `tile-lighthouse` now also uses that same base cylinder mesh as the root
+      and attaches the tower shell, lantern room, balcony, beam pivot, and
+      beacon beneath it instead of wrapping the landmark in a dedicated
+      `Group`, which removes one static `Object3D` from each lighthouse tile
+      without changing the lantern-room layout, beam animation, or night
+      lighting, and full-detail
       `tile-tower` now also uses its base cylinder mesh as the root and hangs
       the crown ring, roof cap, doorway, lantern glow, and point light beneath
       it instead of wrapping the landmark in a dedicated `Group`, which

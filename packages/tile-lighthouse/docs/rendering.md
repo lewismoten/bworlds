@@ -23,6 +23,12 @@ its root and hangs the tower, stripe, cap, and rotating beam pivot beneath it,
 so reduced-quality lighthouse tiles avoid one otherwise empty wrapper `Group`
 without changing the beam animation or silhouette.
 
+The full-detail lighthouse landmark now also uses that same base cylinder mesh
+as its root and attaches the tower shell, lantern room, balcony, beam pivot,
+and beacon beneath it, so lighthouse tiles avoid one otherwise empty wrapper
+`Group` without changing the lantern-room layout, beam animation, or night
+lighting.
+
 Progressive loading:
 
 - The full-detail lighthouse progressive path now yields after

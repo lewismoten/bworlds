@@ -88,8 +88,8 @@ const LIGHTHOUSE_LOW_DETAIL_BEAM_SEGMENTS = [
   { radius: 0.24, length: 1.5, opacity: 0.1, emissiveIntensity: 0.58 },
 ] as const;
 const LIGHTHOUSE_FULL_DETAIL_COST_ESTIMATE: Model3DResourceCostEstimate = {
-  object3dCount: 22,
-  groupCount: 2,
+  object3dCount: 21,
+  groupCount: 1,
   meshCount: 19,
   geometryCount: 19,
   materialCount: 9,
@@ -350,7 +350,6 @@ function* createLighthouseModelProgressive({
   tileY,
   detailLevel = 'full',
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
-  const group = new three.Group();
   const {
     wallMaterial,
     stripeMaterial,
@@ -391,7 +390,6 @@ function* createLighthouseModelProgressive({
     { label: 'base' }
   );
   base.position.set(tileX, 0.16, tileY);
-  group.add(base);
 
   const tower = markStructuralRenderBudgetPart(
     new three.Mesh(
@@ -400,8 +398,8 @@ function* createLighthouseModelProgressive({
     ),
     { label: 'tower' }
   );
-  tower.position.set(tileX, 1.06, tileY);
-  group.add(tower);
+  tower.position.set(0, 0.9, 0);
+  base.add(tower);
   yield {
     completedSteps: 1,
     totalSteps,
@@ -418,8 +416,8 @@ function* createLighthouseModelProgressive({
       priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
     }
   );
-  stripe.position.set(tileX, 0.92, tileY);
-  group.add(stripe);
+  stripe.position.set(0, 0.76, 0);
+  base.add(stripe);
 
   const cap = markStructuralRenderBudgetPart(
     new three.Mesh(
@@ -428,8 +426,8 @@ function* createLighthouseModelProgressive({
     ),
     { label: 'cap' }
   );
-  cap.position.set(tileX, 2.1, tileY);
-  group.add(cap);
+  cap.position.set(0, 1.94, 0);
+  base.add(cap);
 
   const lanternRoom = markStructuralRenderBudgetPart(
     new three.Mesh(
@@ -441,8 +439,8 @@ function* createLighthouseModelProgressive({
       priority: RENDER_BUDGET_PART_PRIORITIES.structuralDetail,
     }
   );
-  lanternRoom.position.set(tileX, 1.86, tileY);
-  group.add(lanternRoom);
+  lanternRoom.position.set(0, 1.7, 0);
+  base.add(lanternRoom);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -460,8 +458,8 @@ function* createLighthouseModelProgressive({
     ...(lanternGlass.userData ?? {}),
     [LIGHTHOUSE_GLASS_KEY]: true,
   };
-  lanternGlass.position.set(tileX, 1.86, tileY);
-  group.add(lanternGlass);
+  lanternGlass.position.set(0, 1.7, 0);
+  base.add(lanternGlass);
 
   const frameRingInstances = markOptionalDecorativeRenderBudgetPart(
     new three.InstancedMesh(
@@ -482,16 +480,16 @@ function* createLighthouseModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         frameRingMatrixScratch,
-        tileX,
-        1.86 + yOffset,
-        tileY,
+        0,
+        1.7 + yOffset,
+        0,
         1,
         1,
         1
       )
     );
   });
-  group.add(frameRingInstances);
+  base.add(frameRingInstances);
 
   const framePostInstances = markOptionalDecorativeRenderBudgetPart(
     new three.InstancedMesh(
@@ -517,16 +515,16 @@ function* createLighthouseModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         framePostMatrixScratch,
-        tileX + offset.x,
-        1.86,
-        tileY + offset.z,
+        offset.x,
+        1.7,
+        offset.z,
         1,
         1,
         1
       )
     );
   });
-  group.add(framePostInstances);
+  base.add(framePostInstances);
 
   const verticalWallGlowInstances = markOptionalDecorativeRenderBudgetPart(
     markPoiLightEmitter(
@@ -556,9 +554,9 @@ function* createLighthouseModelProgressive({
     0,
     writeInstancedScalePositionMatrix(
       verticalWallGlowMatrixScratch,
-      tileX + 0.255,
-      1.7,
-      tileY,
+      0.255,
+      1.54,
+      0,
       1,
       1,
       1
@@ -568,15 +566,15 @@ function* createLighthouseModelProgressive({
     1,
     writeInstancedScalePositionMatrix(
       verticalWallGlowMatrixScratch,
-      tileX - 0.255,
-      1.7,
-      tileY,
+      -0.255,
+      1.54,
+      0,
       1,
       1,
       1
     )
   );
-  group.add(verticalWallGlowInstances);
+  base.add(verticalWallGlowInstances);
 
   const horizontalWallGlowInstances = markOptionalDecorativeRenderBudgetPart(
     markPoiLightEmitter(
@@ -606,9 +604,9 @@ function* createLighthouseModelProgressive({
     0,
     writeInstancedScalePositionMatrix(
       horizontalWallGlowMatrixScratch,
-      tileX,
-      1.7,
-      tileY + 0.255,
+      0,
+      1.54,
+      0.255,
       1,
       1,
       1
@@ -618,15 +616,15 @@ function* createLighthouseModelProgressive({
     1,
     writeInstancedScalePositionMatrix(
       horizontalWallGlowMatrixScratch,
-      tileX,
-      1.7,
-      tileY - 0.255,
+      0,
+      1.54,
+      -0.255,
       1,
       1,
       1
     )
   );
-  group.add(horizontalWallGlowInstances);
+  base.add(horizontalWallGlowInstances);
   yield {
     completedSteps: 3,
     totalSteps,
@@ -651,8 +649,8 @@ function* createLighthouseModelProgressive({
     ...(lens.userData ?? {}),
     [LIGHTHOUSE_LENS_KEY]: true,
   };
-  lens.position.set(tileX, 1.86, tileY);
-  group.add(lens);
+  lens.position.set(0, 1.7, 0);
+  base.add(lens);
 
   const balconyDeck = markOptionalDecorativeRenderBudgetPart(
     new three.Mesh(
@@ -665,8 +663,8 @@ function* createLighthouseModelProgressive({
     ...(balconyDeck.userData ?? {}),
     [LIGHTHOUSE_BALCONY_KEY]: true,
   };
-  balconyDeck.position.set(tileX, 1.67, tileY);
-  group.add(balconyDeck);
+  balconyDeck.position.set(0, 1.51, 0);
+  base.add(balconyDeck);
 
   const balconyRailRing = markOptionalDecorativeRenderBudgetPart(
     new three.Mesh(
@@ -679,8 +677,8 @@ function* createLighthouseModelProgressive({
     ...(balconyRailRing.userData ?? {}),
     [LIGHTHOUSE_BALCONY_RAIL_KEY]: true,
   };
-  balconyRailRing.position.set(tileX, 1.83, tileY);
-  group.add(balconyRailRing);
+  balconyRailRing.position.set(0, 1.67, 0);
+  base.add(balconyRailRing);
 
   const balconyRailPostInstances = markOptionalDecorativeRenderBudgetPart(
     new three.InstancedMesh(
@@ -706,16 +704,16 @@ function* createLighthouseModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         balconyRailPostMatrixScratch,
-        tileX + offset.x,
-        1.75,
-        tileY + offset.z,
+        offset.x,
+        1.59,
+        offset.z,
         1,
         1,
         1
       )
     );
   });
-  group.add(balconyRailPostInstances);
+  base.add(balconyRailPostInstances);
 
   const verticalPaneInstances = markOptionalDecorativeRenderBudgetPart(
     markPoiLightEmitter(
@@ -760,7 +758,7 @@ function* createLighthouseModelProgressive({
     1
   );
   verticalPaneInstances.setMatrixAt(1, verticalPaneMatrixScratch);
-  group.add(verticalPaneInstances);
+  base.add(verticalPaneInstances);
 
   const horizontalPaneInstances = markOptionalDecorativeRenderBudgetPart(
     markPoiLightEmitter(
@@ -784,13 +782,12 @@ function* createLighthouseModelProgressive({
     ...(horizontalPaneInstances.userData ?? {}),
     [LIGHTHOUSE_PANE_INSTANCED_KEY]: 'horizontal',
   };
-  horizontalPaneInstances.position.set(tileX, 0, tileY);
   horizontalPaneInstances.rotation.y = Math.PI / 2;
   const horizontalPaneMatrixScratch = new three.Matrix4();
   writeInstancedScalePositionMatrix(
     horizontalPaneMatrixScratch,
     0,
-    1.86,
+    1.7,
     0.22,
     1,
     1,
@@ -800,14 +797,14 @@ function* createLighthouseModelProgressive({
   writeInstancedScalePositionMatrix(
     horizontalPaneMatrixScratch,
     0,
-    1.86,
+    1.7,
     -0.22,
     1,
     1,
     1
   );
   horizontalPaneInstances.setMatrixAt(1, horizontalPaneMatrixScratch);
-  group.add(horizontalPaneInstances);
+  base.add(horizontalPaneInstances);
   yield {
     completedSteps: 4,
     totalSteps,
@@ -821,7 +818,7 @@ function* createLighthouseModelProgressive({
     lighthouseBeamRotationDurationMs: rotationDurationMs,
     lighthouseBeamRotationDirection: rotationDirection,
   };
-  beamPivot.position.set(tileX, 1.88, tileY);
+  beamPivot.position.set(0, 1.72, 0);
 
   let beamOffset = LIGHTHOUSE_BEAM_START_OFFSET;
   for (const segment of LIGHTHOUSE_BEAM_SEGMENTS) {
@@ -844,7 +841,7 @@ function* createLighthouseModelProgressive({
     beamPivot.add(beam);
     beamOffset += segment.length - 0.04;
   }
-  group.add(beamPivot);
+  base.add(beamPivot);
 
   const beacon = markPoiLightEmitter(
     new three.PointLight(beamColor, 0, 6.2, 1.6),
@@ -854,16 +851,16 @@ function* createLighthouseModelProgressive({
       visibleThreshold: 0.05,
     }
   );
-  beacon.position.set(tileX, 1.88, tileY);
+  beacon.position.set(0, 1.72, 0);
   beacon.visible = false;
-  group.add(beacon);
+  base.add(beacon);
   yield {
     completedSteps: 5,
     totalSteps,
     label: 'beam-and-beacon',
   };
 
-  return group;
+  return base;
 }
 
 function runLighthouseModelBuildToCompletion(
