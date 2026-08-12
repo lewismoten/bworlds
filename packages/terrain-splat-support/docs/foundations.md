@@ -23,6 +23,8 @@ Current responsibilities:
 - flatten packed splat grids into transferable typed arrays
 - summarize chunk layer usage before renderer integration decides budgets
 - share deterministic terrain family variant pools across chunk generation paths
+- merge terrain splat contributions from multiple plugins into one shared
+  catalog set
 - plan one bounded active layer pool for neighboring chunk groups
 - plan aligned texture-array slots and validate descriptor consistency before
   renderer upload code exists

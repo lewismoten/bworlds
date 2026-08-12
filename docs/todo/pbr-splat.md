@@ -8,7 +8,7 @@
 - [x] Define a terrain splat weight interface.
 - [x] Keep layer IDs stable across chunks.
 - [x] Keep splat data deterministic from the world seed.
-- [ ] Share the same splat system across terrain plugins.
+- [x] Share the same splat system across terrain plugins.
 
 ## PBR Layer Data
 
@@ -313,6 +313,10 @@
   `buildTerrainSplatChunkDataFromTerrainState(...)` so plugins can freeze plain
   terrain records before chunk build or renderer planning, keeping splat
   consumers off live gameplay callbacks and state APIs.
+- Added `@bworlds/terrain-splat-support/plugin-catalog` so multiple plugins can
+  contribute terrain layers, bounded variant families, and terrain-kind splat
+  rules into one validated shared catalog set with ownership metadata and
+  collision checks.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and

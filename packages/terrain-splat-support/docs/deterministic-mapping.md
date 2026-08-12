@@ -27,6 +27,8 @@ Current mapping model:
 
 - `createTerrainKindSplatCatalog(...)` validates reusable terrain-kind mapping
   definitions against the shared terrain layer catalog
+- `createTerrainSplatPluginCatalog(...)` can merge layer, family, and kind
+  contributions from multiple plugins before that shared mapping is resolved
 - `resolveTerrainKindSplatSample(...)` picks one deterministic base layer for a
   tile kind, applies conditional blend layers from terrain signals, and
   normalizes the result
