@@ -108,6 +108,10 @@ describe('debug panel', () => {
       oneChildGroupSummary: 'tile-forest:11, tile-town:7',
       oneChildPlainWrapperTopPluginLabel: 'tile-town',
       oneChildPlainWrapperSummary: 'tile-town:4, tile-forest:2',
+      oneChildTransformTopPluginLabel: 'tile-forest',
+      oneChildTransformSummary: 'tile-forest:6, tile-town:2',
+      oneChildTaggedTopPluginLabel: 'tile-town',
+      oneChildTaggedSummary: 'tile-town:3, tile-forest:1',
       oneChildGroupPlainWrapperCount: 6,
       oneChildGroupTransformCount: 8,
       oneChildGroupTaggedCount: 4,
@@ -186,6 +190,10 @@ describe('debug panel', () => {
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Group Summary');
     expect(buildDebugMarkup(snapshot)).toContain('Plain Wrapper Plugin');
     expect(buildDebugMarkup(snapshot)).toContain('Plain Wrapper Summary');
+    expect(buildDebugMarkup(snapshot)).toContain('Transform Pivot Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Transform Pivot Summary');
+    expect(buildDebugMarkup(snapshot)).toContain('Tagged Group Plugin');
+    expect(buildDebugMarkup(snapshot)).toContain('Tagged Group Summary');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Plain Wrappers');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Transform Pivots');
     expect(buildDebugMarkup(snapshot)).toContain('One-Child Tagged Groups');

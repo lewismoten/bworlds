@@ -243,6 +243,8 @@ import {
   summarizeVisibleTileRenderedInstancesByPlugin,
   summarizeVisibleTileOneChildGroupsByPlugin,
   summarizeVisibleTileOneChildPlainWrappersByPlugin,
+  summarizeVisibleTileOneChildTaggedGroupsByPlugin,
+  summarizeVisibleTileOneChildTransformsByPlugin,
   summarizeVisibleTileStaticMatrixUpdatesByPlugin,
   summarizeVisibleTileKinds,
   summarizeRemovedTileModelBudgetParts,
@@ -5371,6 +5373,76 @@ describe('render3d visibility helpers', () => {
     });
 
     expect(summarizeVisibleTileOneChildPlainWrappersByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes visible tile transform pivot groups by plugin', () => {
+    expect(
+      summarizeVisibleTileOneChildTransformsByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          oneChildGroupTransformCount: 5,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          oneChildGroupTransformCount: 2,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          oneChildGroupTransformCount: 1,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          oneChildGroupTransformCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 8,
+      topCount: 6,
+      topLabel: 'tile-forest',
+      summary: 'tile-forest:6, tile-town:2',
+    });
+
+    expect(summarizeVisibleTileOneChildTransformsByPlugin([])).toEqual({
+      totalCount: 0,
+      topCount: 0,
+      topLabel: '',
+      summary: '',
+    });
+  });
+
+  it('summarizes visible tile tagged one-child groups by plugin', () => {
+    expect(
+      summarizeVisibleTileOneChildTaggedGroupsByPlugin([
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          oneChildGroupTaggedCount: 1,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-town',
+          oneChildGroupTaggedCount: 4,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-forest',
+          oneChildGroupTaggedCount: 2,
+        },
+        {
+          tilePluginOwnerLabel: 'tile-empty',
+          oneChildGroupTaggedCount: 0,
+        },
+      ])
+    ).toEqual({
+      totalCount: 7,
+      topCount: 4,
+      topLabel: 'tile-town',
+      summary: 'tile-town:4, tile-forest:3',
+    });
+
+    expect(summarizeVisibleTileOneChildTaggedGroupsByPlugin([])).toEqual({
       totalCount: 0,
       topCount: 0,
       topLabel: '',

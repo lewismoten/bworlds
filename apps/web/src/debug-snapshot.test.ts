@@ -282,6 +282,10 @@ describe('debug snapshot', () => {
         oneChildGroupSummary: 'tile-forest:11, tile-town:7',
         oneChildPlainWrapperTopPluginLabel: 'tile-town',
         oneChildPlainWrapperSummary: 'tile-town:4, tile-forest:2',
+        oneChildTransformTopPluginLabel: 'tile-forest',
+        oneChildTransformSummary: 'tile-forest:6, tile-town:2',
+        oneChildTaggedTopPluginLabel: 'tile-town',
+        oneChildTaggedSummary: 'tile-town:3, tile-forest:1',
         lastLodFailureReason:
           '15:-9 / tile-forest: visible lod recovery failed after full (full failed) -> low (low failed)',
         lastLodDowngradeReason:
@@ -618,6 +622,10 @@ describe('debug snapshot', () => {
       oneChildGroupSummary: 'tile-forest:11, tile-town:7',
       topOneChildPlainWrapperPlugin: 'tile-town',
       oneChildPlainWrapperSummary: 'tile-town:4, tile-forest:2',
+      topOneChildTransformPlugin: 'tile-forest',
+      oneChildTransformSummary: 'tile-forest:6, tile-town:2',
+      topOneChildTaggedPlugin: 'tile-town',
+      oneChildTaggedSummary: 'tile-town:3, tile-forest:1',
       matrixAutoUpdateCount: 22,
       staticMatrixAutoUpdateCount: 15,
       topStaticMatrixUpdatePlugin: 'tile-forest',

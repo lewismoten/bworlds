@@ -2613,6 +2613,11 @@ function collectCurrentDebugSnapshot(
     oneChildPlainWrapperTopPluginLabel:
       rendererStats.oneChildPlainWrapperTopPluginLabel,
     oneChildPlainWrapperSummary: rendererStats.oneChildPlainWrapperSummary,
+    oneChildTransformTopPluginLabel:
+      rendererStats.oneChildTransformTopPluginLabel,
+    oneChildTransformSummary: rendererStats.oneChildTransformSummary,
+    oneChildTaggedTopPluginLabel: rendererStats.oneChildTaggedTopPluginLabel,
+    oneChildTaggedSummary: rendererStats.oneChildTaggedSummary,
     object3dCount: rendererStats.object3dCount,
     visibleObjectCount: rendererStats.visibleObjectCount,
     invisibleObjectCount: rendererStats.invisibleObjectCount,

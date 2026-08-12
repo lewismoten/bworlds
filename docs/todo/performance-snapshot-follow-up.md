@@ -256,7 +256,11 @@
       plain identity wrappers, transform pivots, and tagged semantic groups,
       and the web debug snapshot/panel now exposes those three counts so the
       remaining scene-graph cleanup can target likely no-op wrappers first
-      instead of flattening meaningful animated or tagged pivots blindly.
+      instead of flattening meaningful animated or tagged pivots blindly, and
+      visible-tile diagnostics now also summarize transform pivots and tagged
+      one-child groups by plugin owner so runtime captures can identify which
+      plugin families still create those higher-purpose wrappers before the
+      cleanup work starts flattening them.
 - [x] Report one-child group counts by plugin.
 - [ ] Flatten groups that provide no transform or semantic value.
       Progress: `tile-forest` now places each full-detail tree's branch,

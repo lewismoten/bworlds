@@ -78,6 +78,10 @@ export type DebugSnapshot = {
   oneChildGroupSummary?: string;
   oneChildPlainWrapperTopPluginLabel?: string;
   oneChildPlainWrapperSummary?: string;
+  oneChildTransformTopPluginLabel?: string;
+  oneChildTransformSummary?: string;
+  oneChildTaggedTopPluginLabel?: string;
+  oneChildTaggedSummary?: string;
   latestQualityChangeLimiter?: string;
   latestQualityChangeSummary?: string;
   reducedQualityDurationSec?: number;
@@ -511,6 +515,10 @@ export function buildDebugMarkup(snapshot: DebugSnapshot): string {
     <div><dt>One-Child Group Summary</dt><dd>${snapshot.oneChildGroupSummary || 'None'}</dd></div>
     <div><dt>Plain Wrapper Plugin</dt><dd>${snapshot.oneChildPlainWrapperTopPluginLabel || 'None'}</dd></div>
     <div><dt>Plain Wrapper Summary</dt><dd>${snapshot.oneChildPlainWrapperSummary || 'None'}</dd></div>
+    <div><dt>Transform Pivot Plugin</dt><dd>${snapshot.oneChildTransformTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Transform Pivot Summary</dt><dd>${snapshot.oneChildTransformSummary || 'None'}</dd></div>
+    <div><dt>Tagged Group Plugin</dt><dd>${snapshot.oneChildTaggedTopPluginLabel || 'None'}</dd></div>
+    <div><dt>Tagged Group Summary</dt><dd>${snapshot.oneChildTaggedSummary || 'None'}</dd></div>
     <div><dt>One-Child Plain Wrappers</dt><dd>${snapshot.oneChildGroupPlainWrapperCount ?? 0}</dd></div>
     <div><dt>One-Child Transform Pivots</dt><dd>${snapshot.oneChildGroupTransformCount ?? 0}</dd></div>
     <div><dt>One-Child Tagged Groups</dt><dd>${snapshot.oneChildGroupTaggedCount ?? 0}</dd></div>

@@ -23,6 +23,12 @@ snapshot/panel so scene-graph cleanup can target likely removable wrappers
 first instead of collapsing semantic pivots such as observatory domes or other
 animated anchors.
 
+Visible-tile diagnostics now also summarize those transform-pivot and tagged-
+group buckets by plugin owner, alongside the existing total one-child-group and
+plain-wrapper summaries. That lets runtime captures answer "which plugin is
+still creating transform pivots?" without having to infer ownership from only
+the raw global counts.
+
 Renderer-owned semantic container groups now also mark themselves through
 `userData.renderSceneSemanticGroup`, so visible-tile shells and persistent sky /
 world layer roots do not inflate the plain-wrapper bucket when they temporarily

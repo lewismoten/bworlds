@@ -259,6 +259,10 @@ export type DebugSnapshotExport = {
     oneChildGroupSummary: string;
     topOneChildPlainWrapperPlugin: string | null;
     oneChildPlainWrapperSummary: string;
+    topOneChildTransformPlugin: string | null;
+    oneChildTransformSummary: string;
+    topOneChildTaggedPlugin: string | null;
+    oneChildTaggedSummary: string;
     matrixAutoUpdateCount: number;
     staticMatrixAutoUpdateCount: number;
     topStaticMatrixUpdatePlugin: string | null;
@@ -608,6 +612,12 @@ export function buildDebugSnapshotExport(
         options.snapshot.oneChildPlainWrapperTopPluginLabel?.trim() || null,
       oneChildPlainWrapperSummary:
         options.snapshot.oneChildPlainWrapperSummary ?? '',
+      topOneChildTransformPlugin:
+        options.snapshot.oneChildTransformTopPluginLabel?.trim() || null,
+      oneChildTransformSummary: options.snapshot.oneChildTransformSummary ?? '',
+      topOneChildTaggedPlugin:
+        options.snapshot.oneChildTaggedTopPluginLabel?.trim() || null,
+      oneChildTaggedSummary: options.snapshot.oneChildTaggedSummary ?? '',
       matrixAutoUpdateCount: options.snapshot.matrixAutoUpdateCount ?? 0,
       staticMatrixAutoUpdateCount:
         options.snapshot.staticMatrixAutoUpdateCount ?? 0,
