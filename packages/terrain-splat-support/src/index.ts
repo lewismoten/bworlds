@@ -204,6 +204,8 @@ export type OverworldTerrainSplatLayerSet = {
   grassTrailLayerId?: TerrainMaterialLayerId;
 };
 
+export * from './route-render-plan.ts';
+
 export const MAX_TERRAIN_SPLAT_SAMPLE_LAYERS = 4;
 export const MIN_TERRAIN_SPLAT_WEIGHT = 0.01;
 export const PACKED_TERRAIN_SPLAT_WEIGHT_MAX = 255;

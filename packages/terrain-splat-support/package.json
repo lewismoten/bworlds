@@ -21,6 +21,7 @@
     "./plugin-catalog": "./src/plugin-catalog.ts",
     "./route-overlay-material-plan": "./src/route-overlay-material-plan.ts",
     "./route-overlay-projection": "./src/route-overlay-projection.ts",
+    "./route-render-plan": "./src/route-render-plan.ts",
     "./route-edge-blend": "./src/route-edge-blend.ts",
     "./route-appearance-plan": "./src/route-appearance-plan.ts",
     "./route-distance-field": "./src/route-distance-field.ts",

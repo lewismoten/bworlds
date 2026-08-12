@@ -524,10 +524,10 @@ worker-backed generation. The worker runtime notes live in
 
 # Roads and Paths as Terrain Splats
 
-- [ ] Represent simple roads as terrain splat layers.
-- [ ] Represent trails as terrain splat layers.
-- [ ] Represent worn paths as terrain splat layers.
-- [ ] Remove separate road meshes where splatting is sufficient.
+- [x] Represent simple roads as terrain splat layers.
+- [x] Represent trails as terrain splat layers.
+- [x] Represent worn paths as terrain splat layers.
+- [x] Remove separate road meshes where splatting is sufficient.
 - [x] Keep road gameplay data separate from road rendering.
 - [x] Project road splat weights onto the terrain height field.
 - [x] Generate road width from route metadata.
