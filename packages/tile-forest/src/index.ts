@@ -1426,6 +1426,9 @@ function* createForestModelProgressive({
   const geometry = getTreeGeometry(three);
 
   if (detailLevel === 'low') {
+    if (shouldSkipReducedForestBackgroundTile(state, tileX, tileY, renderQuality)) {
+      return group;
+    }
     addLowDetailForestTreeInstances(
       three,
       group,
@@ -1446,6 +1449,12 @@ function* createForestModelProgressive({
       tileY,
       renderBudget?.quality
     );
+  if (
+    fullDetailDescriptors.length === 0 &&
+    shouldSkipReducedForestBackgroundTile(state, tileX, tileY, renderQuality)
+  ) {
+    return group;
+  }
   if (backgroundInstanceDescriptors.length > 0) {
     addLowDetailForestTreeInstances(
       three,
@@ -4355,6 +4364,31 @@ function shouldRenderForestFullQualityAccessories(
   quality: RenderBudgetQualityLevel | null | undefined
 ) {
   return quality === 'full' || quality == null;
+}
+
+function shouldSkipReducedForestBackgroundTile(
+  state: Create3DModelContext['state'],
+  tileX: number,
+  tileY: number,
+  quality: RenderBudgetQualityLevel | null | undefined
+) {
+  if (quality !== 'reduced' && quality !== 'minimal') {
+    return false;
+  }
+
+  const player = state?.player;
+  if (!player) {
+    return false;
+  }
+
+  const deltaX = tileX - player.x;
+  const deltaY = tileY - player.y;
+  const distanceSquared = deltaX * deltaX + deltaY * deltaY;
+  if (distanceSquared <= 1) {
+    return false;
+  }
+
+  return Math.abs(tileX + tileY) % 2 === 1;
 }
 
 function addLowDetailForestTreeInstances(

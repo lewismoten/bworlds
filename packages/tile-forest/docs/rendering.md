@@ -13,6 +13,11 @@ Progressive loading:
   `understory-and-wildlife`, `landmarks-and-floor`, and `close-effects`.
 - The low-detail forest path remains synchronous because it is already a small
   instanced pass.
+- In reduced and minimal quality, some distant background forest tiles now
+  collapse all the way to an empty sentinel instead of paying even the canopy
+  silhouette pass. Nearby reduced-quality forest tiles still keep the existing
+  low-detail canopy silhouette so the forest edge around the player does not
+  disappear abruptly.
 
 Current layout:
 

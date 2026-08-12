@@ -789,6 +789,32 @@ describe('tile forest', () => {
     expect(instancedCanopies[0]?.count).toBeGreaterThan(0);
   });
 
+  it('skips some distant reduced-quality forest background tiles entirely', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    state.player.x = 8;
+    state.player.y = 6;
+
+    const reducedDistantModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 10,
+      tileY: 7,
+      detailLevel: 'low',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'low',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    expect(reducedDistantModel.children).toHaveLength(0);
+  });
+
   it('renders forest fireflies only at full quality close detail', () => {
     const tile = getForestTile();
     const state = createForestTestState(8, 6);
