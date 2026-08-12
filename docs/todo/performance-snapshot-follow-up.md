@@ -142,7 +142,10 @@
       Progress: reduced-quality `tile-forest` full-detail tiles now keep at
       most one full-detail tree on the player tile and collapse nearby forest
       tiles entirely to the existing low-detail instanced background path so
-      chunk draw calls fall sooner when the renderer is already constrained.
+      chunk draw calls fall sooner when the renderer is already constrained,
+      and reduced-quality forest tiles now skip optional close-detail
+      accessories such as hollows, owls, carvings, meadows, birds, webs,
+      breadcrumbs, bushes, landmarks, and floor props.
 - [ ] Track recovery back to full quality.
 - [ ] Add hysteresis before restoring full graphics quality.
 

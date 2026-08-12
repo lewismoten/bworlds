@@ -745,6 +745,66 @@ describe('tile forest', () => {
     expect(reducedFireflies).toHaveLength(0);
   });
 
+  it('skips optional forest accessory details when reduced quality is active', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    let targetTile: { x: number; y: number } | null = null;
+    let fullMarkers: string[] = [];
+
+    outer: for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        state.player.x = tileX;
+        state.player.y = tileY;
+        const fullModel = tile.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: { kind: 'forest' },
+          tileX,
+          tileY,
+          detailLevel: 'full',
+          renderBudget: {
+            quality: 'full',
+            detailLevel: 'full',
+            targetFps: 60,
+            visibilityRadius: 18,
+            frame: {},
+            pendingBuild: {},
+          },
+        }) as FakeGroup;
+        const markers = collectForestAccessoryMarkers(fullModel);
+        if (markers.length > 0) {
+          targetTile = { x: tileX, y: tileY };
+          fullMarkers = markers;
+          break outer;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+
+    state.player.x = targetTile!.x;
+    state.player.y = targetTile!.y;
+    const reducedModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'full',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    expect(fullMarkers.length).toBeGreaterThan(0);
+    expect(collectForestAccessoryMarkers(reducedModel)).toEqual([]);
+  });
+
   it('renders meadow grass only in full-detail forest models', () => {
     const tile = getForestTile();
     const state = createForestTestState();
@@ -943,6 +1003,17 @@ function getForestAccessoryMaterialMarker(node: FakeNode): string | null {
     return `forestBird:${birdMarker}`;
   }
   return null;
+}
+
+function collectForestAccessoryMarkers(model: FakeGroup): string[] {
+  const markers = new Set<string>();
+  model.traverse((node) => {
+    const marker = getForestAccessoryMaterialMarker(node);
+    if (marker) {
+      markers.add(marker);
+    }
+  });
+  return [...markers].sort();
 }
 
 function collectTreeFamilyMaterials(

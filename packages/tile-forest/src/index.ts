@@ -1414,6 +1414,9 @@ function* createForestModelProgressive({
     tileX,
     tileY
   );
+  const renderFullQualityAccessories = shouldRenderForestFullQualityAccessories(
+    renderQuality
+  );
   const descriptors =
     detailLevel === 'low'
       ? getForestTreeDescriptors(tileX, tileY).filter(
@@ -1507,7 +1510,7 @@ function* createForestModelProgressive({
 
   const floorDetailStyle = getTreeStyle(three, tileX, tileY, 0);
   const scene = getForestTreeSceneState(tileX, tileY);
-  const hollows = renderCloseDetails
+  const hollows = renderCloseDetails && renderFullQualityAccessories
     ? scene.decorations.filter(
         (
           decoration
@@ -1554,7 +1557,7 @@ function* createForestModelProgressive({
     group.add(hollowInstances);
   }
 
-  if (renderCloseDetails) {
+  if (renderCloseDetails && renderFullQualityAccessories) {
     const owls = scene.inhabitants.filter(
       (
         inhabitant
@@ -1657,7 +1660,7 @@ function* createForestModelProgressive({
     }
   }
 
-  if (renderCloseDetails) {
+  if (renderCloseDetails && renderFullQualityAccessories) {
     for (const carving of scene.decorations.filter(
       (
         decoration
@@ -1712,7 +1715,7 @@ function* createForestModelProgressive({
     label: 'hollows-and-markings',
   };
 
-  const meadows = getForestMeadows(tileX, tileY);
+  const meadows = renderFullQualityAccessories ? getForestMeadows(tileX, tileY) : [];
   if (meadows.length > 0) {
     const meadowInstances = new three.InstancedMesh(
       geometry.foliage,
@@ -1753,7 +1756,7 @@ function* createForestModelProgressive({
     );
   }
 
-  if (renderCloseDetails) {
+  if (renderCloseDetails && renderFullQualityAccessories) {
     const birds = scene.inhabitants.filter(
       (
         inhabitant
@@ -1765,7 +1768,7 @@ function* createForestModelProgressive({
     }
   }
 
-  if (renderCloseDetails) {
+  if (renderCloseDetails && renderFullQualityAccessories) {
     addForestWebInstances(
       three,
       group,
@@ -1821,7 +1824,7 @@ function* createForestModelProgressive({
     label: 'understory-and-wildlife',
   };
 
-  const trail = getForestTrail(tileX, tileY);
+  const trail = renderFullQualityAccessories ? getForestTrail(tileX, tileY) : null;
   if (trail) {
     addForestBreadcrumbInstances(
       three,
@@ -1833,7 +1836,9 @@ function* createForestModelProgressive({
       trail
     );
   }
-  const landmark = getForestLandmark(tileX, tileY);
+  const landmark = renderFullQualityAccessories
+    ? getForestLandmark(tileX, tileY)
+    : null;
   if (landmark) {
     createForestLandmarkMeshes(
       three,
@@ -1844,16 +1849,20 @@ function* createForestModelProgressive({
       floorDetailStyle
     );
   }
-  addForestBushInstances(
-    three,
-    group,
-    geometry,
-    floorDetailStyle,
-    tileX,
-    tileY,
-    getForestBushes(tileX, tileY)
-  );
-  const floorDetails = getForestFloorDetails(tileX, tileY);
+  if (renderFullQualityAccessories) {
+    addForestBushInstances(
+      three,
+      group,
+      geometry,
+      floorDetailStyle,
+      tileX,
+      tileY,
+      getForestBushes(tileX, tileY)
+    );
+  }
+  const floorDetails = renderFullQualityAccessories
+    ? getForestFloorDetails(tileX, tileY)
+    : [];
   const stumpDetails = floorDetails.filter((detail) => detail.kind === 'stump');
   if (stumpDetails.length > 0) {
     const stumpInstances = new three.InstancedMesh(
@@ -4338,6 +4347,12 @@ function shouldRenderForestFireflies(
   quality: RenderBudgetQualityLevel | null | undefined
 ) {
   return renderCloseDetails && (quality === 'full' || quality == null);
+}
+
+function shouldRenderForestFullQualityAccessories(
+  quality: RenderBudgetQualityLevel | null | undefined
+) {
+  return quality === 'full' || quality == null;
 }
 
 function addLowDetailForestTreeInstances(
