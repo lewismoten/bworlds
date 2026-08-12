@@ -234,7 +234,7 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       surfaces the peak flush time through the web debug snapshot/export path,
       so sample captures show how long the scheduler spent flushing queued tile
       work instead of only how many tiles it processed.
-- [ ] Report scheduler starvation events.
+- [x] Report scheduler starvation events.
       Progress: `render3d` now records per-plugin pending-build scheduler
       starvation rates when queued tile work cannot advance within the shared
       generation/frame budget, and the web debug snapshot/runtime issue path
