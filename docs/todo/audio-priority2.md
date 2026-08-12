@@ -52,7 +52,12 @@
       lead, bass, and harmony notes in cadence measures and around the
       variation climax, and the variation tests now verify those notes land
       louder than neutral interior notes.
-- [ ] Add sustained-note swells for strings and pads.
+- [x] Add sustained-note swells for strings and pads.
+      Progress: live Web Audio playback now adds a gentle mid-note gain swell
+      for sustained string and synth-pad notes, rising above the sustain body
+      and settling back before release, and the integration tests now verify
+      that long supported notes receive the extra swell ramps while short notes
+      do not.
 - [ ] Change filter brightness with note velocity.
 - [ ] Change filter brightness across a phrase.
 - [ ] Make louder notes slightly brighter when appropriate.

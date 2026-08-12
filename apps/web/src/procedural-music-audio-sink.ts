@@ -60,6 +60,12 @@ type MusicVibratoProfile = Readonly<{
   fadeOutSeconds: number;
 }>;
 
+type MusicSwellProfile = Readonly<{
+  peakMultiplier: number;
+  peakProgress: number;
+  settleLeadSeconds: number;
+}>;
+
 export function createWebAudioMusicSink(
   options: MusicSinkOptions = {}
 ): MusicSink {
@@ -367,6 +373,10 @@ export function createWebAudioMusicSink(
           bodySettleAt - startAt,
           durationSeconds - note.releaseMs / 1000 - harmonicReleaseLeadSeconds
         );
+      const swellProfile = resolveMusicSwellProfile(
+        note.family,
+        note.durationMs
+      );
       const vibratoProfile = resolveMusicVibratoProfile(note.family);
       const sustainVolume =
         note.volume * categoryVolume * spatial.gainMultiplier;
@@ -508,6 +518,29 @@ export function createWebAudioMusicSink(
         sustainVolume * note.harmonicGain * harmonicBodyLevel,
         bodySettleAt
       );
+      applyMusicSwellEnvelope({
+        gain: gain.gain,
+        startAt,
+        durationSeconds,
+        releaseSeconds: note.releaseMs / 1000,
+        bodySettleAt,
+        sustainLevel:
+          sustainVolume * fundamentalGainMultiplier * bodySustainLevel,
+        attackPeakLevel:
+          sustainVolume * fundamentalGainMultiplier * attackPeakGainMultiplier,
+        profile: swellProfile,
+      });
+      applyMusicSwellEnvelope({
+        gain: harmonicGain.gain,
+        startAt,
+        durationSeconds,
+        releaseSeconds: note.releaseMs / 1000,
+        bodySettleAt,
+        sustainLevel: sustainVolume * note.harmonicGain * harmonicBodyLevel,
+        attackPeakLevel:
+          sustainVolume * note.harmonicGain * attackPeakGainMultiplier,
+        profile: swellProfile,
+      });
       gain.gain.exponentialRampToValueAtTime(
         sustainVolume * fundamentalGainMultiplier * bodySustainLevel,
         startAt +
@@ -990,6 +1023,77 @@ function resolveMusicVibratoProfile(
     default:
       return null;
   }
+}
+
+function resolveMusicSwellProfile(
+  family: InstrumentFamily | undefined,
+  durationMs: number
+): MusicSwellProfile | null {
+  if (durationMs < 420) {
+    return null;
+  }
+
+  switch (family) {
+    case 'strings':
+      return {
+        peakMultiplier: 1.08,
+        peakProgress: 0.5,
+        settleLeadSeconds: 0.12,
+      };
+    case 'synth-pad':
+      return {
+        peakMultiplier: 1.12,
+        peakProgress: 0.58,
+        settleLeadSeconds: 0.14,
+      };
+    default:
+      return null;
+  }
+}
+
+function applyMusicSwellEnvelope(options: {
+  gain: AudioParam;
+  startAt: number;
+  durationSeconds: number;
+  releaseSeconds: number;
+  bodySettleAt: number;
+  sustainLevel: number;
+  attackPeakLevel: number;
+  profile: MusicSwellProfile | null;
+}): void {
+  if (!options.profile) {
+    return;
+  }
+
+  const peakAt =
+    options.bodySettleAt +
+    Math.max(
+      0.04,
+      (options.durationSeconds - (options.bodySettleAt - options.startAt)) *
+        options.profile.peakProgress
+    );
+  const settleAt = Math.max(
+    options.bodySettleAt + 0.05,
+    options.startAt +
+      options.durationSeconds -
+      Math.max(options.releaseSeconds, options.profile.settleLeadSeconds)
+  );
+
+  if (peakAt >= settleAt) {
+    return;
+  }
+
+  const peakLevel = Math.min(
+    options.attackPeakLevel * 0.98,
+    options.sustainLevel * options.profile.peakMultiplier
+  );
+
+  if (peakLevel <= options.sustainLevel * 1.01) {
+    return;
+  }
+
+  options.gain.exponentialRampToValueAtTime(peakLevel, peakAt);
+  options.gain.exponentialRampToValueAtTime(options.sustainLevel, settleAt);
 }
 
 function rampAudioParamToValue(

@@ -2889,6 +2889,237 @@ describe('procedural music', () => {
     }
   });
 
+  it('adds a mid-note swell for sustained synth-pad voices', () => {
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'bandpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'pad-swell',
+        role: 'harmony',
+        family: 'synth-pad',
+        startMs: 0,
+        durationMs: 620,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'triangle',
+        timbre: {
+          harmonicWaveform: 'sawtooth',
+          harmonicRatio: 2,
+          filterType: 'bandpass',
+          filterCutoffHz: 1_500,
+          filterQ: 1.2,
+          attackPeakGainMultiplier: 1.1,
+          bodySustainLevel: 0.92,
+        },
+        attackMs: 60,
+        releaseMs: 140,
+        detuneCents: 0,
+        harmonicGain: 0.18,
+        pulseRate: 0.7,
+      });
+
+      const gainRamps =
+        createdGains[0]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
+      expect(gainRamps[0]?.[0]).toBeCloseTo(0.055, 4);
+      expect(gainRamps[1]?.[0]).toBeCloseTo(0.046, 4);
+      expect(gainRamps[2]?.[0]).toBeGreaterThan(gainRamps[1]?.[0] ?? 0);
+      expect(gainRamps[3]?.[0]).toBeCloseTo(0.046, 4);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
+  it('skips sustained swells for short string notes', () => {
+    const createdGains: Array<{
+      gain: {
+        setValueAtTime: ReturnType<typeof vi.fn>;
+        exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+      };
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    class FakeAudioContext {
+      state: AudioContextState = 'running';
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          onended: null,
+          type: 'sine',
+          frequency: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          detune: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+        } as unknown as OscillatorNode;
+      }
+      createGain() {
+        const gain = {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        createdGains.push(gain);
+        return gain as unknown as GainNode;
+      }
+      createBiquadFilter() {
+        return {
+          type: 'bandpass' as BiquadFilterType,
+          frequency: {
+            setValueAtTime: vi.fn(),
+          },
+          Q: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as BiquadFilterNode;
+      }
+      createStereoPanner() {
+        return {
+          pan: {
+            setValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as unknown as StereoPannerNode;
+      }
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    const originalAudioContext = globalThis.AudioContext;
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    try {
+      const sink = createWebAudioMusicSink();
+      sink.play({
+        themeId: 'town-square',
+        instrumentId: 'strings-short',
+        role: 'harmony',
+        family: 'strings',
+        startMs: 0,
+        durationMs: 260,
+        frequency: 440,
+        volume: 0.05,
+        waveform: 'triangle',
+        timbre: {
+          harmonicWaveform: 'sawtooth',
+          harmonicRatio: 2,
+          filterType: 'bandpass',
+          filterCutoffHz: 1_500,
+          filterQ: 1.2,
+          attackPeakGainMultiplier: 1.1,
+          bodySustainLevel: 0.92,
+        },
+        attackMs: 60,
+        releaseMs: 100,
+        detuneCents: 0,
+        harmonicGain: 0.18,
+        pulseRate: 0.7,
+      });
+
+      const gainRamps =
+        createdGains[0]?.gain.exponentialRampToValueAtTime.mock.calls ?? [];
+      expect(gainRamps[0]?.[0]).toBeCloseTo(0.055, 4);
+      expect(gainRamps[1]?.[0]).toBeCloseTo(0.046, 4);
+      expect(gainRamps[2]?.[0]).toBeCloseTo(0.046, 4);
+    } finally {
+      if (originalAudioContext) {
+        vi.stubGlobal('AudioContext', originalAudioContext);
+      } else {
+        vi.unstubAllGlobals();
+      }
+    }
+  });
+
   it('adds subtle vibrato to sustained string and wind notes', () => {
     const createdOscillators: Array<{
       frequency: {
