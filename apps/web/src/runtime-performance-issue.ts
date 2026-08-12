@@ -860,13 +860,13 @@ function isGenericBudgetIssuePayload(reason: string): boolean {
     const nestedReasons = [...normalized.matchAll(/\(([^()]*)\)/gu)]
       .map((match) => match[1]?.trim() ?? '')
       .filter(Boolean);
-    return (
-      nestedReasons.length > 0 &&
-      nestedReasons.every(
-        (nestedReason) =>
-          isGenericBudgetIssuePayload(nestedReason) ||
-          isGenericBudgetPlaceholderReason(nestedReason)
-      )
+    if (nestedReasons.length === 0) {
+      return true;
+    }
+    return nestedReasons.every(
+      (nestedReason) =>
+        isGenericBudgetIssuePayload(nestedReason) ||
+        isGenericBudgetPlaceholderReason(nestedReason)
     );
   }
 

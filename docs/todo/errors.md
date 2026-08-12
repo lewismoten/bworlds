@@ -11,6 +11,12 @@ Always run tests to make sure all tests pass
       corner towers and tower caps and drops the separate low-detail beacon
       `PointLight`, so `full -> low` visible LOD recovery has fewer meshes and
       no low-detail light budget pressure on that landmark path.
+      Progress: runtime issue reporting now suppresses bare wrapped
+      `visible lod recovery failed after full -> low` summaries when they do
+      not carry any specific nested failure reason, which prevents stale
+      unactionable LOD recovery reports from keeping
+      `runtime-performance-issue-latest.test.ts` red after the underlying
+      pressure issue has already been handled elsewhere.
 - [ ] Complete audio-priority2.md
 
 - [ ] Eliminate the remaining 500 ms and 150 ms frame stalls.
