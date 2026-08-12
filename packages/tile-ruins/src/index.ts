@@ -6,7 +6,7 @@ import {
   registerHashSeed,
   resolveHashSeed,
 } from '@bworlds/core/hash';
-import { createBoundedCache } from '@bworlds/cache-support';
+import { createBoundedCache, getOrCreateWeakMapValue } from '@bworlds/cache-support';
 import { createPlainsBackedTilePainter } from '@bworlds/paint-support';
 import {
   DEFAULT_LAND_POI_BLOCKED_KINDS,
@@ -76,6 +76,7 @@ const RUINS_BLOCKED_KINDS = new Set([
 const ruinsStyleCache = createBoundedCache<string, RuinsStyleBlueprint>(
   RUINS_STYLE_CACHE_MAX_ENTRIES
 );
+const ruinsGlowMaterialCache = new WeakMap<object, ThreeMaterialLike>();
 const resolveRuinsStyle = createRegionalValueResolver(
   ruinsStyleCache,
   RUINS_REGION_SIZE,
@@ -136,13 +137,7 @@ const resolveRuinsStyle = createRegionalValueResolver(
               );
             },
           }),
-          glowMaterial: new three.MeshStandardMaterial({
-            color: '#93c5fd',
-            emissive: '#93c5fd',
-            emissiveIntensity: 0.01,
-            roughness: 0.28,
-            metalness: 0.04,
-          }),
+          glowMaterial: getSharedRuinsGlowMaterial(three),
         };
         return style;
       }
@@ -423,6 +418,18 @@ function getRuinsStyle(
   quality: RenderBudgetQualityLevel = 'full'
 ): RuinsStyle {
   return resolveRuinsStyle(tileX, tileY).getValue(three, quality);
+}
+
+function getSharedRuinsGlowMaterial(three: ThreeHostLike): ThreeMaterialLike {
+  return getOrCreateWeakMapValue(ruinsGlowMaterialCache, three as object, () =>
+    new three.MeshStandardMaterial({
+      color: '#93c5fd',
+      emissive: '#93c5fd',
+      emissiveIntensity: 0.01,
+      roughness: 0.28,
+      metalness: 0.04,
+    })
+  );
 }
 
 function paintRuinsTexture(

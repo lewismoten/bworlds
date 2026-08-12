@@ -93,6 +93,11 @@
 - [x] Report scene-unique material owners by plugin.
 - [x] Report cloned material count by plugin.
 - [ ] Reuse shared materials instead of cloning them.
+      Progress: `tile-ruins` now resolves its invariant night-glow material
+      through one host-level cache instead of recreating the same emissive
+      `MeshStandardMaterial` inside every regional ruins style, so cross-region
+      ruins builds on one renderer no longer pay extra scene-unique glow
+      materials when only the painted stone and accent surfaces vary.
 - [ ] Cache materials by their effective property values.
       Progress: `tile-route` now caches dock route sign label materials per
       Three host and per effective label content instead of allocating a fresh
