@@ -121,9 +121,16 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 - [ ] Add a maximum acceptable LOD swap rate.
 - [ ] Increase hysteresis when repeated swaps are detected.
 - [ ] Prevent LOD churn while the player remains nearly still.
-- [ ] Keep the last valid model during failed LOD upgrades.
-- [ ] Cache the last successful LOD for every visible tile.
-- [ ] Prefer cached lower LODs before generating fallbacks.
+- [x] Keep the last valid model during failed LOD upgrades.
+- [x] Cache the last successful LOD for every visible tile.
+- [x] Prefer cached lower LODs before generating fallbacks.
+      Progress: `render3d` now routes visible rebuilds through a recoverable
+      `full -> low` chain, preserves the current visible model when a rebuild
+      only resolves to a fallback shell, records `lastSuccessfulVisibleTileDetailLevels`
+      only for real `modelRoot` results, and prefers a cached successful `low`
+      build before retrying expensive `full` detail. The behavior is covered in
+      `packages/render3d/docs/tile-lod-recovery.md` and the renderer tests for
+      fallback-only replacement guards and cached low-detail recovery.
 
 ## Plains Tile Fallbacks
 
