@@ -228,8 +228,8 @@
 - [x] Test roads blend with surrounding terrain.
 - [x] Test slope can increase rock material weight.
 - [x] Test weather can alter wetness without new materials.
-- [ ] Test splatting reduces terrain material count.
-- [ ] Test splatting reduces terrain draw calls.
+- [x] Test splatting reduces terrain material count.
+- [x] Test splatting reduces terrain draw calls.
 
 ## Initial Delivery
 

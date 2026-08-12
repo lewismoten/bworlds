@@ -12,6 +12,7 @@
     "./chunk-build": "./src/chunk-build.ts",
     "./chunk-cache": "./src/chunk-cache.ts",
     "./debug-view": "./src/debug-view.ts",
+    "./performance-estimate": "./src/performance-estimate.ts",
     "./sample-grid": "./src/sample-grid.ts",
     "./worker-contract": "./src/worker-contract.ts",
     "./variant-pool": "./src/variant-pool.ts",
