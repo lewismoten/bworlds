@@ -147,6 +147,24 @@ const townSignLabelMaterialCache = new WeakMap<
   object,
   ReturnType<typeof createBoundedCache<string, ThreeMaterialLike>>
 >();
+const townTrimMaterialResolver = createHostVariantMaterialResolver(
+  (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color,
+      roughness: 0.84,
+      metalness: 0.04,
+    })
+);
+const townWindowMaterialResolver = createHostVariantMaterialResolver(
+  (host: ThreeHostLike, color: string): ThreeMaterialLike =>
+    new host.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: 0.08,
+      roughness: 0.4,
+      metalness: 0.02,
+    })
+);
 const townStyleCache = createBoundedCache<string, TownStyleBlueprint>(
   TOWN_STYLE_CACHE_LIMIT
 );
@@ -251,18 +269,14 @@ function resolveTownStyle(tileX: number, tileY: number): TownStyleBlueprint {
               paintTownRoofTexture(context, canvas, variant.roofPatternVariant);
             },
           }),
-          trimMaterial: new three.MeshStandardMaterial({
-            color: variant.palette.trimColor,
-            roughness: 0.84,
-            metalness: 0.04,
-          }),
-          windowMaterial: new three.MeshStandardMaterial({
-            color: variant.palette.windowColor,
-            emissive: variant.palette.windowColor,
-            emissiveIntensity: 0.08,
-            roughness: 0.4,
-            metalness: 0.02,
-          }),
+          trimMaterial: townTrimMaterialResolver.getMaterial(
+            three,
+            variant.palette.trimColor
+          ),
+          windowMaterial: townWindowMaterialResolver.getMaterial(
+            three,
+            variant.palette.windowColor
+          ),
           getBannerMaterial(color: string) {
             return bannerMaterials.getMaterial(three, color);
           },

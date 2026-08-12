@@ -1025,6 +1025,59 @@ describe('tile town', () => {
     expect(highestSharedCount).toBeGreaterThanOrEqual(4);
   });
 
+  it('reuses town trim and window materials across regions when the resolved colors match', () => {
+    const plugin = createTownTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
+    const state = createTownState();
+    const coordinates = [
+      { tileX: 3, tileY: 7 },
+      { tileX: 21, tileY: 25 },
+      { tileX: 39, tileY: 43 },
+      { tileX: 57, tileY: 61 },
+      { tileX: 75, tileY: 79 },
+      { tileX: 93, tileY: 97 },
+    ];
+    const sampled = coordinates.map((position) => {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: {
+          kind: 'town',
+          poi: { type: 'town', name: `Town ${position.tileX}:${position.tileY}` },
+        } as never,
+        detailLevel: 'full',
+        ...position,
+      }) as FakeGroup;
+      const trimMaterial = findTownMaterialBySignature(model, {
+        roughness: 0.84,
+        metalness: 0.04,
+      });
+      const windowMaterial = findTownMaterialBySignature(model, {
+        roughness: 0.4,
+        metalness: 0.02,
+        emissiveIntensity: 0.08,
+      });
+      return {
+        trimMaterial,
+        trimColor: trimMaterial?.options?.color,
+        windowMaterial,
+        windowColor: windowMaterial?.options?.color,
+      };
+    });
+
+    const trimPair = findMatchingMaterialPair(sampled, 'trimColor', 'trimMaterial');
+    const windowPair = findMatchingMaterialPair(
+      sampled,
+      'windowColor',
+      'windowMaterial'
+    );
+
+    expect(trimPair).not.toBeNull();
+    expect(trimPair?.[0].trimMaterial).toBe(trimPair?.[1].trimMaterial);
+    expect(windowPair).not.toBeNull();
+    expect(windowPair?.[0].windowMaterial).toBe(windowPair?.[1].windowMaterial);
+  });
+
   it('reuses neutral wall and roof texture maps across different regional palettes', () => {
     const plugin = createTownTilePlugin();
     const tile = plugin.tiles?.find((entry) => entry.kind === 'town');
@@ -1119,6 +1172,59 @@ function findTownInstancedPartMaterial(root: FakeGroup, part: string) {
     material = node.material;
   });
   return material;
+}
+
+function findTownMaterialBySignature(
+  root: FakeGroup,
+  signature: {
+    roughness: number;
+    metalness: number;
+    emissiveIntensity?: number;
+  }
+) {
+  let material: FakeMaterial | undefined;
+  root.traverse((node) => {
+    if (
+      material ||
+      !(node instanceof FakeMesh || node instanceof FakeInstancedMesh) ||
+      Array.isArray(node.material)
+    ) {
+      return;
+    }
+    if (
+      node.material?.options.roughness === signature.roughness &&
+      node.material?.options.metalness === signature.metalness &&
+      (signature.emissiveIntensity === undefined ||
+        node.material?.options.emissiveIntensity === signature.emissiveIntensity)
+    ) {
+      material = node.material;
+    }
+  });
+  return material;
+}
+
+function findMatchingMaterialPair<
+  T extends {
+    [key: string]: unknown;
+  },
+>(
+  entries: T[],
+  colorKey: keyof T,
+  materialKey: keyof T
+): [T, T] | null {
+  for (let index = 0; index < entries.length; index += 1) {
+    const left = entries[index]!;
+    if (!left[colorKey] || !left[materialKey]) {
+      continue;
+    }
+    for (let candidateIndex = index + 1; candidateIndex < entries.length; candidateIndex += 1) {
+      const right = entries[candidateIndex]!;
+      if (left[colorKey] === right[colorKey] && right[materialKey]) {
+        return [left, right];
+      }
+    }
+  }
+  return null;
 }
 
 function collectTownSurfaceTextureColors(

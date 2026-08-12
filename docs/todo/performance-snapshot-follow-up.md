@@ -120,7 +120,11 @@
       textures for every town palette, and `tile-dungeon` now resolves trim
       materials through one host-level cache keyed by effective trim color so
       different dungeon regions that land on the same trim palette stop paying
-      duplicate `MeshStandardMaterial` instances with identical values.
+      duplicate `MeshStandardMaterial` instances with identical values, and
+      `tile-town` now resolves trim and window materials through host-level
+      caches keyed by their effective colors so different town regions that
+      land on the same trim/window palette stop paying duplicate
+      `MeshStandardMaterial` instances with identical values.
 - [ ] Avoid cloning materials only to change unused values.
 - [x] Share SpriteMaterial instances where possible.
       Progress: the ambient night-sky star field already uses `THREE.Sprite`
