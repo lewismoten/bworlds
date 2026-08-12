@@ -416,7 +416,7 @@
   terrain viewer UI is wired up.
 - [x] Add roughness texture array support.
 - [x] Add a debug view for layer weights.
-- [ ] Compare performance against old tile materials.
+- [x] Compare performance against old tile materials.
 
 ## Second Delivery
 
