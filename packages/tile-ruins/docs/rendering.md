@@ -27,5 +27,10 @@ Current layout:
 - The plinth, occasional arch, and glow/light pieces remain ordinary nodes
   because they are unique per landmark or carry light-emitter behavior.
 
+The ruins landmark now also uses the plinth mesh as its root and attaches the
+columns, caps, arch, rubble, and glow details beneath it, so each ruins tile
+avoids one otherwise empty wrapper `Group` without changing the silhouette or
+night-light placement.
+
 This keeps the landmark silhouette intact while removing repeated static child
 meshes from each visible ruins point of interest.

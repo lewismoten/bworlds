@@ -177,7 +177,7 @@ function normalizeMaterialOptions(
   return normalized;
 }
 
-function createModelSignature(model: FakeGroup) {
+function createModelSignature(model: FakeNode) {
   const signature: Array<Record<string, unknown>> = [];
   model.traverse((node) => {
     signature.push({
@@ -224,7 +224,7 @@ describe('tile ruins', () => {
       renderBudget: {
         quality: 'reduced',
       } as never,
-    }) as FakeGroup;
+    }) as FakeNode;
 
     const signature = createModelSignature(model);
     const paintedMaterials = signature
@@ -247,7 +247,7 @@ describe('tile ruins', () => {
       tile: { kind: 'ruins' },
       tileX: 6,
       tileY: 4,
-    }) as FakeGroup;
+    }) as FakeNode;
 
     let glowMesh: FakeMesh | null = null;
     let pointLight: FakePointLight | null = null;
@@ -314,7 +314,7 @@ describe('tile ruins', () => {
       tile: { kind: 'ruins' },
       tileX: 6,
       tileY: 4,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
     const second = tile?.create3DModel?.({
       three: sharedHost as never,
       state,
@@ -355,7 +355,7 @@ describe('tile ruins', () => {
       tile: { kind: 'ruins' },
       tileX: 6,
       tileY: 4,
-    }) as FakeGroup;
+    }) as FakeNode;
 
     for (
       let index = 0;
@@ -447,17 +447,17 @@ describe('tile ruins', () => {
       tileX: 6,
       tileY: 4,
     });
-    let progressiveModel: FakeGroup | undefined;
+    let progressiveModel: FakeNode | undefined;
 
     while (true) {
       const next = progressiveBuild?.next();
       if (next?.done) {
-        progressiveModel = next.value as FakeGroup | undefined;
+        progressiveModel = next.value as FakeNode | undefined;
         break;
       }
     }
 
-    expect(createModelSignature(progressiveModel as FakeGroup)).toEqual(
+    expect(createModelSignature(progressiveModel as FakeNode)).toEqual(
       createModelSignature(syncModel)
     );
   });
@@ -471,7 +471,7 @@ describe('tile ruins', () => {
       tile: { kind: 'ruins' },
       tileX: 6,
       tileY: 4,
-    }) as FakeGroup;
+    }) as FakeNode;
 
     const rubbleInstances = model.children.filter(
       (child) =>
@@ -501,7 +501,7 @@ describe('tile ruins', () => {
       tile: { kind: 'ruins' },
       tileX: 6,
       tileY: 4,
-    }) as FakeGroup;
+    }) as FakeNode;
 
     const columnInstances = model.children.filter(
       (child) =>
@@ -553,14 +553,14 @@ describe('tile ruins', () => {
       tile: { kind: 'ruins' },
       tileX: 6,
       tileY: 4,
-    }) as FakeGroup;
+    }) as FakeNode;
     const rightModel = tile?.create3DModel?.({
       three: fakeThree as never,
       state,
       tile: { kind: 'ruins' },
       tileX: 11,
       tileY: 9,
-    }) as FakeGroup;
+    }) as FakeNode;
 
     const leftGlow = leftModel.children.find(
       (node) => node instanceof FakeMesh && node.userData?.poiNightLightEmitter
@@ -571,9 +571,25 @@ describe('tile ruins', () => {
 
     expect(leftGlow?.material).toBe(rightGlow?.material);
   });
+
+  it('uses the plinth mesh as the root instead of a wrapper group', () => {
+    const plugin = createRuinsTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'ruins');
+    const model = tile?.create3DModel?.({
+      three: fakeThree as never,
+      state: createRuinsState(),
+      tile: { kind: 'ruins' },
+      tileX: 6,
+      tileY: 4,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 6, y: 0.05, z: 4 });
+    expect(model?.children.length ?? 0).toBeGreaterThanOrEqual(3);
+  });
 });
 
-function collectMeshMaterials(root: FakeGroup | undefined): Set<FakeMaterial> {
+function collectMeshMaterials(root: FakeNode | undefined): Set<FakeMaterial> {
   const materials = new Set<FakeMaterial>();
   root?.traverse((node) => {
     if (!('material' in node)) {

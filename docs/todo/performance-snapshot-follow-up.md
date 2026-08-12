@@ -260,7 +260,11 @@
       derrick, lantern, and cart details beneath it instead of wrapping the
       landmark in a dedicated `Group`, which removes one static `Object3D` from
       each quarry tile without changing the landmark silhouette or night-light
-      placement.
+      placement, and `tile-ruins` now uses its plinth mesh as the root and
+      hangs the column ring, caps, arch, rubble, and glow details beneath it
+      instead of wrapping the landmark in a dedicated `Group`, which removes
+      one static `Object3D` from each ruins tile without changing the
+      silhouette or night-light placement.
       Progress: low-detail `tile-forest` tiles now collapse every trunk into
       one shared instanced mesh per tile instead of splitting trunks by tree
       form. Mixed low-detail forest tiles still keep separate canopy buckets so

@@ -232,16 +232,13 @@ function* createRuinsModelProgressive({
   renderBudget,
 }: Create3DModelContext): Generator<Create3DModelProgress, unknown, void> {
   const style = getRuinsStyle(three, tileX, tileY, renderBudget?.quality);
-  const group = new three.Group();
-  group.position.set(tileX, 0, tileY);
   const totalSteps = 3;
 
   const base = new three.Mesh(
     new three.BoxGeometry(0.82, 0.1, 0.82),
     style.stoneMaterial
   );
-  base.position.y = 0.05;
-  group.add(base);
+  base.position.set(tileX, 0.05, tileY);
 
   const columnCount =
     3 + Math.floor(hash2D(RUINS_COLUMNS_SEED, tileX, tileY) * 3);
@@ -269,9 +266,9 @@ function* createRuinsModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         columnMatrixScratch,
-        tileX + columnX,
-        columnY,
-        tileY + columnZ,
+        columnX,
+        columnY - 0.05,
+        columnZ,
         0.1,
         height,
         0.1
@@ -286,7 +283,7 @@ function* createRuinsModelProgressive({
       });
     }
   }
-  group.add(columnInstances);
+  base.add(columnInstances);
 
   if (capPositions.length > 0) {
     const capInstances = new three.InstancedMesh(
@@ -305,16 +302,16 @@ function* createRuinsModelProgressive({
         index,
         writeInstancedScalePositionMatrix(
           capMatrixScratch,
-          tileX + capPosition.x,
-          capPosition.y,
-          tileY + capPosition.z,
+          capPosition.x,
+          capPosition.y - 0.05,
+          capPosition.z,
           0.16,
           0.06,
           0.16
         )
       );
     }
-    group.add(capInstances);
+    base.add(capInstances);
   }
   yield {
     completedSteps: 1,
@@ -329,11 +326,11 @@ function* createRuinsModelProgressive({
     );
     arch.position.set(
       (hash2D(RUINS_ARCH_X_SEED, tileX, tileY) - 0.5) * 0.16,
-      0.5 + hash2D(RUINS_ARCH_HEIGHT_SEED, tileX, tileY) * 0.12,
+      0.45 + hash2D(RUINS_ARCH_HEIGHT_SEED, tileX, tileY) * 0.12,
       (hash2D(RUINS_ARCH_Z_SEED, tileX, tileY) - 0.5) * 0.16
     );
     arch.rotation.y = hash2D(RUINS_ARCH_ROTATION_SEED, tileX, tileY) * Math.PI;
-    group.add(arch);
+    base.add(arch);
   }
 
   const rubbleCount =
@@ -353,16 +350,16 @@ function* createRuinsModelProgressive({
       index,
       writeInstancedScalePositionMatrix(
         rubbleMatrixScratch,
-        tileX + (hash2D(RUINS_RUBBLE_X_SEED, tileX + index, tileY) - 0.5) * 0.6,
-        0.11,
-        tileY + (hash2D(RUINS_RUBBLE_Z_SEED, tileX, tileY + index) - 0.5) * 0.6,
+        (hash2D(RUINS_RUBBLE_X_SEED, tileX + index, tileY) - 0.5) * 0.6,
+        0.06,
+        (hash2D(RUINS_RUBBLE_Z_SEED, tileX, tileY + index) - 0.5) * 0.6,
         0.08 + hash2D(RUINS_RUBBLE_WIDTH_SEED, tileX + index, tileY) * 0.08,
         0.05 + hash2D(RUINS_RUBBLE_HEIGHT_SEED, tileX, tileY + index) * 0.05,
         0.08 + hash2D(RUINS_RUBBLE_DEPTH_SEED, tileX - index, tileY) * 0.08
       )
     );
   }
-  group.add(rubbleInstances);
+  base.add(rubbleInstances);
   yield {
     completedSteps: 2,
     totalSteps,
@@ -381,7 +378,7 @@ function* createRuinsModelProgressive({
     }
   );
   glowCore.position.set(0, 0.24, 0);
-  group.add(glowCore);
+  base.add(glowCore);
 
   const glowLight = markPoiLightEmitter(
     new three.PointLight('#60a5fa', 0, 2.6, 1.9),
@@ -393,14 +390,14 @@ function* createRuinsModelProgressive({
   );
   glowLight.position.set(0, 0.22, 0);
   glowLight.visible = false;
-  group.add(glowLight);
+  base.add(glowLight);
   yield {
     completedSteps: 3,
     totalSteps,
     label: 'glow',
   };
 
-  return group;
+  return base;
 }
 
 function runRuinsModelBuildToCompletion(
