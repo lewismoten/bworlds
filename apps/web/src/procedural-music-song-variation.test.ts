@@ -407,6 +407,63 @@ describe('procedural music song variation', () => {
     expect(closingLead?.releaseMs).toBeGreaterThan(middleLead?.releaseMs ?? 0);
   });
 
+  it('gives sustained string articulations slower attacks and longer releases than struck families', () => {
+    const section = createSection('a');
+    const sustainedStrings = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'harmony',
+        family: 'strings',
+        instrumentId: 'deep-forest:harmony:0:0',
+        durationMs: 360,
+      },
+      section,
+      3,
+      0
+    );
+    const struckPiano = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'harmony',
+        family: 'piano',
+        instrumentId: 'deep-forest:harmony:0:0',
+        durationMs: 360,
+      },
+      section,
+      3,
+      0
+    );
+
+    expect(sustainedStrings).not.toBeNull();
+    expect(struckPiano).not.toBeNull();
+    expect(sustainedStrings?.attackMs).toBeGreaterThan(
+      struckPiano?.attackMs ?? 0
+    );
+    expect(sustainedStrings?.releaseMs).toBeGreaterThan(
+      struckPiano?.releaseMs ?? 0
+    );
+  });
+
+  it('tightens short struck articulations with faster attacks and shorter releases', () => {
+    const section = createSection('a');
+    const struckGuitar = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'lead',
+        family: 'guitar',
+        instrumentId: 'deep-forest:lead:0:0',
+        durationMs: 180,
+      },
+      section,
+      3,
+      0
+    );
+
+    expect(struckGuitar).not.toBeNull();
+    expect(struckGuitar?.attackMs).toBeLessThan(BASE_NOTE.attackMs);
+    expect(struckGuitar?.releaseMs).toBeLessThan(BASE_NOTE.releaseMs);
+  });
+
   it('adds a small upward scoop for expressive lead phrase openings', () => {
     const section = createSection('a');
     const openingLead = transformSongSectionNote(
@@ -501,6 +558,25 @@ describe('procedural music song variation', () => {
     expect(openingPercussion?.attackMs).toBe(BASE_NOTE.attackMs);
     expect(closingPercussion?.attackMs).toBe(BASE_NOTE.attackMs);
     expect(openingPercussion?.releaseMs).toBe(closingPercussion?.releaseMs);
+  });
+
+  it('leaves percussion articulation envelopes unchanged by articulation profiles', () => {
+    const section = createSection('a');
+    const percussion = transformSongSectionNote(
+      {
+        ...BASE_NOTE,
+        role: 'percussion',
+        instrumentId: 'deep-forest:percussion:0:0',
+        durationMs: 180,
+      },
+      section,
+      3,
+      0
+    );
+
+    expect(percussion).not.toBeNull();
+    expect(percussion?.attackMs).toBe(BASE_NOTE.attackMs);
+    expect(percussion?.releaseMs).toBeLessThanOrEqual(BASE_NOTE.releaseMs);
   });
 
   it('caps accompaniment release tails so they do not blur later chord changes', () => {

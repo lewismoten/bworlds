@@ -32,6 +32,11 @@ type PhraseBoundaryPitchBend = {
   durationMs: number;
 };
 
+type NoteArticulationEnvelope = {
+  attackMultiplier: number;
+  releaseMultiplier: number;
+};
+
 const ROLE_RELEASE_TAIL_DURATION_RATIOS = {
   lead: 0.55,
   harmony: 0.4,
@@ -116,6 +121,7 @@ export function transformSongSectionNote(
     phrasePosition: sectionContext.phrasePosition,
     preserveRepairPitch: sectionContext.isGeneratedRepairNote,
   });
+  const articulationEnvelope = resolveNoteArticulationEnvelope(note);
 
   switch (section.id) {
     case 'intro':
@@ -130,8 +136,11 @@ export function transformSongSectionNote(
         releaseMultiplier:
           layerTreatment.releaseMultiplier *
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
-          phraseBoundaryArticulation.releaseMultiplier,
-        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+          phraseBoundaryArticulation.releaseMultiplier *
+          articulationEnvelope.releaseMultiplier,
+        attackMultiplier:
+          phraseBoundaryArticulation.attackMultiplier *
+          articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
@@ -156,8 +165,11 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier:
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
-          phraseBoundaryArticulation.releaseMultiplier,
-        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+          phraseBoundaryArticulation.releaseMultiplier *
+          articulationEnvelope.releaseMultiplier,
+        attackMultiplier:
+          phraseBoundaryArticulation.attackMultiplier *
+          articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
@@ -183,8 +195,11 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier:
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
-          phraseBoundaryArticulation.releaseMultiplier,
-        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+          phraseBoundaryArticulation.releaseMultiplier *
+          articulationEnvelope.releaseMultiplier,
+        attackMultiplier:
+          phraseBoundaryArticulation.attackMultiplier *
+          articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
@@ -201,8 +216,11 @@ export function transformSongSectionNote(
         releaseMultiplier:
           layerTreatment.releaseMultiplier *
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
-          phraseBoundaryArticulation.releaseMultiplier,
-        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+          phraseBoundaryArticulation.releaseMultiplier *
+          articulationEnvelope.releaseMultiplier,
+        attackMultiplier:
+          phraseBoundaryArticulation.attackMultiplier *
+          articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
@@ -217,8 +235,11 @@ export function transformSongSectionNote(
           (leadRhythmOptions?.durationMultiplier ?? 1),
         releaseMultiplier:
           (leadRhythmOptions?.releaseMultiplier ?? 1) *
-          phraseBoundaryArticulation.releaseMultiplier,
-        attackMultiplier: phraseBoundaryArticulation.attackMultiplier,
+          phraseBoundaryArticulation.releaseMultiplier *
+          articulationEnvelope.releaseMultiplier,
+        attackMultiplier:
+          phraseBoundaryArticulation.attackMultiplier *
+          articulationEnvelope.attackMultiplier,
         pitchBend: phraseBoundaryPitchBend,
         startOffsetMs:
           (leadRhythmOptions?.startOffsetMs ?? 0) + roleTimingOffsetMs,
@@ -621,6 +642,88 @@ function resolvePhraseBoundaryPitchBend(options: {
   }
 
   return null;
+}
+
+function resolveNoteArticulationEnvelope(
+  note: ProceduralMusicNote
+): NoteArticulationEnvelope {
+  if (note.role === 'percussion') {
+    return {
+      attackMultiplier: 1,
+      releaseMultiplier: 1,
+    };
+  }
+
+  const isShortNote = note.durationMs <= 220;
+  const isSustainedNote = note.durationMs >= 300;
+
+  switch (note.family) {
+    case 'strings':
+    case 'synth-pad':
+    case 'organ':
+      return isSustainedNote
+        ? {
+            attackMultiplier: 1.16,
+            releaseMultiplier: 1.18,
+          }
+        : {
+            attackMultiplier: 1.04,
+            releaseMultiplier: 1.06,
+          };
+    case 'violin':
+    case 'flute':
+    case 'trumpet':
+    case 'vocals':
+      return isSustainedNote
+        ? {
+            attackMultiplier: 1.08,
+            releaseMultiplier: 1.12,
+          }
+        : {
+            attackMultiplier: 0.98,
+            releaseMultiplier: 1.02,
+          };
+    case 'piano':
+    case 'guitar':
+    case 'lead-guitar':
+      return isShortNote
+        ? {
+            attackMultiplier: 0.82,
+            releaseMultiplier: 0.76,
+          }
+        : {
+            attackMultiplier: 0.9,
+            releaseMultiplier: 0.86,
+          };
+    case 'bass-guitar':
+    case 'upright-bass':
+    case 'bass-synth':
+    case 'tuba':
+      return isShortNote
+        ? {
+            attackMultiplier: 0.9,
+            releaseMultiplier: 0.84,
+          }
+        : {
+            attackMultiplier: 0.96,
+            releaseMultiplier: 0.92,
+          };
+    case 'synth-lead':
+      return isSustainedNote
+        ? {
+            attackMultiplier: 1.04,
+            releaseMultiplier: 1.08,
+          }
+        : {
+            attackMultiplier: 0.92,
+            releaseMultiplier: 0.88,
+          };
+    default:
+      return {
+        attackMultiplier: 1,
+        releaseMultiplier: 1,
+      };
+  }
 }
 
 function scaleSongNote(

@@ -33,8 +33,13 @@
       scoops or fall-off bends for expressive families such as flute, violin,
       trumpet, vocals, and synth leads, while unsupported families remain
       unchanged, and the section-variation tests now verify the bend metadata.
-- [ ] Add note attack differences by articulation type.
-- [ ] Add release differences by articulation type.
+- [x] Add note attack differences by articulation type.
+- [x] Add release differences by articulation type.
+      Progress: section-level note shaping now applies articulation envelope
+      profiles on top of the base patch settings, so sustained string/pad-style
+      notes keep slower attacks and longer releases while struck families such
+      as piano and guitar tighten their envelope, and the variation tests now
+      verify those attack/release differences plus unchanged percussion timing.
 - [ ] Add legato behavior for connected melodic notes.
 - [ ] Add staccato behavior for short detached notes.
 - [ ] Add accents for structurally important notes.
