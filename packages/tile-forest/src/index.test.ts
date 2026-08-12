@@ -643,7 +643,51 @@ describe('tile forest', () => {
     });
 
     expect(reducedTreeGroups.length).toBeLessThan(defaultTreeGroups.length);
-    expect(reducedTreeGroups.length).toBeLessThanOrEqual(2);
+    expect(reducedTreeGroups.length).toBeLessThanOrEqual(1);
+    expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
+  });
+
+  it('collapses nearby reduced-quality forest tiles fully to low-detail tree instances', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    state.player.x = 8;
+    state.player.y = 6;
+
+    const reducedNearbyModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 9,
+      tileY: 6,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'full',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    const reducedTreeGroups: FakeGroup[] = [];
+    const reducedBackgroundInstances: FakeInstancedMesh[] = [];
+    reducedNearbyModel.traverse((node) => {
+      if (
+        node instanceof FakeGroup &&
+        node.userData?.renderStatKind === 'tree'
+      ) {
+        reducedTreeGroups.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        typeof node.userData?.forestTreeLowDetailInstancedPart === 'string'
+      ) {
+        reducedBackgroundInstances.push(node);
+      }
+    });
+
+    expect(reducedTreeGroups).toHaveLength(0);
     expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
   });
 

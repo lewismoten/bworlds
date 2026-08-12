@@ -4468,14 +4468,12 @@ function splitForestFullDetailTreeDescriptors(
   const distanceSquared = player ? dx * dx + dy * dy : 0;
   const baseFullCount =
     quality === 'minimal'
-      ? distanceSquared <= 1
-        ? 2
-        : 1
-      : distanceSquared <= 1
-        ? 2
-        : distanceSquared <= 4
-          ? 1
-          : 1;
+      ? distanceSquared === 0
+        ? 1
+        : 0
+      : distanceSquared === 0
+        ? 1
+        : 0;
   const rankedDescriptors = [...descriptors].sort((left, right) => {
     const leftHistorical = getTreeHistoricalState(left).landmark ? 1 : 0;
     const rightHistorical = getTreeHistoricalState(right).landmark ? 1 : 0;
@@ -4500,14 +4498,8 @@ function splitForestFullDetailTreeDescriptors(
   );
 
   return {
-    fullDetailDescriptors:
-      fullDetailDescriptors.length > 0
-        ? fullDetailDescriptors
-        : descriptors.slice(0, 1),
-    backgroundInstanceDescriptors:
-      fullDetailDescriptors.length > 0
-        ? backgroundInstanceDescriptors
-        : descriptors.slice(1),
+    fullDetailDescriptors,
+    backgroundInstanceDescriptors,
   };
 }
 
