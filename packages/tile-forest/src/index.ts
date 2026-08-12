@@ -385,6 +385,14 @@ const forestFireflyTextureCache = new WeakMap<
   ThreeHostLike,
   ThreeTextureLike
 >();
+const forestTreeBarkTextureCache = new WeakMap<
+  ThreeHostLike,
+  ThreeTextureLike
+>();
+const forestTreeFoliageTextureCache = new WeakMap<
+  ThreeHostLike,
+  ThreeTextureLike
+>();
 const forestWebCache = createBoundedCache<string, ForestWebDescriptor[]>(
   FOREST_COORDINATE_CACHE_LIMIT
 );
@@ -4103,30 +4111,18 @@ function getTreeStyle(
         hash2D(TREE_FOLIAGE_TINT_SEED, styleSeedX, styleSeedY + variety) * 0.34
     );
 
-    const barkTexture = createTreeBarkTexture(
-      three,
-      barkBase,
-      styleSeedX,
-      styleSeedY,
-      variety
-    );
-    const foliageTexture = createTreeFoliageTexture(
-      three,
-      foliageBase,
-      styleSeedX,
-      styleSeedY,
-      variety
-    );
+    const barkTexture = getSharedTreeBarkTexture(three);
+    const foliageTexture = getSharedTreeFoliageTexture(three);
 
     treeStyleCache.set(key, {
       trunkMaterial: new three.MeshStandardMaterial({
-        color: '#ffffff',
+        color: barkBase,
         map: barkTexture,
         roughness: 0.95,
         metalness: 0.02,
       }),
       foliageMaterial: new three.MeshStandardMaterial({
-        color: '#ffffff',
+        color: foliageBase,
         map: foliageTexture,
         roughness: 0.98,
         metalness: 0.01,
@@ -4152,6 +4148,26 @@ function getTreeStyle(
   }
 
   return treeStyleCache.get(key)!;
+}
+
+function getSharedTreeBarkTexture(three: ThreeHostLike): ThreeTextureLike {
+  const cachedTexture = forestTreeBarkTextureCache.get(three);
+  if (cachedTexture) {
+    return cachedTexture;
+  }
+  const texture = createTreeBarkTexture(three);
+  forestTreeBarkTextureCache.set(three, texture);
+  return texture;
+}
+
+function getSharedTreeFoliageTexture(three: ThreeHostLike): ThreeTextureLike {
+  const cachedTexture = forestTreeFoliageTextureCache.get(three);
+  if (cachedTexture) {
+    return cachedTexture;
+  }
+  const texture = createTreeFoliageTexture(three);
+  forestTreeFoliageTextureCache.set(three, texture);
+  return texture;
 }
 
 function getSharedForestAccessoryStyle(
@@ -6480,40 +6496,31 @@ function getDistanceToTrailSegment(
   return Math.hypot(x - nearestX, y - nearestY);
 }
 
-function createTreeBarkTexture(
-  three: ThreeHostLike,
-  baseColor: string,
-  regionX: number,
-  regionY: number,
-  variety: number
-) {
+function createTreeBarkTexture(three: ThreeHostLike) {
   return createPaintedCanvasTexture(three, {
     width: 64,
     height: 64,
     repeatX: 1.2,
     repeatY: 1.2,
     paint(context, canvas) {
-      context.fillStyle = baseColor;
+      context.fillStyle = '#8d8d8d';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
       for (let x = 0; x < canvas.width; x += 5) {
-        const darkness = 34 + ((x * 9 + variety * 17) % 26);
+        const darkness = 34 + ((x * 9 + 17) % 26);
         context.fillStyle = `rgba(${darkness}, ${darkness - 6}, ${darkness - 10}, 0.28)`;
         context.fillRect(x, 0, 2, canvas.height);
       }
 
       for (let index = 0; index < 120; index += 1) {
         const x = Math.floor(
-          hash2D(TREE_BARK_CRACK_X_SEED, regionX * 31 + variety, index) *
-            canvas.width
+          hash2D(TREE_BARK_CRACK_X_SEED, 31, index) * canvas.width
         );
         const y = Math.floor(
-          hash2D(TREE_BARK_CRACK_Y_SEED, regionY * 29 + variety, index) *
-            canvas.height
+          hash2D(TREE_BARK_CRACK_Y_SEED, 29, index) * canvas.height
         );
         const height =
-          3 +
-          Math.floor(hash2D(TREE_BARK_CRACK_HEIGHT_SEED, index, variety) * 8);
+          3 + Math.floor(hash2D(TREE_BARK_CRACK_HEIGHT_SEED, index, 1) * 8);
         context.fillStyle = 'rgba(20, 12, 8, 0.22)';
         context.fillRect(x, y, 1, height);
       }
@@ -6521,37 +6528,26 @@ function createTreeBarkTexture(
   });
 }
 
-function createTreeFoliageTexture(
-  three: ThreeHostLike,
-  baseColor: string,
-  regionX: number,
-  regionY: number,
-  variety: number
-) {
+function createTreeFoliageTexture(three: ThreeHostLike) {
   return createPaintedCanvasTexture(three, {
     width: 64,
     height: 64,
     repeatX: 1.15,
     repeatY: 1.15,
     paint(context, canvas) {
-      context.fillStyle = baseColor;
+      context.fillStyle = '#8fb68c';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
       for (let index = 0; index < 180; index += 1) {
         const x = Math.floor(
-          hash2D(TREE_LEAF_X_SEED, regionX * 17 + variety, index) * canvas.width
+          hash2D(TREE_LEAF_X_SEED, 17, index) * canvas.width
         );
         const y = Math.floor(
-          hash2D(TREE_LEAF_Y_SEED, regionY * 19 + variety, index) *
-            canvas.height
+          hash2D(TREE_LEAF_Y_SEED, 19, index) * canvas.height
         );
-        const size =
-          1 + Math.floor(hash2D(TREE_LEAF_SIZE_SEED, index, variety) * 3);
+        const size = 1 + Math.floor(hash2D(TREE_LEAF_SIZE_SEED, index, 1) * 3);
         const tint =
-          90 +
-          Math.floor(
-            hash2D(TREE_LEAF_BRIGHTNESS_SEED, index, regionX + regionY) * 80
-          );
+          90 + Math.floor(hash2D(TREE_LEAF_BRIGHTNESS_SEED, index, 36) * 80);
         context.fillStyle = `rgba(${24 + (tint % 40)}, ${tint}, ${30 + (tint % 30)}, 0.22)`;
         context.fillRect(x, y, size, size);
       }

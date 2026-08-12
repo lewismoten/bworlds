@@ -6,10 +6,19 @@
 - host-scoped shared accessory materials for landmarks, wildlife, floor detail,
   and trail props
 
+The structural tree materials now also share one host-scoped neutral bark
+texture and one host-scoped neutral foliage texture. Family distinction comes
+from `MeshStandardMaterial.color` tinting instead of painting separate bark and
+leaf textures for broadleaf versus conifer trees.
+
 ## Why
 
 Broadleaf and conifer trees still need distinct bark and foliage materials so
 their structure reads correctly at a glance.
+
+They do not need distinct painted textures for that distinction. Geometry plus
+material tint is enough to keep the families legible while avoiding more unique
+texture ownership.
 
 The surrounding accessories did not justify the same duplication. Stone rings,
 mushroom rings, owl bodies, spiders, meadow grass, breadcrumbs, and bird
@@ -22,6 +31,7 @@ forest scenes.
 For one Three host:
 
 - bark and foliage stay cached per tree family
+- bark and foliage texture maps stay shared across those families
 - low-detail tree instances reuse those same family bark and foliage materials
   instead of creating a separate low-detail-only pair
 - accessory materials are cached once and reused across every forest tile

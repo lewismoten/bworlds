@@ -21,6 +21,7 @@ import {
 import {
   FakeGroup,
   FakeInstancedMesh,
+  FakeMaterial,
   FakeMesh,
   FakeNode,
   FakePoints,
@@ -511,6 +512,49 @@ describe('tile forest', () => {
     );
     expect([...broadleafFoliageMaterials][0]).not.toBe(
       [...pineFoliageMaterials][0]
+    );
+  });
+
+  it('reuses one shared bark and foliage texture map across forest families on one host', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    const broadleafMaterials = new Map<'trunk' | 'foliage', FakeMaterial>();
+    const pineMaterials = new Map<'trunk' | 'foliage', FakeMaterial>();
+
+    for (let tileY = 0; tileY < 24; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const model = tile.create3DModel?.({
+          three: fakeThree as never,
+          state,
+          tile: { kind: 'forest' },
+          tileX,
+          tileY,
+          detailLevel: 'full',
+        }) as FakeGroup;
+        collectTreeFamilyMaterialMaps(model, broadleafMaterials, pineMaterials);
+        if (broadleafMaterials.size === 2 && pineMaterials.size === 2) {
+          expect(broadleafMaterials.get('trunk')).not.toBe(
+            pineMaterials.get('trunk')
+          );
+          expect(broadleafMaterials.get('trunk')?.options.map).toBe(
+            pineMaterials.get('trunk')?.options.map
+          );
+          expect(broadleafMaterials.get('foliage')?.options.map).toBe(
+            pineMaterials.get('foliage')?.options.map
+          );
+          expect(broadleafMaterials.get('trunk')?.options.color).not.toBe(
+            pineMaterials.get('trunk')?.options.color
+          );
+          expect(broadleafMaterials.get('foliage')?.options.color).not.toBe(
+            pineMaterials.get('foliage')?.options.color
+          );
+          return;
+        }
+      }
+    }
+
+    throw new Error(
+      'Expected to sample both broadleaf and pine forest materials on one host.'
     );
   });
 
@@ -1449,6 +1493,46 @@ function collectTreeFamilyMaterials(
           ? buckets.pineFoliageMaterials
           : buckets.broadleafFoliageMaterials
         ).add(material);
+      }
+    });
+  }
+}
+
+function collectTreeFamilyMaterialMaps(
+  model: FakeGroup,
+  broadleafMaterials: Map<'trunk' | 'foliage', FakeMaterial>,
+  pineMaterials: Map<'trunk' | 'foliage', FakeMaterial>
+): void {
+  for (const child of model.children) {
+    const familyMaterials =
+      child.userData?.forestTreeForm === 'pine'
+        ? pineMaterials
+        : broadleafMaterials;
+    child.traverse((node) => {
+      const materialOwner = node as FakeNode & {
+        material?: FakeMaterial | FakeMaterial[];
+      };
+      if (!materialOwner.material) {
+        return;
+      }
+      const material = Array.isArray(materialOwner.material)
+        ? materialOwner.material[0]
+        : materialOwner.material;
+      if (!(material instanceof FakeMaterial)) {
+        return;
+      }
+      if (
+        (node.userData?.forestTreeTrunkSegment ||
+          node.userData?.forestTreeBranchInstanced) &&
+        !familyMaterials.has('trunk')
+      ) {
+        familyMaterials.set('trunk', material);
+      }
+      if (
+        node.userData?.forestTreeFoliageInstanced &&
+        !familyMaterials.has('foliage')
+      ) {
+        familyMaterials.set('foliage', material);
       }
     });
   }

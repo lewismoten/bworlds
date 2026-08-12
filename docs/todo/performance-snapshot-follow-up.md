@@ -19,9 +19,9 @@
       stay local to the client instead of being escalated as runtime issues.
 - [x] Limit each tree species to 10 material variants per part type.
 - [x] Reuse bark, foliage, and branch materials across nearby trees.
-- [ ] Prefer tinting shared materials over creating new textures.
+- [x] Prefer tinting shared materials over creating new textures.
 - [ ] Use color shifts to distinguish related tree species.
-- [ ] Avoid unique textures when color variation is sufficient.
+- [x] Avoid unique textures when color variation is sufficient.
 - [x] Share material variants between compatible tree species.
       Progress: `tile-forest` now resolves full-detail broadleaf materials
       through one shared host-level family bundle, so oak and birch nearby on
@@ -47,7 +47,11 @@
       explicitly sharing the same broadleaf material pair, and a nearby-tile
       regression test now verifies that neighboring oak and birch forest tiles
       on one host reuse the same broadleaf bark/branch material and foliage
-      material instead of allocating duplicate near-identical variants.
+      material instead of allocating duplicate near-identical variants, and
+      forest tree-family materials now also reuse one neutral bark texture and
+      one neutral foliage texture per Three host, letting broadleaf-versus-
+      conifer distinction come from material tint rather than painting
+      separate bark and leaf texture variants for each family.
 - [ ] Extend with plugin-event-channel-system.md
 
 ## Fix Measurement Problems First
