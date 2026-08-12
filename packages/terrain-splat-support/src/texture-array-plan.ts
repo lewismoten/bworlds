@@ -5,11 +5,7 @@ import type {
 } from './index.ts';
 
 export type TerrainTextureArrayPurpose =
-  | 'baseColor'
-  | 'normal'
-  | 'roughness'
-  | 'metalness'
-  | 'ambientOcclusion';
+  'baseColor' | 'normal' | 'roughness' | 'metalness' | 'ambientOcclusion';
 
 export type TerrainTextureArraySource = {
   id: string;
@@ -37,7 +33,10 @@ export type TerrainTextureArrayPlan = {
 };
 
 export type TerrainTextureArrayPlanSet = {
-  layerSlots: readonly Pick<TerrainTextureArrayLayerSlot, 'layerId' | 'layerIndex'>[];
+  layerSlots: readonly Pick<
+    TerrainTextureArrayLayerSlot,
+    'layerId' | 'layerIndex'
+  >[];
   plans: readonly TerrainTextureArrayPlan[];
   estimatedBytes: number;
 };
@@ -188,8 +187,7 @@ function normalizeTerrainTextureArraySource(
   const width = normalizePositiveInteger(source.width);
   const height = normalizePositiveInteger(source.height);
   const bytesPerPixel = normalizePositiveInteger(source.bytesPerPixel ?? 4);
-  const format =
-    typeof source.format === 'string' ? source.format.trim() : '';
+  const format = typeof source.format === 'string' ? source.format.trim() : '';
   const label = formatPurposeLabel(context.purpose);
 
   if (typeof source.id !== 'string' || source.id.trim().length === 0) {
@@ -271,7 +269,9 @@ function getSortedCatalogEntries(
     return [...catalog].sort((left, right) => left.index - right.index);
   }
   if (catalog instanceof Map) {
-    return [...catalog.values()].sort((left, right) => left.index - right.index);
+    return [...catalog.values()].sort(
+      (left, right) => left.index - right.index
+    );
   }
 
   const entries = hasTerrainMaterialLayerCatalogEntries(catalog)
