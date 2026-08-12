@@ -26,12 +26,16 @@ Current support:
   shared-floor terrain cells into authoritative `@bworlds/worldgen` chunk IDs
   and `16x16` chunk bounds, which gives the future chunk floor renderer one
   renderer-owned chunk selection input instead of a raw visible tile scan.
+- `packages/render3d/src/visible-terrain-chunk-geometries.ts` now consumes
+  those visible chunk groups, builds shared splat chunk render data, and turns
+  each chunk into one `BufferGeometry` backed by shared height samples and
+  packed terrain splat attributes.
 
 ## Replace Floor Meshes
 
 - [x] Group visible floor cells into terrain chunks.
-- [ ] Build chunk geometry from shared height samples.
-- [ ] Build chunk splat weights from shared terrain state.
+- [x] Build chunk geometry from shared height samples.
+- [x] Build chunk splat weights from shared terrain state.
 - [ ] Render one shared PBR material across chunks.
 - [ ] Keep water, structures, and vegetation separate.
 

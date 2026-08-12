@@ -7,11 +7,13 @@
     "@bworlds/cache-support": "0.1.0",
     "@bworlds/core": "0.1.0",
     "@bworlds/plugin-api": "0.1.0",
+    "@bworlds/terrain-splat-support": "0.1.0",
     "@bworlds/tile-dungeon": "0.1.0",
     "@bworlds/tile-forest": "0.1.0",
     "@bworlds/tile-lighthouse": "0.1.0",
     "@bworlds/tile-support": "0.1.0",
     "@bworlds/tile-town": "0.1.0",
+    "@bworlds/three-support": "0.1.0",
     "@bworlds/worldgen": "0.1.0",
     "three": "^0.179.1"
   },

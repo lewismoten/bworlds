@@ -14,10 +14,10 @@
 ## Live Renderer
 
 - [ ] Create a terrain chunk renderer plugin.
-- [ ] Consume shared height and splat data.
-- [ ] Build one `BufferGeometry` per visible terrain chunk.
-- [ ] Attach packed splat indices to chunk geometry.
-- [ ] Attach packed splat weights to chunk geometry.
+- [x] Consume shared height and splat data.
+- [x] Build one `BufferGeometry` per visible terrain chunk.
+- [x] Attach packed splat indices to chunk geometry.
+- [x] Attach packed splat weights to chunk geometry.
 - [ ] Use one shared PBR splat material where compatible.
 - [ ] Keep water, structures, and vegetation separate.
 - [ ] Render one test chunk beside the legacy floors.
@@ -100,6 +100,11 @@ Current support:
   terrain cells into authoritative worldgen chunk IDs and stable `16x16` cell
   bounds, so the later live chunk renderer can start from chunk-grouped floor
   visibility instead of rescanning raw visible tile coordinates every build.
+- `@bworlds/render3d/visible-terrain-chunk-geometries` now consumes those
+  visible chunk groups and builds one `BufferGeometry` per chunk through the
+  existing shared terrain chunk render-data pipeline, so render3d can now
+  materialize chunk-local geometry and packed splat attributes without
+  rebuilding seam-safe height or splat data by hand.
 
 ## Sextant Panel
 

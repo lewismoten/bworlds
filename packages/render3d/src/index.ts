@@ -49,6 +49,10 @@ export {
   type VisibleTerrainChunkCell,
   type VisibleTerrainChunkFloorEntry,
 } from './visible-terrain-chunks.ts';
+export {
+  buildVisibleTerrainChunkGeometries,
+  type VisibleTerrainChunkGeometry,
+} from './visible-terrain-chunk-geometries.ts';
 import {
   countGeometriesExceedingBounds,
   countGeometryTriangles,
