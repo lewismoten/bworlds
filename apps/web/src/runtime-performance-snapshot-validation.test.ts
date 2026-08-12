@@ -46,6 +46,7 @@ describe('runtime performance snapshot validation', () => {
       'memoryAfterRegionChangeMb',
       'midiExportMs',
       'songGenerationMs',
+      'visibleTileGeneration.averageMs',
       'visibleTileGeneration.maxMs',
       'wavExportMs',
     ]);
@@ -199,8 +200,30 @@ describe('runtime performance snapshot validation', () => {
       )} ms exceeded ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.initialWorldGenerationMs.toFixed(1)} ms.`,
     },
     {
+      name: 'visible tile average generation',
+      limit: DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationAverageMs,
+      apply: (value: number) => ({
+        path: 'visibleTileGeneration.averageMs',
+        set(
+          snapshot: ReturnType<typeof createValidRuntimePerformanceSnapshot>
+        ) {
+          snapshot.metrics.visibleTileGeneration = {
+            averageMs: value,
+            maxMs: Math.max(value, 8),
+            buildsPerSecond: 12,
+            pendingTileCount: 0,
+          };
+        },
+      }),
+      expectedViolation: `Visible tile average generation ${(
+        DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationAverageMs + 1
+      ).toFixed(
+        1
+      )} ms exceeded ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationAverageMs.toFixed(1)} ms.`,
+    },
+    {
       name: 'visible tile maximum generation',
-      limit: DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMs,
+      limit: DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMaxMs,
       apply: (value: number) => ({
         path: 'visibleTileGeneration.maxMs',
         set(
@@ -214,11 +237,11 @@ describe('runtime performance snapshot validation', () => {
           };
         },
       }),
-      expectedViolation: `Visible tile generation ${(
-        DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMs + 1
+      expectedViolation: `Visible tile maximum generation ${(
+        DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMaxMs + 1
       ).toFixed(
         1
-      )} ms exceeded ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMs.toFixed(1)} ms.`,
+      )} ms exceeded ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMaxMs.toFixed(1)} ms.`,
     },
     {
       name: 'maximum frame time',

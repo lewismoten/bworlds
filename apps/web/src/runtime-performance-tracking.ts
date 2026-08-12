@@ -2,7 +2,8 @@ import type { DebugSnapshot } from './debug-panel.ts';
 
 export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
   initialWorldGenerationMs: 4_000,
-  visibleTileGenerationMs: 16,
+  visibleTileGenerationAverageMs: 8,
+  visibleTileGenerationMaxMs: 16,
   maximumFrameMs: 50,
   memoryAfterRegionChangeMb: 512,
   activeThreeObjectCount: 2_500,
@@ -187,11 +188,20 @@ export function collectRuntimePerformanceViolations(
     );
   }
   if (
-    typeof metrics.visibleTileGeneration?.maxMs === 'number' &&
-    metrics.visibleTileGeneration.maxMs > limits.visibleTileGenerationMs
+    typeof metrics.visibleTileGeneration?.averageMs === 'number' &&
+    metrics.visibleTileGeneration.averageMs >
+      limits.visibleTileGenerationAverageMs
   ) {
     violations.push(
-      `Visible tile generation ${metrics.visibleTileGeneration.maxMs.toFixed(1)} ms exceeded ${limits.visibleTileGenerationMs.toFixed(1)} ms.`
+      `Visible tile average generation ${metrics.visibleTileGeneration.averageMs.toFixed(1)} ms exceeded ${limits.visibleTileGenerationAverageMs.toFixed(1)} ms.`
+    );
+  }
+  if (
+    typeof metrics.visibleTileGeneration?.maxMs === 'number' &&
+    metrics.visibleTileGeneration.maxMs > limits.visibleTileGenerationMaxMs
+  ) {
+    violations.push(
+      `Visible tile maximum generation ${metrics.visibleTileGeneration.maxMs.toFixed(1)} ms exceeded ${limits.visibleTileGenerationMaxMs.toFixed(1)} ms.`
     );
   }
   if (

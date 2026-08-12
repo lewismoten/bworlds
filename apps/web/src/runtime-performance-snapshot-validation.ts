@@ -25,7 +25,8 @@ export const NULLABLE_RUNTIME_PERFORMANCE_METRICS = [
 
 export const RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS = {
   initialWorldGenerationMs: 'initialWorldGenerationMs',
-  visibleTileGenerationMs: 'visibleTileGeneration.maxMs',
+  visibleTileGenerationAverageMs: 'visibleTileGeneration.averageMs',
+  visibleTileGenerationMaxMs: 'visibleTileGeneration.maxMs',
   maximumFrameMs: 'maximumFrameMs',
   memoryAfterRegionChangeMb: 'memoryAfterRegionChangeMb',
   activeThreeObjectCount: 'activeThreeObjectCount',

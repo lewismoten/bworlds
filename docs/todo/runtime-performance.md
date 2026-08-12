@@ -24,7 +24,7 @@
 - [x] Test values just below each configured limit.
 - [x] Test values just above each configured limit.
 - [x] Test maximum frame duration enforcement.
-- [ ] Test visible tile average duration enforcement.
+- [x] Test visible tile average duration enforcement.
 - [x] Test visible tile maximum duration enforcement.
 - [ ] Add a pending tile count limit.
 - [ ] Test pending tile count enforcement.
@@ -61,4 +61,8 @@ instead of posting `null` and failing the stricter runtime snapshot schema, and
 the validator now defines explicit trigger-specific required metrics plus an
 explicit limit-to-metric alignment map, with regression tests covering missing
 required metrics for `startup` and `bundle-export` snapshots and ensuring the
-supported hard-limit fields stay aligned with their measured metric paths.
+supported hard-limit fields stay aligned with their measured metric paths, and
+the runtime snapshot limits now split visible tile generation into separate
+`averageMs` and `maxMs` hard limits so the validation and violation coverage
+matches the actual metric shape instead of forcing two measurements through one
+shared threshold.
