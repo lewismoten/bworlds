@@ -447,6 +447,63 @@ describe('tile cave', () => {
     );
   });
 
+  it('keeps repeated full-detail cave builds on one host within the shared material budget', () => {
+    const previousDocument = globalThis.document;
+    globalThis.document = createFakeDocument() as never;
+    const three = createFakeThree() as never;
+    const state = {
+      getCurrentTile() {
+        return { kind: 'plains' };
+      },
+      getTileDefinition() {
+        return { walkable: true };
+      },
+    } as never;
+    const repeatedModels: Array<{
+      material?: unknown;
+      children?: unknown[];
+    }> = [];
+
+    try {
+      for (const [tileX, tileY] of [
+        [4, 6],
+        [8, 9],
+        [12, 14],
+        [16, 18],
+      ]) {
+        const model = caveTile?.create3DModel?.({
+          tile: { kind: 'cave' },
+          three,
+          state,
+          tileX,
+          tileY,
+          detailLevel: 'full',
+        }) as
+          | {
+              material?: unknown;
+              children?: unknown[];
+            }
+          | null
+          | undefined;
+        if (model) {
+          repeatedModels.push(model);
+        }
+      }
+
+      const sharedMaterials = new Set<unknown>();
+      repeatedModels.forEach((model) => {
+        collectMeshMaterials(model).forEach((material) => {
+          sharedMaterials.add(material);
+        });
+      });
+
+      expect(repeatedModels).toHaveLength(4);
+      expect(sharedMaterials.size).toBeLessThanOrEqual(6);
+    } finally {
+      globalThis.document = previousDocument;
+    }
+  });
+
   it('instances repeated cave mushrooms as shared stem and cap sets', () => {
     const three = createFakeThree() as never;
     const mushroomTile = plugin.tiles?.find(
@@ -1032,6 +1089,45 @@ function collectCaveInstancedParts(
     .map((child) => child.userData?.caveInstancedPart)
     .filter((value): value is string => typeof value === 'string')
     .sort();
+}
+
+function collectMeshMaterials(
+  node:
+    | {
+        material?: unknown;
+        children?: unknown[];
+      }
+    | null
+    | undefined
+): Set<unknown> {
+  const materials = new Set<unknown>();
+  const stack = node ? [node] : [];
+
+  while (stack.length > 0) {
+    const current = stack.pop() as
+      | {
+          material?: unknown;
+          children?: unknown[];
+        }
+      | undefined;
+    if (!current) {
+      continue;
+    }
+
+    if (Array.isArray(current.material)) {
+      current.material.forEach((material) => materials.add(material));
+    } else if (current.material) {
+      materials.add(current.material);
+    }
+
+    current.children?.forEach((child) => {
+      if (child && typeof child === 'object') {
+        stack.push(child as { material?: unknown; children?: unknown[] });
+      }
+    });
+  }
+
+  return materials;
 }
 
 function createFakeDocument() {
