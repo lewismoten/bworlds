@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./sample-grid": "./src/sample-grid.ts",
+    "./worker-contract": "./src/worker-contract.ts",
     "./variant-pool": "./src/variant-pool.ts",
     "./layer-pool-plan": "./src/layer-pool-plan.ts",
     "./texture-array-plan": "./src/texture-array-plan.ts"

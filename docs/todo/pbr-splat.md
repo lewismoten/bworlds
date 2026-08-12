@@ -144,8 +144,8 @@
 ## Chunk Generation
 
 - [ ] Generate splat weights while building terrain chunks.
-- [ ] Keep splat generation separate from mesh creation.
-- [ ] Generate weight data in workers where practical.
+- [x] Keep splat generation separate from mesh creation.
+- [x] Generate weight data in workers where practical.
 - [x] Transfer compact splat buffers to the main thread.
 - [ ] Cache splat data with terrain chunk data.
 - [ ] Rebuild splat data only when terrain state changes.
@@ -331,6 +331,10 @@
   `@bworlds/terrain-splat-support/sample-grid` so chunk generation can measure
   splat build cost, compare it against a time budget, and retry with a coarser
   deterministic LOD grid when overloaded.
+- Added `@bworlds/terrain-splat-support/worker-contract` so chunk tile inputs,
+  packed splat outputs, transferables, and adaptive build metrics can move
+  through one serializable worker request/result contract without coupling
+  splat generation to mesh creation.
 - [x] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
