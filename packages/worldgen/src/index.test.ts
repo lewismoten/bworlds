@@ -15,6 +15,7 @@ import {
   createPluginRegistryFromPack,
   createPluginRegistryFromPacks,
   createWorldRuntime,
+  createWorldTerrainHeightInfluencePlugin,
   createWorldGenerator,
   getTerrainChunkCellBounds,
   getTerrainChunkHeightSampleCoordinate,
@@ -955,6 +956,83 @@ describe('world generator', () => {
       seaLevel: WORLD_TERRAIN_SEA_LEVEL,
       depthBelowSeaLevel: 0,
     });
+  });
+
+  it('lets callers extend the shared terrain height path with ordered influence plugins', () => {
+    const plugins = createDefaultPluginRegistry();
+    const baselineGenerator = createWorldGenerator({
+      seed: 'spec',
+      plugins,
+    });
+    const layeredGenerator = createWorldGenerator({
+      seed: 'spec',
+      plugins,
+      heightInfluencePlugins: [
+        createWorldTerrainHeightInfluencePlugin({
+          id: 'continent-uplift',
+          order: {
+            priority: 20,
+            after: ['overworld-relief'],
+          },
+          sample() {
+            return {
+              amount: 0.4,
+              reason: 'broad uplift boost',
+            };
+          },
+        }),
+        createWorldTerrainHeightInfluencePlugin({
+          id: 'river-carving',
+          order: {
+            priority: 30,
+            after: ['continent-uplift'],
+          },
+          sampling: {
+            resolutions: ['fine'],
+          },
+          sample() {
+            return -0.1;
+          },
+        }),
+      ],
+    });
+
+    const baselineCoarse = baselineGenerator.sampleTerrainHeight(10, 20);
+    const baselineFine = baselineGenerator.sampleTerrainHeight(10.25, 20.5, {
+      resolution: 'fine',
+    });
+
+    expect(layeredGenerator.sampleTerrainHeight(10, 20)).toBeCloseTo(
+      baselineCoarse + 0.4
+    );
+    expect(
+      layeredGenerator.sampleTerrainHeight(10.25, 20.5, {
+        resolution: 'fine',
+      })
+    ).toBeCloseTo(baselineFine + 0.3);
+  });
+
+  it('attributes invalid terrain heights to the height influence plugin that produced them', () => {
+    const plugins = createDefaultPluginRegistry();
+    const generator = createWorldGenerator({
+      seed: 'spec',
+      plugins,
+      heightInfluencePlugins: [
+        createWorldTerrainHeightInfluencePlugin({
+          id: 'broken-river-carving',
+          order: {
+            after: ['overworld-relief'],
+          },
+          sample() {
+            return Number.NaN;
+          },
+        }),
+      ],
+    });
+
+    expect(() => generator.sampleTerrainHeight(10, 20)).toThrow(
+      'Terrain height influence broken-river-carving amount must be a finite number.'
+    );
   });
 
   it('keeps player-facing runtime tile heights aligned with the shared terrain sampler', () => {

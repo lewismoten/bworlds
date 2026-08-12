@@ -48,6 +48,7 @@ import {
   createWorldTerrainHeightInfluencePlugin,
   sampleWorldTerrainHeightInfluences,
   sortWorldTerrainHeightInfluencePlugins,
+  type WorldTerrainHeightInfluencePlugin,
 } from './terrain-height-influences.ts';
 export {
   getTerrainChunkCellBounds,
@@ -273,9 +274,11 @@ function makeKey(...parts: Array<string | number>): string {
 export function createWorldGenerator({
   seed,
   plugins,
+  heightInfluencePlugins = [],
 }: {
   seed: Seed;
   plugins: PluginRegistry;
+  heightInfluencePlugins?: readonly WorldTerrainHeightInfluencePlugin[];
 }): {
   getMap(context: Context): WorldMapLike;
   sampleOverworld(x: number, y: number): SpawnTile;
@@ -408,6 +411,7 @@ export function createWorldGenerator({
           );
         },
       }),
+      ...heightInfluencePlugins,
     ]);
   const getMap = (context: Context) => {
     const key = makeKey(context.id, context.depth);

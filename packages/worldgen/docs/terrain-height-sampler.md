@@ -32,6 +32,9 @@ resolution? })` derives one sampled min/max height summary for an explicit
   used by the sampler path before height values are cached or summarized
 - `clampTerrainHeightValue(height, bounds?)` is the shared post-compose clamp
   used by the sampler path before validated heights are cached
+- `createWorldGenerator({ ..., heightInfluencePlugins })` lets callers extend
+  the authoritative terrain-height path with ordered signed height-delta
+  plugins that are merged with the built-in `overworld-relief` layer
 
 Current limits:
 

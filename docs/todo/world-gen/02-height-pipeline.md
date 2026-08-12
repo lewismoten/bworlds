@@ -128,3 +128,7 @@ Current support:
   query through one sorted `overworld-relief` influence stack, so the existing
   relief-based height sampler already uses the ordered plugin composition path
   instead of a package-local one-off formula.
+- That same generator entry point now also accepts `heightInfluencePlugins`,
+  which lets callers compose ordered uplift, carving, grading, and other
+  signed height-delta layers directly into the shared terrain sampler while
+  keeping invalid sampled values attributed to the plugin that produced them.
