@@ -755,6 +755,8 @@ describe('tile forest', () => {
   it('omits low-detail trunk instances while reduced quality is active', () => {
     const tile = getForestTile();
     const state = createForestTestState();
+    state.player.x = 8;
+    state.player.y = 6;
 
     const reducedLowModel = tile.create3DModel?.({
       three: fakeThree as never,
@@ -800,7 +802,7 @@ describe('tile forest', () => {
       state,
       tile: { kind: 'forest' },
       tileX: 10,
-      tileY: 7,
+      tileY: 8,
       detailLevel: 'low',
       renderBudget: {
         quality: 'reduced',
@@ -813,6 +815,58 @@ describe('tile forest', () => {
     }) as FakeGroup;
 
     expect(reducedDistantModel.children).toHaveLength(0);
+  });
+
+  it('keeps nearby reduced-quality low-detail forest tiles inside the immediate ring', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    state.player.x = 8;
+    state.player.y = 6;
+
+    const reducedNearbyModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 9,
+      tileY: 7,
+      detailLevel: 'low',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'low',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    expect(reducedNearbyModel.children.length).toBeGreaterThan(0);
+  });
+
+  it('skips more distant reduced-quality low-detail forest tiles beyond the immediate ring', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    state.player.x = 8;
+    state.player.y = 6;
+
+    const reducedFarModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: 10,
+      tileY: 8,
+      detailLevel: 'low',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'low',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    expect(reducedFarModel.children).toHaveLength(0);
   });
 
   it('renders forest fireflies only at full quality close detail', () => {

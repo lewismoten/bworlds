@@ -4384,11 +4384,15 @@ function shouldSkipReducedForestBackgroundTile(
   const deltaX = tileX - player.x;
   const deltaY = tileY - player.y;
   const distanceSquared = deltaX * deltaX + deltaY * deltaY;
-  if (distanceSquared <= 1) {
+  if (distanceSquared <= 2) {
     return false;
   }
 
-  return Math.abs(tileX + tileY) % 2 === 1;
+  if (quality === 'minimal') {
+    return true;
+  }
+
+  return Math.abs(tileX * 17 + tileY * 31) % 3 !== 0;
 }
 
 function addLowDetailForestTreeInstances(

@@ -152,7 +152,11 @@
       breadcrumbs, bushes, landmarks, and floor props, and reduced-quality
       low-detail forest tiles now drop separate trunk instances and keep one
       canopy silhouette pass so the dominant background forest path costs one
-      instanced mesh instead of two per tile.
+      instanced mesh instead of two per tile, and reduced-quality background
+      forest now keeps canopy silhouettes only inside the immediate ring around
+      the player while farther tiles fall back to a stable sparse subset so
+      chunk draw calls stop spending half the visible forest budget on distant
+      silhouettes.
 - [ ] Track recovery back to full quality.
 - [ ] Add hysteresis before restoring full graphics quality.
 

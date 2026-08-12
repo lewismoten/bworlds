@@ -18,6 +18,10 @@ Progressive loading:
   silhouette pass. Nearby reduced-quality forest tiles still keep the existing
   low-detail canopy silhouette so the forest edge around the player does not
   disappear abruptly.
+- Reduced-quality forest now keeps that canopy silhouette only inside the
+  immediate ring around the player and sparsifies farther background tiles to a
+  stable subset, while minimal quality drops every background tile beyond the
+  immediate ring.
 
 Current layout:
 
