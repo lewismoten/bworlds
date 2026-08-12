@@ -644,3 +644,53 @@ footer strong {
     transition: none !important;
   }
 }
+.reviews {
+  display: grid;
+  grid-template-columns: 0.75fr 1.25fr;
+  gap: clamp(3rem, 8vw, 8rem);
+}
+
+.reviews-disclaimer {
+  margin-top: 1rem;
+  color: var(--quiet);
+  font-size: 0.9rem;
+}
+
+.reviews-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.review-card {
+  padding: 1.3rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.035),
+      transparent
+    ),
+    var(--panel);
+}
+
+.review-card blockquote {
+  margin: 0;
+  color: #dce5f1;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.review-card cite {
+  display: block;
+  margin-top: 0.8rem;
+  color: var(--quiet);
+  font-size: 0.82rem;
+  font-style: normal;
+}
+
+@media (max-width: 850px) {
+  .reviews {
+    grid-template-columns: 1fr;
+  }
+}

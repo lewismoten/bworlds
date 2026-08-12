@@ -141,18 +141,18 @@ const showNextMeaning = () => {
 };
 
 const loadGenerator = async () => {
-  const response = await fetch('index.json', {
+  const response = await fetch('alias.json', {
     cache: 'no-store',
   });
 
   if (!response.ok) {
-    throw new Error(`Unable to load index.json: ${response.status}`);
+    throw new Error(`Unable to load alias.json: ${response.status}`);
   }
 
   grammar = await response.json();
 
   if (grammar.acronym !== 'KOGNABO') {
-    throw new Error('index.json does not contain a KOGNABO grammar.');
+    throw new Error('alias.json does not contain a KOGNABO grammar.');
   }
 
   buildAllMeanings();
