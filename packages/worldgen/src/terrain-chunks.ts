@@ -21,6 +21,8 @@ export type TerrainChunkCellBounds = {
 };
 
 export type TerrainChunkHeightSampleBounds = TerrainChunkCellBounds;
+export type TerrainChunkBorderEdge = 'north' | 'east' | 'south' | 'west';
+export type TerrainChunkHeightSampleBorder = TerrainChunkHeightSampleBounds;
 
 export function getTerrainChunkCoordinates(
   worldX: number,
@@ -64,4 +66,43 @@ export function getTerrainChunkHeightSampleBounds(
     minY: bounds.minY,
     maxY: bounds.maxY + 1,
   };
+}
+
+export function getTerrainChunkHeightSampleBorder(
+  chunkX: number,
+  chunkY: number,
+  edge: TerrainChunkBorderEdge
+): TerrainChunkHeightSampleBorder {
+  const bounds = getTerrainChunkHeightSampleBounds(chunkX, chunkY);
+
+  switch (edge) {
+    case 'north':
+      return {
+        minX: bounds.minX,
+        maxX: bounds.maxX,
+        minY: bounds.minY,
+        maxY: bounds.minY,
+      };
+    case 'east':
+      return {
+        minX: bounds.maxX,
+        maxX: bounds.maxX,
+        minY: bounds.minY,
+        maxY: bounds.maxY,
+      };
+    case 'south':
+      return {
+        minX: bounds.minX,
+        maxX: bounds.maxX,
+        minY: bounds.maxY,
+        maxY: bounds.maxY,
+      };
+    case 'west':
+      return {
+        minX: bounds.minX,
+        maxX: bounds.minX,
+        minY: bounds.minY,
+        maxY: bounds.maxY,
+      };
+  }
 }

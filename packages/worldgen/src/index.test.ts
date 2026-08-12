@@ -14,6 +14,7 @@ import {
   createWorldRuntime,
   createWorldGenerator,
   getTerrainChunkCellBounds,
+  getTerrainChunkHeightSampleBorder,
   getTerrainChunkCoordinates,
   getTerrainChunkHeightSampleBounds,
   listContentPacks,
@@ -149,6 +150,27 @@ describe('world generator', () => {
 
     expect(center.maxX).toBe(east.minX);
     expect(center.maxY).toBe(south.minY);
+  });
+
+  it('derives identical shared border sample lines for adjacent chunks', () => {
+    expect(getTerrainChunkHeightSampleBorder(0, 0, 'east')).toEqual(
+      getTerrainChunkHeightSampleBorder(1, 0, 'west')
+    );
+    expect(getTerrainChunkHeightSampleBorder(0, 0, 'south')).toEqual(
+      getTerrainChunkHeightSampleBorder(0, 1, 'north')
+    );
+    expect(getTerrainChunkHeightSampleBorder(-2, -3, 'east')).toEqual({
+      minX: -16,
+      maxX: -16,
+      minY: -48,
+      maxY: -32,
+    });
+    expect(getTerrainChunkHeightSampleBorder(-2, -3, 'south')).toEqual({
+      minX: -32,
+      maxX: -16,
+      minY: -32,
+      maxY: -32,
+    });
   });
 
   it('lists built-in content packs with manifest metadata', () => {

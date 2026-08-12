@@ -10,7 +10,7 @@
 - [x] Add chunk X and Y to the sextant panel.
 - [x] Add local X and Y inside the current chunk.
 - [x] Show sampled terrain height in the sextant panel.
-- [ ] Verify adjacent chunks share identical border heights.
+- [x] Verify adjacent chunks share identical border heights.
 - [ ] Verify the player crosses chunk seams without a visible step.
 - [ ] Verify the 2D tile map still represents the 3D world.
 

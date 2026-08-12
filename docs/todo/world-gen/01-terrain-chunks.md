@@ -26,9 +26,9 @@
 
 ## Seamless Geometry
 
-- [ ] Sample chunk border heights from world coordinates.
+- [x] Sample chunk border heights from world coordinates.
 - [ ] Never derive border heights from local-only noise.
-- [ ] Share exact border height samples between neighbors.
+- [x] Share exact border height samples between neighbors.
 - [ ] Use world-space UVs across all chunk borders.
 - [ ] Keep splat weights continuous across chunk borders.
 - [ ] Keep route and river influence continuous across borders.
@@ -40,6 +40,9 @@ Current support:
 
 - `@bworlds/worldgen` exposes chunk cell bounds and 17x17 height-sample bounds
   so later height-field builders can share one world-space seam contract.
+- `getTerrainChunkHeightSampleBorder(...)` now exposes the exact world-space
+  sample line for each chunk edge, and tests verify adjacent chunks resolve the
+  same east/west and north/south seam coordinates.
 
 ## Sextant Panel
 
