@@ -2,11 +2,22 @@
 
 ## Preserve Logical Tiles
 
-- [ ] Keep logical tiles for gameplay indexing.
-- [ ] Keep logical tiles for local feature queries.
-- [ ] Keep logical tiles for the 2D tile map.
+- [x] Keep logical tiles for gameplay indexing.
+- [x] Keep logical tiles for local feature queries.
+- [x] Keep logical tiles for the 2D tile map.
 - [ ] Stop treating each tile as one 3D floor mesh.
 - [ ] Stop treating each tile as one material owner.
+
+Current support:
+
+- `packages/render3d/src/logical-tile-state.ts` now creates one explicit logical
+  tile snapshot before any floor-content decision runs, so the renderer keeps
+  authoritative decorated tile state, tile definitions, plugin ownership, and
+  terrain-surface selection separate from legacy floor meshes.
+- That logical tile snapshot is now the source for renderer-local floor content
+  setup, which means gameplay indexing, local feature queries, and the 2D map
+  can continue to rely on shared logical tiles even while the 3D floor path is
+  being replaced.
 
 ## Replace Floor Meshes
 

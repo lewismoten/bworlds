@@ -105,6 +105,7 @@ import {
 } from './object-materials.ts';
 import { collectRecentWindowedEvents } from './recent-windowed-events.ts';
 import { getRenderEffectQualityProfile } from './render-effect-quality.ts';
+import { createLogicalTileRenderState } from './logical-tile-state.ts';
 import { resolveTileTerrainSurfaceSelection } from './terrain-surface-mode.ts';
 import {
   createTerrainSurfaceBlendMaterial,
@@ -2068,24 +2069,33 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     const tile = buildCache.getTile(x, y);
     const definition = getTileDefinitionFromRegistry(tile.kind);
     const variant = getTileVariantIndex(tile.kind, x, y);
-    const surfaceHeight = buildCache.getSurfaceProfile(
-      x,
-      y,
-      tile
-    ).surfaceHeight;
     const terrainSurfaceSelection = resolveTileTerrainSurfaceSelection(tile);
-    const tilePlugin = registry.getTilePlugin(tile.kind);
     const tilePluginOwnerLabel = getTilePluginOwnerLabel(registry, tile.kind);
+    const logicalTileState = createLogicalTileRenderState({
+      tileX: x,
+      tileY: y,
+      tile,
+      definition,
+      variant,
+      tilePluginOwnerLabel,
+      terrainSurfaceSelection,
+    });
+    const surfaceHeight = buildCache.getSurfaceProfile(
+      logicalTileState.tileX,
+      logicalTileState.tileY,
+      logicalTileState.tile
+    ).surfaceHeight;
+    const tilePlugin = registry.getTilePlugin(tile.kind);
 
     const floorContent = createTileFloorContent(
       state,
-      tile,
-      x,
-      y,
-      variant,
+      logicalTileState.tile,
+      logicalTileState.tileX,
+      logicalTileState.tileY,
+      logicalTileState.variant,
       buildCache,
-      tilePluginOwnerLabel,
-      terrainSurfaceSelection.activeMode
+      logicalTileState.tilePluginOwnerLabel,
+      logicalTileState.terrainSurfaceMode
     );
     if (floorContent.floorNode) {
       freezeStaticObjectTransforms(floorContent.floorNode);
@@ -2094,28 +2104,28 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
 
     return {
       key: `${x}:${y}`,
-      tile,
-      definition,
-      variant,
-      tileX: x,
-      tileY: y,
+      tile: logicalTileState.tile,
+      definition: logicalTileState.definition,
+      variant: logicalTileState.variant,
+      tileX: logicalTileState.tileX,
+      tileY: logicalTileState.tileY,
       surfaceHeight,
       tileNode,
       sharedFloorInstance: floorContent.sharedFloorInstance,
       sharedWallFallbackInstance: null,
       tilePlugin,
-      tilePluginOwnerLabel,
+      tilePluginOwnerLabel: logicalTileState.tilePluginOwnerLabel,
       detailLevel,
-      terrainSurfaceSelection,
+      terrainSurfaceSelection: logicalTileState.terrainSurfaceSelection,
       tilePluginRenderContext: {
         three: THREE,
         state,
-        tile,
-        tileX: x,
-        tileY: y,
+        tile: logicalTileState.tile,
+        tileX: logicalTileState.tileX,
+        tileY: logicalTileState.tileY,
         detailLevel,
         renderBudget: createTilePluginRenderBudget(renderBudget, detailLevel),
-        terrainSurfaceMode: terrainSurfaceSelection.activeMode,
+        terrainSurfaceMode: logicalTileState.terrainSurfaceMode,
       },
     };
   }
@@ -3482,7 +3492,8 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       oneChildPlainWrapperTopPluginLabel:
         visibleTileOneChildPlainWrapperStats.topLabel,
       oneChildPlainWrapperSummary: visibleTileOneChildPlainWrapperStats.summary,
-      oneChildTransformTopPluginLabel: visibleTileOneChildTransformStats.topLabel,
+      oneChildTransformTopPluginLabel:
+        visibleTileOneChildTransformStats.topLabel,
       oneChildTransformSummary: visibleTileOneChildTransformStats.summary,
       oneChildTaggedTopPluginLabel: visibleTileOneChildTaggedStats.topLabel,
       oneChildTaggedSummary: visibleTileOneChildTaggedStats.summary,
@@ -6691,15 +6702,15 @@ export function summarizeVisibleTileOneChildTransformsByPlugin(
   topLabel: string;
   summary: string;
 } {
-  return summarizeVisibleTileCountByPlugin(entries, 'oneChildGroupTransformCount');
+  return summarizeVisibleTileCountByPlugin(
+    entries,
+    'oneChildGroupTransformCount'
+  );
 }
 
 export function summarizeVisibleTileOneChildTaggedGroupsByPlugin(
   entries: Iterable<
-    Pick<
-      DynamicTileNode,
-      'tilePluginOwnerLabel' | 'oneChildGroupTaggedCount'
-    >
+    Pick<DynamicTileNode, 'tilePluginOwnerLabel' | 'oneChildGroupTaggedCount'>
   >
 ): {
   totalCount: number;
