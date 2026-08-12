@@ -15,6 +15,8 @@ Current responsibilities:
 - validate that samples reference known layers and sum near `1.0`
 - pack normalized samples into fixed `Uint8Array(4)` layer indices and weights
 - validate packed samples before worker transfer or attribute upload
+- derive deterministic splat samples from seed, tile kind, and terrain signals
+- keep overworld terrain-to-splat mapping renderer-free and reusable
 
 Why this comes first:
 
@@ -32,3 +34,5 @@ Current limits:
   `layerId` sorting
 - packed weights sum to `255` so one sample fits cleanly into compact vertex or
   worker-transfer buffers
+- deterministic terrain mapping currently targets overworld-style kinds and
+  signal inputs rather than final renderer integration

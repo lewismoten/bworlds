@@ -7,7 +7,7 @@
 - [x] Define a terrain material layer interface.
 - [x] Define a terrain splat weight interface.
 - [x] Keep layer IDs stable across chunks.
-- [ ] Keep splat data deterministic from the world seed.
+- [x] Keep splat data deterministic from the world seed.
 - [ ] Share the same splat system across terrain plugins.
 
 ## PBR Layer Data
@@ -56,14 +56,14 @@
 
 ## Terrain Type Mapping
 
-- [ ] Map plains terrain to one or more grass layers.
-- [ ] Map forest floor to grass, soil, and leaf layers.
+- [x] Map plains terrain to one or more grass layers.
+- [x] Map forest floor to grass, soil, and leaf layers.
 - [ ] Map dirt terrain to dirt and gravel layers.
 - [ ] Map rocky terrain to rock and soil layers.
-- [ ] Map sand terrain to sand and soil layers.
+- [x] Map sand terrain to sand and soil layers.
 - [ ] Map snow terrain to snow and exposed ground layers.
 - [ ] Map mud terrain to mud and wet soil layers.
-- [ ] Keep water outside normal ground splatting.
+- [x] Keep water outside normal ground splatting.
 
 ## Boundary Blending
 
@@ -83,16 +83,16 @@
 - [ ] Allow slope to influence material selection.
 - [ ] Add more rock weight on steep slopes.
 - [ ] Add more soil weight on gentle slopes.
-- [ ] Allow elevation to influence terrain layers.
+- [x] Allow elevation to influence terrain layers.
 - [ ] Keep shared chunk edges identical in height.
 
 ## World Influence
 
 - [ ] Allow biome to influence splat material weights.
-- [ ] Allow moisture to influence splat material weights.
+- [x] Allow moisture to influence splat material weights.
 - [ ] Allow temperature to influence splat material weights.
 - [ ] Allow season to influence splat material weights.
-- [ ] Allow roads to override local splat weights.
+- [x] Allow roads to override local splat weights.
 - [ ] Allow POIs to influence nearby ground appearance.
 - [ ] Allow settlement footprints to alter ground layers.
 - [ ] Keep world influences deterministic.
@@ -164,7 +164,7 @@
 ## Roads and Trails
 
 - [ ] Decide whether roads use splats or separate overlays.
-- [ ] Use splat weights for broad dirt roads where suitable.
+- [x] Use splat weights for broad dirt roads where suitable.
 - [ ] Use overlays for narrow trails where suitable.
 - [ ] Project road overlays onto terrain height.
 - [ ] Blend road shoulders into terrain splats.
@@ -245,6 +245,11 @@
   `@bworlds/terrain-splat-support` using `Uint8Array(4)` layer indices and
   `Uint8Array(4)` weights that rebalance to a total of `255`, with round-trip
   and validation tests for unknown indices and fallback packing.
+- Added deterministic terrain kind splat mapping in
+  `@bworlds/terrain-splat-support` so seed, coordinates, tile kind, and
+  overworld terrain signals resolve to normalized reusable splat samples
+  without renderer coupling. The recommended overworld mapping currently covers
+  plains, forest, mountain, shore, road, and water/crossing exclusions.
 - [ ] Add roughness texture array support.
 - [ ] Add a debug view for layer weights.
 - [ ] Compare performance against old tile materials.
@@ -272,10 +277,11 @@
 Progress: `@bworlds/terrain-splat-support` now provides the first shared PBR
 splat foundation package with validated `TerrainMaterialLayerDefinition`
 entries, stable catalog indexing by layer ID, bounded `TerrainSplatSample` /
-`TerrainSplatWeight` normalization, a four-layer active sample cap, tiny-weight
-dropping, and validation for NaN or out-of-range weights. The architecture note
-lives in `packages/terrain-splat-support/docs/foundations.md`, and focused
-tests cover stable layer indices plus sample normalization and validation.
+`TerrainSplatWeight` normalization, compact packed sample buffers, and
+deterministic terrain-kind mapping from seed plus world signals. Architecture
+notes live in `packages/terrain-splat-support/docs/foundations.md` and
+`packages/terrain-splat-support/docs/deterministic-mapping.md`, and focused
+tests cover normalization, packing, validation, and deterministic mapping.
 
 # Roads and Paths as Terrain Splats
 

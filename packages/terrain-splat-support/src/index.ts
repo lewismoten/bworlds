@@ -1,3 +1,11 @@
+import {
+  appendHashSeedLabel,
+  hash2DWithSeed,
+  registerHashLabel,
+  resolveHashSeedInput,
+} from '@bworlds/core/hash';
+import type { Kind, OverworldSignals, Seed } from '@bworlds/plugin-api';
+
 export type TerrainMaterialLayerId = string;
 
 export type TerrainMaterialLayerDefinition = {
@@ -32,9 +40,57 @@ export type PackedTerrainSplatSample = {
   weights: Uint8Array;
 };
 
+export type TerrainKindSplatCondition = {
+  minElevation?: number;
+  maxElevation?: number;
+  minMoisture?: number;
+  maxMoisture?: number;
+  minRiverSignal?: number;
+  maxRiverSignal?: number;
+  minRoadSignal?: number;
+  maxRoadSignal?: number;
+};
+
+export type TerrainKindSplatBlendDefinition = {
+  layerId: TerrainMaterialLayerId;
+  weight: number;
+  when?: TerrainKindSplatCondition;
+};
+
+export type TerrainKindSplatDefinition = {
+  kind: Kind;
+  baseLayerIds?: readonly TerrainMaterialLayerId[];
+  blends?: readonly TerrainKindSplatBlendDefinition[];
+  exclude?: boolean;
+};
+
+export type TerrainKindSplatCatalogEntry = TerrainKindSplatDefinition & {
+  index: number;
+};
+
+export type ResolveTerrainKindSplatSampleInput = {
+  seed: Seed;
+  x: number;
+  y: number;
+  kind: Kind;
+  signals?: Partial<OverworldSignals>;
+};
+
+export type OverworldTerrainSplatLayerSet = {
+  grassLayerIds: readonly TerrainMaterialLayerId[];
+  soilLayerId: TerrainMaterialLayerId;
+  leafLayerId: TerrainMaterialLayerId;
+  rockLayerId: TerrainMaterialLayerId;
+  sandLayerId: TerrainMaterialLayerId;
+  dirtRoadLayerId: TerrainMaterialLayerId;
+  gravelRoadLayerId: TerrainMaterialLayerId;
+};
+
 export const MAX_TERRAIN_SPLAT_SAMPLE_LAYERS = 4;
 export const MIN_TERRAIN_SPLAT_WEIGHT = 0.01;
 export const PACKED_TERRAIN_SPLAT_WEIGHT_MAX = 255;
+
+const TERRAIN_SPLAT_VARIANT_LABEL = registerHashLabel('terrain-splat-variant');
 
 export function validateTerrainMaterialLayerDefinition(
   layer: TerrainMaterialLayerDefinition
@@ -153,6 +209,107 @@ export function createTerrainMaterialLayerCatalog(
   return {
     entries: [...byId.values()],
     byId,
+  };
+}
+
+export function validateTerrainKindSplatDefinition(
+  definition: TerrainKindSplatDefinition,
+  catalog:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        byId: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      }
+): string[] {
+  const errors: string[] = [];
+  const layerMap = 'byId' in catalog ? catalog.byId : catalog;
+
+  if (
+    typeof definition.kind !== 'string' ||
+    definition.kind.trim().length === 0
+  ) {
+    errors.push('Terrain splat kind definition must use a non-empty kind.');
+  }
+  if (definition.exclude === true) {
+    return errors;
+  }
+
+  if (
+    !Array.isArray(definition.baseLayerIds) ||
+    definition.baseLayerIds.length === 0
+  ) {
+    errors.push(
+      `Terrain splat kind ${formatLayerLabel(definition.kind)} must define at least one baseLayerId unless it is excluded.`
+    );
+  }
+
+  for (const layerId of definition.baseLayerIds ?? []) {
+    if (!layerMap.has(layerId)) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(definition.kind)} references unknown base layer ${formatLayerLabel(layerId)}.`
+      );
+    }
+  }
+
+  for (const blend of definition.blends ?? []) {
+    if (!layerMap.has(blend.layerId)) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(definition.kind)} references unknown blend layer ${formatLayerLabel(blend.layerId)}.`
+      );
+    }
+    if (!isNormalizedScalar(blend.weight) || blend.weight === 0) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(definition.kind)} must define blend weights within 0..1.`
+      );
+    }
+    errors.push(
+      ...validateTerrainKindSplatCondition(definition.kind, blend.when)
+    );
+  }
+
+  return errors;
+}
+
+export function createTerrainKindSplatCatalog(
+  definitions: readonly TerrainKindSplatDefinition[],
+  catalog:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        byId: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      }
+): {
+  entries: readonly TerrainKindSplatCatalogEntry[];
+  byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+} {
+  const errors: string[] = [];
+  const byKind = new Map<Kind, TerrainKindSplatCatalogEntry>();
+
+  definitions.forEach((definition, index) => {
+    errors.push(...validateTerrainKindSplatDefinition(definition, catalog));
+    if (byKind.has(definition.kind)) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(definition.kind)} must be unique within the shared catalog.`
+      );
+      return;
+    }
+    byKind.set(definition.kind, {
+      ...definition,
+      index,
+    });
+  });
+
+  if (errors.length > 0) {
+    throw new Error(errors.join(' '));
+  }
+
+  return {
+    entries: [...byKind.values()],
+    byKind,
   };
 }
 
@@ -285,6 +442,165 @@ export function validateTerrainSplatSample(
   }
 
   return errors;
+}
+
+export function resolveTerrainKindSplatSample(
+  input: ResolveTerrainKindSplatSampleInput,
+  kindCatalog:
+    | ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>
+    | {
+        byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+      },
+  options: {
+    fallbackKind?: Kind;
+    fallbackLayerId?: TerrainMaterialLayerId;
+  } = {}
+): TerrainSplatSample {
+  const byKind = 'byKind' in kindCatalog ? kindCatalog.byKind : kindCatalog;
+  const kindDefinition =
+    byKind.get(input.kind) ??
+    (options.fallbackKind ? byKind.get(options.fallbackKind) : undefined);
+
+  if (!kindDefinition) {
+    return normalizeTerrainSplatSample(
+      {
+        entries: [],
+      },
+      {
+        fallbackLayerId: options.fallbackLayerId,
+      }
+    );
+  }
+  if (kindDefinition.exclude) {
+    return { entries: [] };
+  }
+
+  const baseLayerIds = kindDefinition.baseLayerIds ?? [];
+  const baseLayerId = selectTerrainMaterialLayerVariant(baseLayerIds, input);
+  const signals = resolveTerrainKindSignals(input.signals);
+  const entries: TerrainSplatWeight[] = [];
+
+  if (baseLayerId) {
+    entries.push({
+      layerId: baseLayerId,
+      weight: 1,
+    });
+  }
+
+  for (const blend of kindDefinition.blends ?? []) {
+    if (!matchesTerrainKindSplatCondition(blend.when, signals)) {
+      continue;
+    }
+    entries.push({
+      layerId: blend.layerId,
+      weight: blend.weight,
+    });
+  }
+
+  return normalizeTerrainSplatSample(
+    {
+      entries,
+    },
+    {
+      fallbackLayerId: options.fallbackLayerId ?? baseLayerId,
+    }
+  );
+}
+
+export function createOverworldTerrainSplatDefinitions(
+  layers: OverworldTerrainSplatLayerSet
+): TerrainKindSplatDefinition[] {
+  return [
+    {
+      kind: 'plains',
+      baseLayerIds: layers.grassLayerIds,
+      blends: [
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.16,
+          when: {
+            minMoisture: 0.72,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'forest',
+      baseLayerIds: layers.grassLayerIds,
+      blends: [
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.22,
+        },
+        {
+          layerId: layers.leafLayerId,
+          weight: 0.18,
+        },
+        {
+          layerId: layers.leafLayerId,
+          weight: 0.08,
+          when: {
+            minMoisture: 0.62,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'mountain',
+      baseLayerIds: [layers.rockLayerId],
+      blends: [
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.2,
+          when: {
+            maxElevation: 0.78,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'shore',
+      baseLayerIds: [layers.sandLayerId],
+      blends: [
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.14,
+          when: {
+            minMoisture: 0.36,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'road',
+      baseLayerIds: [layers.dirtRoadLayerId],
+      blends: [
+        {
+          layerId: layers.gravelRoadLayerId,
+          weight: 0.28,
+          when: {
+            minRoadSignal: 0.28,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'river',
+      exclude: true,
+    },
+    {
+      kind: 'ocean',
+      exclude: true,
+    },
+    {
+      kind: 'bridge',
+      exclude: true,
+    },
+    {
+      kind: 'dock',
+      exclude: true,
+    },
+  ];
 }
 
 export function packTerrainSplatSample(
@@ -420,6 +736,28 @@ export function validatePackedTerrainSplatSample(
   return errors;
 }
 
+export function selectTerrainMaterialLayerVariant(
+  layerIds: readonly TerrainMaterialLayerId[],
+  input: Pick<ResolveTerrainKindSplatSampleInput, 'seed' | 'x' | 'y' | 'kind'>
+): TerrainMaterialLayerId | undefined {
+  if (layerIds.length === 0) {
+    return undefined;
+  }
+  if (layerIds.length === 1) {
+    return layerIds[0];
+  }
+
+  const seedHash = appendHashSeedLabel(
+    resolveHashSeedInput(input.seed),
+    TERRAIN_SPLAT_VARIANT_LABEL
+  );
+  const offset = Math.floor(
+    hash2DWithSeed(seedHash, input.x + hashString(input.kind), input.y) *
+      layerIds.length
+  );
+  return layerIds[offset] ?? layerIds[0];
+}
+
 function collapseTerrainSplatWeights(
   entries: readonly TerrainSplatWeight[]
 ): TerrainSplatWeight[] {
@@ -491,4 +829,87 @@ function getFirstCatalogLayerId(
   catalog: ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
 ): TerrainMaterialLayerId | undefined {
   return catalog.values().next().value?.id;
+}
+
+function validateTerrainKindSplatCondition(
+  kind: Kind,
+  condition?: TerrainKindSplatCondition
+): string[] {
+  if (!condition) {
+    return [];
+  }
+
+  const errors: string[] = [];
+  const pairs: Array<[keyof TerrainKindSplatCondition, unknown]> = [
+    ['minElevation', condition.minElevation],
+    ['maxElevation', condition.maxElevation],
+    ['minMoisture', condition.minMoisture],
+    ['maxMoisture', condition.maxMoisture],
+    ['minRiverSignal', condition.minRiverSignal],
+    ['maxRiverSignal', condition.maxRiverSignal],
+    ['minRoadSignal', condition.minRoadSignal],
+    ['maxRoadSignal', condition.maxRoadSignal],
+  ];
+
+  for (const [label, value] of pairs) {
+    if (value === undefined) {
+      continue;
+    }
+    if (!isNormalizedScalar(value)) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(kind)} must keep ${label} within 0..1.`
+      );
+    }
+  }
+
+  return errors;
+}
+
+function matchesTerrainKindSplatCondition(
+  condition: TerrainKindSplatCondition | undefined,
+  signals: OverworldSignals
+): boolean {
+  if (!condition) {
+    return true;
+  }
+
+  return (
+    matchesMinimum(condition.minElevation, signals.elevation) &&
+    matchesMaximum(condition.maxElevation, signals.elevation) &&
+    matchesMinimum(condition.minMoisture, signals.moisture) &&
+    matchesMaximum(condition.maxMoisture, signals.moisture) &&
+    matchesMinimum(condition.minRiverSignal, signals.riverSignal) &&
+    matchesMaximum(condition.maxRiverSignal, signals.riverSignal) &&
+    matchesMinimum(condition.minRoadSignal, signals.roadSignal) &&
+    matchesMaximum(condition.maxRoadSignal, signals.roadSignal)
+  );
+}
+
+function resolveTerrainKindSignals(
+  signals: Partial<OverworldSignals> | undefined
+): OverworldSignals {
+  return {
+    continent: clampWeight(signals?.continent ?? 0),
+    elevation: clampWeight(signals?.elevation ?? 0),
+    moisture: clampWeight(signals?.moisture ?? 0),
+    riverSignal: clampWeight(signals?.riverSignal ?? 0),
+    roadSignal: clampWeight(signals?.roadSignal ?? 0),
+  };
+}
+
+function matchesMinimum(minimum: number | undefined, value: number): boolean {
+  return minimum === undefined || value >= minimum;
+}
+
+function matchesMaximum(maximum: number | undefined, value: number): boolean {
+  return maximum === undefined || value <= maximum;
+}
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }

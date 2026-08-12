@@ -2,6 +2,10 @@
   "name": "@bworlds/terrain-splat-support",
   "version": "0.1.0",
   "type": "module",
+  "dependencies": {
+    "@bworlds/core": "file:../core",
+    "@bworlds/plugin-api": "file:../plugin-api"
+  },
   "exports": {
     ".": "./src/index.ts"
   }

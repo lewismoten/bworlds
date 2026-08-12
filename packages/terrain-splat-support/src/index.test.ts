@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createOverworldTerrainSplatDefinitions,
   createTerrainMaterialLayerCatalog,
+  createTerrainKindSplatCatalog,
   MAX_TERRAIN_SPLAT_SAMPLE_LAYERS,
   normalizeTerrainSplatSample,
   packTerrainSplatSample,
   PACKED_TERRAIN_SPLAT_WEIGHT_MAX,
+  resolveTerrainKindSplatSample,
   unpackTerrainSplatSample,
+  validateTerrainKindSplatDefinition,
   validateTerrainMaterialLayerDefinition,
   validatePackedTerrainSplatSample,
   validateTerrainSplatSample,
@@ -354,4 +358,397 @@ describe('terrain splat support', () => {
     expect(packed.layerIndices).toEqual(new Uint8Array([0, 0, 0, 0]));
     expect(packed.weights).toEqual(new Uint8Array([255, 0, 0, 0]));
   });
+
+  it('builds deterministic overworld terrain splat samples from seed and tile kind', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass-a',
+        baseColorTextureId: 'grass-a/base',
+        normalTextureId: 'grass-a/normal',
+        roughnessTextureId: 'grass-a/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'grass-b',
+        baseColorTextureId: 'grass-b/base',
+        normalTextureId: 'grass-b/normal',
+        roughnessTextureId: 'grass-b/roughness',
+        textureScale: 3,
+        defaultTint: '#7fa650',
+        defaultRoughness: 0.88,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'leaf',
+        baseColorTextureId: 'leaf/base',
+        normalTextureId: 'leaf/normal',
+        roughnessTextureId: 'leaf/roughness',
+        textureScale: 2,
+        defaultTint: '#5f6f31',
+        defaultRoughness: 0.92,
+      },
+      {
+        id: 'rock',
+        baseColorTextureId: 'rock/base',
+        normalTextureId: 'rock/normal',
+        roughnessTextureId: 'rock/roughness',
+        textureScale: 4,
+        defaultTint: '#7f7f7f',
+        defaultRoughness: 0.7,
+      },
+      {
+        id: 'sand',
+        baseColorTextureId: 'sand/base',
+        normalTextureId: 'sand/normal',
+        roughnessTextureId: 'sand/roughness',
+        textureScale: 4,
+        defaultTint: '#c9bb82',
+        defaultRoughness: 0.65,
+      },
+      {
+        id: 'dirt-road',
+        baseColorTextureId: 'dirt-road/base',
+        normalTextureId: 'dirt-road/normal',
+        roughnessTextureId: 'dirt-road/roughness',
+        textureScale: 3,
+        defaultTint: '#7a6245',
+        defaultRoughness: 0.78,
+      },
+      {
+        id: 'gravel-road',
+        baseColorTextureId: 'gravel-road/base',
+        normalTextureId: 'gravel-road/normal',
+        roughnessTextureId: 'gravel-road/roughness',
+        textureScale: 3,
+        defaultTint: '#8d897f',
+        defaultRoughness: 0.72,
+      },
+    ]);
+    const kindCatalog = createTerrainKindSplatCatalog(
+      createOverworldTerrainSplatDefinitions({
+        grassLayerIds: ['grass-a', 'grass-b'],
+        soilLayerId: 'soil',
+        leafLayerId: 'leaf',
+        rockLayerId: 'rock',
+        sandLayerId: 'sand',
+        dirtRoadLayerId: 'dirt-road',
+        gravelRoadLayerId: 'gravel-road',
+      }),
+      layerCatalog
+    );
+
+    const first = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 12,
+        y: -4,
+        kind: 'forest',
+        signals: {
+          moisture: 0.85,
+          elevation: 0.33,
+        },
+      },
+      kindCatalog
+    );
+    const second = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 12,
+        y: -4,
+        kind: 'forest',
+        signals: {
+          moisture: 0.85,
+          elevation: 0.33,
+        },
+      },
+      kindCatalog
+    );
+
+    expect(first).toEqual(second);
+    expect(first.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['soil', 'leaf'])
+    );
+    expect(
+      first.entries.reduce((sum, entry) => sum + entry.weight, 0)
+    ).toBeCloseTo(1, 6);
+  });
+
+  it('uses overworld signals to shift terrain splat blends', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'leaf',
+        baseColorTextureId: 'leaf/base',
+        normalTextureId: 'leaf/normal',
+        roughnessTextureId: 'leaf/roughness',
+        textureScale: 2,
+        defaultTint: '#5f6f31',
+        defaultRoughness: 0.92,
+      },
+      {
+        id: 'rock',
+        baseColorTextureId: 'rock/base',
+        normalTextureId: 'rock/normal',
+        roughnessTextureId: 'rock/roughness',
+        textureScale: 4,
+        defaultTint: '#7f7f7f',
+        defaultRoughness: 0.7,
+      },
+      {
+        id: 'sand',
+        baseColorTextureId: 'sand/base',
+        normalTextureId: 'sand/normal',
+        roughnessTextureId: 'sand/roughness',
+        textureScale: 4,
+        defaultTint: '#c9bb82',
+        defaultRoughness: 0.65,
+      },
+      {
+        id: 'dirt-road',
+        baseColorTextureId: 'dirt-road/base',
+        normalTextureId: 'dirt-road/normal',
+        roughnessTextureId: 'dirt-road/roughness',
+        textureScale: 3,
+        defaultTint: '#7a6245',
+        defaultRoughness: 0.78,
+      },
+      {
+        id: 'gravel-road',
+        baseColorTextureId: 'gravel-road/base',
+        normalTextureId: 'gravel-road/normal',
+        roughnessTextureId: 'gravel-road/roughness',
+        textureScale: 3,
+        defaultTint: '#8d897f',
+        defaultRoughness: 0.72,
+      },
+    ]);
+    const kindCatalog = createTerrainKindSplatCatalog(
+      createOverworldTerrainSplatDefinitions({
+        grassLayerIds: ['grass'],
+        soilLayerId: 'soil',
+        leafLayerId: 'leaf',
+        rockLayerId: 'rock',
+        sandLayerId: 'sand',
+        dirtRoadLayerId: 'dirt-road',
+        gravelRoadLayerId: 'gravel-road',
+      }),
+      layerCatalog
+    );
+
+    const dryForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 0,
+        y: 0,
+        kind: 'forest',
+        signals: {
+          moisture: 0.2,
+        },
+      },
+      kindCatalog
+    );
+    const wetForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 0,
+        y: 0,
+        kind: 'forest',
+        signals: {
+          moisture: 0.9,
+        },
+      },
+      kindCatalog
+    );
+    const road = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 1,
+        y: 1,
+        kind: 'road',
+        signals: {
+          roadSignal: 0.7,
+        },
+      },
+      kindCatalog
+    );
+
+    expect(findEntryWeight(wetForest, 'leaf')).toBeGreaterThan(
+      findEntryWeight(dryForest, 'leaf')
+    );
+    expect(road.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['dirt-road', 'gravel-road'])
+    );
+  });
+
+  it('keeps water and bridge kinds out of normal ground splatting', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+      {
+        id: 'soil',
+        baseColorTextureId: 'soil/base',
+        normalTextureId: 'soil/normal',
+        roughnessTextureId: 'soil/roughness',
+        textureScale: 2,
+        defaultTint: '#7b5a3d',
+        defaultRoughness: 0.8,
+      },
+      {
+        id: 'leaf',
+        baseColorTextureId: 'leaf/base',
+        normalTextureId: 'leaf/normal',
+        roughnessTextureId: 'leaf/roughness',
+        textureScale: 2,
+        defaultTint: '#5f6f31',
+        defaultRoughness: 0.92,
+      },
+      {
+        id: 'rock',
+        baseColorTextureId: 'rock/base',
+        normalTextureId: 'rock/normal',
+        roughnessTextureId: 'rock/roughness',
+        textureScale: 4,
+        defaultTint: '#7f7f7f',
+        defaultRoughness: 0.7,
+      },
+      {
+        id: 'sand',
+        baseColorTextureId: 'sand/base',
+        normalTextureId: 'sand/normal',
+        roughnessTextureId: 'sand/roughness',
+        textureScale: 4,
+        defaultTint: '#c9bb82',
+        defaultRoughness: 0.65,
+      },
+      {
+        id: 'dirt-road',
+        baseColorTextureId: 'dirt-road/base',
+        normalTextureId: 'dirt-road/normal',
+        roughnessTextureId: 'dirt-road/roughness',
+        textureScale: 3,
+        defaultTint: '#7a6245',
+        defaultRoughness: 0.78,
+      },
+      {
+        id: 'gravel-road',
+        baseColorTextureId: 'gravel-road/base',
+        normalTextureId: 'gravel-road/normal',
+        roughnessTextureId: 'gravel-road/roughness',
+        textureScale: 3,
+        defaultTint: '#8d897f',
+        defaultRoughness: 0.72,
+      },
+    ]);
+    const kindCatalog = createTerrainKindSplatCatalog(
+      createOverworldTerrainSplatDefinitions({
+        grassLayerIds: ['grass'],
+        soilLayerId: 'soil',
+        leafLayerId: 'leaf',
+        rockLayerId: 'rock',
+        sandLayerId: 'sand',
+        dirtRoadLayerId: 'dirt-road',
+        gravelRoadLayerId: 'gravel-road',
+      }),
+      layerCatalog
+    );
+
+    expect(
+      resolveTerrainKindSplatSample(
+        {
+          seed: 'pbr-splat-seed',
+          x: 5,
+          y: 8,
+          kind: 'river',
+        },
+        kindCatalog
+      )
+    ).toEqual({ entries: [] });
+    expect(
+      resolveTerrainKindSplatSample(
+        {
+          seed: 'pbr-splat-seed',
+          x: 5,
+          y: 8,
+          kind: 'bridge',
+        },
+        kindCatalog
+      )
+    ).toEqual({ entries: [] });
+  });
+
+  it('rejects terrain kind splat definitions that reference missing layers', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    expect(
+      validateTerrainKindSplatDefinition(
+        {
+          kind: 'plains',
+          baseLayerIds: ['grass', 'soil'],
+          blends: [
+            {
+              layerId: 'leaf',
+              weight: 0.2,
+            },
+          ],
+        },
+        layerCatalog
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        'Terrain splat kind "plains" references unknown base layer "soil".',
+        'Terrain splat kind "plains" references unknown blend layer "leaf".',
+      ])
+    );
+  });
 });
+
+function findEntryWeight(
+  sample: { entries: readonly { layerId: string; weight: number }[] },
+  layerId: string
+): number {
+  return sample.entries.find((entry) => entry.layerId === layerId)?.weight ?? 0;
+}
