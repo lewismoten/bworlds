@@ -15,6 +15,7 @@
     "./debug-view": "./src/debug-view.ts",
     "./height-field": "./src/height-field.ts",
     "./material-plan": "./src/material-plan.ts",
+    "./lod-transition": "./src/lod-transition.ts",
     "./performance-estimate": "./src/performance-estimate.ts",
     "./sample-grid": "./src/sample-grid.ts",
     "./shader-source": "./src/shader-source.ts",

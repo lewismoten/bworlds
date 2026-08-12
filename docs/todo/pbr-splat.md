@@ -158,8 +158,8 @@
 - [x] Preserve chunk edge splat weights across LODs.
 - [x] Preserve major terrain boundaries across LODs.
 - [x] Reduce splat sample density at distant LODs.
-- [ ] Avoid visible material popping during LOD changes.
-- [ ] Crossfade terrain LODs when needed.
+- [x] Avoid visible material popping during LOD changes.
+- [x] Crossfade terrain LODs when needed.
 
 ## Roads and Trails
 
@@ -291,6 +291,10 @@
   corner-sampled terrain height fields and splat geometry plans from the same
   world-space bounds while keeping splat weights unchanged and neighboring
   chunk border heights identical.
+- Added `@bworlds/terrain-splat-support/lod-transition` to compare high-detail
+  and coarse splat grids at shared coordinates, flag cells whose dominant or
+  active layers would pop across an LOD swap, and resolve deterministic
+  crossfade weights across a fade band.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and
@@ -412,6 +416,7 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/attribute-plans.md`, plus
 `packages/terrain-splat-support/docs/shader-sources.md`, plus
 `packages/terrain-splat-support/docs/height-fields.md`, plus
+`packages/terrain-splat-support/docs/lod-transitions.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
 `packages/terrain-splat-support/docs/tint-variation.md`, plus
 `packages/terrain-splat-support/docs/weather-effects.md`, plus
