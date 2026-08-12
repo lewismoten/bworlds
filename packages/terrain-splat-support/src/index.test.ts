@@ -417,6 +417,42 @@ describe('terrain splat support', () => {
         defaultRoughness: 0.65,
       },
       {
+        id: 'dirt',
+        baseColorTextureId: 'dirt/base',
+        normalTextureId: 'dirt/normal',
+        roughnessTextureId: 'dirt/roughness',
+        textureScale: 3,
+        defaultTint: '#876748',
+        defaultRoughness: 0.82,
+      },
+      {
+        id: 'gravel',
+        baseColorTextureId: 'gravel/base',
+        normalTextureId: 'gravel/normal',
+        roughnessTextureId: 'gravel/roughness',
+        textureScale: 3,
+        defaultTint: '#8f8a80',
+        defaultRoughness: 0.76,
+      },
+      {
+        id: 'mud',
+        baseColorTextureId: 'mud/base',
+        normalTextureId: 'mud/normal',
+        roughnessTextureId: 'mud/roughness',
+        textureScale: 3,
+        defaultTint: '#6c533f',
+        defaultRoughness: 0.58,
+      },
+      {
+        id: 'snow',
+        baseColorTextureId: 'snow/base',
+        normalTextureId: 'snow/normal',
+        roughnessTextureId: 'snow/roughness',
+        textureScale: 4,
+        defaultTint: '#eef2f6',
+        defaultRoughness: 0.42,
+      },
+      {
         id: 'dirt-road',
         baseColorTextureId: 'dirt-road/base',
         normalTextureId: 'dirt-road/normal',
@@ -442,6 +478,10 @@ describe('terrain splat support', () => {
         leafLayerId: 'leaf',
         rockLayerId: 'rock',
         sandLayerId: 'sand',
+        dirtLayerId: 'dirt',
+        gravelLayerId: 'gravel',
+        mudLayerId: 'mud',
+        snowLayerId: 'snow',
         dirtRoadLayerId: 'dirt-road',
         gravelRoadLayerId: 'gravel-road',
       }),
@@ -532,6 +572,42 @@ describe('terrain splat support', () => {
         defaultRoughness: 0.65,
       },
       {
+        id: 'dirt',
+        baseColorTextureId: 'dirt/base',
+        normalTextureId: 'dirt/normal',
+        roughnessTextureId: 'dirt/roughness',
+        textureScale: 3,
+        defaultTint: '#876748',
+        defaultRoughness: 0.82,
+      },
+      {
+        id: 'gravel',
+        baseColorTextureId: 'gravel/base',
+        normalTextureId: 'gravel/normal',
+        roughnessTextureId: 'gravel/roughness',
+        textureScale: 3,
+        defaultTint: '#8f8a80',
+        defaultRoughness: 0.76,
+      },
+      {
+        id: 'mud',
+        baseColorTextureId: 'mud/base',
+        normalTextureId: 'mud/normal',
+        roughnessTextureId: 'mud/roughness',
+        textureScale: 3,
+        defaultTint: '#6c533f',
+        defaultRoughness: 0.58,
+      },
+      {
+        id: 'snow',
+        baseColorTextureId: 'snow/base',
+        normalTextureId: 'snow/normal',
+        roughnessTextureId: 'snow/roughness',
+        textureScale: 4,
+        defaultTint: '#eef2f6',
+        defaultRoughness: 0.42,
+      },
+      {
         id: 'dirt-road',
         baseColorTextureId: 'dirt-road/base',
         normalTextureId: 'dirt-road/normal',
@@ -557,6 +633,10 @@ describe('terrain splat support', () => {
         leafLayerId: 'leaf',
         rockLayerId: 'rock',
         sandLayerId: 'sand',
+        dirtLayerId: 'dirt',
+        gravelLayerId: 'gravel',
+        mudLayerId: 'mud',
+        snowLayerId: 'snow',
         dirtRoadLayerId: 'dirt-road',
         gravelRoadLayerId: 'gravel-road',
       }),
@@ -605,6 +685,85 @@ describe('terrain splat support', () => {
     );
     expect(road.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['dirt-road', 'gravel-road'])
+    );
+
+    const snowyLowland = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 2,
+        y: 3,
+        kind: 'snow',
+        signals: {
+          moisture: 0.4,
+          elevation: 0.35,
+        },
+      },
+      kindCatalog
+    );
+    const snowyHighland = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 2,
+        y: 3,
+        kind: 'snow',
+        signals: {
+          moisture: 0.92,
+          elevation: 0.88,
+        },
+      },
+      kindCatalog
+    );
+    const muddyGround = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 4,
+        y: 5,
+        kind: 'mud',
+        signals: {
+          moisture: 0.95,
+        },
+      },
+      kindCatalog
+    );
+    const rockyGround = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 6,
+        y: 7,
+        kind: 'rocky',
+        signals: {
+          moisture: 0.2,
+        },
+      },
+      kindCatalog
+    );
+    const dirtPath = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 8,
+        y: 9,
+        kind: 'path',
+        signals: {
+          moisture: 0.7,
+        },
+      },
+      kindCatalog
+    );
+
+    expect(snowyLowland.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['snow', 'soil'])
+    );
+    expect(snowyHighland.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['snow', 'rock'])
+    );
+    expect(muddyGround.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['mud', 'soil'])
+    );
+    expect(rockyGround.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['rock', 'soil', 'gravel'])
+    );
+    expect(dirtPath.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['dirt', 'gravel', 'soil'])
     );
   });
 
@@ -656,6 +815,42 @@ describe('terrain splat support', () => {
         defaultRoughness: 0.65,
       },
       {
+        id: 'dirt',
+        baseColorTextureId: 'dirt/base',
+        normalTextureId: 'dirt/normal',
+        roughnessTextureId: 'dirt/roughness',
+        textureScale: 3,
+        defaultTint: '#876748',
+        defaultRoughness: 0.82,
+      },
+      {
+        id: 'gravel',
+        baseColorTextureId: 'gravel/base',
+        normalTextureId: 'gravel/normal',
+        roughnessTextureId: 'gravel/roughness',
+        textureScale: 3,
+        defaultTint: '#8f8a80',
+        defaultRoughness: 0.76,
+      },
+      {
+        id: 'mud',
+        baseColorTextureId: 'mud/base',
+        normalTextureId: 'mud/normal',
+        roughnessTextureId: 'mud/roughness',
+        textureScale: 3,
+        defaultTint: '#6c533f',
+        defaultRoughness: 0.58,
+      },
+      {
+        id: 'snow',
+        baseColorTextureId: 'snow/base',
+        normalTextureId: 'snow/normal',
+        roughnessTextureId: 'snow/roughness',
+        textureScale: 4,
+        defaultTint: '#eef2f6',
+        defaultRoughness: 0.42,
+      },
+      {
         id: 'dirt-road',
         baseColorTextureId: 'dirt-road/base',
         normalTextureId: 'dirt-road/normal',
@@ -681,6 +876,10 @@ describe('terrain splat support', () => {
         leafLayerId: 'leaf',
         rockLayerId: 'rock',
         sandLayerId: 'sand',
+        dirtLayerId: 'dirt',
+        gravelLayerId: 'gravel',
+        mudLayerId: 'mud',
+        snowLayerId: 'snow',
         dirtRoadLayerId: 'dirt-road',
         gravelRoadLayerId: 'gravel-road',
       }),

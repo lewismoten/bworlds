@@ -51,7 +51,7 @@ describe('terrain splat sample grid', () => {
 
     expect(first).toEqual(second);
     expect(first.samples).toHaveLength(9);
-    expect(layerCatalog.entries).toHaveLength(8);
+    expect(layerCatalog.entries).toHaveLength(12);
   });
 
   it('keeps adjacent chunk borders identical when the world inputs match', () => {
@@ -204,7 +204,14 @@ describe('terrain splat sample grid', () => {
       'sand',
       'soil',
     ]);
-    expect(summary.unusedLayerIds).toEqual(['leaf', 'rock']);
+    expect(summary.unusedLayerIds).toEqual([
+      'dirt',
+      'gravel',
+      'leaf',
+      'mud',
+      'rock',
+      'snow',
+    ]);
     expect(summary.dominantLayerId).toBe('dirt-road');
     expect(summary.uniqueLayerCombinationCount).toBeGreaterThan(1);
     expect(summary.perSampleActiveLayerCount).toHaveLength(grid.samples.length);
@@ -369,6 +376,42 @@ function createGridCatalogs() {
       defaultRoughness: 0.65,
     },
     {
+      id: 'dirt',
+      baseColorTextureId: 'dirt/base',
+      normalTextureId: 'dirt/normal',
+      roughnessTextureId: 'dirt/roughness',
+      textureScale: 3,
+      defaultTint: '#876748',
+      defaultRoughness: 0.82,
+    },
+    {
+      id: 'gravel',
+      baseColorTextureId: 'gravel/base',
+      normalTextureId: 'gravel/normal',
+      roughnessTextureId: 'gravel/roughness',
+      textureScale: 3,
+      defaultTint: '#8f8a80',
+      defaultRoughness: 0.76,
+    },
+    {
+      id: 'mud',
+      baseColorTextureId: 'mud/base',
+      normalTextureId: 'mud/normal',
+      roughnessTextureId: 'mud/roughness',
+      textureScale: 3,
+      defaultTint: '#6c533f',
+      defaultRoughness: 0.58,
+    },
+    {
+      id: 'snow',
+      baseColorTextureId: 'snow/base',
+      normalTextureId: 'snow/normal',
+      roughnessTextureId: 'snow/roughness',
+      textureScale: 4,
+      defaultTint: '#eef2f6',
+      defaultRoughness: 0.42,
+    },
+    {
       id: 'dirt-road',
       baseColorTextureId: 'dirt-road/base',
       normalTextureId: 'dirt-road/normal',
@@ -394,6 +437,10 @@ function createGridCatalogs() {
       leafLayerId: 'leaf',
       rockLayerId: 'rock',
       sandLayerId: 'sand',
+      dirtLayerId: 'dirt',
+      gravelLayerId: 'gravel',
+      mudLayerId: 'mud',
+      snowLayerId: 'snow',
       dirtRoadLayerId: 'dirt-road',
       gravelRoadLayerId: 'gravel-road',
     }),

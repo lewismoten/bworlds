@@ -58,11 +58,11 @@
 
 - [x] Map plains terrain to one or more grass layers.
 - [x] Map forest floor to grass, soil, and leaf layers.
-- [ ] Map dirt terrain to dirt and gravel layers.
-- [ ] Map rocky terrain to rock and soil layers.
+- [x] Map dirt terrain to dirt and gravel layers.
+- [x] Map rocky terrain to rock and soil layers.
 - [x] Map sand terrain to sand and soil layers.
-- [ ] Map snow terrain to snow and exposed ground layers.
-- [ ] Map mud terrain to mud and wet soil layers.
+- [x] Map snow terrain to snow and exposed ground layers.
+- [x] Map mud terrain to mud and wet soil layers.
 - [x] Keep water outside normal ground splatting.
 
 ## Boundary Blending

@@ -41,3 +41,5 @@ Current limits:
   worker-transfer buffers
 - deterministic terrain mapping currently targets overworld-style kinds and
   signal inputs rather than final renderer integration
+- recommended overworld mappings now cover grass, forest floor, sand, dirt,
+  path, road, rocky, snow, and mud surface families

@@ -88,6 +88,10 @@ export type OverworldTerrainSplatLayerSet = {
   leafLayerId: TerrainMaterialLayerId;
   rockLayerId: TerrainMaterialLayerId;
   sandLayerId: TerrainMaterialLayerId;
+  dirtLayerId: TerrainMaterialLayerId;
+  gravelLayerId: TerrainMaterialLayerId;
+  mudLayerId: TerrainMaterialLayerId;
+  snowLayerId: TerrainMaterialLayerId;
   dirtRoadLayerId: TerrainMaterialLayerId;
   gravelRoadLayerId: TerrainMaterialLayerId;
 };
@@ -648,6 +652,40 @@ export function createOverworldTerrainSplatDefinitions(
       ],
     },
     {
+      kind: 'dirt',
+      baseLayerIds: [layers.dirtLayerId],
+      blends: [
+        {
+          layerId: layers.gravelLayerId,
+          weight: 0.18,
+        },
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.12,
+          when: {
+            minMoisture: 0.58,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'path',
+      baseLayerIds: [layers.dirtLayerId],
+      blends: [
+        {
+          layerId: layers.gravelLayerId,
+          weight: 0.24,
+        },
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.1,
+          when: {
+            minMoisture: 0.52,
+          },
+        },
+      ],
+    },
+    {
       kind: 'road',
       baseLayerIds: [layers.dirtRoadLayerId],
       blends: [
@@ -657,6 +695,53 @@ export function createOverworldTerrainSplatDefinitions(
           when: {
             minRoadSignal: 0.28,
           },
+        },
+      ],
+    },
+    {
+      kind: 'rocky',
+      baseLayerIds: [layers.rockLayerId],
+      blends: [
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.24,
+        },
+        {
+          layerId: layers.gravelLayerId,
+          weight: 0.12,
+          when: {
+            maxMoisture: 0.42,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'snow',
+      baseLayerIds: [layers.snowLayerId],
+      blends: [
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.18,
+          when: {
+            maxMoisture: 0.76,
+          },
+        },
+        {
+          layerId: layers.rockLayerId,
+          weight: 0.12,
+          when: {
+            minElevation: 0.72,
+          },
+        },
+      ],
+    },
+    {
+      kind: 'mud',
+      baseLayerIds: [layers.mudLayerId],
+      blends: [
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.2,
         },
       ],
     },

@@ -27,8 +27,8 @@ Current mapping model:
 - terrain-kind mappings can resolve their base layer from either explicit
   `baseLayerIds` or one shared `baseFamilyId`
 - `createOverworldTerrainSplatDefinitions(...)` provides one recommended
-  overworld mapping set for `plains`, `forest`, `mountain`, `shore`, `road`,
-  and water/crossing exclusions
+  overworld mapping set for `plains`, `forest`, `mountain`, `shore`, `dirt`,
+  `path`, `road`, `rocky`, `snow`, `mud`, and water/crossing exclusions
 - `createTerrainSplatSampleGrid(...)` resolves chunk-like bounds into a stable
   sample grid that adjacent chunks can share along matching borders
 - `packTerrainSplatSampleGrid(...)` flattens that grid into contiguous
@@ -47,6 +47,8 @@ Current scope:
 
 - base-layer variation is deterministic from seed plus world coordinates
 - moisture, elevation, and road signal thresholds can influence blend weights
+- recommended mappings now cover exposed-ground snow blends plus dirt, mud, and
+  rocky surface mixes without renderer-specific rules
 - `river`, `ocean`, `bridge`, and `dock` are excluded from normal ground
   splatting in the recommended overworld definitions
 - packed sample grids quantize weights to `Uint8`, so unpacked weights preserve
