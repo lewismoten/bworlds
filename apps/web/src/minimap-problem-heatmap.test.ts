@@ -141,6 +141,10 @@ describe('minimap problem heatmap', () => {
           renderQualityLimiters: 'Scene materials exceeded the hard cap',
           currentTileFallbackReason:
             '10:-4 / tile-plains: built wall-height fallback',
+          currentTileTerrainSurfaceMode: 'legacy-mesh',
+          currentTileSharedSplatEligible: true,
+          currentTileTerrainSurfaceReason:
+            'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
           lastLodFailureReason: '10:-4 / tile-plains: full-detail build failed',
           resourceWarnings: ['Active audio source count is high (26 > 24).'],
         }),
@@ -157,6 +161,8 @@ describe('minimap problem heatmap', () => {
         tileKind: 'plains',
         severity: 'critical',
         issueCount: 2,
+        terrainSurfaceMode: 'legacy-mesh',
+        sharedSplatEligible: true,
       })
     );
     expect(currentTile?.issues.map((issue) => issue.category)).toEqual([
@@ -274,13 +280,26 @@ describe('minimap problem heatmap', () => {
           source: 'snapshot' as const,
         },
       ],
+      terrainSurfaceMode: 'legacy-mesh',
+      sharedSplatEligible: true,
+      terrainSurfaceReason:
+        'simple roads stay on terrain splat layers so separate road meshes can be removed when no structure fallback is needed; broad roads stay in terrain splats by default using the dirt route surface',
     };
 
     expect(formatMinimapProblemSeverityLabel('none')).toBe('Healthy');
     expect(buildMinimapProblemTooltipMarkup(cell)).toContain('plains @ 10:-4');
     expect(buildMinimapProblemTooltipMarkup(cell)).toContain('2 issues');
+    expect(buildMinimapProblemTooltipMarkup(cell)).toContain(
+      'Surface legacy-mesh'
+    );
+    expect(buildMinimapProblemTooltipMarkup(cell)).toContain('Splat eligible');
     expect(buildMinimapProblemDialogMarkup(cell)).toContain(
       'Active audio source count is high'
     );
+    expect(buildMinimapProblemDialogMarkup(cell)).toContain('Surface Mode');
+    expect(buildMinimapProblemDialogMarkup(cell)).toContain(
+      'Shared Splat Eligible'
+    );
+    expect(buildMinimapProblemDialogMarkup(cell)).toContain('Surface Reason');
   });
 });

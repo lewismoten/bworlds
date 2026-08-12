@@ -33,6 +33,9 @@ export type MinimapProblemCell = {
   severity: MinimapProblemSeverity;
   score: number;
   issues: MinimapProblemIssue[];
+  terrainSurfaceMode?: string | null;
+  sharedSplatEligible?: boolean;
+  terrainSurfaceReason?: string | null;
   rect: {
     left: number;
     top: number;
@@ -115,6 +118,16 @@ export function buildMinimapProblemCells(
         severity,
         score,
         issues,
+        ...(key === `${options.currentTileX}:${options.currentTileY}`
+          ? {
+              terrainSurfaceMode:
+                options.latestSnapshot?.currentTileTerrainSurfaceMode ?? null,
+              sharedSplatEligible:
+                options.latestSnapshot?.currentTileSharedSplatEligible ?? false,
+              terrainSurfaceReason:
+                options.latestSnapshot?.currentTileTerrainSurfaceReason ?? null,
+            }
+          : {}),
         rect: {
           left: drawX,
           top: drawY,
@@ -210,7 +223,14 @@ export function getMinimapProblemCanvasPoint(
 export function buildMinimapProblemTooltipMarkup(
   cell: Pick<
     MinimapProblemCell,
-    'worldX' | 'worldY' | 'tileKind' | 'severity' | 'issueCount' | 'issues'
+    | 'worldX'
+    | 'worldY'
+    | 'tileKind'
+    | 'severity'
+    | 'issueCount'
+    | 'issues'
+    | 'terrainSurfaceMode'
+    | 'sharedSplatEligible'
   >
 ): string {
   const issueMarkup =
@@ -230,6 +250,11 @@ export function buildMinimapProblemTooltipMarkup(
       <span>${escapeHtml(formatMinimapProblemSeverityLabel(cell.severity))}</span>
       <span>${cell.issueCount} issue${cell.issueCount === 1 ? '' : 's'}</span>
     </div>
+    ${
+      cell.terrainSurfaceMode
+        ? `<div class="minimap-problem-tooltip-meta"><span>Surface ${escapeHtml(cell.terrainSurfaceMode)}</span><span>${cell.sharedSplatEligible ? 'Splat eligible' : 'Mesh only'}</span></div>`
+        : ''
+    }
     <ul class="minimap-problem-tooltip-list">
       ${issueMarkup}
       ${
@@ -244,7 +269,15 @@ export function buildMinimapProblemTooltipMarkup(
 export function buildMinimapProblemDialogMarkup(
   cell: Pick<
     MinimapProblemCell,
-    'worldX' | 'worldY' | 'tileKind' | 'severity' | 'issueCount' | 'issues'
+    | 'worldX'
+    | 'worldY'
+    | 'tileKind'
+    | 'severity'
+    | 'issueCount'
+    | 'issues'
+    | 'terrainSurfaceMode'
+    | 'sharedSplatEligible'
+    | 'terrainSurfaceReason'
   >
 ): string {
   return `
@@ -252,6 +285,12 @@ export function buildMinimapProblemDialogMarkup(
       <div><dt>Tile</dt><dd>${escapeHtml(formatMinimapTileTitle(cell))}</dd></div>
       <div><dt>Severity</dt><dd>${escapeHtml(formatMinimapProblemSeverityLabel(cell.severity))}</dd></div>
       <div><dt>Issue Count</dt><dd>${cell.issueCount}</dd></div>
+      ${
+        cell.terrainSurfaceMode
+          ? `<div><dt>Surface Mode</dt><dd>${escapeHtml(cell.terrainSurfaceMode)}</dd></div>
+      <div><dt>Shared Splat Eligible</dt><dd>${cell.sharedSplatEligible ? 'Yes' : 'No'}</dd></div>`
+          : ''
+      }
     </div>
     <div class="minimap-problem-dialog-issues">
       ${
@@ -265,6 +304,11 @@ export function buildMinimapProblemDialogMarkup(
               .join('')}</ul>`
       }
     </div>
+    ${
+      cell.terrainSurfaceReason
+        ? `<div class="minimap-problem-dialog-surface-reason"><strong>Surface Reason</strong><span>${escapeHtml(cell.terrainSurfaceReason)}</span></div>`
+        : ''
+    }
   `;
 }
 
