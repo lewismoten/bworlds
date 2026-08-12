@@ -17,9 +17,18 @@ export type TerrainSplatViewerDebugModeOption = {
   requiresRouteLayers: boolean;
 };
 
+export type TerrainSplatViewerDebugToggleOption = {
+  id: 'route-layers-only';
+  label: string;
+  description: string;
+  enabled: boolean;
+  active: boolean;
+};
+
 export type TerrainSplatViewerDebugModel = {
   selectedMode: TerrainSplatDebugViewMode;
   modeOptions: readonly TerrainSplatViewerDebugModeOption[];
+  toggleOptions: readonly TerrainSplatViewerDebugToggleOption[];
   availableTargetLayerIds: readonly TerrainMaterialLayerId[];
   availableRouteLayerIds: readonly TerrainMaterialLayerId[];
   selectedTargetLayerId: TerrainMaterialLayerId | null;
@@ -148,6 +157,16 @@ export function createTerrainSplatViewerDebugModel(
         (!option.requiresCatalog || catalogById !== null) &&
         (!option.requiresRouteLayers || availableRouteLayerIds.length > 0)
     ),
+    toggleOptions: [
+      {
+        id: 'route-layers-only',
+        label: 'Road/Path Layers Only',
+        description:
+          'Filter the debug view down to route splat layers without hiding the shared sample grid.',
+        enabled: availableRouteLayerIds.length > 0,
+        active: routeLayersOnly && availableRouteLayerIds.length > 0,
+      },
+    ],
     availableTargetLayerIds,
     availableRouteLayerIds,
     selectedTargetLayerId,

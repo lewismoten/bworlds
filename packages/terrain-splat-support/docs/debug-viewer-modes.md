@@ -18,6 +18,8 @@ around the renderer-free splat debug payloads.
 
 - exposes stable mode metadata with labels and whether a mode needs catalog or
   target-layer or route-layer inputs
+- exposes stable toggle metadata so viewers can surface route-only filtering
+  without inventing their own labels or enablement rules
 - resolves the selected debug mode safely when the requested mode is not
   currently valid
 - lists available active target layers so viewers can wire one layer-weight

@@ -564,7 +564,7 @@ worker-backed generation. The worker runtime notes live in
 - [x] Detect when a route requires real geometry.
 - [x] Fall back to road geometry for unsupported cases.
 - [x] Show route splat weights in terrain debug mode.
-- [ ] Add a toggle for road and path splat layers.
+- [x] Add a toggle for road and path splat layers.
 - [x] Compare splat roads against mesh road draw calls.
 - [x] Test roads follow terrain height without gaps.
 - [x] Test roads remain continuous across chunk borders.
@@ -589,6 +589,10 @@ worker-backed generation. The worker runtime notes live in
   edge-grass, wetness, mud, and partial snow-cover signals from shared route
   traffic and weather inputs before any renderer-specific shader or mesh path
   consumes them.
+- Extended `@bworlds/terrain-splat-support/debug-viewer` so terrain viewers can
+  expose one explicit `Road/Path Layers Only` toggle with stable label,
+  enablement, and active-state metadata while reusing the existing
+  `routeLayersOnly` filtering path from the renderer-free debug view payloads.
 
 ## Live Renderer Status
 

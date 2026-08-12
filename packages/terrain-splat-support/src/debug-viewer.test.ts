@@ -31,6 +31,16 @@ describe('terrain splat debug viewer', () => {
       'normal-map',
       'roughness-map',
     ]);
+    expect(model.toggleOptions).toEqual([
+      {
+        id: 'route-layers-only',
+        label: 'Road/Path Layers Only',
+        description:
+          'Filter the debug view down to route splat layers without hiding the shared sample grid.',
+        enabled: false,
+        active: false,
+      },
+    ]);
     expect(model.view.mode).toBe('dominant-layer');
     expect(model.availableTargetLayerIds.length).toBeGreaterThan(1);
   });
@@ -90,6 +100,16 @@ describe('terrain splat debug viewer', () => {
     expect(model.availableTargetLayerIds).toEqual(
       expect.arrayContaining(['dirt-road', 'gravel-road', 'grass-trail'])
     );
+    expect(model.toggleOptions).toEqual([
+      {
+        id: 'route-layers-only',
+        label: 'Road/Path Layers Only',
+        description:
+          'Filter the debug view down to route splat layers without hiding the shared sample grid.',
+        enabled: true,
+        active: true,
+      },
+    ]);
     expect(model.routeLayersOnly).toBe(true);
     expect(model.view.mode).toBe('route-layer-weight');
     expect(model.view.routeLayersOnly).toBe(true);
