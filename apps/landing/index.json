@@ -1,0 +1,462 @@
+{
+  "schemaVersion": 1,
+  "acronym": "KOGNABO",
+  "description": "Composable tagline grammar for KOGNABO. Choose a tone, then a grammar pattern, then one compatible chunk per segment. Final output must spell K-O-G-N-A-B-O by word initials.",
+  "tones": [
+    "world",
+    "exploration",
+    "serious",
+    "absurd",
+    "dev",
+    "ai",
+    "slop",
+    "vibe",
+    "warning",
+    "optimistic",
+    "chaotic"
+  ],
+  "validation": {
+    "requiredInitials": [
+      "K",
+      "O",
+      "G",
+      "N",
+      "A",
+      "B",
+      "O"
+    ],
+    "requiredWordCount": 7,
+    "stripPunctuationBeforeInitialCheck": true,
+    "rejectUnknownPattern": true,
+    "rejectMissingSegments": true,
+    "rejectDuplicateSegmentRange": true
+  },
+  "patterns": [
+    {
+      "id": "exploration_2_3_2",
+      "label": "Exploration",
+      "tone": [
+        "world",
+        "exploration",
+        "optimistic"
+      ],
+      "segments": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "join": " ",
+      "description": "Command, generated-world action, destination.",
+      "pools": {
+        "1-2": [
+          "Keep On"
+        ],
+        "3-5": [
+          "Generating New Areas",
+          "Growing New Areas",
+          "Generating New Adventures",
+          "Generating New Outposts",
+          "Going New Adventures",
+          "Growing New Outposts",
+          "Generating New Archipelagos",
+          "Generating New Attractions",
+          "Growing New Biomes",
+          "Generating New Biomes"
+        ],
+        "6-7": [
+          "Beyond Origin",
+          "Beyond Outposts",
+          "Beyond Observation",
+          "Beyond Overworld",
+          "Beyond Objects",
+          "Beyond Oblivion"
+        ]
+      }
+    },
+    {
+      "id": "exploration_3_2_2",
+      "label": "Exploration Alternate",
+      "tone": [
+        "world",
+        "exploration"
+      ],
+      "segments": [
+        [
+          1,
+          3
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "join": " ",
+      "description": "Command phrase, generated subject, destination.",
+      "pools": {
+        "1-3": [
+          "Keep On Generating",
+          "Keep On Going",
+          "Keep On Growing"
+        ],
+        "4-5": [
+          "New Areas",
+          "New Adventures",
+          "New Outposts",
+          "New Biomes",
+          "New Attractions",
+          "New Archipelagos"
+        ],
+        "6-7": [
+          "Beyond Origin",
+          "Beyond Outposts",
+          "Beyond Observation",
+          "Beyond Overworld",
+          "Beyond Objects"
+        ]
+      }
+    },
+    {
+      "id": "vibe_2_3_2",
+      "label": "Vibe Coding",
+      "tone": [
+        "dev",
+        "ai",
+        "vibe",
+        "slop",
+        "absurd"
+      ],
+      "segments": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "join": " ",
+      "description": "Command, questionable action, dry punchline.",
+      "pools": {
+        "1-2": [
+          "Keep On",
+          "Kinda Okay"
+        ],
+        "3-5": [
+          "Generating Nobody Asked",
+          "Guessing Nothing Actually",
+          "Generating Nonsense Automatically",
+          "Generating New Abstractions",
+          "Generating New Assets",
+          "Generating New Algorithms",
+          "Glitching Nothing Actually",
+          "Generating Nonsense Again"
+        ],
+        "6-7": [
+          "But Okay",
+          "Broke Obviously",
+          "Before Optimization",
+          "Basically Okay",
+          "Because Output",
+          "Beyond Optimism"
+        ]
+      }
+    },
+    {
+      "id": "warning_2_3_2",
+      "label": "Keep Out",
+      "tone": [
+        "warning",
+        "absurd",
+        "dev",
+        "chaotic"
+      ],
+      "segments": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "join": " ",
+      "punctuation": {
+        "afterSegment": {
+          "1-2": "!"
+        },
+        "final": "."
+      },
+      "description": "Warning, subject/problem, consequence.",
+      "pools": {
+        "1-2": [
+          "Keep Out"
+        ],
+        "3-5": [
+          "Gremlins Need Another",
+          "Gamers Need Another",
+          "Generators Need Another",
+          "Glitches Need Another",
+          "GPTs Need Another",
+          "Garbage Needs Another",
+          "Gremlins Notice Another",
+          "Generators Notice Another",
+          "Glitches Need Attention",
+          "Good News Another"
+        ],
+        "6-7": [
+          "Build Obviously",
+          "Bug Obviously",
+          "Backup Obviously",
+          "Break Obviously",
+          "Benchmark Obviously",
+          "Button Obviously",
+          "Brain Offline",
+          "Build Again",
+          "Bug Again",
+          "Oops Again"
+        ]
+      }
+    },
+    {
+      "id": "assessment_2_3_2",
+      "label": "Dry Assessment",
+      "tone": [
+        "absurd",
+        "dev",
+        "slop",
+        "chaotic"
+      ],
+      "segments": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "join": " ",
+      "punctuation": {
+        "afterSegment": {
+          "1-2": ","
+        },
+        "final": "."
+      },
+      "description": "Assessment, subject/state, verdict.",
+      "pools": {
+        "1-2": [
+          "Kinda Okay",
+          "Kinda Overbuilt",
+          "Kinda Odd"
+        ],
+        "3-5": [
+          "Generated Nonsense Apparently",
+          "Game Not Actually",
+          "Garbage Nearly Always",
+          "Generated Noise Apparently",
+          "Glitchy Nonsense Apparently",
+          "Game Nearly Always"
+        ],
+        "6-7": [
+          "Builds Okay",
+          "Broken Obviously",
+          "Behaves Occasionally",
+          "Barely Operates",
+          "Builds Occasionally",
+          "Breaks Often"
+        ]
+      }
+    },
+    {
+      "id": "known_output_2_3_2",
+      "label": "Known Output",
+      "tone": [
+        "dev",
+        "ai",
+        "serious",
+        "absurd"
+      ],
+      "segments": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "join": " ",
+      "punctuation": {
+        "afterSegment": {
+          "1-2": ","
+        },
+        "final": "."
+      },
+      "description": "Technical-sounding setup with an uncertain conclusion.",
+      "pools": {
+        "1-2": [
+          "Known Output",
+          "Known Only",
+          "Kernel Output"
+        ],
+        "3-5": [
+          "Generated No Assurance",
+          "Generated Nearly Automatically",
+          "Generated Nonsense Again",
+          "Generating New Abstractions",
+          "Generated Noise Apparently"
+        ],
+        "6-7": [
+          "Beyond Optimism",
+          "Basically Okay",
+          "Before Optimization",
+          "Beyond Observation",
+          "Because Output"
+        ]
+      }
+    },
+    {
+      "id": "world_1_2_2_2",
+      "label": "World Four-Part",
+      "tone": [
+        "world",
+        "exploration",
+        "serious"
+      ],
+      "segments": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "join": " ",
+      "description": "Single-word opener with world-building phrase blocks.",
+      "pools": {
+        "1-1": [
+          "Keep",
+          "Known"
+        ],
+        "2-3": [
+          "On Generating",
+          "On Growing",
+          "Over Generated"
+        ],
+        "4-5": [
+          "New Areas",
+          "New Adventures",
+          "New Biomes",
+          "New Outposts"
+        ],
+        "6-7": [
+          "Beyond Origin",
+          "Beyond Overworld",
+          "Beyond Observation",
+          "Beyond Outposts"
+        ]
+      }
+    },
+    {
+      "id": "dev_4_3",
+      "label": "Dev Four-Three",
+      "tone": [
+        "dev",
+        "ai",
+        "vibe",
+        "slop"
+      ],
+      "segments": [
+        [
+          1,
+          4
+        ],
+        [
+          5,
+          7
+        ]
+      ],
+      "join": " ",
+      "description": "Long setup followed by compact punchline.",
+      "pools": {
+        "1-4": [
+          "Keep On Generating New",
+          "Keep On Guessing Nothing",
+          "Kinda Okay Generated Nonsense",
+          "Known Output Generated No"
+        ],
+        "5-7": [
+          "Abstractions Before Optimization",
+          "Actually Broke Obviously",
+          "Apparently Builds Okay",
+          "Assurance Beyond Optimism"
+        ]
+      }
+    }
+  ],
+  "generatorHints": {
+    "selectionOrder": [
+      "tone",
+      "pattern",
+      "one chunk per segment",
+      "punctuation",
+      "validation"
+    ],
+    "avoidCrossPatternMixing": true,
+    "allowWeightedPatterns": true,
+    "allowWeightedChunks": true,
+    "recommendedStrategy": "Choose one grammar pattern first. Only combine chunks from that pattern. Validate seven words and KOGNABO initials after assembly."
+  },
+  "examples": [
+    "Keep On Generating New Areas Beyond Origin.",
+    "Keep On Going New Adventures Beyond Outposts.",
+    "Keep On Generating. Nobody Asked But Okay.",
+    "Keep Out! Gremlins Need Another Build Obviously.",
+    "Kinda Okay, Generated Nonsense Apparently Builds Okay.",
+    "Known Output, Generated No Assurance Beyond Optimism.",
+    "Keep On Generating New Abstractions Before Optimization."
+  ]
+}

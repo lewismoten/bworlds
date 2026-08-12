@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>KOGNABO — A World Still Generating</title>
+
+  <meta
+    name="description"
+    content="KOGNABO is an evolving procedural world of generated places,
+    systems, sound, weather, exploration, and questionable engineering."
+  >
+
+  <link rel="stylesheet" href="index.css">
+  <script src="index.js" defer></script>
+</head>
+
+<body>
+  <div class="background" aria-hidden="true">
+    <div class="glow glow-one"></div>
+    <div class="glow glow-two"></div>
+    <div class="grid"></div>
+    <div class="noise"></div>
+  </div>
+
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="KOGNABO home">
+      <span class="brand-mark">K</span>
+      <span>KOGNABO</span>
+    </a>
+
+    <span class="status">
+      <span class="status-dot"></span>
+      World generation in progress
+    </span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="kicker">PROCEDURAL WORLD / EXPERIMENT / PROBABLY FINE</p>
+
+        <h1>KOGNABO</h1>
+
+        <div class="meaning-wrap">
+          <p class="meaning-label">Today, KOGNABO means:</p>
+
+          <p id="meaning" class="meaning" aria-live="polite">
+            Keep On Generating New Areas Beyond Origin.
+          </p>
+        </div>
+
+        <div class="actions">
+          <button id="reroll" class="button primary" type="button">
+            Generate another meaning
+          </button>
+
+          <a class="button secondary" href="#about">
+            What's coming?
+          </a>
+        </div>
+
+        <p class="microcopy">
+          The acronym is deterministic-ish. The explanation is not.
+        </p>
+      </div>
+
+      <div class="world-card" aria-hidden="true">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <div class="planet">
+          <div class="planet-glow"></div>
+        </div>
+
+        <div class="floating-card card-one">
+          <span>SEED</span>
+          <strong>0xK0GNA80</strong>
+        </div>
+
+        <div class="floating-card card-two">
+          <span>STATUS</span>
+          <strong>GENERATING</strong>
+        </div>
+
+        <div class="floating-card card-three">
+          <span>CONFIDENCE</span>
+          <strong>PROBABLY</strong>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="about section">
+      <div class="section-heading">
+        <p class="kicker">WHAT IS THIS?</p>
+        <h2>A world without a finished map.</h2>
+      </div>
+
+      <div class="about-copy">
+        <p>
+          KOGNABO is an experiment in building a world from systems instead of
+          starting with a hand-authored map. Terrain, settlements, routes,
+          weather, creatures, sound, music, and other pieces are intended to
+          emerge from deterministic generation.
+        </p>
+
+        <p>
+          The same underlying world can eventually be experienced through
+          different views: text, maps, simplified graphics, or a full 3D
+          environment. The presentation can change without replacing the world.
+        </p>
+      </div>
+    </section>
+
+    <section class="features section">
+      <article class="feature-card">
+        <div class="feature-number">01</div>
+        <div class="feature-icon">◎</div>
+        <h3>Procedural Worlds</h3>
+        <p>
+          Seeds create terrain, biomes, settlements, routes, points of interest,
+          and increasingly questionable places to wander into.
+        </p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-number">02</div>
+        <div class="feature-icon">⌁</div>
+        <h3>Living Systems</h3>
+        <p>
+          Time, seasons, weather, creatures, ambience, and music respond to the
+          world rather than existing as disconnected decorations.
+        </p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-number">03</div>
+        <div class="feature-icon">◇</div>
+        <h3>Many Perspectives</h3>
+        <p>
+          One simulation can support maps, text, 2D, pseudo-3D, and Three.js
+          views without making the renderer the source of truth.
+        </p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-number">04</div>
+        <div class="feature-icon">⚠</div>
+        <h3>Questionable Engineering</h3>
+        <p>
+          Procedural generation, tests, plugins, vibe coding, AI assistance,
+          occasional slop, and an alarming faith in reproducible seeds.
+        </p>
+      </article>
+    </section>
+
+    <section class="coming section">
+      <div>
+        <p class="kicker">COMING EVENTUALLY™</p>
+        <h2>The world is still being assembled.</h2>
+      </div>
+
+      <div class="coming-list">
+        <div>
+          <span>WORLD</span>
+          <strong>Terrain, towns, routes, biomes, POIs</strong>
+        </div>
+        <div>
+          <span>SIMULATION</span>
+          <strong>Time, seasons, weather, creatures</strong>
+        </div>
+        <div>
+          <span>AUDIO</span>
+          <strong>Generated music, ambience, sound</strong>
+        </div>
+        <div>
+          <span>RENDERING</span>
+          <strong>Text, maps, 2D, 3D, debug views</strong>
+        </div>
+        <div>
+          <span>CHAOS</span>
+          <strong>Unscheduled but statistically inevitable</strong>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      <strong>KOGNABO</strong>
+      <span>© Whenever the generator decides.</span>
+    </div>
+
+    <span>Probably fine.</span>
+  </footer>
+</body>
+</html>
