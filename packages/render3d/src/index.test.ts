@@ -163,6 +163,7 @@ import {
   buildPendingWorldBuildQueue,
   countColorVariantShareableMaterials,
   collectSharedVisibleFloorBatches,
+  collectSharedWallFallbackBatches,
   createFrameTimeBudget,
   getDecoratedTileSurfaceHeight,
   getEffectivePendingWorldBuildBudget,
@@ -4755,6 +4756,50 @@ describe('render3d visibility helpers', () => {
     });
   });
 
+  it('treats shared wall-height fallback tiles as rendered while keeping the fallback reason', () => {
+    expect(
+      getVisibleTileDebugInfoFromState(
+        new Map([
+          [
+            '8:2',
+            {
+              tilePluginOwnerLabel: 'tile-plains',
+              requestedDetailLevel: 'low',
+              detailLevel: 'low',
+              fallbackReason:
+                'tile has no plugin model and uses the wall-height fallback',
+              modelRoot: null,
+              supportsModel: false,
+              sharedFloorInstance: null,
+              sharedWallFallbackInstance: {
+                kind: 'plains',
+                variant: 0,
+                tileX: 8,
+                tileY: 2,
+                surfaceHeight: 0.2,
+                wallHeight: 0.38,
+                tilePluginOwnerLabel: 'tile-plains',
+              },
+            },
+          ],
+        ]),
+        new Map(),
+        8,
+        2
+      )
+    ).toEqual({
+      tileKey: '8:2',
+      plugin: 'tile-plains',
+      requestedDetailLevel: 'low',
+      renderedDetailLevel: 'low',
+      cachedDetailLevel: null,
+      fallbackReason:
+        'tile has no plugin model and uses the wall-height fallback',
+      hasVisibleModel: true,
+      supportsModel: false,
+    });
+  });
+
   it('summarizes static matrix updates by visible tile plugin', () => {
     expect(
       summarizeVisibleTileStaticMatrixUpdatesByPlugin([
@@ -6366,6 +6411,86 @@ describe('render3d visibility helpers', () => {
             tileX: 1,
             tileY: 0,
             positionY: 0.385,
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('batches shared wall-height fallbacks by variant and wall height', () => {
+    expect(
+      collectSharedWallFallbackBatches(
+        [
+          {
+            sharedWallFallbackInstance: {
+              kind: 'plains',
+              variant: 0,
+              tileX: 0,
+              tileY: 0,
+              surfaceHeight: 0.2,
+              wallHeight: 0.38,
+              tilePluginOwnerLabel: 'tile-plains',
+            },
+          },
+          {
+            sharedWallFallbackInstance: {
+              kind: 'plains',
+              variant: 0,
+              tileX: 12,
+              tileY: 0,
+              surfaceHeight: 0.2,
+              wallHeight: 0.38,
+              tilePluginOwnerLabel: 'tile-plains',
+            },
+          },
+          {
+            sharedWallFallbackInstance: {
+              kind: 'plains',
+              variant: 1,
+              tileX: 1,
+              tileY: 0,
+              surfaceHeight: 0.4,
+              wallHeight: 0.5,
+              tilePluginOwnerLabel: 'tile-plains',
+            },
+          },
+          {
+            sharedWallFallbackInstance: null,
+          },
+        ],
+        {
+          player: { x: 0, y: 0, facing: 0 },
+        }
+      )
+    ).toEqual([
+      {
+        kind: 'plains',
+        variant: 0,
+        wallHeight: 0.38,
+        tilePluginOwnerLabel: 'tile-plains',
+        instances: [
+          {
+            tileX: 0,
+            tileY: 0,
+            positionY: 0.39,
+          },
+          {
+            tileX: 12,
+            tileY: 0,
+            positionY: expect.closeTo(0.39 + getWorldCurvatureOffset(12), 6),
+          },
+        ],
+      },
+      {
+        kind: 'plains',
+        variant: 1,
+        wallHeight: 0.5,
+        tilePluginOwnerLabel: 'tile-plains',
+        instances: [
+          {
+            tileX: 1,
+            tileY: 0,
+            positionY: 0.65,
           },
         ],
       },

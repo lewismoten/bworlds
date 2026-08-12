@@ -970,6 +970,7 @@ type DynamicTileNode = {
   tileX: number;
   tileY: number;
   sharedFloorInstance?: SharedVisibleFloorInstance | null;
+  sharedWallFallbackInstance?: SharedWallFallbackInstance | null;
   object3dCount: number;
   drawCallCount: number;
   visibleObjectCount: number;
@@ -1011,6 +1012,7 @@ type TileNodeBuildShell = {
   surfaceHeight: number;
   tileNode: THREE.Group;
   sharedFloorInstance: SharedVisibleFloorInstance | null;
+  sharedWallFallbackInstance: SharedWallFallbackInstance | null;
   tilePlugin?: TilePlugin;
   tilePluginOwnerLabel: string;
   detailLevel: RenderBudgetDetailLevel;
@@ -1064,6 +1066,16 @@ type SharedVisibleFloorInstance = {
   tileY: number;
   surfaceHeight: number;
   thickness: number;
+  tilePluginOwnerLabel: string;
+};
+
+type SharedWallFallbackInstance = {
+  kind: Kind;
+  variant: number;
+  tileX: number;
+  tileY: number;
+  surfaceHeight: number;
+  wallHeight: number;
   tilePluginOwnerLabel: string;
 };
 
@@ -1723,7 +1735,9 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   const worldRoot = new THREE.Group();
   scene.add(worldRoot);
   const sharedVisibleFloorRoot = new THREE.Group();
+  const sharedWallFallbackRoot = new THREE.Group();
   worldRoot.add(sharedVisibleFloorRoot);
+  worldRoot.add(sharedWallFallbackRoot);
 
   const atlasTexture = new THREE.CanvasTexture(getTileAtlasCanvas());
   atlasTexture.colorSpace = THREE.SRGBColorSpace;
@@ -1804,6 +1818,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
   function clearWorld() {
     disposeAndClearObject3D(worldRoot);
     worldRoot.add(sharedVisibleFloorRoot);
+    worldRoot.add(sharedWallFallbackRoot);
     visibleTileNodes.clear();
     lastSuccessfulVisibleTileDetailLevels.clear();
     lastLodSyncPlayerPosition = null;
@@ -1874,6 +1889,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       surfaceHeight,
       tileNode,
       sharedFloorInstance: floorContent.sharedFloorInstance,
+      sharedWallFallbackInstance: null,
       tilePlugin,
       tilePluginOwnerLabel,
       detailLevel,
@@ -1907,6 +1923,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       surfaceHeight,
       tileNode,
       sharedFloorInstance,
+      sharedWallFallbackInstance: initialSharedWallFallbackInstance,
       tilePlugin,
       tilePluginOwnerLabel,
       detailLevel,
@@ -1914,6 +1931,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
     } = shell;
     const { estimateValidation, pluginBuildStartMs, pluginBuildDurationMs } =
       buildMetadata;
+    let sharedWallFallbackInstance = initialSharedWallFallbackInstance;
     let pluginModel = initialPluginModel;
     let lastRejectedSummary: string | null = null;
     const usedTilePluginModelFactory = Boolean(
@@ -2294,25 +2312,21 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         label: tilePluginOwnerLabel,
       });
       const wallHeight = Math.max(definition.wallHeight * 1.9, 0.18);
-      const wallMesh = new THREE.Mesh(
-        getSharedBoxGeometry(TILE_SIZE, wallHeight, TILE_SIZE),
-        getTileMaterial(tile.kind, variant)
-      );
-      wallMesh.position.set(
-        x * TILE_SIZE,
-        surfaceHeight + wallHeight * 0.5,
-        y * TILE_SIZE
-      );
-      wallMesh.castShadow = true;
-      wallMesh.receiveShadow = true;
-      freezeStaticObjectTransforms(wallMesh);
-      tileNode.add(wallMesh);
+      sharedWallFallbackInstance = {
+        kind: tile.kind,
+        variant,
+        tileX: x,
+        tileY: y,
+        surfaceHeight,
+        wallHeight,
+        tilePluginOwnerLabel,
+      };
     }
 
     const finalSceneResourceStats = collectSceneResourceStats(tileNode);
     const finalUniqueTextures = collectUniqueObjectTextures(tileNode);
     const fallbackReason =
-      pluginModel || sharedFloorInstance
+      pluginModel || sharedFloorInstance || sharedWallFallbackInstance
         ? undefined
         : getFallbackBoxReason(
             lastRejectedSummary,
@@ -2327,6 +2341,7 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
       tileX: x,
       tileY: y,
       sharedFloorInstance,
+      sharedWallFallbackInstance,
       object3dCount: finalSceneResourceStats.object3dCount,
       drawCallCount: finalSceneResourceStats.drawCallCount,
       visibleObjectCount: finalSceneResourceStats.visibleObjectCount,
@@ -2910,6 +2925,15 @@ export function create3DRenderer(host: HTMLElement): Render3DController {
         {
           getTileMaterial,
           getTileAtlasGeometry,
+          getSharedBoxGeometry,
+        }
+      );
+      syncSharedWallFallbackMeshes(
+        sharedWallFallbackRoot,
+        visibleTileNodes.values(),
+        state,
+        {
+          getTileMaterial,
           getSharedBoxGeometry,
         }
       );
@@ -4516,6 +4540,7 @@ export function getVisibleTileDebugInfoFromState(
       | 'modelRoot'
       | 'supportsModel'
       | 'sharedFloorInstance'
+      | 'sharedWallFallbackInstance'
     >
   >,
   lastSuccessfulVisibleTileDetailLevels: ReadonlyMap<
@@ -4548,7 +4573,11 @@ export function getVisibleTileDebugInfoFromState(
     renderedDetailLevel: entry?.detailLevel ?? null,
     cachedDetailLevel,
     fallbackReason: entry?.fallbackReason ?? null,
-    hasVisibleModel: Boolean(entry?.modelRoot || entry?.sharedFloorInstance),
+    hasVisibleModel: Boolean(
+      entry?.modelRoot ||
+      entry?.sharedFloorInstance ||
+      entry?.sharedWallFallbackInstance
+    ),
     supportsModel:
       typeof entry?.supportsModel === 'boolean' ? entry.supportsModel : null,
   };
@@ -4837,6 +4866,69 @@ export function collectSharedVisibleFloorBatches(
   return [...batches.values()];
 }
 
+export function collectSharedWallFallbackBatches(
+  entries: Iterable<Pick<DynamicTileNode, 'sharedWallFallbackInstance'>>,
+  state: Pick<Render3DState, 'player'>
+): Array<{
+  kind: Kind;
+  variant: number;
+  wallHeight: number;
+  tilePluginOwnerLabel: string;
+  instances: Array<{
+    tileX: number;
+    tileY: number;
+    positionY: number;
+  }>;
+}> {
+  const batches = new Map<
+    string,
+    {
+      kind: Kind;
+      variant: number;
+      wallHeight: number;
+      tilePluginOwnerLabel: string;
+      instances: Array<{
+        tileX: number;
+        tileY: number;
+        positionY: number;
+      }>;
+    }
+  >();
+
+  for (const entry of entries) {
+    const sharedWallFallbackInstance = entry.sharedWallFallbackInstance;
+    if (!sharedWallFallbackInstance) {
+      continue;
+    }
+    const key = `${sharedWallFallbackInstance.kind}:${sharedWallFallbackInstance.variant}:${sharedWallFallbackInstance.wallHeight}`;
+    let batch = batches.get(key);
+    if (!batch) {
+      batch = {
+        kind: sharedWallFallbackInstance.kind,
+        variant: sharedWallFallbackInstance.variant,
+        wallHeight: sharedWallFallbackInstance.wallHeight,
+        tilePluginOwnerLabel: sharedWallFallbackInstance.tilePluginOwnerLabel,
+        instances: [],
+      };
+      batches.set(key, batch);
+    }
+    const distance = Math.hypot(
+      sharedWallFallbackInstance.tileX - state.player.x,
+      sharedWallFallbackInstance.tileY - state.player.y
+    );
+    batch.instances.push({
+      tileX: sharedWallFallbackInstance.tileX,
+      tileY: sharedWallFallbackInstance.tileY,
+      positionY:
+        sharedWallFallbackInstance.surfaceHeight +
+        sharedWallFallbackInstance.wallHeight * 0.5 +
+        getWorldCurvatureOffset(distance),
+    });
+  }
+
+  return [...batches.values()];
+}
+
 function syncSharedVisibleFloorMeshes(
   root: THREE.Group,
   entries: Iterable<Pick<DynamicTileNode, 'sharedFloorInstance'>>,
@@ -4877,6 +4969,56 @@ function syncSharedVisibleFloorMeshes(
       tileKind: batch.kind,
       tileVariant: batch.variant,
     };
+    mesh.receiveShadow = true;
+    const matrix = new THREE.Matrix4();
+    batch.instances.forEach((instance, index) => {
+      mesh.setMatrixAt(
+        index,
+        matrix.makeTranslation(
+          instance.tileX * TILE_SIZE,
+          instance.positionY,
+          instance.tileY * TILE_SIZE
+        )
+      );
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    freezeStaticObjectTransforms(mesh);
+    root.add(mesh);
+  }
+}
+
+function syncSharedWallFallbackMeshes(
+  root: THREE.Group,
+  entries: Iterable<Pick<DynamicTileNode, 'sharedWallFallbackInstance'>>,
+  state: Pick<Render3DState, 'player'>,
+  deps: {
+    getTileMaterial(kind: Kind, variant: number): THREE.Material;
+    getSharedBoxGeometry(
+      width: number,
+      height: number,
+      depth: number
+    ): THREE.BoxGeometry;
+  }
+): void {
+  while (root.children.length > 0) {
+    root.remove(root.children[0]!);
+  }
+
+  const batches = collectSharedWallFallbackBatches(entries, state);
+  for (const batch of batches) {
+    const mesh = new THREE.InstancedMesh(
+      deps.getSharedBoxGeometry(TILE_SIZE, batch.wallHeight, TILE_SIZE),
+      deps.getTileMaterial(batch.kind, batch.variant),
+      batch.instances.length
+    );
+    mesh.userData = {
+      ...(mesh.userData ?? {}),
+      sharedWallFallback: true,
+      tilePluginOwnerLabel: batch.tilePluginOwnerLabel,
+      tileKind: batch.kind,
+      tileVariant: batch.variant,
+    };
+    mesh.castShadow = true;
     mesh.receiveShadow = true;
     const matrix = new THREE.Matrix4();
     batch.instances.forEach((instance, index) => {

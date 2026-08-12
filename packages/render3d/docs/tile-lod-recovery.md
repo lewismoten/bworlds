@@ -67,6 +67,12 @@ fallback reason unless the renderer actually built that fallback mesh. Plain
 tiles without plugin models now report a simple missing-model reason instead of
 incorrectly claiming that a wall-height fallback box was rendered.
 
+When the renderer does need those wall-height fallback boxes, it now batches
+them through one shared instanced layer by compatible kind, variant, and wall
+height instead of rebuilding one identical fallback mesh per tile. The per-tile
+fallback reason still stays intact in debug state, but repeated plains fallback
+tiles now reuse one shared rendered representation.
+
 The debug panel also includes a `Freeze LOD` toggle that stops new visible-tile LOD resync passes while it is active. That makes it easier to inspect a problematic tile without movement immediately retriggering another selection pass.
 
 The text viewport also shows the current rendered visible-tile LOD directly above each tile glyph when the renderer has visible-tile state for that coordinate. It uses compact `F` and `L` labels so LOD churn is visible without opening the debug summary.

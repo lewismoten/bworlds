@@ -159,8 +159,12 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
 - [x] Distinguish missing models from budget rejections.
 - [x] Do not label missing plugin models as budget failures.
 - [x] Add a normal low-cost plains model instead of a wall box.
-- [ ] Cache the plains fallback geometry for reuse.
-- [ ] Avoid rebuilding identical plains fallback models.
+- [x] Cache the plains fallback geometry for reuse.
+- [x] Avoid rebuilding identical plains fallback models.
+      Progress: `render3d` now batches repeated wall-height fallback boxes
+      through one shared instanced layer by compatible tile kind, variant, and
+      wall height, so identical plains fallback boxes reuse shared geometry and
+      material instead of rebuilding one fallback mesh object per tile.
 - [x] Count fallback models by plugin in the snapshot.
       Progress: the live debug snapshot and exported snapshot already carry
       `fallbackBoxSummary` / `lod.fallbackSummary`, so fallback-box rates are
