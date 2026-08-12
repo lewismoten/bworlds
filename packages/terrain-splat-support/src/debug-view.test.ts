@@ -129,6 +129,95 @@ describe('terrain splat debug view', () => {
       true
     );
   });
+
+  it('supports base-color, normal, and roughness map toggles', () => {
+    const { layerCatalog, kindCatalog } = createDebugCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'debug-map-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x }) => ({
+        kind: x >= 1 ? 'forest' : 'plains',
+        signals: {
+          moisture: 0.7,
+          season: 'summer',
+          temperature: 0.68,
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    const baseColorView = createTerrainSplatDebugView(grid, {
+      mode: 'base-color-map',
+      catalog: layerCatalog,
+    });
+    const normalView = createTerrainSplatDebugView(grid, {
+      mode: 'normal-map',
+      catalog: layerCatalog,
+    });
+    const roughnessView = createTerrainSplatDebugView(grid, {
+      mode: 'roughness-map',
+      catalog: layerCatalog,
+    });
+
+    expect(baseColorView.cells.some((cell) => cell.textureId?.includes('/base'))).toBe(
+      true
+    );
+    expect(normalView.cells.some((cell) => cell.textureId?.includes('/normal'))).toBe(
+      true
+    );
+    expect(
+      roughnessView.cells.some((cell) => cell.textureId?.includes('/roughness'))
+    ).toBe(true);
+  });
+
+  it('can disable blend visualization and collapse cells to one dominant layer', () => {
+    const { layerCatalog, kindCatalog } = createDebugCatalogs();
+    const grid = createTerrainSplatSampleGrid({
+      seed: 'debug-disable-blend-seed',
+      bounds: {
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 2,
+      },
+      kindCatalog,
+      resolveTile: createTerrainSplatGridTileResolver(({ x, y }) => ({
+        kind: x >= 1 ? 'forest' : y >= 1 ? 'road' : 'plains',
+        signals: {
+          moisture: 0.62,
+          roadSignal: y >= 1 ? 0.82 : 0,
+          season: 'summer',
+          temperature: 0.68,
+        },
+      })),
+      fallbackLayerId: 'grass-a',
+      blendWidth: 1,
+    });
+
+    const blendedView = createTerrainSplatDebugView(grid, {
+      mode: 'dominant-layer',
+      catalog: layerCatalog,
+    });
+    const disabledBlendView = createTerrainSplatDebugView(grid, {
+      mode: 'dominant-layer',
+      catalog: layerCatalog,
+      blendEnabled: false,
+    });
+
+    expect(blendedView.blendEnabled).toBe(true);
+    expect(disabledBlendView.blendEnabled).toBe(false);
+    expect(blendedView.cells.some((cell) => cell.activeLayerCount > 1)).toBe(true);
+    expect(
+      disabledBlendView.cells.every((cell) => cell.activeLayerCount <= 1)
+    ).toBe(true);
+  });
 });
 
 function createDebugCatalogs() {

@@ -11,7 +11,10 @@ export type TerrainSplatDebugViewMode =
   | 'active-layer-count'
   | 'layer-weight'
   | 'blend-color'
-  | 'layer-index';
+  | 'layer-index'
+  | 'base-color-map'
+  | 'normal-map'
+  | 'roughness-map';
 
 export type TerrainSplatDebugCell = {
   column: number;
@@ -22,6 +25,7 @@ export type TerrainSplatDebugCell = {
   dominantWeight: number;
   colorHex: string;
   layerIndices: readonly number[];
+  textureId: string | null;
   value: number;
 };
 
@@ -32,6 +36,7 @@ export type TerrainSplatDebugView = {
   totalActiveLayerCount: number;
   packedMemoryUsageBytes: number;
   targetLayerId: TerrainMaterialLayerId | null;
+  blendEnabled: boolean;
 };
 
 export function createTerrainSplatDebugView(
@@ -39,6 +44,7 @@ export function createTerrainSplatDebugView(
   options: {
     mode: TerrainSplatDebugViewMode;
     targetLayerId?: TerrainMaterialLayerId;
+    blendEnabled?: boolean;
     catalog?:
       | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
       | {
@@ -65,19 +71,24 @@ export function createTerrainSplatDebugView(
           ? left.layerId.localeCompare(right.layerId)
           : right.weight - left.weight
       );
-      const activeIds = sortedEntries.map((entry) => entry.layerId);
+      const effectiveEntries =
+        options.blendEnabled === false
+          ? sortedEntries.slice(0, sortedEntries.length > 0 ? 1 : 0)
+          : sortedEntries;
+      const activeIds = effectiveEntries.map((entry) => entry.layerId);
       for (const layerId of activeIds) {
         activeLayerIds.add(layerId);
       }
-      const dominantEntry = sortedEntries[0];
-      const layerIndices = sortedEntries
+      const dominantEntry = effectiveEntries[0];
+      const layerIndices = effectiveEntries
         .map((entry) => layerMap?.get(entry.layerId)?.index)
         .filter((index): index is number => typeof index === 'number');
       const resolved = resolveTerrainSplatDebugCell({
         mode: options.mode,
         sample: {
-          entries: sortedEntries,
+          entries: effectiveEntries,
         },
+        layerMap,
         activeLayerIds: activeIds,
         dominantLayerId: dominantEntry?.layerId ?? null,
         dominantWeight: dominantEntry?.weight ?? 0,
@@ -94,6 +105,7 @@ export function createTerrainSplatDebugView(
         dominantWeight: dominantEntry?.weight ?? 0,
         colorHex: resolved.colorHex,
         layerIndices,
+        textureId: resolved.textureId,
         value: resolved.value,
       });
     }
@@ -106,12 +118,16 @@ export function createTerrainSplatDebugView(
     totalActiveLayerCount: activeLayerIds.size,
     packedMemoryUsageBytes: grid.samples.length * 8,
     targetLayerId: options.targetLayerId ?? null,
+    blendEnabled: options.blendEnabled !== false,
   };
 }
 
 function resolveTerrainSplatDebugCell(params: {
   mode: TerrainSplatDebugViewMode;
   sample: TerrainSplatSample;
+  layerMap:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | null;
   activeLayerIds: readonly TerrainMaterialLayerId[];
   dominantLayerId: TerrainMaterialLayerId | null;
   dominantWeight: number;
@@ -119,18 +135,21 @@ function resolveTerrainSplatDebugCell(params: {
   targetLayerId?: TerrainMaterialLayerId;
 }): {
   colorHex: string;
+  textureId: string | null;
   value: number;
 } {
   switch (params.mode) {
     case 'dominant-layer':
       return {
         colorHex: colorFromLabel(params.dominantLayerId ?? ''),
+        textureId: null,
         value: params.dominantWeight,
       };
     case 'active-layer-count': {
       const normalized = clamp01((params.activeLayerIds.length - 1) / 3);
       return {
         colorHex: mixColor('#1f8f55', '#e2b93b', '#d94b3d', normalized),
+        textureId: null,
         value: params.activeLayerIds.length,
       };
     }
@@ -138,6 +157,7 @@ function resolveTerrainSplatDebugCell(params: {
       const weight = findLayerWeight(params.sample, params.targetLayerId);
       return {
         colorHex: grayscaleColor(weight),
+        textureId: null,
         value: weight,
       };
     }
@@ -147,6 +167,7 @@ function resolveTerrainSplatDebugCell(params: {
       );
       return {
         colorHex: rgbColor(first, second, third),
+        textureId: null,
         value: params.sample.entries.length,
       };
     }
@@ -154,10 +175,52 @@ function resolveTerrainSplatDebugCell(params: {
       const normalized = clamp01((params.layerIndices[0] ?? 0) / 255);
       return {
         colorHex: mixColor('#214479', '#d37f24', '#f0f2f5', normalized),
+        textureId: null,
         value: params.layerIndices[0] ?? -1,
       };
     }
+    case 'base-color-map':
+      return resolveTerrainSplatTextureDebugCell(
+        params.layerMap,
+        params.dominantLayerId,
+        'baseColorTextureId'
+      );
+    case 'normal-map':
+      return resolveTerrainSplatTextureDebugCell(
+        params.layerMap,
+        params.dominantLayerId,
+        'normalTextureId'
+      );
+    case 'roughness-map':
+      return resolveTerrainSplatTextureDebugCell(
+        params.layerMap,
+        params.dominantLayerId,
+        'roughnessTextureId'
+      );
   }
+}
+
+function resolveTerrainSplatTextureDebugCell(
+  layerMap:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | null,
+  dominantLayerId: TerrainMaterialLayerId | null,
+  property:
+    | 'baseColorTextureId'
+    | 'normalTextureId'
+    | 'roughnessTextureId'
+): {
+  colorHex: string;
+  textureId: string | null;
+  value: number;
+} {
+  const textureId =
+    dominantLayerId && layerMap ? layerMap.get(dominantLayerId)?.[property] : null;
+  return {
+    colorHex: colorFromLabel(textureId ?? dominantLayerId ?? property),
+    textureId: textureId ?? null,
+    value: textureId ? 1 : 0,
+  };
 }
 
 function findLayerWeight(

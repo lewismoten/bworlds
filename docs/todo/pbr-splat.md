@@ -202,8 +202,8 @@
 - [x] Show chunk splat memory usage.
 - [x] Show active layer count per chunk.
 - [x] Show dominant terrain layer per cell.
-- [ ] Add toggles for color, normal, and roughness maps.
-- [ ] Add a toggle to disable splat blending.
+- [x] Add toggles for color, normal, and roughness maps.
+- [x] Add a toggle to disable splat blending.
 
 ## Validation
 
