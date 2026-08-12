@@ -170,12 +170,14 @@ low` visible recovery, and `render3d` now batches simple visible plains floors b
       boundary before they can flip to `full` again. That keeps repeated
       `full <-> low` swaps from flapping at the same distance boundary while
       normal low-detail entry thresholds stay unchanged.
-- [ ] Prevent LOD churn while the player remains nearly still.
+- [x] Prevent LOD churn while the player remains nearly still.
       Progress: `render3d` now widens the movement required to seed another
       visible-tile LOD sync pass whenever recent `lodReplacementsPerSecond`
       stays above the churn threshold, so near-stationary jitter no longer
       restarts a full visible LOD sweep at the normal `0.18`-tile threshold
-      while swap churn is already high.
+      while swap churn is already high, and the renderer regression tests now
+      verify that elevated churn keeps the normal `0.18` movement from
+      resyncing LODs until the widened `0.35`-tile threshold is crossed.
 - [x] Keep the last valid model during failed LOD upgrades.
 - [x] Cache the last successful LOD for every visible tile.
 - [x] Prefer cached lower LODs before generating fallbacks.

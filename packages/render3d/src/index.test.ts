@@ -6359,6 +6359,27 @@ describe('render3d visibility helpers', () => {
     expect(shouldSyncTileModelDetailLevels({ x: 0, y: 0 }, 0.18, 0)).toBe(true);
   });
 
+  it('widens the tile lod resync threshold while swap churn is elevated', () => {
+    const elevatedMovementSquared = getAdaptiveLodSyncMovementSquared(4);
+
+    expect(
+      shouldSyncTileModelDetailLevels(
+        { x: 0, y: 0 },
+        0.18,
+        0,
+        elevatedMovementSquared
+      )
+    ).toBe(false);
+    expect(
+      shouldSyncTileModelDetailLevels(
+        { x: 0, y: 0 },
+        0.35,
+        0,
+        elevatedMovementSquared
+      )
+    ).toBe(true);
+  });
+
   it('only resyncs world curvature when the player moves or visible tiles change', () => {
     expect(shouldSyncWorldCurvature(null, 0, 0, -1, 0)).toBe(true);
     expect(shouldSyncWorldCurvature({ x: 2, y: 3 }, 2, 3, 4, 4)).toBe(false);
