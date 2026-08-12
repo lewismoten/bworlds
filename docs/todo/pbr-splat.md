@@ -88,7 +88,7 @@
 
 ## World Influence
 
-- [ ] Allow biome to influence splat material weights.
+- [x] Allow biome to influence splat material weights.
 - [x] Allow moisture to influence splat material weights.
 - [x] Allow temperature to influence splat material weights.
 - [x] Allow season to influence splat material weights.
@@ -345,7 +345,10 @@ memory estimates, plus deterministic UV rotation, mirroring, and tint
 variation resolution, plus world-space UV scale and seam continuity, plus
 deterministic temperature- and season-aware blend conditions so the shared
 overworld splat mapping can add cold winter snow cover to plains and forest
-ground without coupling climate-sensitive terrain blending to renderer code.
+ground without coupling climate-sensitive terrain blending to renderer code,
+plus deterministic biome-aware blend conditions so the same shared mapping can
+shift plains and forest ground toward coastal or wetland mixes without
+inventing plugin-specific splat rules.
 
 # Roads and Paths as Terrain Splats
 

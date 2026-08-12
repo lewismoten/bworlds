@@ -887,6 +887,7 @@ describe('terrain splat support', () => {
         y: -4,
         kind: 'forest',
         signals: {
+          biome: 'wetland',
           moisture: 0.85,
           elevation: 0.33,
           temperature: 0.22,
@@ -902,6 +903,7 @@ describe('terrain splat support', () => {
         y: -4,
         kind: 'forest',
         signals: {
+          biome: 'wetland',
           moisture: 0.85,
           elevation: 0.33,
           temperature: 0.22,
@@ -1201,6 +1203,66 @@ describe('terrain splat support', () => {
       },
       kindCatalog
     );
+    const coastalPlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 14,
+        y: 15,
+        kind: 'plains',
+        signals: {
+          biome: 'shore',
+          moisture: 0.45,
+          temperature: 0.68,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const inlandPlains = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 14,
+        y: 15,
+        kind: 'plains',
+        signals: {
+          biome: 'plains',
+          moisture: 0.45,
+          temperature: 0.68,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const swampForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 16,
+        y: 17,
+        kind: 'forest',
+        signals: {
+          biome: 'wetland',
+          moisture: 0.6,
+          temperature: 0.7,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
+    const uplandForest = resolveTerrainKindSplatSample(
+      {
+        seed: 'pbr-splat-seed',
+        x: 16,
+        y: 17,
+        kind: 'forest',
+        signals: {
+          biome: 'forest',
+          moisture: 0.6,
+          temperature: 0.7,
+          season: 'summer',
+        },
+      },
+      kindCatalog
+    );
 
     expect(snowyLowland.entries.map((entry) => entry.layerId)).toEqual(
       expect.arrayContaining(['snow', 'soil'])
@@ -1228,6 +1290,15 @@ describe('terrain splat support', () => {
     );
     expect(warmWinterPlains.entries.map((entry) => entry.layerId)).not.toEqual(
       expect.arrayContaining(['snow'])
+    );
+    expect(coastalPlains.entries.map((entry) => entry.layerId)).toEqual(
+      expect.arrayContaining(['sand'])
+    );
+    expect(inlandPlains.entries.map((entry) => entry.layerId)).not.toEqual(
+      expect.arrayContaining(['sand'])
+    );
+    expect(findEntryWeight(swampForest, 'soil')).toBeGreaterThan(
+      findEntryWeight(uplandForest, 'soil')
     );
   });
 
@@ -1444,6 +1515,43 @@ describe('terrain splat support', () => {
       expect.arrayContaining([
         'Terrain splat kind "plains" must keep minTemperature within 0..1.',
         'Terrain splat kind "plains" seasons must only contain spring, summer, autumn, or winter.',
+      ])
+    );
+  });
+
+  it('rejects invalid biome conditions on terrain kinds', () => {
+    const layerCatalog = createTerrainMaterialLayerCatalog([
+      {
+        id: 'grass',
+        baseColorTextureId: 'grass/base',
+        normalTextureId: 'grass/normal',
+        roughnessTextureId: 'grass/roughness',
+        textureScale: 3,
+        defaultTint: '#88aa55',
+        defaultRoughness: 0.9,
+      },
+    ]);
+
+    expect(
+      validateTerrainKindSplatDefinition(
+        {
+          kind: 'plains',
+          baseLayerIds: ['grass'],
+          blends: [
+            {
+              layerId: 'grass',
+              weight: 0.2,
+              when: {
+                biomes: ['shore', ''],
+              },
+            },
+          ],
+        },
+        layerCatalog
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        'Terrain splat kind "plains" biomes must only contain non-empty biome labels.',
       ])
     );
   });

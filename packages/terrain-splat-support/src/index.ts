@@ -91,6 +91,7 @@ export type TerrainKindSplatCondition = {
   maxRiverSignal?: number;
   minRoadSignal?: number;
   maxRoadSignal?: number;
+  biomes?: readonly string[];
   seasons?: readonly TerrainSplatSeason[];
 };
 
@@ -118,12 +119,14 @@ export type ResolveTerrainKindSplatSampleInput = {
   y: number;
   kind: Kind;
   signals?: Partial<OverworldSignals> & {
+    biome?: string;
     temperature?: number;
     season?: TerrainSplatSeason;
   };
 };
 
 type ResolvedTerrainKindSignals = OverworldSignals & {
+  biome: string;
   temperature: number;
   season: TerrainSplatSeason;
 };
@@ -725,6 +728,13 @@ export function createOverworldTerrainSplatDefinitions(
           },
         },
         {
+          layerId: layers.sandLayerId,
+          weight: 0.18,
+          when: {
+            biomes: ['shore', 'desert'],
+          },
+        },
+        {
           layerId: layers.snowLayerId,
           weight: 0.2,
           when: {
@@ -751,6 +761,13 @@ export function createOverworldTerrainSplatDefinitions(
           weight: 0.08,
           when: {
             minMoisture: 0.62,
+          },
+        },
+        {
+          layerId: layers.soilLayerId,
+          weight: 0.1,
+          when: {
+            biomes: ['swamp', 'wetland'],
           },
         },
         {
@@ -1405,6 +1422,22 @@ function validateTerrainKindSplatCondition(
     }
   }
 
+  if (condition.biomes !== undefined) {
+    if (!Array.isArray(condition.biomes) || condition.biomes.length === 0) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(kind)} must omit biomes or define a non-empty array of biome labels.`
+      );
+    } else if (
+      condition.biomes.some(
+        (biome) => typeof biome !== 'string' || biome.trim().length === 0
+      )
+    ) {
+      errors.push(
+        `Terrain splat kind ${formatLayerLabel(kind)} biomes must only contain non-empty biome labels.`
+      );
+    }
+  }
+
   return errors;
 }
 
@@ -1427,6 +1460,7 @@ function matchesTerrainKindSplatCondition(
     matchesMaximum(condition.maxRiverSignal, signals.riverSignal) &&
     matchesMinimum(condition.minRoadSignal, signals.roadSignal) &&
     matchesMaximum(condition.maxRoadSignal, signals.roadSignal) &&
+    matchesBiome(condition.biomes, signals.biome) &&
     matchesSeason(condition.seasons, signals.season)
   );
 }
@@ -1434,12 +1468,14 @@ function matchesTerrainKindSplatCondition(
 function resolveTerrainKindSignals(
   signals:
     | (Partial<OverworldSignals> & {
+        biome?: string;
         temperature?: number;
         season?: TerrainSplatSeason;
       })
     | undefined
 ): ResolvedTerrainKindSignals {
   return {
+    biome: normalizeTerrainBiomeLabel(signals?.biome),
     continent: clampWeight(signals?.continent ?? 0),
     elevation: clampWeight(signals?.elevation ?? 0),
     moisture: clampWeight(signals?.moisture ?? 0),
@@ -1458,11 +1494,25 @@ function matchesMaximum(maximum: number | undefined, value: number): boolean {
   return maximum === undefined || value <= maximum;
 }
 
+function matchesBiome(
+  biomes: readonly string[] | undefined,
+  biome: string
+): boolean {
+  return (
+    biomes === undefined ||
+    biomes.some((candidate) => normalizeTerrainBiomeLabel(candidate) === biome)
+  );
+}
+
 function matchesSeason(
   seasons: readonly TerrainSplatSeason[] | undefined,
   season: TerrainSplatSeason
 ): boolean {
   return seasons === undefined || seasons.includes(season);
+}
+
+function normalizeTerrainBiomeLabel(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 
 function isTerrainSplatSeason(value: unknown): value is TerrainSplatSeason {
