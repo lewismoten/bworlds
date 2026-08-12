@@ -41,17 +41,29 @@ class FakeMatrix4 {
   }
 }
 
-vi.mock('@bworlds/three-support', () => ({
-  createMountainTerrainMaterials() {
-    return {
-      mountainMaterial: new FakeMaterial({ color: '#7c6f65' }),
-    };
-  },
-  createBasicMaterial(three: unknown, options: Record<string, unknown>) {
-    void three;
-    return new FakeMaterial(options);
-  },
-}));
+vi.mock('@bworlds/three-support', () => {
+  const mountainTerrainMaterialCache = new WeakMap<
+    object,
+    { mountainMaterial: FakeMaterial }
+  >();
+
+  return {
+    createMountainTerrainMaterials(three: object) {
+      let cached = mountainTerrainMaterialCache.get(three);
+      if (!cached) {
+        cached = {
+          mountainMaterial: new FakeMaterial({ color: '#7c6f65' }),
+        };
+        mountainTerrainMaterialCache.set(three, cached);
+      }
+      return cached;
+    },
+    createBasicMaterial(three: unknown, options: Record<string, unknown>) {
+      void three;
+      return new FakeMaterial(options);
+    },
+  };
+});
 
 class FakeNode {
   position = {
@@ -359,6 +371,41 @@ describe('tile quarry', () => {
     expect(countSharedMaterialReferences(first, second)).toBeGreaterThanOrEqual(
       5
     );
+  });
+
+  it('keeps repeated quarry builds on one host within the shared material budget', () => {
+    const plugin = createQuarryTilePlugin();
+    const tile = plugin.tiles?.find((entry) => entry.kind === 'quarry');
+    const state = createQuarryState();
+    const repeatedModels: FakeNode[] = [];
+
+    for (const [tileX, tileY] of [
+      [8, 8],
+      [9, 8],
+      [10, 8],
+      [11, 8],
+    ]) {
+      const model = tile?.create3DModel?.({
+        three: fakeThree as never,
+        state,
+        tile: { kind: 'quarry' } as never,
+        tileX,
+        tileY,
+      }) as FakeNode | undefined;
+      if (model) {
+        repeatedModels.push(model);
+      }
+    }
+
+    const sharedMaterials = new Set<FakeMaterial>();
+    repeatedModels.forEach((model) => {
+      collectMeshMaterials(model).forEach((material) => {
+        sharedMaterials.add(material);
+      });
+    });
+
+    expect(repeatedModels).toHaveLength(4);
+    expect(sharedMaterials.size).toBeLessThanOrEqual(6);
   });
 
   it('builds the quarry progressively before returning the final model', () => {

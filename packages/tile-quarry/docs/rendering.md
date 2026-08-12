@@ -16,3 +16,11 @@ The quarry landmark now also uses the rim mesh as its root and attaches the
 pit, derrick, lantern, and cart details beneath it, so quarry tiles avoid one
 otherwise empty wrapper `Group` without changing the landmark silhouette or
 night-light placement.
+
+Material reuse:
+
+- repeated quarry builds on one Three host are expected to stay within one
+  shared six-material palette for the stone rim plus timber, rope, rubble,
+  dark metal, and lantern surfaces
+- the regression test locks that budget so repeated nearby quarry builds
+  cannot quietly start allocating extra equivalent materials on the same host

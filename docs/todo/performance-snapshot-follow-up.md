@@ -183,6 +183,9 @@
       so body and highlight materials cannot quietly grow between passes, and
       `tile-ship` now keeps repeated ship builds on one host within one shared
       five-material palette per resolved variant so hull, trim, mast, sail,
+      and lantern materials cannot quietly grow between passes, and
+      `tile-quarry` now keeps repeated quarry builds on one host within one
+      shared six-material palette so rim, timber, rope, rubble, dark-metal,
       and lantern materials cannot quietly grow between passes.
 
 ## Instancing
