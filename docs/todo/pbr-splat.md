@@ -2,7 +2,7 @@
 
 ## Core Architecture
 
-- [ ] Create one PBR splat terrain material.
+- [x] Create one PBR splat terrain material.
 - [ ] Keep splat rendering separate from tile gameplay state.
 - [x] Define a terrain material layer interface.
 - [x] Define a terrain splat weight interface.
@@ -133,13 +133,13 @@
 
 ## Material Reuse
 
-- [ ] Use one shared splat material for compatible chunks.
-- [ ] Avoid cloning the splat material per chunk.
+- [x] Use one shared splat material for compatible chunks.
+- [x] Avoid cloning the splat material per chunk.
 - [ ] Pass chunk data through geometry attributes.
-- [ ] Pass global settings through shared uniforms.
+- [x] Pass global settings through shared uniforms.
 - [ ] Share texture arrays across terrain chunks.
 - [ ] Report shared material reuse counts.
-- [ ] Warn when a chunk creates a unique splat material.
+- [x] Warn when a chunk creates a unique splat material.
 
 ## Chunk Generation
 
@@ -234,7 +234,7 @@
 ## Initial Delivery
 
 - [x] Build one chunk with grass and dirt splat layers.
-- [ ] Add one shared PBR splat material.
+- [x] Add one shared PBR splat material.
 - [ ] Blend two terrain layers from vertex weights.
 - [ ] Add base color texture array support.
 - [ ] Add normal map texture array support.
@@ -274,6 +274,11 @@
   from the shared layer catalog, keep layer indices aligned across array
   purposes, reject mismatched dimensions or formats before WebGL upload, and
   estimate array memory usage for future terrain budget tooling.
+- Added `@bworlds/terrain-splat-support/material-plan` to build one shared
+  renderer-free terrain splat material signature from the existing texture
+  binding plans, keep chunk splat data in geometry attributes instead of
+  per-chunk clones, define shared runtime uniforms for blend/wetness/snow, and
+  warn when a chunk falls off the shared material path.
 - Added active-layer subset support to
   `@bworlds/terrain-splat-support/texture-array-plan` so optional metalness and
   ambient-occlusion arrays can be planned only for participating chunk layers.
@@ -380,6 +385,7 @@ notes live in `packages/terrain-splat-support/docs/foundations.md` and
 `packages/terrain-splat-support/docs/variant-pools.md`, plus
 `packages/terrain-splat-support/docs/neighborhood-layer-pools.md`, plus
 `packages/terrain-splat-support/docs/texture-array-plans.md`, plus
+`packages/terrain-splat-support/docs/material-plans.md`, plus
 `packages/terrain-splat-support/docs/uv-transforms.md`, plus
 `packages/terrain-splat-support/docs/tint-variation.md`, plus
 `packages/terrain-splat-support/docs/weather-effects.md`, plus
