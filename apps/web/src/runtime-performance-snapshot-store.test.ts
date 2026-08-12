@@ -1,7 +1,8 @@
 import { mkdtempSync, rmSync } from 'node:fs';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   formatRuntimePerformanceIssueFileName,
   formatRuntimePerformanceSnapshotFileName,
@@ -197,5 +198,127 @@ describe('runtime performance snapshot store', () => {
         limit: 10,
       })
     ).toHaveLength(2);
+  });
+
+  it('skips runtime issue files that disappear between listing and reading', () => {
+    const snapshotDir = mkdtempSync(
+      path.join(os.tmpdir(), 'bworlds-runtime-issues-race-')
+    );
+    tempDirs.push(snapshotDir);
+
+    const stableIssue = {
+      schemaVersion: 1 as const,
+      createdAt: '2026-08-12T02:29:40.450Z',
+      source: 'game' as const,
+      route: '/',
+      worldSeed: 'alpha',
+      context: null,
+      issueHash: 'stable',
+      summary: 'Stable issue.',
+      reasons: ['Stable issue.'],
+      performanceSnapshot: {
+        schemaVersion: 1 as const,
+        createdAt: '2026-08-12T02:29:40.450Z',
+        source: 'game' as const,
+        trigger: 'runtime-issue' as const,
+        route: '/',
+        worldSeed: 'alpha',
+        context: null,
+        limits: {
+          initialWorldGenerationMs: 4000,
+          visibleTileGenerationMs: 16,
+          maximumFrameMs: 50,
+          memoryAfterRegionChangeMb: 512,
+          activeThreeObjectCount: 2500,
+          drawCalls: 1200,
+          audioNodeCount: 16,
+          songGenerationMs: 750,
+          midiExportMs: 1500,
+          wavExportMs: 2000,
+        },
+        metrics: {
+          initialWorldGenerationMs: null,
+          visibleTileGeneration: null,
+          maximumFrameMs: 30,
+          memoryAfterRegionChangeMb: null,
+          activeThreeObjectCount: 1200,
+          drawCalls: 500,
+          audioNodeCount: 4,
+          songGenerationMs: null,
+          midiExportMs: null,
+          wavExportMs: null,
+        },
+        violations: [],
+      },
+      renderState: {
+        performanceTier: 'critical',
+        renderQualityLevel: 'reduced',
+        renderQualityLimiters: ['frame time'],
+        targetFps: 60,
+        visibilityRadius: 6,
+        pendingTileCount: 4,
+      },
+      pluginHotspots: {
+        materials: 'tile-water',
+        drawCalls: 'tile-forest',
+        objects: 'tile-town',
+        meshes: 'tile-town',
+        lodSwaps: 'tile-town',
+        fallbackBoxes: 'tile-plains',
+        rejectedModels: 'tile-plains',
+        staticMatrixUpdates: 'tile-sign',
+      },
+      currentTile: {
+        plugin: 'tile-plains',
+        requestedDetailLevel: 'full',
+        renderedDetailLevel: 'low',
+        cachedDetailLevel: 'low',
+        fallbackReason: 'Budget rejection',
+        hasVisibleModel: true,
+      },
+      resourceWarnings: [],
+    };
+    const missingIssue = {
+      ...stableIssue,
+      createdAt: '2026-08-12T02:29:42.463Z',
+      issueHash: 'missing',
+      summary: 'Missing issue.',
+      reasons: ['Missing issue.'],
+      performanceSnapshot: {
+        ...stableIssue.performanceSnapshot,
+        createdAt: '2026-08-12T02:29:42.463Z',
+      },
+    };
+
+    saveRuntimePerformanceIssue(stableIssue, {
+      snapshotDir,
+      maxSnapshots: 10,
+    });
+    saveRuntimePerformanceIssue(missingIssue, {
+      snapshotDir,
+      maxSnapshots: 10,
+    });
+
+    const missingPath = path.join(
+      snapshotDir,
+      formatRuntimePerformanceIssueFileName(missingIssue)
+    );
+    const originalReadFileSync = fs.readFileSync.bind(fs);
+    const readFileSyncSpy = vi.spyOn(fs, 'readFileSync');
+    readFileSyncSpy.mockImplementation((filePath, options) => {
+      if (String(filePath) === missingPath) {
+        throw Object.assign(new Error('missing'), { code: 'ENOENT' });
+      }
+      return originalReadFileSync(filePath, options);
+    });
+
+    expect(
+      readRecentRuntimePerformanceIssues({
+        snapshotDir,
+        limit: 10,
+      })
+    ).toEqual([expect.objectContaining({ issueHash: 'stable' })]);
+
+    readFileSyncSpy.mockRestore();
   });
 });

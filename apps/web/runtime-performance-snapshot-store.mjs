@@ -31,16 +31,36 @@ function listSnapshotEntries(snapshotDir) {
   return fs
     .readdirSync(snapshotDir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
-    .map((entry) => {
+    .flatMap((entry) => {
       const absolutePath = getSnapshotFilePath(snapshotDir, entry.name);
-      const stats = fs.statSync(absolutePath);
-      return {
-        fileName: entry.name,
-        absolutePath,
-        createdAtMs: stats.mtimeMs,
-      };
+      try {
+        const stats = fs.statSync(absolutePath);
+        return [
+          {
+            fileName: entry.name,
+            absolutePath,
+            createdAtMs: stats.mtimeMs,
+          },
+        ];
+      } catch (error) {
+        if (error?.code === 'ENOENT') {
+          return [];
+        }
+        throw error;
+      }
     })
     .sort((left, right) => right.createdAtMs - left.createdAtMs);
+}
+
+function readJsonSnapshotFile(absolutePath) {
+  try {
+    return JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
 }
 
 function trimSnapshots(snapshotDir, maxSnapshots) {
@@ -86,7 +106,8 @@ export function readRecentRuntimePerformanceSnapshots(options = {}) {
   const limit = options.limit ?? MAX_RUNTIME_PERFORMANCE_SNAPSHOTS;
   return listSnapshotEntries(snapshotDir)
     .slice(0, limit)
-    .map((entry) => JSON.parse(fs.readFileSync(entry.absolutePath, 'utf8')));
+    .map((entry) => readJsonSnapshotFile(entry.absolutePath))
+    .filter((snapshot) => snapshot !== null);
 }
 
 export function formatRuntimePerformanceIssueFileName(issue) {
@@ -117,5 +138,6 @@ export function readRecentRuntimePerformanceIssues(options = {}) {
   const limit = options.limit ?? MAX_RUNTIME_PERFORMANCE_ISSUES;
   return listSnapshotEntries(snapshotDir)
     .slice(0, limit)
-    .map((entry) => JSON.parse(fs.readFileSync(entry.absolutePath, 'utf8')));
+    .map((entry) => readJsonSnapshotFile(entry.absolutePath))
+    .filter((issue) => issue !== null);
 }
