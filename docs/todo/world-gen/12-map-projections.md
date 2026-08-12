@@ -21,7 +21,7 @@
 - [x] Add an orthographic projection plugin.
 - [x] Add a sinusoidal projection plugin.
 - [x] Add a Mollweide projection plugin.
-- [ ] Add an Equal Earth projection plugin.
+- [x] Add an Equal Earth projection plugin.
 - [ ] Add a Goode homolosine projection plugin.
 - [ ] Add a Robinson projection plugin.
 - [ ] Add a Winkel Tripel projection plugin.
@@ -87,6 +87,10 @@ Current support:
   `createMollweideMapProjectionPlugin()`, which gives the map stack a
   global oval equal-area option with full-world coverage and inverse
   projection support backed by a small forward solver.
+- `@bworlds/map-support` now also exposes
+  `createEqualEarthMapProjectionPlugin()`, which gives the map stack a
+  modern full-world equal-area option with full-world coverage and inverse
+  projection support based on the standard Equal Earth polynomial constants.
 - The projection contract uses canonical `worldX/worldY` inputs and
   `mapX/mapY` outputs so map code can keep world-space and projected-space
   coordinates explicit instead of overloading generic `x` and `y` labels.

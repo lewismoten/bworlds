@@ -16,6 +16,7 @@ import {
   createAzimuthalEquidistantMapProjectionPlugin,
   createAlbersEqualAreaConicMapProjectionPlugin,
   createGenericConicMapProjectionPlugin,
+  createEqualEarthMapProjectionPlugin,
   createMapProjectionPlugin,
   createMercatorMapProjectionPlugin,
   createMillerCylindricalMapProjectionPlugin,
@@ -33,6 +34,15 @@ import {
   MILLER_MAX_PROJECTED_Y,
   MILLER_MAX_WORLD_LATITUDE,
   MERCATOR_MAX_WORLD_LATITUDE,
+  EQUAL_EARTH_A1,
+  EQUAL_EARTH_A2,
+  EQUAL_EARTH_A3,
+  EQUAL_EARTH_A4,
+  EQUAL_EARTH_MAX_PROJECTED_X,
+  EQUAL_EARTH_MAX_PROJECTED_Y,
+  EQUAL_EARTH_MAX_SOLVER_ITERATIONS,
+  EQUAL_EARTH_MAX_WORLD_LATITUDE,
+  EQUAL_EARTH_MAX_WORLD_LONGITUDE,
   MOLLWEIDE_MAX_PROJECTED_X,
   MOLLWEIDE_MAX_PROJECTED_Y,
   MOLLWEIDE_MAX_SOLVER_ITERATIONS,
@@ -661,5 +671,38 @@ describe('map projections', () => {
     expect(MOLLWEIDE_MAX_PROJECTED_X).toBeCloseTo(2 * Math.SQRT2, 10);
     expect(MOLLWEIDE_MAX_PROJECTED_Y).toBeCloseTo(Math.SQRT2, 10);
     expect(MOLLWEIDE_MAX_SOLVER_ITERATIONS).toBe(12);
+  });
+
+  it('projects and inverts Equal Earth coordinates across the full latitude range', () => {
+    const projection = createEqualEarthMapProjectionPlugin();
+
+    expect(projection.id).toBe('equal-earth');
+    expect(projection.label).toBe('Equal Earth');
+    expect(projection.distortion).toBe('equal-area');
+    expect(projection.wrapping).toEqual({
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    });
+    expect(projection.project({ worldX: 0, worldY: 0 })).toEqual({
+      mapX: 0,
+      mapY: 0,
+    });
+
+    const forward = projection.project({
+      worldX: 80,
+      worldY: 25,
+    });
+    const inverted = projection.invert?.(forward);
+    expect(inverted?.worldX).toBeCloseTo(80, 10);
+    expect(inverted?.worldY).toBeCloseTo(25, 10);
+    expect(EQUAL_EARTH_MAX_WORLD_LONGITUDE).toBe(180);
+    expect(EQUAL_EARTH_MAX_WORLD_LATITUDE).toBe(90);
+    expect(EQUAL_EARTH_A1).toBeCloseTo(1.340264, 10);
+    expect(EQUAL_EARTH_A2).toBeCloseTo(-0.081106, 10);
+    expect(EQUAL_EARTH_A3).toBeCloseTo(0.000893, 10);
+    expect(EQUAL_EARTH_A4).toBeCloseTo(0.003796, 10);
+    expect(EQUAL_EARTH_MAX_PROJECTED_X).toBeGreaterThan(2.5);
+    expect(EQUAL_EARTH_MAX_PROJECTED_Y).toBeGreaterThan(1.2);
+    expect(EQUAL_EARTH_MAX_SOLVER_ITERATIONS).toBe(12);
   });
 });

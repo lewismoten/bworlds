@@ -19,6 +19,7 @@ Current built-in support:
 - `createAzimuthalMapProjectionPlugin()`
 - `createAlbersEqualAreaConicMapProjectionPlugin()`
 - `createGenericConicMapProjectionPlugin()`
+- `createEqualEarthMapProjectionPlugin()`
 - `createMercatorMapProjectionPlugin()`
 - `createMillerCylindricalMapProjectionPlugin()`
 - `createMollweideMapProjectionPlugin()`
@@ -276,6 +277,26 @@ The projected range is normalized from raw Mollweide coordinates:
 
 This gives later map UIs one full-world equal-area option with an oval map
 footprint while still fitting the same normalized projection plugin contract.
+
+## Equal Earth
+
+`createEqualEarthMapProjectionPlugin()` provides a global pseudocylindrical
+equal-area projection using the standard Equal Earth polynomial constants.
+
+It currently:
+
+- uses `id: 'equal-earth'`
+- declares `distortion: 'equal-area'`
+- does not wrap world X or world Y
+- supports inverse projection back to `worldX/worldY`
+- supports the full `±180` longitude and `±90` latitude range
+
+The projected range is normalized from the standard Equal Earth horizontal
+and vertical extents derived from the published polynomial coefficients.
+
+This gives later map UIs a modern full-world equal-area projection with a
+less aggressively stretched appearance than Mollweide while still fitting the
+shared normalized plugin contract.
 
 ## Miller Cylindrical
 

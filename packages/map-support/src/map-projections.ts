@@ -110,6 +110,17 @@ export const MOLLWEIDE_MAX_PROJECTED_X = 2 * Math.SQRT2;
 export const MOLLWEIDE_MAX_PROJECTED_Y = Math.SQRT2;
 export const MOLLWEIDE_MAX_SOLVER_ITERATIONS = 12;
 export const MOLLWEIDE_SOLVER_TOLERANCE = 1e-12;
+export const EQUAL_EARTH_MAX_WORLD_LONGITUDE = 180;
+export const EQUAL_EARTH_MAX_WORLD_LATITUDE = 90;
+export const EQUAL_EARTH_A1 = 1.340264;
+export const EQUAL_EARTH_A2 = -0.081106;
+export const EQUAL_EARTH_A3 = 0.000893;
+export const EQUAL_EARTH_A4 = 0.003796;
+export const EQUAL_EARTH_MAX_PROJECTED_X =
+  (2 * Math.sqrt(3) * Math.PI) / (3 * EQUAL_EARTH_A1);
+export const EQUAL_EARTH_MAX_PROJECTED_Y = evaluateEqualEarthY(Math.PI / 3);
+export const EQUAL_EARTH_MAX_SOLVER_ITERATIONS = 12;
+export const EQUAL_EARTH_SOLVER_TOLERANCE = 1e-12;
 
 export function createMapProjectionPlugin(params: {
   id: string;
@@ -1066,6 +1077,85 @@ export function createMollweideMapProjectionPlugin(): MapProjectionPlugin {
   });
 }
 
+export function createEqualEarthMapProjectionPlugin(): MapProjectionPlugin {
+  return createMapProjectionPlugin({
+    id: 'equal-earth',
+    label: 'Equal Earth',
+    distortion: 'equal-area',
+    bounds: {
+      minWorldX: -EQUAL_EARTH_MAX_WORLD_LONGITUDE,
+      maxWorldX: EQUAL_EARTH_MAX_WORLD_LONGITUDE,
+      minWorldY: -EQUAL_EARTH_MAX_WORLD_LATITUDE,
+      maxWorldY: EQUAL_EARTH_MAX_WORLD_LATITUDE,
+      minMapX: -1,
+      maxMapX: 1,
+      minMapY: -1,
+      maxMapY: 1,
+    },
+    wrapping: {
+      wrapsWorldX: false,
+      wrapsWorldY: false,
+    },
+    project({ worldX, worldY }) {
+      const clampedLongitude = clamp(
+        worldX,
+        -EQUAL_EARTH_MAX_WORLD_LONGITUDE,
+        EQUAL_EARTH_MAX_WORLD_LONGITUDE
+      );
+      const clampedLatitude = clamp(
+        worldY,
+        -EQUAL_EARTH_MAX_WORLD_LATITUDE,
+        EQUAL_EARTH_MAX_WORLD_LATITUDE
+      );
+      const longitudeRadians = degreesToRadians(clampedLongitude);
+      const latitudeRadians = degreesToRadians(clampedLatitude);
+      const theta = Math.asin((Math.sqrt(3) / 2) * Math.sin(latitudeRadians));
+      const theta2 = theta ** 2;
+      const theta6 = theta2 ** 3;
+      const denominator =
+        3 *
+        (EQUAL_EARTH_A1 +
+          3 * EQUAL_EARTH_A2 * theta2 +
+          theta6 * (7 * EQUAL_EARTH_A3 + 9 * EQUAL_EARTH_A4 * theta2));
+      return {
+        mapX: snapNearZero(
+          ((2 * Math.sqrt(3) * longitudeRadians * Math.cos(theta)) /
+            denominator) /
+            EQUAL_EARTH_MAX_PROJECTED_X
+        ),
+        mapY: snapNearZero(
+          evaluateEqualEarthY(theta) / EQUAL_EARTH_MAX_PROJECTED_Y
+        ),
+      };
+    },
+    invert({ mapX, mapY }) {
+      const projectedX = mapX * EQUAL_EARTH_MAX_PROJECTED_X;
+      const projectedY = mapY * EQUAL_EARTH_MAX_PROJECTED_Y;
+      const theta = solveEqualEarthTheta(projectedY);
+      const theta2 = theta ** 2;
+      const theta6 = theta2 ** 3;
+      const denominator =
+        2 * Math.sqrt(3) * Math.cos(theta);
+      const longitudeRadians =
+        Math.abs(denominator) <= 1e-12
+          ? 0
+          : (projectedX *
+              3 *
+              (EQUAL_EARTH_A1 +
+                3 * EQUAL_EARTH_A2 * theta2 +
+                theta6 * (7 * EQUAL_EARTH_A3 + 9 * EQUAL_EARTH_A4 * theta2))) /
+            denominator;
+      const latitudeRadians = Math.asin(
+        clamp((2 * Math.sin(theta)) / Math.sqrt(3), -1, 1)
+      );
+      return {
+        worldX: radiansToDegrees(longitudeRadians),
+        worldY: radiansToDegrees(latitudeRadians),
+      };
+    },
+  });
+}
+
 function normalizeMapProjectionWorldCoordinate(
   coordinate: MapProjectionWorldCoordinate
 ): MapProjectionWorldCoordinate {
@@ -1229,6 +1319,44 @@ function solveMollweideTheta(latitudeRadians: number): number {
     }
   }
   return clamp(theta, -Math.PI / 2, Math.PI / 2);
+}
+
+function evaluateEqualEarthY(theta: number): number {
+  const theta2 = theta ** 2;
+  return theta * (
+    EQUAL_EARTH_A1 +
+    theta2 *
+      (EQUAL_EARTH_A2 + theta2 ** 2 * (EQUAL_EARTH_A3 + EQUAL_EARTH_A4 * theta2))
+  );
+}
+
+function solveEqualEarthTheta(projectedY: number): number {
+  const maxTheta = Math.PI / 3;
+  const clampedProjectedY = clamp(
+    projectedY,
+    -EQUAL_EARTH_MAX_PROJECTED_Y,
+    EQUAL_EARTH_MAX_PROJECTED_Y
+  );
+  let theta = clampedProjectedY / EQUAL_EARTH_A1;
+  for (
+    let iteration = 0;
+    iteration < EQUAL_EARTH_MAX_SOLVER_ITERATIONS;
+    iteration += 1
+  ) {
+    const theta2 = theta ** 2;
+    const theta4 = theta2 ** 2;
+    const delta =
+      (evaluateEqualEarthY(theta) - clampedProjectedY) /
+      (EQUAL_EARTH_A1 +
+        3 * EQUAL_EARTH_A2 * theta2 +
+        7 * EQUAL_EARTH_A3 * theta4 * theta2 +
+        9 * EQUAL_EARTH_A4 * theta4 * theta4);
+    theta -= delta;
+    if (Math.abs(delta) <= EQUAL_EARTH_SOLVER_TOLERANCE) {
+      break;
+    }
+  }
+  return clamp(theta, -maxTheta, maxTheta);
 }
 
 function resolveGenericConicConeConstant(
