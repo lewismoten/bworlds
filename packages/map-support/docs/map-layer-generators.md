@@ -4,6 +4,9 @@ for physical map products built on canonical map features:
 - `createTopographicMapFeatureGeneratorPlugin(...)`
 - `createReliefMapFeatureGeneratorPlugin(...)`
 - `createPhysicalMapFeatureGeneratorPlugin(...)`
+- `createElevationMapFeatureGeneratorPlugin(...)`
+- `createSlopeMapFeatureGeneratorPlugin(...)`
+- `createGeologyMapFeatureGeneratorPlugin(...)`
 
 ## Purpose
 
@@ -24,6 +27,9 @@ The helpers currently reserve these layer ids:
 - `topographic`
 - `relief`
 - `physical`
+- `elevation`
+- `slope`
+- `geology`
 
 That gives later PMTiles export, map styling, and viewer code one stable layer
 vocabulary instead of forcing each feature generator to invent its own names.
@@ -65,3 +71,30 @@ or classified relief areas can share one polygon-oriented export surface.
 The callback accepts any canonical `MapFeatureRecord`, which leaves room for
 mixed physical features such as landmarks, coastlines, or hybrid layer content
 without creating another ad hoc PMTiles wrapper.
+
+## Elevation, Slope, And Geology Layers
+
+`createElevationMapFeatureGeneratorPlugin(...)`,
+`createSlopeMapFeatureGeneratorPlugin(...)`, and
+`createGeologyMapFeatureGeneratorPlugin(...)` follow the same PMTiles generator
+contract with conventional layer ids:
+
+- `layerId: 'elevation'`
+- `layerId: 'slope'`
+- `layerId: 'geology'`
+
+They default to:
+
+- `id: 'elevation-map-layer'`
+- `id: 'slope-map-layer'`
+- `id: 'geology-map-layer'`
+
+and:
+
+- `label: 'Elevation Layer'`
+- `label: 'Slope Layer'`
+- `label: 'Geology Layer'`
+
+These wrappers intentionally accept canonical `MapFeatureRecord` values so
+later terrain analysis or geology products can choose point, line, or polygon
+features without changing the shared layer-generator contract.

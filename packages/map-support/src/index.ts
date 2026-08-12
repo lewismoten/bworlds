@@ -20,8 +20,11 @@ export type * from './map-pmtiles.ts';
 export type * from './map-viewport-3d.ts';
 export type * from './map-viewport.ts';
 export {
+  createElevationMapFeatureGeneratorPlugin,
+  createGeologyMapFeatureGeneratorPlugin,
   createPhysicalMapFeatureGeneratorPlugin,
   createReliefMapFeatureGeneratorPlugin,
+  createSlopeMapFeatureGeneratorPlugin,
   createTopographicMapFeatureGeneratorPlugin,
 } from './map-layer-generators.ts';
 export {

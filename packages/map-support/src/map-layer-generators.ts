@@ -57,3 +57,52 @@ export function createPhysicalMapFeatureGeneratorPlugin(options: {
     },
   });
 }
+
+export function createElevationMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getElevationFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'elevation-map-layer',
+    label: options.label ?? 'Elevation Layer',
+    layerId: 'elevation',
+    getFeatures(request) {
+      return options.getElevationFeatures(request);
+    },
+  });
+}
+
+export function createSlopeMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getSlopeFeatures(request: PmtilesExportRequest): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'slope-map-layer',
+    label: options.label ?? 'Slope Layer',
+    layerId: 'slope',
+    getFeatures(request) {
+      return options.getSlopeFeatures(request);
+    },
+  });
+}
+
+export function createGeologyMapFeatureGeneratorPlugin(options: {
+  id?: string;
+  label?: string;
+  getGeologyFeatures(
+    request: PmtilesExportRequest
+  ): readonly MapFeatureRecord[];
+}): MapFeatureGeneratorPlugin {
+  return createMapFeatureGeneratorPlugin({
+    id: options.id ?? 'geology-map-layer',
+    label: options.label ?? 'Geology Layer',
+    layerId: 'geology',
+    getFeatures(request) {
+      return options.getGeologyFeatures(request);
+    },
+  });
+}
