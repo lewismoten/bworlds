@@ -257,10 +257,11 @@
       under the dungeon root whenever the support poles and crossbars are
       already emitted through shared instanced sets, which removes one
       avoidable one-child wrapper per banner without changing banner motion,
-      and straight two-connection `tile-route` roads now use the road ribbon
-      mesh itself as the tile root and attach the center patch plus optional
-      full-detail shoulder ribbon beneath it instead of returning a wrapper
-      group for that case, and
+      and `tile-route` straight roads, isolated stubs, and multi-branch
+      junctions now use a road ribbon mesh as the tile root and attach the
+      center patch, optional shoulder ribbons, and remaining branch ribbons
+      beneath that first road mesh instead of returning a wrapper group for
+      those road shapes, and
       full-detail `tile-cave` now uses its entrance-boulder `InstancedMesh`
       as the cave-mouth root and attaches the cap, portal shell, arch, inner
       pillars, sill, and lantern pieces beneath it instead of returning a

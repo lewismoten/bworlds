@@ -813,7 +813,7 @@ describe('tile route', () => {
     while (true) {
       const next = progressiveBuild?.next();
       if (next?.done) {
-        progressiveModel = next.value as FakeGroup | undefined;
+        progressiveModel = next.value as FakeNode | undefined;
         break;
       }
     }
@@ -845,6 +845,29 @@ describe('tile route', () => {
     expect(model).toBeInstanceOf(FakeMesh);
     expect(model?.position).toMatchObject({ x: 0, y: 0, z: 0 });
     expect(model?.children).toHaveLength(2);
+  });
+
+  it('uses the full-detail isolated road stub ribbon as the root instead of a wrapper group', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+    });
+    const model = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 0, y: 0, z: 0 });
+    expect(model?.children).toHaveLength(1);
+    expect(getRenderBudgetPartMetadata(model?.children[0])).toEqual(
+      expect.objectContaining({
+        label: 'stub-shoulder',
+        optional: true,
+      })
+    );
   });
 
   it('builds road junctions progressively one branch at a time', () => {
@@ -887,6 +910,32 @@ describe('tile route', () => {
       { completedSteps: 3, totalSteps: 4, label: 'branch-2' },
       { completedSteps: 4, totalSteps: 4, label: 'branch-3' },
     ]);
+  });
+
+  it('uses the full-detail road junction ribbon as the root instead of a wrapper group', () => {
+    const state = createRoadModelState({
+      '0:0': 'road',
+      '-1:0': 'road',
+      '1:0': 'road',
+      '0:-1': 'road',
+    });
+    const model = roadTile?.create3DModel?.({
+      three: fakeThree as never,
+      state: state as never,
+      tile: { kind: 'road' } as never,
+      tileX: 0,
+      tileY: 0,
+    }) as FakeMesh | undefined;
+
+    expect(model).toBeInstanceOf(FakeMesh);
+    expect(model?.position).toMatchObject({ x: 0, y: 0, z: 0 });
+    expect(model?.children).toHaveLength(6);
+    expect(model?.children[0]).toBeInstanceOf(FakeMesh);
+    expect(
+      model?.children
+        .map((child) => getRenderBudgetPartMetadata(child)?.label ?? null)
+        .filter((label): label is string => label !== null)
+    ).toEqual(['branch-1-shoulder', 'branch-2-shoulder', 'branch-3-shoulder']);
   });
 
   it('skips low-detail road junction shoulder and center phases', () => {
@@ -1002,7 +1051,7 @@ describe('tile route', () => {
       tile: { kind: 'road' } as never,
       tileX: 0,
       tileY: 0,
-    }) as FakeGroup | undefined;
+    }) as FakeNode | undefined;
 
     const optionalPartLabels =
       model?.children

@@ -17,14 +17,23 @@ under the low-detail tile draw-call cap instead of building decorative road
 trim only to prune or reject it later.
 
 Low-detail straight roads now use the road ribbon mesh itself as the tile root
-and attach the center patch beneath it. That removes one static wrapper
-`Group` from each visible low-detail straight road while preserving the same
-surface marker and patch placement.
+and attach the center patch beneath it. Low-detail junctions likewise use their
+first branch road ribbon as the root, and isolated stubs return the stub ribbon
+mesh directly. Those changes remove one static wrapper `Group` from each of
+those visible road shapes while preserving the same surface marker and patch
+placement.
 
 Full-detail straight roads now use that same road ribbon mesh as the tile root
 and attach the decorative shoulder ribbon plus center patch beneath it. That
 removes one more static wrapper `Group` from each visible straight road tile
 without changing the same local road and shoulder curve layout.
+
+Full-detail isolated stubs now use the stub road ribbon as the tile root and
+attach the optional shoulder ribbon beneath it, while full-detail junctions use
+their first branch road ribbon as the tile root and attach the center patch,
+optional shoulder ribbons, and remaining branch ribbons beneath it. That
+removes one more static wrapper `Group` from each visible stub and junction
+tile without changing branch placement or optional render-budget tags.
 
 Road shoulder meshes are tagged as optional render-budget parts. When a dense
 road junction crosses the per-tile draw-call cap, `render3d` can prune shoulder

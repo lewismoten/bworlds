@@ -131,15 +131,15 @@ Always run tests to make sure all tests pass
       and placard directly under the tile root instead of a dedicated
       silhouette subgroup, and full-detail roadside signs now place their
       post meshes, placard boards, and label planes directly under the tile
-      root instead of dedicated post and placard subgroups, and straight
-      two-connection road tiles now use the road ribbon mesh itself as the
-      tile root and attach the center patch plus optional full-detail shoulder
-      ribbon beneath it instead of paying a wrapper group, and dock boats
+      root instead of dedicated post and placard subgroups, and `tile-route`
+      straight roads, isolated stubs, and multi-branch junctions now use a
+      road ribbon mesh as the tile root and attach the center patch, optional
+      shoulder ribbons, and remaining branch ribbons beneath it instead of
+      paying a wrapper group for those road shapes, and dock boats
       now place their hull, prow, cabin, sail, and ramp pieces directly
       under the dock root instead of a dedicated boat subgroup, and forest log
       bridges now collapse their repeated support posts into one shared
-      `InstancedMesh`, isolated low-detail road tiles now return their single
-      stub ribbon mesh directly instead of wrapping it in a one-child group,
+      `InstancedMesh`,
       and standard bridge railings and covered bridge spans now collapse their repeated rails and posts into shared
       `InstancedMesh` sets, and stone bridges now collapse their repeated
       parapets into one shared `InstancedMesh`, and
