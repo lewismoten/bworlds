@@ -26,8 +26,8 @@
 - [x] Test maximum frame duration enforcement.
 - [x] Test visible tile average duration enforcement.
 - [x] Test visible tile maximum duration enforcement.
-- [ ] Add a pending tile count limit.
-- [ ] Test pending tile count enforcement.
+- [x] Add a pending tile count limit.
+- [x] Test pending tile count enforcement.
 - [ ] Add a minimum tile build rate if useful.
 - [ ] Test minimum tile build rate enforcement.
 - [x] Test active Three.js object count enforcement.
@@ -65,4 +65,6 @@ supported hard-limit fields stay aligned with their measured metric paths, and
 the runtime snapshot limits now split visible tile generation into separate
 `averageMs` and `maxMs` hard limits so the validation and violation coverage
 matches the actual metric shape instead of forcing two measurements through one
-shared threshold.
+shared threshold, and runtime snapshots now also enforce the healthy
+pending-build queue ceiling of `8` pending tiles, with regression coverage for
+the corresponding violation and schema alignment path.

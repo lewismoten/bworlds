@@ -27,6 +27,7 @@ export const RUNTIME_PERFORMANCE_LIMIT_TO_METRIC_PATHS = {
   initialWorldGenerationMs: 'initialWorldGenerationMs',
   visibleTileGenerationAverageMs: 'visibleTileGeneration.averageMs',
   visibleTileGenerationMaxMs: 'visibleTileGeneration.maxMs',
+  pendingTileCount: 'visibleTileGeneration.pendingTileCount',
   maximumFrameMs: 'maximumFrameMs',
   memoryAfterRegionChangeMb: 'memoryAfterRegionChangeMb',
   activeThreeObjectCount: 'activeThreeObjectCount',

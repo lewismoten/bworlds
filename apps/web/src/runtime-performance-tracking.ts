@@ -4,6 +4,7 @@ export const DEFAULT_RUNTIME_PERFORMANCE_LIMITS = {
   initialWorldGenerationMs: 4_000,
   visibleTileGenerationAverageMs: 8,
   visibleTileGenerationMaxMs: 16,
+  pendingTileCount: 8,
   maximumFrameMs: 50,
   memoryAfterRegionChangeMb: 512,
   activeThreeObjectCount: 2_500,
@@ -202,6 +203,14 @@ export function collectRuntimePerformanceViolations(
   ) {
     violations.push(
       `Visible tile maximum generation ${metrics.visibleTileGeneration.maxMs.toFixed(1)} ms exceeded ${limits.visibleTileGenerationMaxMs.toFixed(1)} ms.`
+    );
+  }
+  if (
+    typeof metrics.visibleTileGeneration?.pendingTileCount === 'number' &&
+    metrics.visibleTileGeneration.pendingTileCount > limits.pendingTileCount
+  ) {
+    violations.push(
+      `Pending tile count ${metrics.visibleTileGeneration.pendingTileCount} exceeded ${limits.pendingTileCount}.`
     );
   }
   if (

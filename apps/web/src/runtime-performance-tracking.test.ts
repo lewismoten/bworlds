@@ -1062,6 +1062,7 @@ describe('runtime performance tracking', () => {
           initialWorldGenerationMs: 4000,
           visibleTileGenerationAverageMs: 8,
           visibleTileGenerationMaxMs: 16,
+          pendingTileCount: 8,
           maximumFrameMs: 50,
           memoryAfterRegionChangeMb: 512,
           activeThreeObjectCount: 2500,

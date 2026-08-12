@@ -48,6 +48,7 @@ describe('runtime performance snapshot validation', () => {
       'songGenerationMs',
       'visibleTileGeneration.averageMs',
       'visibleTileGeneration.maxMs',
+      'visibleTileGeneration.pendingTileCount',
       'wavExportMs',
     ]);
     expect(NULLABLE_RUNTIME_PERFORMANCE_METRICS).toEqual(
@@ -242,6 +243,24 @@ describe('runtime performance snapshot validation', () => {
       ).toFixed(
         1
       )} ms exceeded ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.visibleTileGenerationMaxMs.toFixed(1)} ms.`,
+    },
+    {
+      name: 'pending tile count',
+      limit: DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount,
+      apply: (value: number) => ({
+        path: 'visibleTileGeneration.pendingTileCount',
+        set(
+          snapshot: ReturnType<typeof createValidRuntimePerformanceSnapshot>
+        ) {
+          snapshot.metrics.visibleTileGeneration = {
+            averageMs: 4,
+            maxMs: 8,
+            buildsPerSecond: 12,
+            pendingTileCount: value,
+          };
+        },
+      }),
+      expectedViolation: `Pending tile count ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount + 1} exceeded ${DEFAULT_RUNTIME_PERFORMANCE_LIMITS.pendingTileCount}.`,
     },
     {
       name: 'maximum frame time',
