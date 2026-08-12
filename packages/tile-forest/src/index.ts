@@ -1432,7 +1432,8 @@ function* createForestModelProgressive({
       geometry,
       tileX,
       tileY,
-      descriptors
+      descriptors,
+      renderQuality
     );
     return group;
   }
@@ -1452,7 +1453,8 @@ function* createForestModelProgressive({
       geometry,
       tileX,
       tileY,
-      backgroundInstanceDescriptors
+      backgroundInstanceDescriptors,
+      renderQuality
     );
   }
 
@@ -4361,7 +4363,8 @@ function addLowDetailForestTreeInstances(
   geometry: TreeGeometry,
   tileX: number,
   tileY: number,
-  descriptors: ForestTreeDescriptor[]
+  descriptors: ForestTreeDescriptor[],
+  quality?: RenderBudgetQualityLevel | null
 ) {
   if (descriptors.length === 0) {
     return;
@@ -4379,6 +4382,8 @@ function addLowDetailForestTreeInstances(
 
   const lowDetailMatrixScratch = new three.Matrix4();
   const dominantForm = resolveDominantLowDetailForestForm(descriptors);
+  const collapseCanopiesToDominantForm =
+    quality === 'reduced' || quality === 'minimal';
   const trunkStyle = getLowDetailTreeStyle(three, dominantForm);
   const trunkInstances = new three.InstancedMesh(
     geometry.trunk,
@@ -4409,7 +4414,13 @@ function addLowDetailForestTreeInstances(
   });
   group.add(trunkInstances);
 
-  for (const [form, bucket] of trunkBuckets.entries()) {
+  const canopyBuckets = collapseCanopiesToDominantForm
+    ? new Map<ForestTreeForm, ForestTreeDescriptor[]>([
+        [dominantForm, descriptors.slice()],
+      ])
+    : trunkBuckets;
+
+  for (const [form, bucket] of canopyBuckets.entries()) {
     const canopyStyle = getLowDetailTreeStyle(three, form);
     const canopyInstances = new three.InstancedMesh(
       geometry.foliage,

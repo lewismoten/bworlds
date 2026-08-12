@@ -691,6 +691,67 @@ describe('tile forest', () => {
     expect(reducedBackgroundInstances.length).toBeGreaterThan(0);
   });
 
+  it('collapses reduced-quality background forest canopies to one shared instanced mesh', () => {
+    const tile = getForestTile();
+    const state = createForestTestState();
+    let targetTile: { x: number; y: number } | null = null;
+
+    for (let tileY = 0; tileY < 24 && !targetTile; tileY += 1) {
+      for (let tileX = 0; tileX < 24; tileX += 1) {
+        const speciesIds = new Set(getForestTreeSpeciesIds(tileX, tileY));
+        if (
+          speciesIds.has('pine') &&
+          (speciesIds.has('oak') || speciesIds.has('birch'))
+        ) {
+          targetTile = { x: tileX, y: tileY };
+          break;
+        }
+      }
+    }
+
+    expect(targetTile).not.toBeNull();
+    state.player.x = targetTile!.x;
+    state.player.y = targetTile!.y;
+
+    const reducedModel = tile.create3DModel?.({
+      three: fakeThree as never,
+      state,
+      tile: { kind: 'forest' },
+      tileX: targetTile!.x,
+      tileY: targetTile!.y,
+      detailLevel: 'full',
+      renderBudget: {
+        quality: 'reduced',
+        detailLevel: 'full',
+        targetFps: 60,
+        visibilityRadius: 10,
+        frame: {},
+        pendingBuild: {},
+      },
+    }) as FakeGroup;
+
+    const instancedTrunks: FakeInstancedMesh[] = [];
+    const instancedCanopies: FakeInstancedMesh[] = [];
+    reducedModel.traverse((node) => {
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestTreeLowDetailInstancedPart === 'trunk'
+      ) {
+        instancedTrunks.push(node);
+      }
+      if (
+        node instanceof FakeInstancedMesh &&
+        node.userData?.forestTreeLowDetailInstancedPart === 'canopy'
+      ) {
+        instancedCanopies.push(node);
+      }
+    });
+
+    expect(instancedTrunks).toHaveLength(1);
+    expect(instancedCanopies).toHaveLength(1);
+    expect(instancedCanopies[0]?.count).toBe(instancedTrunks[0]?.count);
+  });
+
   it('renders forest fireflies only at full quality close detail', () => {
     const tile = getForestTile();
     const state = createForestTestState(8, 6);
