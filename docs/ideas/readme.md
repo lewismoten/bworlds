@@ -57,7 +57,8 @@ Do not work on this file. These are just ideas for later.
 different celestial bodies - constellations, moon, sun, comets, aurora, meteor shower, planets should proably be seprated into their own celestial plugins and have the ability to toggle on/off, and report/listen on some kind of event channel for calculations and such, but also be throttled so they don't get too noisy sending information out if they need to do so (ie, moon start/end phase/location, aurora on/off/position)
 
 Add different geographic layers where areas of the world have a 0.0 to 1.0 influence of style/game play - 
-- Technology - Computers / Future
+- Modern - Today (computers, internet, etc)
+- Future - Teleportation, Robots, Space Stations, etc.
 - Post Apocolyptic - Ruins
 - Legends - Gods & Mythology
 - Fantasy - Magic
