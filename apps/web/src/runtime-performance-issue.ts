@@ -778,7 +778,8 @@ function isGenericBudgetIssuePayload(reason: string): boolean {
   if (
     isGenericRuntimePerformanceBudgetReason(normalized) ||
     isNumericBudgetThresholdReason(normalized) ||
-    isGenericBudgetPlaceholderReason(normalized)
+    isGenericBudgetPlaceholderReason(normalized) ||
+    isExpectedTileFallbackReason(normalized)
   ) {
     return true;
   }
@@ -811,6 +812,12 @@ function isNumericBudgetThresholdReason(reason: string): boolean {
 
 function isGenericBudgetPlaceholderReason(reason: string): boolean {
   return /^(?:full failed|low failed|budget rejection)$/iu.test(reason.trim());
+}
+
+function isExpectedTileFallbackReason(reason: string): boolean {
+  return /^(?:tile has no plugin model(?: and uses the wall-height fallback)?)$/iu.test(
+    reason.trim()
+  );
 }
 
 function isGenericRuntimePerformanceBudgetReason(reason: string): boolean {

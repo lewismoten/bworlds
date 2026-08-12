@@ -12,7 +12,11 @@
       `plugin unique materialCount 13>12`, and aggregate runtime symptom
       summaries such as plugin rejection totals, scheduler starvation totals,
       LOD-swap churn, fallback dominance, and heap-growth trend warnings now
-      stay local to the client unless an explicit failure reason is present.
+      stay local to the client unless an explicit failure reason is present,
+      and expected non-plugin tile fallback reasons such as
+      `tile has no plugin model` and
+      `tile has no plugin model and uses the wall-height fallback` now also
+      stay local to the client instead of being escalated as runtime issues.
 - [x] Limit each tree species to 10 material variants per part type.
 - [x] Reuse bark, foliage, and branch materials across nearby trees.
 - [ ] Prefer tinting shared materials over creating new textures.
