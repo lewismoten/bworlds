@@ -13,10 +13,13 @@ point that turns a tile resolver into packed splat chunk data.
 ## Main API
 
 - `buildTerrainSplatChunkData(...)`
+- `buildTerrainSplatChunkDataFromTerrainState(...)`
 
 ## Behavior
 
 - builds one worker-style request from seed, bounds, and a tile resolver
+- can also build from one captured terrain-state snapshot with no live gameplay
+  callback
 - computes a terrain-state cache key when a cache is supplied
 - returns a packed splat result ready for worker transfer or later attribute
   upload

@@ -19,6 +19,10 @@ import {
   type TerrainSplatWorkerBuildRequest,
   type TerrainSplatWorkerBuildResult,
 } from './worker-contract.ts';
+import {
+  createTerrainSplatWorkerBuildRequestFromTerrainState,
+  type TerrainSplatTerrainStateSnapshot,
+} from './terrain-state.ts';
 
 export type TerrainSplatChunkBuildResult = {
   request: TerrainSplatWorkerBuildRequest;
@@ -65,8 +69,67 @@ export function buildTerrainSplatChunkData(params: {
     budgetMs: params.budgetMs,
     fallbackLodStepMultiplier: params.fallbackLodStepMultiplier,
   });
-  const cacheKeyInput: TerrainSplatChunkStateKeyInput = {
+  return buildTerrainSplatChunkDataFromRequest({
     request,
+    terrainStateRevision: params.terrainStateRevision,
+    kindCatalog: params.kindCatalog,
+    layerCatalog: params.layerCatalog,
+    cache: params.cache,
+    nowMs: params.nowMs,
+  });
+}
+
+export function buildTerrainSplatChunkDataFromTerrainState(params: {
+  terrainState: TerrainSplatTerrainStateSnapshot;
+  kindCatalog:
+    | ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>
+    | {
+        byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+      };
+  layerCatalog:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        byId: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      };
+  cache?: TerrainSplatChunkBuildCache<TerrainSplatWorkerBuildResult>;
+  nowMs?: () => number;
+}): TerrainSplatChunkBuildResult {
+  return buildTerrainSplatChunkDataFromRequest({
+    request: createTerrainSplatWorkerBuildRequestFromTerrainState(
+      params.terrainState
+    ),
+    terrainStateRevision: params.terrainState.terrainStateRevision,
+    kindCatalog: params.kindCatalog,
+    layerCatalog: params.layerCatalog,
+    cache: params.cache,
+    nowMs: params.nowMs,
+  });
+}
+
+function buildTerrainSplatChunkDataFromRequest(params: {
+  request: TerrainSplatWorkerBuildRequest;
+  terrainStateRevision?: string | number;
+  kindCatalog:
+    | ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>
+    | {
+        byKind: ReadonlyMap<Kind, TerrainKindSplatCatalogEntry>;
+      };
+  layerCatalog:
+    | ReadonlyMap<TerrainMaterialLayerId, TerrainMaterialLayerCatalogEntry>
+    | {
+        byId: ReadonlyMap<
+          TerrainMaterialLayerId,
+          TerrainMaterialLayerCatalogEntry
+        >;
+      };
+  cache?: TerrainSplatChunkBuildCache<TerrainSplatWorkerBuildResult>;
+  nowMs?: () => number;
+}): TerrainSplatChunkBuildResult {
+  const cacheKeyInput: TerrainSplatChunkStateKeyInput = {
+    request: params.request,
     terrainStateRevision: params.terrainStateRevision,
   };
   const cacheKey = createTerrainSplatChunkStateKey(cacheKeyInput);
@@ -75,7 +138,7 @@ export function buildTerrainSplatChunkData(params: {
     const cached = params.cache.get(cacheKey);
     if (cached !== undefined) {
       return {
-        request,
+        request: params.request,
         result: cached,
         cacheKey,
         fromCache: true,
@@ -84,7 +147,7 @@ export function buildTerrainSplatChunkData(params: {
   }
 
   const result = buildTerrainSplatWorkerResult(
-    request,
+    params.request,
     params.kindCatalog,
     params.layerCatalog,
     {
@@ -94,7 +157,7 @@ export function buildTerrainSplatChunkData(params: {
   params.cache?.set(cacheKey, result);
 
   return {
-    request,
+    request: params.request,
     result,
     cacheKey,
     fromCache: false,

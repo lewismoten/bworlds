@@ -3,7 +3,7 @@
 ## Core Architecture
 
 - [x] Create one PBR splat terrain material.
-- [ ] Keep splat rendering separate from tile gameplay state.
+- [x] Keep splat rendering separate from tile gameplay state.
 - [x] Define a terrain material layer interface.
 - [x] Define a terrain splat weight interface.
 - [x] Keep layer IDs stable across chunks.
@@ -309,6 +309,10 @@
   overlay route material identities tied to shared terrain-layer inputs instead
   of per-chunk geometry, summarize cross-chunk reuse, and flag unique overlay
   material fallbacks before live renderer integration.
+- Added `@bworlds/terrain-splat-support/terrain-state` plus
+  `buildTerrainSplatChunkDataFromTerrainState(...)` so plugins can freeze plain
+  terrain records before chunk build or renderer planning, keeping splat
+  consumers off live gameplay callbacks and state APIs.
 - Added `@bworlds/terrain-splat-support/shader-source` to emit bounded terrain
   splat shader variants that sample shared texture-array bindings, blend
   weighted base-color/normal/roughness inputs, include optional metalness and

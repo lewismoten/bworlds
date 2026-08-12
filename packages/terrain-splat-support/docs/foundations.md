@@ -18,6 +18,8 @@ Current responsibilities:
 - derive deterministic splat samples from seed, tile kind, and terrain signals
 - keep overworld terrain-to-splat mapping renderer-free and reusable
 - build chunk-like sample grids without coupling splat generation to meshes
+- capture renderer-free terrain-state snapshots before chunk build or render
+  planning
 - flatten packed splat grids into transferable typed arrays
 - summarize chunk layer usage before renderer integration decides budgets
 - share deterministic terrain family variant pools across chunk generation paths
